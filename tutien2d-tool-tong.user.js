@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm)
 // @namespace    https://tutienpixel.online/
-// @version      1.2.0
+// @version      1.2.1
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 7 tab — Câu cá Hồ Tây (v3.1: tỷ lệ cắn + Côn Bằng + thời tiết), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường tới map + khu đã chọn. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
 // @author       Muse (làm cho Thanh)
 // @match        https://tutienpixel.online/*
@@ -10,7 +10,11 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
-// TOOL TỔNG v1.2.0 — 1 bảng chung, 7 tab. v1.2.0 (25/11): mở rộng điều
+// TOOL TỔNG v1.2.1 — 1 bảng chung, 7 tab. v1.2.1 (25/11): SỬA LỖI Farm
+// không tự di chuyển — runToTarget tắt Auto TRƯỚC khi diToiMap (joystick
+// không chạy khi Auto BẬT), nav diToi/quaCong/diToiMap tắt Auto đầu mỗi
+// nhịp/cổng + tắt lại khi Auto tự bật giữa đường; datAuto bấm xong kiểm tra
+// lại (toggle). v1.2.0 (25/11): mở rộng điều
 // hướng chung thêm Mỏ Linh Thạch, Thạch Phong, Bát Quái, Thiên Đạo, Ma Động,
 // Hắc Phong Lĩnh, Hắc Thị + đường ra hầm Huyết Xích; duongDi thành BFS trên
 // đồ thị cổng; tab Farm thêm 7 map đích; sửa cổng làng->Miếu Hoang (0,12). Gộp từ 5 tool lẻ (giữ nguyên logic):
@@ -4117,6 +4121,9 @@ window.__TT2D_TONG__ = {
       var p = docViTri();
       if (p.x === null) { await sleep(2000); continue; }
       if (Math.abs(p.x - tx) <= 1 && Math.abs(p.y - ty) <= 1) return true;
+      // Joystick không chạy khi Auto BẬT (vd nhân vật đang farm sẵn) — tắt
+      // ngay từ nhịp đầu, và tắt lại nếu Auto tự bật lại giữa đường (vào combat).
+      if (autoDangBat()) datAuto(false);
       // Thử BFS trên lưới thật mỗi vài nhịp (lưới có thể đổi khi quái di chuyển).
       var grid = readWalkable();
       if (grid) {
@@ -4263,6 +4270,22 @@ window.__TT2D_TONG__ = {
     b.click();
     return true;
   }
+  function autoDangBat() {
+    var b1 = $('#btn-auto'), b2 = $('#btn-auto-touch');
+    return !!((b1 && b1.classList.contains('active')) || (b2 && b2.classList.contains('active')));
+  }
+  // Tắt/bật Auto CÓ kiểm tra lại (nút là toggle — bấm mù có thể bấm nhầm
+  // chiều; thử cả 2 nút nếu cần). Joystick KHÔNG di chuyển được khi Auto
+  // BẬT nên mọi hàm di chuyển (diToi/quaCong/diToiMap) đều tắt Auto trước
+  // khi đẩy joystick — sửa lỗi 05:41 25/11 (bật Farm mà nhân vật không đi).
+  function datAuto(bat) {
+    if (autoDangBat() === bat) return true;
+    var b = $('#btn-auto');
+    if (b) { b.click(); if (autoDangBat() === bat) return true; }
+    var b2 = $('#btn-auto-touch');
+    if (b2) { b2.click(); if (autoDangBat() === bat) return true; }
+    return autoDangBat() === bat;
+  }
   async function quaCong(congKey) {
     var c = CONG[congKey];
     if (!c) return false;
@@ -4287,6 +4310,7 @@ window.__TT2D_TONG__ = {
       return false;
     }
     for (var i = 0; i < CFG_NAV.portalTries; i++) {
+      if (autoDangBat()) datAuto(false); // đẩy cổng cũng cần Auto TẮT
       await joyHold(c.dx * 40, c.dy * 40, CFG_NAV.portalHoldMs);
       var p = docViTri();
       if (p.map && p.map !== mapCu) return true;
@@ -4294,6 +4318,7 @@ window.__TT2D_TONG__ = {
     return false;
   }
   async function diToiMap(toiMap) {
+    if (autoDangBat()) datAuto(false); // xem diToi — Auto BẬT thì joystick đứng yên
     var p = docViTri();
     if (p.map === toiMap) return true;
     var duong = duongDi(p.map, toiMap);
@@ -4316,6 +4341,8 @@ window.__TT2D_TONG__ = {
     quaCong: quaCong,
     diToiMap: diToiMap,
     duongDi: duongDi,
+    autoDangBat: autoDangBat,
+    datAuto: datAuto,
     CONG: CONG,
     status: function () {
       var p = docViTri();
@@ -4548,7 +4575,11 @@ window.__TT2D_TONG__ = {
   }
   function datAuto(v) {
     if (autoIsOn() === !!v) return true;
-    return bamNut('#btn-auto') || bamNut('#btn-auto-touch');
+    // Bấm rồi KIỂM TRA LẠI (nút là toggle — bấm mù có thể bấm nhầm chiều;
+    // thử cả 2 nút #btn-auto / #btn-auto-touch nếu cần).
+    if (bamNut('#btn-auto') && autoIsOn() === !!v) return true;
+    if (bamNut('#btn-auto-touch') && autoIsOn() === !!v) return true;
+    return autoIsOn() === !!v;
   }
   function datFly(v) {
     if (flyIsOn() === !!v) return true;
@@ -4702,6 +4733,14 @@ window.__TT2D_TONG__ = {
         setPhase('stuck', 'Module Điều hướng chưa sẵn sàng (nav).');
         return;
       }
+      // TẮT Auto TRƯỚC khi di chuyển (lỗi 05:41 25/11: bật Farm mà nhân
+      // vật không đi): joystick KHÔNG di chuyển được khi Auto BẬT (cơ chế
+      // game đã xác minh — cũng là nguyên nhân kẹt Huyết Xích lần 5).
+      // Trước đây runToTarget gọi diToiMap mà không tắt Auto, nên nhân vật
+      // đang farm sẵn (Auto BẬT) thì đẩy joystick 60 nhịp vẫn đứng yên rồi
+      // tool báo "kẹt". Auto chỉ bật lại SAU khi tới đích (batBoFarm cuối
+      // runToTarget); Phi Hành giữ nguyên (bay + joystick vẫn chạy được).
+      tatAuto();
       setPhase('going', 'Đang đi tới ' + MAPS[target.map].ten + ' Khu ' + target.khu + '...');
       var vt = docViTri();
       if (vt.map !== target.map) {
