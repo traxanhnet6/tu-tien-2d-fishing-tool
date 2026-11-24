@@ -1,0 +1,4186 @@
+// ==UserScript==
+// @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội)
+// @namespace    https://tutienpixel.online/
+// @version      1.0.0
+// @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 6 tab — Câu cá Hồ Tây (v3.1: tỷ lệ cắn + Côn Bằng + thời tiết), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
+// @author       Muse (làm cho Thanh)
+// @match        https://tutienpixel.online/*
+// @match        https://tutien2d.com/*
+// @grant        none
+// @run-at       document-idle
+// ==/UserScript==
+//
+// TOOL TỔNG v1.0.0 — 1 bảng chung, 6 tab. Gộp từ 5 tool lẻ (giữ nguyên logic):
+//  - Câu cá Hồ Tây v3.1.0 | Boss v1.1.0 | Dược v1.1.0 | Huyết Xích phụ v1.1.0
+//    | Vận Tiêu phụ v1.0.0 — xem README.md trong thư mục tu-tien-2d-tool-tong.
+//  - Tổ đội + farm rùa: mời/chấp nhận trong 180px, tối đa 6 người, farm Thạch
+//    Quy Miếu Ông Trường Con Khu 12 (mới, viết cho Tool Tổng).
+//  - Điều hướng chung: joystick + BFS trên lưới thật, dùng chung cho mọi tab;
+//    script Python gọi qua window.__TT2D_TONG__.nav.
+//  - Debug chung: window.__TT2D_TONG__ (.status() / .showTab(id) /
+//    .setCollapsed(v) / .setTabCollapsed(v) / .tab(id) / .nav). Handle riêng
+//    từng tool vẫn giữ: __TT2D_FISH__ / __TT2D_BOSS__ / __TT2D_DUOC__ /
+//    __TT2D_HX__ / __TT2D_VANTIEU__ / __TT2D_PARTY__ / __TT2D_NAV__.
+//  - THU NHỎ 2 CẤP: nút "—" trên thanh tab thu gọn nội dung tab đang dùng
+//    (chỉ hiện thanh tab); nút "—" trên tiêu đề thu nhỏ toàn bộ bảng thành
+//    1 thanh nhỏ (tên + trạng thái ngắn + "＋"). Mỗi tab vẫn giữ nút "—"
+//    riêng (thu gọn khung tab đó). Tool vẫn chạy khi thu nhỏ.
+//  - CHƯA TEST LIVE trên game thật (chỉ test trên DOM giả) — xem README.
+
+(function () {
+  'use strict';
+
+// ================= VỎ TOOL TỔNG (shell) =================
+// 1 bảng chung chia 6 tab. Các module con (câu cá / boss / dược /
+// huyết xích / vận tiêu / tổ đội) là các IIFE riêng — chúng chèn panel
+// của mình vào đúng container tab qua Tong.tabBody(id) rồi đăng ký
+// handle debug qua Tong.register(id, api).
+// Thu nhỏ 2 cấp (lệnh Thanh 00:05 25/11):
+//  - Nút "—" trên thanh tab: thu gọn NỘI DUNG tab đang dùng, chỉ còn
+//    hiện thanh tiêu đề + thanh tab. Bấm "＋" mở lại.
+//  - Nút "—" trên tiêu đề: thu nhỏ TOÀN BỘ bảng thành 1 thanh nhỏ
+//    (tên + trạng thái ngắn của tab đang dùng + nút "＋"). Tool vẫn chạy.
+//  - Mỗi module vẫn giữ nút "—" riêng của nó (thu gọn khung của module
+//    đó thành tên + trạng thái ngắn + "＋", tool vẫn chạy).
+var TABS = [
+  { id: 'fish', icon: '\uD83C\uDFA3', ten: 'Câu cá' },
+  { id: 'boss', icon: '\uD83D\uDC09', ten: 'Boss' },
+  { id: 'duoc', icon: '\uD83C\uDF3F', ten: 'Dược' },
+  { id: 'hx', icon: '\uD83E\uDE78', ten: 'Huyết Xích' },
+  { id: 'vantieu', icon: '\uD83D\uDE9A', ten: 'Vận Tiêu' },
+  { id: 'party', icon: '\uD83D\uDC65', ten: 'Tổ đội' },
+];
+var activeTab = 'fish';
+var tabCollapsed = false;
+var shellCollapsed = false;
+var apis = {};
+var containers = {};
+var tabBtns = {};
+var shellPanel, shellMini, shellMiniStatus, tabContent, tabCollapseBtn;
+
+function tongTabTen(id) {
+  for (var i = 0; i < TABS.length; i++) if (TABS[i].id === id) return TABS[i].ten;
+  return id;
+}
+
+function tongMiniStatus() {
+  var api = apis[activeTab];
+  var ten = tongTabTen(activeTab);
+  if (!api || typeof api.status !== 'function') return ten + ' · —';
+  try {
+    var s = api.status();
+    if (activeTab === 'fish') return '\uD83C\uDFA3 ' + (s.on ? 'BẬT · ' + s.target + ' · ' + s.vung + ' · Quăng ' + (s.stats ? s.stats.cast : 0) : 'TẮT');
+    if (activeTab === 'boss') return '\uD83D\uDC09 ' + (s.on ? 'BẬT · ' + s.phase + (s.currentTarget ? ' · ' + s.currentTarget : '') : 'TẮT');
+    if (activeTab === 'duoc') return '\uD83C\uDF3F ' + (s.on ? 'BẬT · ' + s.luotDaLam + '/15' + (s.viecHienTai ? ' · ' + s.viecHienTai : '') : 'TẮT');
+    if (activeTab === 'hx') return '\uD83E\uDE78 ' + (s.on ? 'BẬT · ' + (s.inDungeon ? s.floor : 'ngoài hầm') : 'TẮT');
+    if (activeTab === 'vantieu') return '\uD83D\uDE9A ' + (s.carrying ? 'Đang kéo · ' + (s.han || '') : 'Chưa nhận tiêu');
+    if (activeTab === 'party') return '\uD83D\uDC65 ' + (s.inParty ? 'Trong đội · ' + s.members.length + ' người' : 'Chưa vào đội');
+  } catch (e) { /* bỏ qua */ }
+  return ten;
+}
+
+function tongRenderMini() {
+  if (shellMiniStatus) shellMiniStatus.textContent = tongMiniStatus();
+}
+
+function tongShowTab(id) {
+  if (!containers[id]) return;
+  activeTab = id;
+  Object.keys(containers).forEach(function (k) {
+    containers[k].style.display = (k === id) ? '' : 'none';
+  });
+  Object.keys(tabBtns).forEach(function (k) {
+    tabBtns[k].style.background = (k === id) ? '#6b4d16' : '#2a2113';
+    tabBtns[k].style.fontWeight = (k === id) ? 'bold' : 'normal';
+  });
+  tongRenderMini();
+}
+
+function tongSetTabCollapsed(v) {
+  tabCollapsed = !!v;
+  if (tabContent) tabContent.style.display = tabCollapsed ? 'none' : '';
+  if (tabCollapseBtn) tabCollapseBtn.textContent = tabCollapsed ? '＋' : '—';
+  if (tabCollapseBtn) tabCollapseBtn.title = tabCollapsed ? 'Mở rộng nội dung tab' : 'Thu nhỏ nội dung tab (chỉ hiện thanh tab)';
+}
+
+function tongSetCollapsed(v) {
+  shellCollapsed = !!v;
+  if (shellPanel) shellPanel.style.display = shellCollapsed ? 'none' : 'block';
+  if (shellMini) shellMini.style.display = shellCollapsed ? 'flex' : 'none';
+  tongRenderMini();
+}
+
+function tongBuildShell() {
+  // CSS ghi đè: panel của từng module vốn là fixed (top/right riêng) —
+  // trong Tool Tổng chúng phải chảy trong tab (static, full-width, không
+  // viền/bóng riêng; khung chung của shell lo phần đó). !important để
+  // thắng inline style mà module tự đặt (vd setCollapsed đổi width).
+  var st = document.createElement('style');
+  st.id = 'tt2d-tong-style';
+  st.textContent =
+    '#tt2d-fish-panel,#tt2d-boss-panel,#tt2d-hx-panel,#tt2d-vantieu-panel,#tt2d-duoc-panel,#tt2d-party-panel,#tt2d-boss-mini{' +
+    'position:static!important;top:auto!important;left:auto!important;right:auto!important;' +
+    'width:100%!important;max-width:none!important;margin:0!important;padding:0!important;' +
+    'border:none!important;border-radius:0!important;box-shadow:none!important;' +
+    'background:transparent!important;z-index:auto!important;}';
+  document.head.appendChild(st);
+
+  shellPanel = document.createElement('div');
+  shellPanel.id = 'tt2d-tong-panel';
+  shellPanel.style.cssText = [
+    'position:fixed', 'top:10px', 'right:10px', 'z-index:999999',
+    'width:320px', 'background:rgba(20,14,8,0.92)', 'color:#ffe9b0',
+    'border:1px solid #8a6a2f', 'border-radius:10px', 'padding:10px 12px',
+    'font:12px/1.5 system-ui, sans-serif', 'box-shadow:0 4px 18px rgba(0,0,0,0.5)',
+  ].join(';');
+  shellPanel.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+      '<b>\uD83E\uDDF0 Tool Tổng Tu Tiên 2D</b>' +
+      '<span>' +
+        '<button id="tt2d-tong-collapse" title="Thu nhỏ toàn bộ bảng (tool vẫn chạy)" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 4px">—</button>' +
+      '</span>' +
+    '</div>' +
+    '<div id="tt2d-tong-tabbar" style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 0;align-items:center"></div>' +
+    '<div id="tt2d-tong-content" style="margin-top:8px"></div>';
+  document.body.appendChild(shellPanel);
+
+  var tabbar = shellPanel.querySelector('#tt2d-tong-tabbar');
+  TABS.forEach(function (t) {
+    var b = document.createElement('button');
+    b.textContent = t.icon + ' ' + t.ten;
+    b.title = 'Tab ' + t.ten;
+    b.style.cssText = 'padding:3px 7px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer;font-size:12px';
+    b.addEventListener('click', function () { tongShowTab(t.id); });
+    tabbar.appendChild(b);
+    tabBtns[t.id] = b;
+  });
+  tabCollapseBtn = document.createElement('button');
+  tabCollapseBtn.id = 'tt2d-tong-tab-collapse';
+  tabCollapseBtn.textContent = '—';
+  tabCollapseBtn.title = 'Thu nhỏ nội dung tab (chỉ hiện thanh tab)';
+  tabCollapseBtn.style.cssText = 'padding:3px 7px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer;font-size:12px;margin-left:auto';
+  tabCollapseBtn.addEventListener('click', function () { tongSetTabCollapsed(!tabCollapsed); });
+  tabbar.appendChild(tabCollapseBtn);
+
+  tabContent = shellPanel.querySelector('#tt2d-tong-content');
+  TABS.forEach(function (t) {
+    var c = document.createElement('div');
+    c.id = 'tt2d-tong-tab-' + t.id;
+    c.style.display = 'none';
+    tabContent.appendChild(c);
+    containers[t.id] = c;
+  });
+
+  shellPanel.querySelector('#tt2d-tong-collapse').addEventListener('click', function () { tongSetCollapsed(true); });
+
+  // Thanh thu nhỏ toàn bộ bảng: tên + trạng thái ngắn tab đang dùng + nút ＋.
+  shellMini = document.createElement('div');
+  shellMini.id = 'tt2d-tong-mini';
+  shellMini.style.cssText = [
+    'position:fixed', 'top:10px', 'right:10px', 'z-index:999999',
+    'display:none', 'align-items:center', 'gap:6px',
+    'background:rgba(20,14,8,0.92)', 'color:#ffe9b0',
+    'border:1px solid #8a6a2f', 'border-radius:8px', 'padding:4px 8px',
+    'font:12px/1.4 system-ui, sans-serif', 'box-shadow:0 4px 18px rgba(0,0,0,0.5)',
+    'max-width:320px',
+  ].join(';');
+  shellMini.innerHTML =
+    '<b>\uD83E\uDDF0 Tool Tổng</b>' +
+    '<span id="tt2d-tong-mini-status" style="color:#bfe3ff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>' +
+    '<button id="tt2d-tong-expand" title="Mở lại bảng đầy đủ" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px">＋</button>';
+  document.body.appendChild(shellMini);
+  shellMiniStatus = shellMini.querySelector('#tt2d-tong-mini-status');
+  shellMini.querySelector('#tt2d-tong-expand').addEventListener('click', function () { tongSetCollapsed(false); });
+
+  tongShowTab(activeTab);
+  setInterval(tongRenderMini, 1000);
+}
+
+// Registry mà các module con dùng: lấy container tab + đăng ký handle.
+var Tong = {
+  tabBody: function (id) { return containers[id] || null; },
+  register: function (id, api) { apis[id] = api; tongRenderMini(); },
+  showTab: tongShowTab,
+  setCollapsed: tongSetCollapsed,
+  setTabCollapsed: tongSetTabCollapsed,
+  activeTab: function () { return activeTab; },
+  apis: apis,
+};
+
+tongBuildShell();
+
+// Debug handle chung: __TT2D_TONG__.status() / .showTab(id) /
+// .setCollapsed(v) / .setTabCollapsed(v) / .tab(id) / .nav (module Điều hướng).
+window.__TT2D_TONG__ = {
+  version: '1.0.0',
+  showTab: tongShowTab,
+  setCollapsed: tongSetCollapsed,
+  setTabCollapsed: tongSetTabCollapsed,
+  activeTab: function () { return activeTab; },
+  tab: function (id) { return apis[id] || null; },
+  status: function () {
+    var out = { version: '1.0.0', activeTab: activeTab, tabs: {} };
+    Object.keys(apis).forEach(function (id) {
+      try { out.tabs[id] = apis[id].status ? apis[id].status() : null; } catch (e) { out.tabs[id] = null; }
+    });
+    return out;
+  },
+  nav: null, // module Điều hướng chung gắn vào đây (xem fragments/nav.js)
+};
+
+
+  // ================= MODULE: fish (Câu cá Hồ Tây v3.1.0: tỷ lệ cắn theo vùng/mồi/thời tiết, mục tiêu auto, tự vào Côn Bằng 12:30 + 19:30.) =================
+
+  (function () {
+
+
+    // ---------------- Cấu hình ----------------
+    var CFG = {
+      pollMs: 50,               // kiểm tra trạng thái mỗi 50ms
+      jerkDelayMin: 80,         // trễ trước khi giật (ms)
+      jerkDelayMax: 250,
+      castHoldMs: { nong: 136, giua: 408, sau: 680 }, // giữ nút để quăng theo vùng
+      waitBiteTimeoutMs: 60000, // chờ cắn câu tối đa 60s rồi thu cần, quăng lại
+      recastDelayMin: 1000,     // nghỉ giữa các lần quăng (ms)
+      recastDelayMax: 3000,
+      tapHoldMin: 200,          // "Nhả nhịp": giữ bao lâu rồi buông
+      tapHoldMax: 350,
+      jerkTapMs: 60,            // giật: bấm giữ 60ms rồi buông
+      conTapMs: 60,             // nối Côn Bằng: bấm giữ 60ms rồi buông
+      khongCanDoiVung: 2,       // quăng N lần không cắn thì đổi vùng tìm chỗ
+      tiLeToiThieuMau: 3,       // cần tối thiểu N lần quăng/vùng (hoặc/mồi) mới tin tỷ lệ
+      conTruocMs: 60000,        // v3.1: trước giờ Côn Bằng N ms thì không quăng mới, chờ gắn dây
+      conChoToiDaMs: 90000,     // v3.1: chờ nút Côn tối đa N ms sau khi vào khung giờ rồi quay lại câu thường
+      tiLeToiThieuMauTT: 3,     // v3.1: cần tối thiểu N lần quăng/(thời tiết+vùng) mới tin tỷ lệ theo thời tiết
+    };
+
+    // ---------------- Mục tiêu: mồi + vùng ----------------
+    var TARGETS = {
+      linh: { ten: 'Linh Ngư', moi: 'ngoc_ha', moiTen: 'Ngọc Hà', duPhong: 'van_khau', duPhongTen: 'Vân Linh Khâu', vung: 'giua', vungThu: ['giua', 'sau', 'nong'] },
+      yeu:  { ten: 'Yêu Ngư',  moi: 'huyet_tinh', moiTen: 'Xích Huyết Mồi', duPhong: 'van_khau', duPhongTen: 'Vân Linh Khâu', vung: 'sau', vungThu: ['sau', 'giua', 'nong'] },
+      giao: { ten: 'Giao Ngư', moi: 'long_huong', moiTen: 'Long Diên Hương', duPhong: 'linh_nhi', duPhongTen: 'Linh Nhĩ Mồi', vung: 'sau', vungThu: ['sau', 'giua', 'nong'] },
+      tudo: { ten: 'Tự do',    moi: 'giun', moiTen: 'Giun Đất', duPhong: null, duPhongTen: null, vung: 'giua', vungThu: ['giua', 'sau', 'nong'] },
+      // Tự động: mồi + vùng do chonTuDong() cập nhật theo tỷ lệ quan sát được.
+      auto: { ten: 'Tự động (tỷ lệ tốt nhất)', moi: 'ngoc_ha', moiTen: 'Ngọc Hà', duPhong: 'van_khau', duPhongTen: 'Vân Linh Khâu', vung: 'giua', vungThu: ['giua', 'sau', 'nong'] },
+    };
+    var VUNG_TEN = { nong: 'Nông', giua: 'Giữa', sau: 'Sâu' };
+    var MOI_TEN = { giun: 'Giun Đất', ngoc_ha: 'Ngọc Hà', linh_nhi: 'Linh Nhĩ Mồi', van_khau: 'Vân Linh Khâu', huyet_tinh: 'Xích Huyết Mồi', long_huong: 'Long Diên Hương' };
+    var VUNG_THU_TU = ['giua', 'sau', 'nong']; // thứ tự thử vùng khi chưa đủ mẫu
+
+    // ---------------- Trạng thái ----------------
+    var on = false;             // tool đang bật?
+    var holding = false;        // nút đang được giữ (đã pointerdown, chưa pointerup)
+    var state = 'idle';         // idle | casting | waiting | jerking | pulling | con-wait | con-tapped
+    var nextCastAt = 0;         // thời điểm được quăng tiếp
+    var lastCastAt = 0;         // thời điểm quăng gần nhất
+    var stats = { cast: 0, jerk: 0, pull: 0, con: 0 };
+    var logLines = [];
+    var target = 'tudo';        // mục tiêu hiện tại: linh | yeu | giao | tudo | auto
+    var vungHien = 'giua';      // vùng quăng đang dùng: nong | giua | sau
+    var choTimDuoc = null;      // vùng đã tìm thấy cá cắn (null = chưa tìm thấy)
+    var demKhongCan = 0;        // số lần quăng liên tiếp không thấy cá cắn
+    var moiDaChon = null;       // mồi tool đã bấm chọn (để khỏi bấm lại)
+    var moiDangDung = 'giun';   // mồi đang dùng thực tế (sau khi xét hết/dự phòng)
+    // --- v3: tỷ lệ + luồng ---
+    var ratesVung = { nong: { quang: 0, can: 0, cauDuoc: 0 }, giua: { quang: 0, can: 0, cauDuoc: 0 }, sau: { quang: 0, can: 0, cauDuoc: 0 } };
+    var ratesMoi = {};          // key mồi -> {quang, can, cauDuoc} (tạo khi dùng)
+    var luongHienTai = null;    // vùng vừa có cá cắn gần nhất (suy ra "luồng" từ dữ liệu cắn)
+    var castVung = null;        // vùng của lượt quăng đang chạy (để ghi tỷ lệ đúng)
+    var castMoi = null;         // mồi của lượt quăng đang chạy
+    // --- v3.1: Côn Bằng ---
+    var conDangHoatDong = false; // đã thấy nút Côn/Nối trong khung giờ này
+    var conDaNoi = false;        // đã gắn dây vào Côn (đang kéo hoặc vừa đứt chờ nối lại)
+    var conDangKeo = false;      // đang kéo Côn (phân biệt với kéo cá thường)
+    var conKhung = null;         // khung giờ Côn hiện tại (batMs) — để biết khi nào hết
+    var conChoDen = 0;           // hạn chót chờ nút Côn xuất hiện (sau khi vào khung giờ)
+    var conBoQuaKhung = null;    // khung giờ đã bỏ qua (không thấy nút Côn) — khỏi chờ lại
+    var conThayNutLuc = 0;       // lần cuối thấy nút Côn/Nối (để biết Côn đã xong chưa)
+    var conSoXong = 0;           // số lượt Côn đã kéo xong
+    // --- v3.1: thời tiết ---
+    var ratesTT = {};            // key id thời tiết -> { vung: {nong,giua,sau}, moi: {key: {...}} }
+    var castTT = null;           // thời tiết của lượt quăng đang chạy (để ghi tỷ lệ đúng)
+
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function randInt(a, b) { return Math.round(rand(a, b)); }
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+    // ---------------- Côn Bằng (v3.1) ----------------
+    // Client 24/11 (VanCan): CON_GIO=[[12,30],[19,30]] giờ VN, CON_DAI_MS=360000.
+    var CON_GIO = [[12, 30], [19, 30]];
+    var CON_DAI_MS = 360000; // 6 phút
+    var VN_OFFSET_MS = 7 * 3600000;
+    function msTrongNgayVN(dateMs) {
+      var t = dateMs + VN_OFFSET_MS;
+      return ((t % 86400000) + 86400000) % 86400000;
+    }
+    function ngayVNStr(dateMs) {
+      var d = new Date(dateMs + VN_OFFSET_MS);
+      return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+    }
+    function gioPhut(ms) {
+      var p = Math.floor(ms / 60000) % 1440;
+      return pad2(Math.floor(p / 60)) + ':' + pad2(p % 60);
+    }
+    function msSangChu(ms) {
+      var s = Math.max(0, Math.ceil(ms / 1000));
+      if (s < 60) return s + 's';
+      var m = Math.floor(s / 60);
+      return m + 'p' + (s % 60 ? ' ' + (s % 60) + 's' : '');
+    }
+    // Trạng thái Côn Bằng theo đồng hồ (chỉ để hiển thị + chờ gắn dây; gắn dây
+    // thì DỰA VÀO NÚT game, vì đồng hồ máy có thể lệch với giờ server).
+    function conTrangThai(dateMs) {
+      var ms = msTrongNgayVN(dateMs);
+      for (var i = 0; i < CON_GIO.length; i++) {
+        var bat = (CON_GIO[i][0] * 60 + CON_GIO[i][1]) * 60000;
+        var het = bat + CON_DAI_MS;
+        if (ms >= bat && ms < het) {
+          return { dangDienRa: true, batMs: bat, hetMs: het, conLaiMs: het - ms, sapMs: bat };
+        }
+      }
+      var sap = null;
+      for (var j = 0; j < CON_GIO.length; j++) {
+        var b2 = (CON_GIO[j][0] * 60 + CON_GIO[j][1]) * 60000;
+        if (ms < b2) { sap = b2; break; }
+      }
+      if (sap === null) sap = (CON_GIO[0][0] * 60 + CON_GIO[0][1]) * 60000 + 86400000;
+      return { dangDienRa: false, batMs: null, hetMs: null, conLaiMs: sap - ms, sapMs: sap };
+    }
+    // Có nên chờ Côn Bằng (không quăng cần thường) không? Trả về chuỗi trạng thái
+    // để hiện, hoặc null nếu cứ câu thường.
+    function lyDoChoCon(now, ct) {
+      if (conDaNoi) return null; // đã gắn dây rồi — đang kéo, không chờ nữa
+      if (ct.dangDienRa) {
+        if (conDangHoatDong) {
+          // Đã thấy nút Côn trong khung giờ này nhưng giờ nút không còn (vd vừa
+          // câu xong 1 con cá) — chờ nó hiện lại; quá 90s không thấy thì Côn
+          // có lẽ đã xong, quay lại câu thường.
+          if (conThayNutLuc && now - conThayNutLuc > 90000) {
+            conDangHoatDong = false; conDaNoi = false; conDangKeo = false; conChoDen = 0;
+            log('Không thấy nút Côn nữa — có lẽ Côn đã xong, câu thường tiếp.');
+            return null;
+          }
+          return 'Côn Bằng đang trồi — chờ nút Côn để gắn dây…';
+        }
+        // Chưa thấy nút Côn trong khung giờ này: chờ tối đa conChoToiDaMs.
+        if (!conChoDen) conChoDen = now + CFG.conChoToiDaMs;
+        if (now < conChoDen) return 'Côn Bằng đang trồi — chờ nút Côn…';
+        if (conBoQuaKhung !== ct.batMs) {
+          conBoQuaKhung = ct.batMs;
+          log('Không thấy nút Côn trong khung giờ này — câu thường tiếp.');
+        }
+        return null;
+      }
+      // Sắp tới giờ Côn (trong conTruocMs): đừng quăng mới, chờ gắn dây.
+      if (ct.conLaiMs <= CFG.conTruocMs) {
+        return 'Côn Bằng sắp trồi lúc ' + gioPhut(ct.sapMs) + ' — chờ gắn dây…';
+      }
+      return null;
+    }
+
+    // ---------------- Thời tiết (v3.1) ----------------
+    // Client 24/11 (VanCan.LUAT): 6 loại, đổi mỗi ngày theo hash ngày (luatKy).
+    // Server gửi id thời tiết qua tin tt (a.luat) → game hiện trong <span class="vc-luat">
+    // (<i class="vc-luat-ic"> icon + <span class="vc-luat-ten"> tên). Tool đọc DOM trước,
+    // không có DOM thì tự tính bằng hash ngày y hệt client làm dự phòng.
+    var LUAT = [
+      { id: 'nang_gat', ten: 'Nắng Gắt', icon: '☀️', cau: 'Cá sâu ăn mồi, chỗ nông vắng.' },
+      { id: 'mua_bui', ten: 'Mưa Bụi', icon: '🌦️', cau: 'Giữa hồ đông cá, rỉa mồi nhiều.' },
+      { id: 'gio_nom', ten: 'Gió Nồm', icon: '🌬️', cau: 'Gió dạt, quăng khó trúng chỗ.' },
+      { id: 'nuoc_duc', ten: 'Nước Đục', icon: '🌫️', cau: 'Dấu nước mờ, cá to hơn.' },
+      { id: 'linh_trieu', ten: 'Linh Triều', icon: '🌊', cau: 'Giao Ngư dễ cắn mà giãy dữ.' },
+      { id: 'lang_song', ten: 'Lặng Sóng', icon: '🍃', cau: 'Hồ yên, nhiều vật lạ.' },
+    ];
+    var LUAT_THEO_ID = {}, LUAT_THEO_TEN = {};
+    LUAT.forEach(function (w) { LUAT_THEO_ID[w.id] = w; LUAT_THEO_TEN[w.ten] = w; });
+    // Gợi ý theo mô tả thời tiết của game — chỉ dùng khi chưa có dữ liệu quan sát.
+    var GOI_Y_THEO_TT = {
+      linh_trieu: { vung: 'sau', moi: 'long_huong' }, // Giao Ngư dễ cắn
+      nang_gat: { vung: 'sau', moi: null },           // Cá sâu ăn mồi
+      mua_bui: { vung: 'giua', moi: null },           // Giữa hồ đông cá
+    };
+    function luatKy(ngayStr) { // hash ngày y hệt client: i=7; i=(31*i+code)>>>0; LUAT[i%6]
+      var s = String(ngayStr || ''), i = 7;
+      for (var k = 0; k < s.length; k++) i = (31 * i + s.charCodeAt(k)) >>> 0;
+      return LUAT[i % LUAT.length];
+    }
+    function thoiTietTuDOM() {
+      var el = document.querySelector('.vc-luat-ten');
+      if (el) {
+        var t = (el.textContent || '').trim();
+        if (LUAT_THEO_TEN[t]) return { w: LUAT_THEO_TEN[t], nguon: 'dom' };
+      }
+      return null;
+    }
+    function thoiTietTuNgay(dateMs) {
+      return { w: luatKy(ngayVNStr(dateMs)), nguon: 'tinh' };
+    }
+    // Thời tiết hiện tại (cache ~5s để khỏi đọc DOM mỗi tick).
+    var ttCache = null, ttCacheAt = 0;
+    function thoiTietHienTai() {
+      var now = Date.now();
+      if (ttCache && now - ttCacheAt < 5000) return ttCache;
+      var r = thoiTietTuDOM() || thoiTietTuNgay(now);
+      ttCache = r; ttCacheAt = now;
+      return r;
+    }
+    function ttBucket(id) {
+      if (!ratesTT[id]) {
+        ratesTT[id] = {
+          vung: { nong: { quang: 0, can: 0, cauDuoc: 0 }, giua: { quang: 0, can: 0, cauDuoc: 0 }, sau: { quang: 0, can: 0, cauDuoc: 0 } },
+          moi: {},
+        };
+      }
+      return ratesTT[id];
+    }
+
+    // ---------------- Tỷ lệ cắn / câu được (v3) ----------------
+    var LS_KEY = 'tt2d_fish_v3_rates';
+    function tiLeCan(r) { return r.quang > 0 ? r.can / r.quang : 0; }
+    function tiLeCau(r) { return r.quang > 0 ? r.cauDuoc / r.quang : 0; }
+    function pct(x) { return Math.round(x * 100) + '%'; }
+    function round3(x) { return Math.round(x * 1000) / 1000; }
+    function rateObj(r) {
+      return { quang: r.quang, can: r.can, cauDuoc: r.cauDuoc, tiLeCan: round3(tiLeCan(r)), tiLeCau: round3(tiLeCau(r)) };
+    }
+    function luuRates() {
+      try {
+        if (typeof localStorage === 'undefined') return;
+        localStorage.setItem(LS_KEY, JSON.stringify({ vung: ratesVung, moi: ratesMoi, tt: ratesTT }));
+      } catch (e) { /* bỏ qua (vd chế độ ẩn danh chặn storage) */ }
+    }
+    function taiRates() {
+      try {
+        if (typeof localStorage === 'undefined') return;
+        var s = localStorage.getItem(LS_KEY);
+        if (!s) return;
+        var d = JSON.parse(s);
+        if (d && d.vung) {
+          ['nong', 'giua', 'sau'].forEach(function (z) {
+            if (d.vung[z]) {
+              ratesVung[z].quang = d.vung[z].quang | 0;
+              ratesVung[z].can = d.vung[z].can | 0;
+              ratesVung[z].cauDuoc = d.vung[z].cauDuoc | 0;
+            }
+          });
+        }
+        if (d && d.moi) {
+          Object.keys(d.moi).forEach(function (k) {
+            if (MOI_TEN[k]) {
+              ratesMoi[k] = { quang: d.moi[k].quang | 0, can: d.moi[k].can | 0, cauDuoc: d.moi[k].cauDuoc | 0 };
+            }
+          });
+        }
+        if (d && d.tt) { // v3.1: tỷ lệ theo thời tiết
+          Object.keys(d.tt).forEach(function (id) {
+            if (!LUAT_THEO_ID[id]) return;
+            var b = ttBucket(id);
+            ['nong', 'giua', 'sau'].forEach(function (z) {
+              if (d.tt[id].vung && d.tt[id].vung[z]) {
+                b.vung[z].quang = d.tt[id].vung[z].quang | 0;
+                b.vung[z].can = d.tt[id].vung[z].can | 0;
+                b.vung[z].cauDuoc = d.tt[id].vung[z].cauDuoc | 0;
+              }
+            });
+            if (d.tt[id].moi) {
+              Object.keys(d.tt[id].moi).forEach(function (k) {
+                if (MOI_TEN[k]) {
+                  b.moi[k] = { quang: d.tt[id].moi[k].quang | 0, can: d.tt[id].moi[k].can | 0, cauDuoc: d.tt[id].moi[k].cauDuoc | 0 };
+                }
+              });
+            }
+          });
+        }
+      } catch (e) { /* dữ liệu cũ hỏng — bỏ qua, bắt đầu lại từ 0 */ }
+    }
+    function xoaRates() {
+      ['nong', 'giua', 'sau'].forEach(function (z) { ratesVung[z] = { quang: 0, can: 0, cauDuoc: 0 }; });
+      ratesMoi = {};
+      ratesTT = {};
+      luongHienTai = null;
+      luuRates();
+      renderRates();
+      renderLuong();
+      renderThoiTiet();
+      log('Đã xóa dữ liệu tỷ lệ (bắt đầu ghi lại từ 0).');
+    }
+    // Ghi 1 lần quăng (gọi khi quăng xong, kèm vùng/mồi của lượt đó).
+    function ghiNhanQuang(vung, moi) {
+      var rv = ratesVung[vung];
+      if (rv) rv.quang += 1;
+      var rm = ratesMoi[moi] || (ratesMoi[moi] = { quang: 0, can: 0, cauDuoc: 0 });
+      rm.quang += 1;
+      castVung = vung;
+      castMoi = moi;
+      castTT = thoiTietHienTai().w.id; // thời tiết lúc quăng (để ghi cắn/câu được đúng)
+      var b = ttBucket(castTT); // v3.1: ghi theo thời tiết
+      if (b.vung[vung]) b.vung[vung].quang += 1;
+      var bm = b.moi[moi] || (b.moi[moi] = { quang: 0, can: 0, cauDuoc: 0 });
+      bm.quang += 1;
+      luuRates();
+      renderRates();
+      renderThoiTiet();
+    }
+    // Ghi 1 lần kéo xong (nút về "Quăng" sau khi kéo) — tính là câu được 1 con.
+    function ghiNhanCauDuoc() {
+      var v = castVung || vungHien;
+      var m = castMoi || moiDangDung;
+      if (ratesVung[v]) ratesVung[v].cauDuoc += 1;
+      if (ratesMoi[m]) ratesMoi[m].cauDuoc += 1;
+      var b = ttBucket(castTT || thoiTietHienTai().w.id); // v3.1: ghi theo thời tiết lúc quăng
+      if (b.vung[v]) b.vung[v].cauDuoc += 1;
+      if (b.moi[m]) b.moi[m].cauDuoc += 1;
+      luuRates();
+      renderRates();
+      renderThoiTiet();
+    }
+
+    // Vùng có tỷ lệ cắn tốt nhất trong 1 bảng tỷ lệ (đủ mẫu, tỷ lệ > 0 — hoặc
+    // tất cả vùng đã đủ mẫu thì lấy tốt nhất kể cả 0). null = chưa đủ dữ liệu.
+    function vungTotNhat(bang, exclude, minMau) {
+      var tot = null, totTiLe = -1, coTiLeDuong = false, tatCaDuMau = true;
+      VUNG_THU_TU.forEach(function (z) {
+        if (z === exclude) return;
+        var r = bang[z];
+        if (!r || r.quang < minMau) { tatCaDuMau = false; return; }
+        var t = tiLeCan(r);
+        if (t > 0) coTiLeDuong = true;
+        if (t > totTiLe || (t === totTiLe && tot && r.quang > bang[tot].quang)) { tot = z; totTiLe = t; }
+      });
+      if (tot && (coTiLeDuong || tatCaDuMau)) return tot;
+      return null;
+    }
+    // Vùng chưa đủ mẫu đầu tiên theo thứ tự thử (để thử dần khi chưa có dữ liệu).
+    function vungChuaDuMau(bang, exclude, minMau) {
+      for (var i = 0; i < VUNG_THU_TU.length; i++) {
+        var z = VUNG_THU_TU[i];
+        if (z === exclude) continue;
+        var r = bang[z];
+        if (!r || r.quang < minMau) return z;
+      }
+      return null;
+    }
+    // Mồi có tỷ lệ cắn tốt nhất trong 1 bảng mồi (đủ mẫu, tỷ lệ > 0). null = chưa có.
+    function moiTotNhat(bangMoi, minMau) {
+      if (!bangMoi) return null;
+      var tot = null, totTiLe = -1;
+      Object.keys(bangMoi).forEach(function (k) {
+        var r = bangMoi[k];
+        if (r.quang >= minMau) {
+          var t = tiLeCan(r);
+          if (t > 0 && t > totTiLe) { tot = k; totTiLe = t; }
+        }
+      });
+      return tot;
+    }
+    // Gợi ý vùng + mồi tốt nhất lúc này (để hiện trong bảng + dùng cho chế độ auto):
+    // 1) tỷ lệ theo thời tiết hiện tại → 2) tỷ lệ chung → null (chưa đủ dữ liệu).
+    function goiYThoiTiet(w) {
+      var tt = ratesTT[w.id];
+      var v = tt ? vungTotNhat(tt.vung, null, CFG.tiLeToiThieuMauTT) : null;
+      var m = tt ? moiTotNhat(tt.moi, CFG.tiLeToiThieuMauTT) : null;
+      if (v) return { vung: v, moi: m, tiLe: tiLeCan(tt.vung[v]), nguon: w.ten };
+      v = vungTotNhat(ratesVung, null, CFG.tiLeToiThieuMau);
+      m = moiTotNhat(ratesMoi, CFG.tiLeToiThieuMau);
+      if (v) return { vung: v, moi: m, tiLe: tiLeCan(ratesVung[v]), nguon: 'chung' };
+      return null;
+    }
+
+    // Chế độ "Tự động": chọn vùng + mồi theo tỷ lệ cắn tốt nhất đã quan sát.
+    // v3.1 — thứ tự ưu tiên: (1) tỷ lệ theo THỜI TIẾT hiện tại (đủ mẫu);
+    // (2) tỷ lệ chung (mọi thời tiết); (3) gợi ý theo mô tả thời tiết của game;
+    // (4) thử các vùng chưa đủ mẫu theo thứ tự Giữa → Sâu → Nông.
+    // - Cần tối thiểu CFG.tiLeToiThieuMau lần quăng/vùng (hoặc/mồi) mới tin tỷ lệ.
+    // - exclude: vùng cần loại trừ (khi vừa 2 lần không cắn ở vùng đó).
+    function chonTuDong(exclude, lyDo) {
+      var w = thoiTietHienTai().w;
+      var tt = ratesTT[w.id];
+      var vungChon = null, nguon = '';
+      if (tt) {
+        vungChon = vungTotNhat(tt.vung, exclude, CFG.tiLeToiThieuMauTT);
+        if (vungChon) nguon = 'theo ' + w.ten;
+      }
+      if (!vungChon) {
+        vungChon = vungTotNhat(ratesVung, exclude, CFG.tiLeToiThieuMau);
+        if (vungChon) nguon = 'chung';
+      }
+      if (!vungChon) {
+        var goiY = GOI_Y_THEO_TT[w.id];
+        if (goiY && goiY.vung && goiY.vung !== exclude) {
+          vungChon = goiY.vung;
+          nguon = 'gợi ý ' + w.ten;
+        }
+      }
+      if (!vungChon) {
+        vungChon = vungChuaDuMau(ratesVung, exclude, CFG.tiLeToiThieuMau) || 'giua';
+        nguon = 'thử vùng';
+      }
+      // Mồi: tỷ lệ theo thời tiết → tỷ lệ chung → gợi ý thời tiết → Ngọc Hà.
+      var moiChon = (tt ? moiTotNhat(tt.moi, CFG.tiLeToiThieuMauTT) : null) ||
+        moiTotNhat(ratesMoi, CFG.tiLeToiThieuMau);
+      if (!moiChon) {
+        var gy = GOI_Y_THEO_TT[w.id];
+        moiChon = (gy && gy.moi) || 'ngoc_ha';
+      }
+      TARGETS.auto.moi = moiChon;
+      TARGETS.auto.moiTen = MOI_TEN[moiChon] || moiChon;
+      TARGETS.auto.duPhong = (moiChon === 'van_khau') ? 'ngoc_ha' : 'van_khau';
+      TARGETS.auto.duPhongTen = MOI_TEN[TARGETS.auto.duPhong];
+      moiDaChon = null; // để damBaoMoi chọn lại mồi mới
+      doiVung(vungChon);
+      log('Tự động' + (lyDo ? ' (' + lyDo + ')' : '') + ': chọn vùng ' + VUNG_TEN[vungChon] +
+        ' (' + nguon + ', cắn ' + pct(tiLeCan((tt && tt.vung[vungChon]) || ratesVung[vungChon])) + ') + mồi ' + TARGETS.auto.moiTen + '.');
+    }
+
+    // ---------------- Đọc DOM của game ----------------
+    function nutBtn() { return document.querySelector('button.vc-nut'); }
+    function nutText() {
+      var el = document.querySelector('.vc-nut-chu');
+      return el ? el.textContent.trim() : '';
+    }
+    function goiKind() {
+      var el = document.querySelector('.vc-goi');
+      if (!el) return '';
+      var m = /vc-goi-(tha|keo|nhip)/.exec(el.className || '');
+      return m ? m[1] : '';
+    }
+    function goiText() {
+      var el = document.querySelector('.vc-goi');
+      return el ? el.textContent.trim() : '';
+    }
+    function tensionHigh() { return !!document.querySelector('.vc-cang-do'); }
+    function thuCanBtn() {
+      var b = document.querySelector('button.vc-thu');
+      if (!b || b.classList.contains('hidden')) return null;
+      return b;
+    }
+    // Nút mồi: <button class="vc-moi-nut" data-moi="...">, số lượng trong <small class="vc-moi-so">
+    function nutMoi(key) { return document.querySelector('button.vc-moi-nut[data-moi="' + key + '"]'); }
+    function soLuongMoi(key) {
+      var b = nutMoi(key);
+      if (!b) return -1;
+      var s = b.querySelector('small.vc-moi-so');
+      if (!s) return -1;
+      var t = (s.textContent || '').trim();
+      if (t === '' || t === '∞' || t === '—' || t === '-') return Infinity;
+      var n = parseInt(t.replace(/[^0-9]/g, ''), 10);
+      return isNaN(n) ? -1 : n;
+    }
+
+    // ---------------- Bấm / buông nút của game ----------------
+    function press() {
+      var b = nutBtn();
+      if (!b || holding) return false;
+      b.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true, cancelable: true, pointerId: 1, isPrimary: true,
+      }));
+      holding = true;
+      return true;
+    }
+    function release() {
+      var b = nutBtn();
+      if (!b || !holding) return false;
+      b.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true, cancelable: true, pointerId: 1, isPrimary: true,
+      }));
+      holding = false;
+      return true;
+    }
+    // Bấm nhanh: giữ `ms` rồi buông.
+    function tap(ms) {
+      if (!press()) return;
+      setTimeout(release, ms);
+    }
+    // Bấm nút mồi để game đổi mồi (o.moi = key).
+    function chonMoi(key) {
+      var b = nutMoi(key);
+      if (!b) return false;
+      b.click();
+      moiDaChon = key;
+      moiDangDung = key;
+      return true;
+    }
+
+    // ---------------- Mục tiêu / mồi / vùng ----------------
+    // Đảm bảo đúng mồi cho mục tiêu trước khi quăng. Hết mồi chính thì dùng
+    // mồi dự phòng, hết nữa thì dùng Giun Đất (vô hạn). Trả về mồi sẽ dùng.
+    function damBaoMoi() {
+      var tg = TARGETS[target];
+      var chon = tg.moi;
+      var sl = soLuongMoi(chon);
+      if (sl === 0) {
+        if (tg.duPhong && soLuongMoi(tg.duPhong) > 0) {
+          chon = tg.duPhong;
+          log('Hết ' + tg.moiTen + ' — đổi sang ' + tg.duPhongTen + '.');
+        } else {
+          chon = 'giun';
+          log('Hết ' + tg.moiTen + ' (dự phòng cũng hết) — dùng Giun Đất.');
+        }
+      } else if (sl === -1) {
+        chon = tg.moi; // chưa đọc được số lượng (chưa vào giao diện câu) — cứ chọn mồi chính
+      }
+      if (moiDaChon !== chon) {
+        var tenMoi = chon === 'giun' ? 'Giun Đất' : (chon === tg.moi ? tg.moiTen : tg.duPhongTen);
+        if (chonMoi(chon)) log('Đã chọn mồi: ' + tenMoi + '.');
+      }
+      moiDangDung = chon;
+      return chon;
+    }
+    function doiVung(vung) {
+      vungHien = vung;
+      if (zoneBtns) {
+        Object.keys(zoneBtns).forEach(function (z) {
+          zoneBtns[z].style.background = z === vungHien ? '#6b4d16' : '#2a2113';
+        });
+      }
+      setTargetLine();
+    }
+    function vungTiepTheo() {
+      var list = TARGETS[target].vungThu;
+      var i = list.indexOf(vungHien);
+      return list[(i + 1) % list.length];
+    }
+    // Quăng N lần không thấy cắn ở vùng hiện tại → đổi vùng để tìm chỗ.
+    // - Mục tiêu thường: xoay vùng theo thứ tự của mục tiêu (như v2).
+    // - Tự động: chọn lại vùng theo tỷ lệ (loại vùng vừa không cắn).
+    function ghiNhanKhongCan() {
+      demKhongCan += 1;
+      if (demKhongCan >= CFG.khongCanDoiVung) {
+        var vungCu = vungHien;
+        demKhongCan = 0;
+        if (target === 'auto') {
+          chonTuDong(vungCu, '2 lần không cắn ở ' + VUNG_TEN[vungCu]);
+        } else {
+          var vungMoi = vungTiepTheo();
+          doiVung(vungMoi);
+          log('Không thấy cắn ở vùng ' + VUNG_TEN[vungCu] + ' — đang tìm chỗ khác (vùng ' + VUNG_TEN[vungMoi] + ').');
+        }
+      }
+    }
+    // Đã cắn ở vùng hiện tại → ghi nhớ là "chỗ" đã tìm thấy, giữ vùng đó;
+    // ghi tỷ lệ cắn + ghi nhận "luồng" hiện tại là vùng này.
+    function ghiNhanCan() {
+      if (choTimDuoc !== vungHien) {
+        choTimDuoc = vungHien;
+        log('Tìm thấy chỗ! Cá cắn ở vùng ' + VUNG_TEN[vungHien] + ' — giữ vùng này.');
+      }
+      demKhongCan = 0;
+      var v = castVung || vungHien;
+      var m = castMoi || moiDangDung;
+      if (ratesVung[v]) ratesVung[v].can += 1;
+      if (ratesMoi[m]) ratesMoi[m].can += 1;
+      var b = ttBucket(castTT || thoiTietHienTai().w.id); // v3.1: ghi theo thời tiết lúc quăng
+      if (b.vung[v]) b.vung[v].can += 1;
+      if (b.moi[m]) b.moi[m].can += 1;
+      luongHienTai = v; // luồng hiện tại = vùng vừa cắn
+      luuRates();
+      renderRates();
+      renderLuong();
+      renderThoiTiet();
+      setTargetLine();
+    }
+    function datMucTieu(key) {
+      if (!TARGETS[key]) return;
+      target = key;
+      var tg = TARGETS[key];
+      vungHien = tg.vung;
+      choTimDuoc = null;
+      demKhongCan = 0;
+      moiDaChon = null; // để damBaoMoi chọn lại mồi mới cho mục tiêu mới
+      doiVung(vungHien);
+      if (targetBtns) {
+        Object.keys(targetBtns).forEach(function (k) {
+          targetBtns[k].style.background = k === target ? '#6b4d16' : '#2a2113';
+        });
+      }
+      log('Mục tiêu: ' + tg.ten + ' — mồi ' + tg.moiTen + ', vùng ' + VUNG_TEN[tg.vung] + '.');
+      if (key === 'auto') chonTuDong(null); // chọn ngay vùng + mồi theo tỷ lệ đã có
+      setTargetLine();
+    }
+
+    // ---------------- Bảng điều khiển ----------------
+    var panel, panelHead, panelBody, miniBar, miniStatusEl, statusEl, statsEl, logEl, toggleBtn, targetLineEl, luongEl, ratesEl, conEl, ttEl, zoneBtns = {}, targetBtns = {};
+    var collapsed = false; // bảng đang thu nhỏ?
+    function buildPanel() {
+      panel = document.createElement('div');
+      panel.id = 'tt2d-fish-panel';
+      panel.style.cssText = [
+        'position:fixed', 'top:10px', 'right:10px', 'z-index:999999',
+        'width:248px', 'background:rgba(20,14,8,0.88)', 'color:#ffe9b0',
+        'border:1px solid #8a6a2f', 'border-radius:10px', 'padding:10px 12px',
+        'font:12px/1.5 system-ui, sans-serif', 'box-shadow:0 4px 18px rgba(0,0,0,0.5)',
+      ].join(';');
+      panel.innerHTML =
+        '<div id="tt2d-fish-head" style="display:flex;justify-content:space-between;align-items:center">' +
+          '<b>🎣 Tool câu Hồ Tây v3.1</b>' +
+          '<span>' +
+            '<button id="tt2d-fish-min" title="Thu nhỏ bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 4px">—</button>' +
+            '<button id="tt2d-fish-hide" title="Ẩn bảng (tool vẫn chạy nếu đang BẬT)" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 2px">×</button>' +
+          '</span>' +
+        '</div>' +
+        '<div id="tt2d-fish-mini" style="display:none;align-items:center;justify-content:space-between;gap:6px">' +
+          '<b>🎣 Hồ Tây v3.1</b>' +
+          '<span id="tt2d-fish-mini-status" style="color:#bfe3ff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>' +
+          '<button id="tt2d-fish-expand" title="Mở rộng bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:16px;padding:0 2px">＋</button>' +
+        '</div>' +
+        '<div id="tt2d-fish-body">' +
+        '<div style="margin:8px 0">Mục tiêu: ' +
+          '<button data-target="linh" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Linh Ngư</button> ' +
+          '<button data-target="yeu" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Yêu Ngư</button> ' +
+          '<button data-target="giao" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Giao Ngư</button> ' +
+          '<button data-target="tudo" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#6b4d16;color:#ffe9b0;cursor:pointer">Tự do</button> ' +
+          '<button data-target="auto" title="Tự chọn vùng + mồi theo tỷ lệ cắn tốt nhất đã quan sát" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Tự động ★</button>' +
+        '</div>' +
+        '<div id="tt2d-fish-target" style="margin:4px 0;color:#ffd27a"></div>' +
+        '<div style="margin:8px 0;display:flex;gap:6px">' +
+          '<button id="tt2d-fish-toggle" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT</button>' +
+        '</div>' +
+        '<div style="margin:4px 0">Vùng quăng: ' +
+          '<button data-zone="nong" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Nông</button> ' +
+          '<button data-zone="giua" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#6b4d16;color:#ffe9b0;cursor:pointer">Giữa</button> ' +
+          '<button data-zone="sau" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Sâu</button>' +
+        '</div>' +
+        '<div id="tt2d-fish-status" style="margin:6px 0;color:#bfe3ff">Chưa bật — vào Hồ Tây, đứng ở cầu câu rồi bấm BẬT.</div>' +
+        '<div id="tt2d-fish-con" style="margin:4px 0;color:#ffd36a">Côn Bằng: …</div>' +
+        '<div id="tt2d-fish-thoitiet" style="margin:4px 0;color:#8fd8ff">Thời tiết: …</div>' +
+        '<div id="tt2d-fish-stats" style="color:#c9f2c9">Quăng 0 · Giật 0 · Kéo 0 · Côn 0</div>' +
+        '<div id="tt2d-fish-luong" style="margin:4px 0;color:#ffd27a">Luồng: chưa có (chưa thấy cá cắn)</div>' +
+        '<div id="tt2d-fish-rates" style="color:#c9f2c9"></div>' +
+        '<div id="tt2d-fish-log" style="margin-top:6px;max-height:96px;overflow:auto;color:#d8c9a3;font-size:11px"></div>' +
+        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Chỉ bấm nút của game. Dừng khi rời hồ. Tool không thấy được luồng cá thật và không đổi được tỷ lệ cắn của server — chỉ chọn vùng/mồi theo tỷ lệ đã quan sát.</div>' +
+        '</div>';
+      Tong.tabBody('fish').appendChild(panel);
+
+      panelHead = panel.querySelector('#tt2d-fish-head');
+      panelBody = panel.querySelector('#tt2d-fish-body');
+      miniBar = panel.querySelector('#tt2d-fish-mini');
+      miniStatusEl = panel.querySelector('#tt2d-fish-mini-status');
+      toggleBtn = panel.querySelector('#tt2d-fish-toggle');
+      statusEl = panel.querySelector('#tt2d-fish-status');
+      statsEl = panel.querySelector('#tt2d-fish-stats');
+      logEl = panel.querySelector('#tt2d-fish-log');
+      targetLineEl = panel.querySelector('#tt2d-fish-target');
+      luongEl = panel.querySelector('#tt2d-fish-luong');
+      ratesEl = panel.querySelector('#tt2d-fish-rates');
+      conEl = panel.querySelector('#tt2d-fish-con');
+      ttEl = panel.querySelector('#tt2d-fish-thoitiet');
+
+      toggleBtn.addEventListener('click', function () { setOn(!on); });
+      panel.querySelector('#tt2d-fish-hide').addEventListener('click', function () {
+        setCollapsed(true);
+      });
+      panel.querySelector('#tt2d-fish-min').addEventListener('click', function () { setCollapsed(true); });
+      panel.querySelector('#tt2d-fish-expand').addEventListener('click', function () { setCollapsed(false); });
+      panel.querySelectorAll('[data-target]').forEach(function (btn) {
+        targetBtns[btn.getAttribute('data-target')] = btn;
+        btn.addEventListener('click', function () { datMucTieu(btn.getAttribute('data-target')); });
+      });
+      panel.querySelectorAll('[data-zone]').forEach(function (btn) {
+        zoneBtns[btn.getAttribute('data-zone')] = btn;
+        btn.addEventListener('click', function () {
+          // Đổi vùng tay — tool sẽ thử vùng này trước (tìm chỗ vẫn tự đổi nếu không cắn)
+          doiVung(btn.getAttribute('data-zone'));
+          choTimDuoc = null;
+          demKhongCan = 0;
+          log('Đổi vùng quăng tay: ' + VUNG_TEN[vungHien] + '.');
+        });
+      });
+      setTargetLine();
+      renderRates();
+      renderLuong();
+      renderCon();
+      renderThoiTiet();
+      renderMini();
+    }
+
+    // Thu nhỏ / mở rộng bảng. Khi thu nhỏ chỉ còn 1 thanh (tên + trạng thái ngắn + nút ＋).
+    function setCollapsed(v) {
+      collapsed = v;
+      if (panelHead) panelHead.style.display = v ? 'none' : '';
+      if (panelBody) panelBody.style.display = v ? 'none' : '';
+      if (miniBar) miniBar.style.display = v ? 'flex' : 'none';
+      if (panel) panel.style.width = v ? '230px' : '248px';
+      renderMini();
+    }
+    function renderMini() {
+      if (!miniStatusEl) return;
+      var ct = conTrangThai(Date.now());
+      var conTxt = (conDaNoi || conDangHoatDong || ct.dangDienRa) ? ' · 🐋 Côn' : '';
+      miniStatusEl.textContent = (on ? 'BẬT' : 'TẮT') + ' · ' + VUNG_TEN[vungHien] +
+        ' · Quăng ' + stats.cast + ' · Cắn ' + pct(tiLeCan(ratesVung[vungHien])) + conTxt;
+    }
+    function renderLuong() {
+      if (!luongEl) return;
+      if (luongHienTai) {
+        luongEl.textContent = 'Luồng: ' + VUNG_TEN[luongHienTai] + ' (tỷ lệ cắn ' + pct(tiLeCan(ratesVung[luongHienTai])) + ')';
+      } else {
+        luongEl.textContent = 'Luồng: chưa có (chưa thấy cá cắn)';
+      }
+    }
+    // Chỉ ghi text khi đổi (để gọi mỗi tick mà không ghi DOM liên tục).
+    function setText(el, s) { if (el && el.textContent !== s) el.textContent = s; }
+    // v3.1: dòng trạng thái Côn Bằng (12:30/19:30 giờ VN, 6 phút).
+    // Chỉ hiện "ĐANG TRỒI — bấm Côn" khi ĐANG trong khung giờ (kẻo cờ
+    // conDangHoatDong còn sót từ khung trước làm bảng hiện sai ngoài giờ).
+    function renderCon() {
+      if (!conEl) return;
+      var ct = conTrangThai(Date.now());
+      var s;
+      if (conDaNoi) {
+        s = 'Côn Bằng: ĐANG TRỒI — đang kéo Côn!' + (ct.dangDienRa ? ' · còn ' + msSangChu(ct.conLaiMs) : '');
+      } else if (conDangHoatDong && ct.dangDienRa) {
+        s = 'Côn Bằng: ĐANG TRỒI — bấm Côn để gắn dây · còn ' + msSangChu(ct.conLaiMs);
+      } else if (ct.dangDienRa) {
+        s = 'Côn Bằng: ĐANG TRỒI (còn ' + msSangChu(ct.conLaiMs) + ') — chờ nút Côn…';
+      } else {
+        s = 'Côn Bằng: sắp tới ' + gioPhut(ct.sapMs) + ' (còn ' + msSangChu(ct.conLaiMs) + ')';
+      }
+      setText(conEl, s);
+    }
+    // v3.1: dòng thời tiết + gợi ý vùng/mồi tốt nhất lúc này.
+    function renderThoiTiet() {
+      if (!ttEl) return;
+      var r = thoiTietHienTai();
+      var w = r.w;
+      var s = 'Thời tiết: ' + w.icon + ' ' + w.ten + ' — ' + w.cau;
+      var tot = goiYThoiTiet(w);
+      if (tot) {
+        s += ' | Tốt nhất lúc này: ' + VUNG_TEN[tot.vung] +
+          (tot.moi ? ' + ' + (MOI_TEN[tot.moi] || tot.moi) : '') +
+          ' (cắn ' + pct(tot.tiLe) + (tot.nguon === w.ten ? ', theo ' + w.ten : ', chung') + ')';
+      } else {
+        s += ' | Chưa đủ dữ liệu theo thời tiết này.';
+      }
+      if (r.nguon === 'tinh') s += ' (tính từ ngày — chưa đọc được từ game)';
+      setText(ttEl, s);
+    }
+    function renderRates() {
+      if (!ratesEl) return;
+      var html = '<div style="color:#ffd27a">Tỷ lệ (quăng/cắn/được):</div>';
+      ['nong', 'giua', 'sau'].forEach(function (z) {
+        var r = ratesVung[z];
+        html += '<div>' + VUNG_TEN[z] + ': ' + r.quang + 'q · ' + r.can + ' cắn ' + pct(tiLeCan(r)) +
+          ' · ' + r.cauDuoc + ' được</div>';
+      });
+      var moiKeys = Object.keys(ratesMoi).filter(function (k) { return ratesMoi[k].quang > 0; });
+      if (moiKeys.length) {
+        html += '<div style="color:#ffd27a">Mồi:</div>';
+        moiKeys.forEach(function (k) {
+          var r = ratesMoi[k];
+          html += '<div>' + (MOI_TEN[k] || k) + ': ' + r.quang + 'q · ' + r.can + ' cắn ' + pct(tiLeCan(r)) +
+            ' · ' + r.cauDuoc + ' được</div>';
+        });
+      }
+      var w = thoiTietHienTai().w; // v3.1: tỷ lệ theo thời tiết hiện tại
+      var tt = ratesTT[w.id];
+      if (tt) {
+        var coDuLieu = ['nong', 'giua', 'sau'].some(function (z) { return tt.vung[z].quang > 0; });
+        if (coDuLieu) {
+          html += '<div style="color:#8fd8ff">Theo ' + w.ten + ':</div>';
+          ['nong', 'giua', 'sau'].forEach(function (z) {
+            var r = tt.vung[z];
+            if (r.quang > 0) {
+              html += '<div>' + VUNG_TEN[z] + ': ' + r.quang + 'q · ' + r.can + ' cắn ' + pct(tiLeCan(r)) +
+                ' · ' + r.cauDuoc + ' được</div>';
+            }
+          });
+        }
+      }
+      html += '<div><a href="#" id="tt2d-fish-reset-rates" style="color:#9a8a6a">Xóa dữ liệu tỷ lệ</a></div>';
+      ratesEl.innerHTML = html;
+      var rs = ratesEl.querySelector('#tt2d-fish-reset-rates');
+      if (rs) rs.addEventListener('click', function (ev) { ev.preventDefault(); xoaRates(); });
+      renderLuong();
+    }
+
+    function setStatus(s) { if (statusEl) statusEl.textContent = s; renderMini(); }
+    function setTargetLine() {
+      if (!targetLineEl) return;
+      var tg = TARGETS[target];
+      var moiTen = moiDangDung === 'giun' ? 'Giun Đất' : (moiDangDung === tg.moi ? tg.moiTen : tg.duPhongTen);
+      targetLineEl.textContent = 'Mục tiêu: ' + tg.ten + ' · Mồi: ' + moiTen +
+        ' · Vùng: ' + VUNG_TEN[vungHien] +
+        (choTimDuoc ? ' · Đã tìm thấy chỗ ✓' : ' · Đang tìm chỗ…');
+      renderLuong();
+    }
+    function setStats() {
+      if (statsEl) {
+        statsEl.textContent = 'Quăng ' + stats.cast + ' · Giật ' + stats.jerk +
+          ' · Kéo ' + stats.pull + ' · Côn ' + stats.con;
+      }
+      renderMini();
+    }
+    function log(msg) {
+      var line = new Date().toLocaleTimeString('vi-VN') + ' — ' + msg;
+      logLines.unshift(line);
+      if (logLines.length > 6) logLines.length = 6;
+      if (logEl) logEl.innerHTML = logLines.map(function (l) {
+        return '<div>' + l.replace(/</g, '&lt;') + '</div>';
+      }).join('');
+      try { console.log('[TT2D-Fish] ' + line); } catch (e) { /* bỏ qua */ }
+    }
+
+    function setOn(v) {
+      on = v;
+      if (toggleBtn) {
+        toggleBtn.textContent = on ? 'DỪNG' : 'BẬT';
+        toggleBtn.style.background = on ? '#7a2d12' : '#3a2c12';
+      }
+      if (on) {
+        state = 'idle';
+        nextCastAt = Date.now() + 500;
+        // BẬT là tự động đi tìm chỗ: đảm bảo đúng mồi + vùng cho mục tiêu rồi quăng
+        if (target === 'auto') chonTuDong(null); // chọn lại vùng + mồi theo tỷ lệ mới nhất
+        damBaoMoi();
+        doiVung(vungHien);
+        setStatus('Đang chạy — tìm chỗ cho ' + TARGETS[target].ten + '…');
+        log('Tool BẬT (mục tiêu ' + TARGETS[target].ten + ', mồi ' +
+          (moiDangDung === 'giun' ? 'Giun Đất' : moiDangDung) + ', vùng ' + VUNG_TEN[vungHien] + ').');
+        var r0 = thoiTietHienTai(); // v3.1: báo thời tiết + giờ Côn Bằng tới
+        var ct0 = conTrangThai(Date.now());
+        log('Thời tiết: ' + r0.w.icon + ' ' + r0.w.ten + ' (' + (r0.nguon === 'dom' ? 'đọc từ game' : 'tính từ ngày') +
+          '). Côn Bằng tới: ' + gioPhut(ct0.sapMs) + (ct0.dangDienRa ? ' (ĐANG TRỒI!)' : '') + '.');
+        renderCon();
+        renderThoiTiet();
+      } else {
+        if (holding) release();
+        setStatus('Đã dừng.');
+        log('Tool DỪNG.');
+      }
+      setTargetLine();
+    }
+
+    // ---------------- Logic kéo cá theo nhịp ----------------
+    function applyPull() {
+      // An toàn: căng dây ≥90 thì buông ngay, khỏi đứt dây.
+      if (tensionHigh()) {
+        if (holding) { release(); log('Căng dây ≥90 — buông dây.'); }
+        return;
+      }
+      var gk = goiKind();
+      if (gk === 'tha') {           // Giãy → "Thả!": buông dây
+        if (holding) release();
+      } else if (gk === 'keo') {    // Mỏi → "Kéo!": giữ chặt
+        if (!holding) press();
+      } else if (gk === 'nhip') {   // Lặn → "Nhả nhịp": giữ rồi buông
+        if (!holding) {
+          press();
+          setTimeout(function () {
+            if (holding && goiKind() !== 'keo') release();
+          }, randInt(CFG.tapHoldMin, CFG.tapHoldMax));
+        } else {
+          setTimeout(function () {
+            if (holding && goiKind() !== 'keo') release();
+          }, randInt(150, 300));
+        }
+      } else {                      // Bơi (không prompt): giữ để cuốn dây
+        if (!holding) press();
+      }
+    }
+
+    // ---------------- Vòng lặp chính ----------------
+    function tick() {
+      if (!on) return;
+      var b = nutBtn();
+      if (!b) {
+        setStatus('Chưa thấy giao diện câu cá — vào Hồ Tây, đứng ở cầu câu.');
+        return;
+      }
+      var t = nutText();
+      var now = Date.now();
+
+      // --- v3.1: Côn Bằng — theo dõi khung giờ (đồng hồ chỉ để hiển thị + chờ) ---
+      var ct = conTrangThai(now);
+      if (ct.dangDienRa) {
+        if (conKhung !== ct.batMs) {
+          // Vừa vào khung giờ Côn MỚI — reset trạng thái theo khung giờ cũ
+          // (kẻo cờ "đã thấy nút Côn" từ khung trước làm tool tưởng Côn đã xong
+          // rồi quăng cần thường ngay đầu khung mới).
+          conKhung = ct.batMs;
+          conDangHoatDong = false; conDaNoi = false; conDangKeo = false;
+          conChoDen = 0; conBoQuaKhung = null; conThayNutLuc = 0;
+        }
+      } else if (conKhung !== null) {
+        // Vừa hết khung giờ Côn Bằng.
+        if (conDangHoatDong || conDaNoi) log('Côn Bằng đã hết — quay lại câu thường.');
+        conDangHoatDong = false; conDaNoi = false; conDangKeo = false;
+        conKhung = null; conChoDen = 0; conBoQuaKhung = null; conThayNutLuc = 0;
+      }
+      // Nút Côn/Nối hiện = sự kiện đang diễn ra (nguồn tin từ game, tin hơn đồng hồ).
+      if (t === 'Côn' || /^Nối \d+$/.test(t)) {
+        conDangHoatDong = true;
+        conThayNutLuc = now;
+        conChoDen = 0;
+      }
+
+      // --- v3.1: Côn Bằng — gắn dây (ưu tiên cao nhất) ---
+      if (t === 'Côn') {
+        if (state !== 'con-tapped') {
+          state = 'con-tapped';
+          conDaNoi = true;
+          conDangKeo = true;
+          tap(CFG.conTapMs);
+          stats.con += 1;
+          setStats();
+          log('Nối dây Côn Bằng!');
+          setStatus('Đã nối dây Côn Bằng — kéo theo nhịp.');
+          renderCon();
+        }
+        return;
+      }
+      if (/^Nối \d+$/.test(t)) {
+        state = 'con-wait';
+        setStatus('Côn Bằng: chờ nối lại dây (' + t + ')…');
+        renderCon();
+        return;
+      }
+
+      // Quăng cần: nút hiện 'Quăng' HOẶC tool đang idle và đã tới lúc quăng lại
+      // (nút có thể hiện tên vùng Nông/Giữa/Sâu thay vì 'Quăng').
+      if (t === 'Quăng' || (state === 'idle' && now >= nextCastAt)) {
+        // Kết thúc một lượt kéo/câu → chuẩn bị quăng lại.
+        if (state === 'pulling' || state === 'jerking' || state === 'waiting' ||
+            state === 'con-wait' || state === 'con-tapped') {
+          if (state === 'pulling') {
+            if (conDangKeo) {
+              // Kéo Côn xong (Côn lặn/kết thúc) — KHÔNG tính là câu được cá.
+              conDangKeo = false; conDaNoi = false; conSoXong += 1;
+              log('Côn Bằng xong (' + conSoXong + ' lượt). Quay lại câu thường.');
+              renderCon();
+            } else {
+              ghiNhanCauDuoc(); // kéo xong → tính là câu được 1 con
+            }
+          } else if (state === 'con-wait' || state === 'con-tapped') {
+            // Côn kết thúc trong lúc chờ nối lại / vừa gắn dây.
+            if (conDangKeo || conDaNoi) {
+              conDangKeo = false; conDaNoi = false; conSoXong += 1;
+              log('Côn Bằng xong (' + conSoXong + ' lượt). Quay lại câu thường.');
+              renderCon();
+            }
+          }
+          if (holding) release(); // buông nút đang giữ (vd giữ dây lúc kéo) để quăng lại được
+          state = 'idle';
+          nextCastAt = now + randInt(CFG.recastDelayMin, CFG.recastDelayMax);
+        }
+        if (state === 'idle' && now >= nextCastAt) {
+          // --- v3.1: nếu Côn Bằng sắp tới/đang diễn ra thì ĐỪNG quăng mới — chờ gắn dây ---
+          var choCon = lyDoChoCon(now, ct);
+          if (choCon) {
+            setStatus(choCon);
+            renderCon();
+            return;
+          }
+          // Nút không hiện 'Quăng' (vd hiện tên vùng) thì dây có thể vẫn còn trong nước — thu cần trước.
+          if (t !== 'Quăng') {
+            var thu3 = thuCanBtn();
+            if (thu3) {
+              thu3.click();
+              log('Thu cần trước khi quăng lại.');
+              nextCastAt = now + 1500;
+              return;
+            }
+            // Không có nút thu cần — dây đã thu rồi, cứ quăng.
+          }
+          // Trước mỗi lần quăng: đảm bảo đúng mồi cho mục tiêu (mồi có thể đã hết)
+          damBaoMoi();
+          state = 'casting';
+          var holdMs = CFG.castHoldMs[vungHien] + randInt(-15, 15);
+          var cv = vungHien, cm = moiDangDung; // snapshot vùng/mồi của lượt quăng này
+          if (press()) {
+            setStatus('Đang quăng cần (' + TARGETS[target].ten + ', vùng ' + VUNG_TEN[vungHien] + ', giữ ~' + holdMs + 'ms)…');
+            setTimeout(function () {
+              release();
+              stats.cast += 1;
+              state = 'waiting';
+              lastCastAt = Date.now();
+              ghiNhanQuang(cv, cm);
+              setStats();
+              log('Đã quăng cần (' + TARGETS[target].ten + ', vùng ' + VUNG_TEN[vungHien] + ').');
+            }, Math.max(60, holdMs));
+          } else {
+            state = 'idle';
+          }
+        } else if (state === 'idle') {
+          setStatus('Chuẩn bị quăng lại…');
+        }
+        renderCon();
+        renderThoiTiet();
+        return;
+      }
+
+      // Timeout cho lúc đang chờ cá cắn — áp dụng cả khi nút không hiện 'Giật'
+      // (vd nút hiện tên vùng Nông/Giữa/Sâu): quá 60s không cắn thì thu cần, quăng lại.
+      // (Không áp dụng khi nút là 'Giật!' để khỏi bỏ lỡ lúc phao chìm.)
+      if (state === 'waiting' && t !== 'Giật!' && lastCastAt && now - lastCastAt > CFG.waitBiteTimeoutMs) {
+        var thu2 = thuCanBtn();
+        if (thu2) { thu2.click(); log('Chờ cắn quá 60s — thu cần, quăng lại.'); }
+        ghiNhanKhongCan(); // không cắn ở vùng này → đếm để đổi vùng tìm chỗ
+        state = 'idle';
+        nextCastAt = now + 1000;
+        renderCon();
+        renderThoiTiet();
+        return;
+      }
+
+      if (t === 'Giật') {
+        // Đang chờ cá cắn — quá lâu thì thu cần, quăng lại.
+        state = 'waiting';
+        setStatus('Đang chờ cá cắn (' + TARGETS[target].ten + ', vùng ' + VUNG_TEN[vungHien] + ')…');
+        if (lastCastAt && now - lastCastAt > CFG.waitBiteTimeoutMs) {
+          var thu = thuCanBtn();
+          if (thu) { thu.click(); log('Chờ cắn quá 60s — thu cần, quăng lại.'); }
+          ghiNhanKhongCan(); // không cắn ở vùng này → đếm để đổi vùng tìm chỗ
+          state = 'idle';
+          nextCastAt = now + 1000;
+        }
+        renderCon();
+        renderThoiTiet();
+        return;
+      }
+
+      if (t === 'Giật!') {
+        // Phao chìm hẳn — giật ngay (trễ ngẫu nhiên cho giống tay người).
+        if (state === 'waiting') {
+          state = 'jerking';
+          ghiNhanCan(); // đã cắn ở vùng này → ghi nhớ là "chỗ" đã tìm thấy + ghi tỷ lệ + luồng
+          var delay = randInt(CFG.jerkDelayMin, CFG.jerkDelayMax);
+          setStatus('Phao chìm — giật sau ~' + delay + 'ms…');
+          setTimeout(function () {
+            tap(CFG.jerkTapMs);
+            stats.jerk += 1;
+            setStats();
+            log('Đã giật!');
+          }, delay);
+        }
+        renderCon();
+        renderThoiTiet();
+        return;
+      }
+
+      if (t === 'Giữ' || t === 'Cuốn') {
+        // Đang kéo — theo prompt nhịp. Phân biệt kéo Côn Bằng với kéo cá thường
+        // (cùng chữ prompt Thả!/Nhả nhịp/Kéo! nên dùng chung applyPull()).
+        if (conDangKeo) {
+          if (state !== 'pulling') {
+            state = 'pulling';
+            log('Đang kéo Côn Bằng…');
+          }
+          setStatus('Đang kéo Côn Bằng — nhịp: ' + (goiText() || 'Bơi') + '.');
+          applyPull();
+        } else {
+          if (state !== 'pulling') {
+            state = 'pulling';
+            stats.pull += 1;
+            setStats();
+            log('Đang kéo cá…');
+          }
+          setStatus('Đang kéo cá — nhịp: ' + (goiText() || 'Bơi') + '.');
+          applyPull();
+        }
+        renderCon();
+        renderThoiTiet();
+        return;
+      }
+
+      // Trạng thái khác (đang nạp lực, đang xử lý…) — chờ vòng sau.
+      setStatus('Đang câu… (' + (t || '?') + ')');
+      renderCon();
+      renderThoiTiet();
+    }
+
+    // ---------------- Khởi động ----------------
+    taiRates(); // nạp lại dữ liệu tỷ lệ đã lưu (nếu có)
+    buildPanel();
+    setInterval(tick, CFG.pollMs);
+    setStatus('Chưa bật — vào Hồ Tây, đứng ở cầu câu rồi bấm BẬT.');
+    setTargetLine();
+    log('Tool đã nạp (v3.1). Mặc định TẮT.');
+    // Điều khiển từ Console khi cần debug: __TT2D_FISH__.start() / .stop() /
+    // .setTarget('linh'|'yeu'|'giao'|'tudo'|'auto') / .status()
+    // (_tick và _cfg chỉ để test/debug.)
+    window.__TT2D_FISH__ = {
+      start: function () { setOn(true); },
+      stop: function () { setOn(false); },
+      setTarget: function (k) { datMucTieu(k); },
+      setCollapsed: function (v) { setCollapsed(!!v); },
+      status: function () {
+        var moiOut = {};
+        Object.keys(ratesMoi).forEach(function (k) { moiOut[k] = rateObj(ratesMoi[k]); });
+        var ttOut = {};
+        Object.keys(ratesTT).forEach(function (id) {
+          var b = ratesTT[id];
+          var vOut = {};
+          ['nong', 'giua', 'sau'].forEach(function (z) { vOut[z] = rateObj(b.vung[z]); });
+          var mOut = {};
+          Object.keys(b.moi).forEach(function (k) { mOut[k] = rateObj(b.moi[k]); });
+          ttOut[id] = { vung: vOut, moi: mOut };
+        });
+        var rTT = thoiTietHienTai();
+        var ct = conTrangThai(Date.now());
+        return {
+          on: on, state: state, holding: holding, target: target, vung: vungHien,
+          choTimDuoc: choTimDuoc, moi: moiDangDung, stats: stats,
+          tiLe: {
+            vung: { nong: rateObj(ratesVung.nong), giua: rateObj(ratesVung.giua), sau: rateObj(ratesVung.sau) },
+            moi: moiOut,
+          },
+          luongHienTai: luongHienTai,
+          thoiTiet: { id: rTT.w.id, ten: rTT.w.ten, icon: rTT.w.icon, nguon: rTT.nguon },
+          tiLeThoiTiet: ttOut,
+          conBang: {
+            dangDienRa: ct.dangDienRa, sapToi: ct.dangDienRa ? null : gioPhut(ct.sapMs),
+            conLaiMs: ct.conLaiMs, daNoi: conDaNoi, dangKeo: conDangKeo, soXong: conSoXong,
+          },
+        };
+      },
+      _tick: tick,
+      _cfg: CFG,
+    };
+    Tong.register('fish', window.__TT2D_FISH__);
+
+
+  })();
+
+
+  // ================= MODULE: boss (Boss v1.1.0: ưu tiên Boss, khóa mục tiêu qua HUD, ở lại bãi ~60s cho nam châm nhặt đồ.) =================
+
+  (function () {
+
+
+    // ---------------- Cấu hình ----------------
+    var CFG = {
+      pollMs: 250,              // kiểm tra mục tiêu/Auto mỗi 250ms
+      lootWaitMs: 60000,        // sau khi boss gục: ở lại bãi 60s cho nam châm nhặt đồ
+      autoClickCooldownMs: 1000,// không bấm nút Auto dồn dập (cách nhau ≥1s)
+      uuTienClickCooldownMs: 1500,
+      hpLogStep: 0.25,          // ghi log khi HP boss xuống dưới mỗi mốc 25%
+      hpLogMinMs: 10000,        // ...nhưng không ghi dày hơn 10s/lần
+    };
+
+    // ---------------- Boss đã xác minh (client 24/11) ----------------
+    // respawnSec: 0 = không hồi sinh định kỳ (theo lịch ngày/tuần, server điều khiển)
+    var BOSSES = {
+      xich_long: {
+        id: 'xich_long', type: 'than_thu_xich_long', ten: 'Thần Thú · Xích Long',
+        tenNgan: 'Xích Long', cap: 3, map: 'long_uyen', mapTen: 'Long Uyên',
+        spawn: 'ttxl_1', toa: '(27,14) — ĐÃ ĐÍNH CHÍNH từ client (biến t=27)', hp: 100000, respawnSec: 10800,
+        respawnTen: '3 giờ', hoVe: 'Xích Nhãn Ngưu ×3',
+        ghi: 'Hộ vệ: 3 Xích Nhãn Ngưu — hạ hết trước. Tọa độ (27,14) đã xác minh từ code dựng map Long Uyên (t=27); số 13 cũ là biến cục bộ hàm khác.',
+        drops: 'LT 10–40, Phá Cảnh Đan 5%, Tẩy Tâm Đan 5%, Thú Hồn 3. Tính TopBoss tuần.',
+      },
+      linh_ho: {
+        id: 'linh_ho', type: 'linh_ho_tran_son', ten: 'Linh Hổ Trấn Sơn',
+        tenNgan: 'Linh Hổ', cap: 4, map: 'thach_phong_thung_lung', mapTen: 'Thạch Phong Thung Lũng',
+        spawn: 'boss_linh_ho_tran_son', toa: '(33,5) hoặc (30,8) tùy biến thể map',
+        hp: 200000, respawnSec: 18000, respawnTen: '5 giờ', hoVe: 'Bạch Hổ Tuyết',
+        ghi: 'Bạch Hổ Tuyết hộ vệ quanh ổ.',
+        drops: 'Yêu Huyết Cấp 4 (20%), pháp bảo (1%), Ngựa Hắc Thố. Tính TopBoss tuần.',
+      },
+      nhen: {
+        id: 'nhen', type: 'nhen_bach_ngoc', ten: 'Nhện Bạch Ngọc',
+        tenNgan: 'Nhện Bạch Ngọc', cap: 5, map: 'bai_da_hang_gio', mapTen: 'Bãi Đá Hang Gió',
+        spawn: 'boss_nhen_bach_ngoc', toa: '(21,11)', hp: 268000, respawnSec: 28800,
+        respawnTen: '8 giờ', hoVe: 'Nhện Ngọc Con ×3',
+        ghi: 'Ổ ở cuối lối cát đông-bắc Bãi Đá.',
+        drops: 'Vũ khí/bí tịch (Hoa Kim Thương, Băng Linh Kiếm, Phá Sơn Chùy, Huyết Kiếm…), Cổ Bích Mộc ×10, Trấn Thần Thạch ×10.',
+      },
+      ma_bao: {
+        id: 'ma_bao', type: 'song_duc_ma_bao', ten: 'Song Dực Ma Báo',
+        tenNgan: 'Ma Báo', cap: 6, map: 'mo_linh_thach', mapTen: 'Mỏ Linh Thạch',
+        spawn: 'boss_song_duc_ma_bao', toa: 'Động — sân mỏ sâu nhất (server chọn)',
+        hp: 300000, respawnSec: 0, respawnTen: 'Mỗi ngày 1 lần', hoVe: 'Ngân Mao Hống ×3',
+        ghi: 'Ngẫu nhiên 11:00–21:00 mỗi ngày, sống 2 giờ. Ở sân mỏ sâu nhất.',
+        drops: 'Yêu Huyết Cấp 6 (20%), bí tịch (Ma Hồn Phệ 10%, Cửu U Ma Trảo 2%…), Y Phục/Quần (5%). Tính TopBoss tuần.',
+      },
+      giao_long: {
+        id: 'giao_long', type: 'giao_long', ten: 'Thượng Cổ Giao Long',
+        tenNgan: 'Giao Long', cap: 8, map: 'thien_dao_khuyet', mapTen: 'Thiên Đạo Khuyết',
+        spawn: 'giao_long_1', toa: '(58,11)', hp: 2000000, respawnSec: 0,
+        respawnTen: 'Tối Chủ Nhật', hoVe: '—',
+        ghi: 'Mỗi tuần 1 lần, tối Chủ Nhật, ~10 phút sau Hòm Vết Nứt (Hòm nổ ngẫu nhiên 18:00–23:00; mặc định 22:00 → Giao Long ~22:10). Sống 2 giờ.',
+        drops: 'Giao Long Vảy 12–20 (bốc thăm, tối đa 1/người/tuần), Tẩy Niệm Phù ×10, Linh Căn Tinh Hoa ×3, vũ khí/bí tịch Hậu Kỳ.',
+      },
+    };
+    var BOSS_ORDER = ['xich_long', 'linh_ho', 'nhen', 'ma_bao', 'giao_long'];
+
+    // ---------------- Trạng thái ----------------
+    var on = false;                 // tool đang bật?
+    var selectedBoss = 'all';       // boss đang săn: 'all' hoặc id boss
+    var phase = 'idle';             // idle | waiting | fighting | looting
+    var currentBoss = null;         // boss đang đánh (đối tượng BOSSES)
+    var currentBossName = '';       // tên mục tiêu đang đánh (kể cả quái/hộ vệ)
+    var lastBossHpFrac = null;      // tỉ lệ HP boss thấy lần cuối (0..1)
+    var lastBossHpLogAt = 0;        // thời điểm ghi log HP gần nhất
+    var lastHpMilestone = 1;        // mốc HP đã ghi log gần nhất (1 / 0.75 / 0.5 / 0.25)
+    var lootUntil = 0;              // thời điểm hết chờ nhặt đồ
+    var lastAutoClickAt = 0;
+    var lastUuTienClickAt = 0;
+    var stats = { killed: 0, looted: 0 };
+    var logLines = [];
+
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    // ---------------- Giờ Việt Nam + đếm ngược ----------------
+    function vnNow() {
+      var d = new Date();
+      return new Date(d.getTime() + (d.getTimezoneOffset() + 420) * 60000); // UTC+7
+    }
+    function fmtCountdown(ms) {
+      if (ms <= 0) return 'đã tới giờ';
+      var s = Math.floor(ms / 1000);
+      var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+      if (h > 0) return h + ' giờ ' + m + ' phút';
+      if (m > 0) return m + ' phút';
+      return s + ' giây';
+    }
+    function fmtGio(ts) {
+      try { return new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); }
+      catch (e) { return ''; }
+    }
+
+    // ---------------- Mốc hạ boss (localStorage RIÊNG của tool) ----------------
+    function lsGet(k) {
+      try {
+        var v = window.localStorage.getItem(k);
+        return v ? parseInt(v, 10) : 0;
+      } catch (e) { return 0; }
+    }
+    function lsSet(k, v) {
+      try { window.localStorage.setItem(k, String(v)); } catch (e) { /* bỏ qua */ }
+    }
+    function lsDel(k) {
+      try { window.localStorage.removeItem(k); } catch (e) { /* bỏ qua */ }
+    }
+    // Mốc hạ CHẮC CHẮN (HP boss đã thấy <25% rồi biến mất) và mốc BIẾN MẤT
+    // (chưa chắc đã hạ — có thể nhân vật chết hoặc boss hết giờ).
+    function mocHa(id) { return lsGet('tt2d_boss_kill_' + id); }
+    function mocBienMat(id) { return lsGet('tt2d_boss_gone_' + id); }
+    function ghiHa(id, chac) {
+      var now = Date.now();
+      if (chac) {
+        lsSet('tt2d_boss_kill_' + id, now);
+        lsDel('tt2d_boss_gone_' + id);
+      } else {
+        lsSet('tt2d_boss_gone_' + id, now);
+      }
+      capNhatLich();
+    }
+    function xoaMoc(id) {
+      lsDel('tt2d_boss_kill_' + id);
+      lsDel('tt2d_boss_gone_' + id);
+      capNhatLich();
+    }
+
+    // ---------------- Trạng thái lịch của từng boss ----------------
+    // Trả về {txt, hot}: txt = dòng trạng thái, hot = đang trong khung giờ săn được.
+    function trangThaiBoss(b) {
+      var now = vnNow();
+      var day = now.getDay(); // 0 = Chủ Nhật
+      var mins = now.getHours() * 60 + now.getMinutes();
+      if (b.id === 'ma_bao') {
+        if (mins >= 11 * 60 && mins < 21 * 60) {
+          return { txt: 'ĐANG TRONG GIỜ (11:00–21:00) — có thể xuất hiện bất cứ lúc nào', hot: true };
+        }
+        if (mins < 11 * 60) {
+          return { txt: 'Chờ 11:00 hôm nay (còn ' + fmtCountdown((11 * 60 - mins) * 60000) + ')', hot: false };
+        }
+        return { txt: 'Đã qua giờ hôm nay — chờ 11:00 ngày mai', hot: false };
+      }
+      if (b.id === 'giao_long') {
+        if (day === 0) {
+          if (mins >= 18 * 60 && mins < 23 * 60 + 30) {
+            return { txt: 'TỐI NAY — Hòm Vết Nứt nổ ngẫu nhiên 18:00–23:00, Giao Long giáng ~10 phút sau (mặc định ~22:10)', hot: true };
+          }
+          if (mins < 18 * 60) {
+            return { txt: 'Chờ tối nay (Hòm nổ 18:00–23:00)', hot: false };
+          }
+          return { txt: 'Đã qua giờ tối nay', hot: false };
+        }
+        var daysToSun = (7 - day) % 7;
+        return { txt: 'Chờ Chủ Nhật (còn ' + daysToSun + ' ngày)', hot: false };
+      }
+      // Boss hồi sinh định kỳ: tính từ mốc hạ (server giữ mốc thật, tool chỉ ước tính).
+      var lk = mocHa(b.id);
+      var lg = mocBienMat(b.id);
+      var moc = lk || lg;
+      if (moc) {
+        var next = moc + b.respawnSec * 1000;
+        var remain = next - Date.now();
+        var nhan = lk ? ('từ mốc hạ ' + fmtGio(lk)) : ('ước tính từ lúc boss biến mất ' + fmtGio(lg));
+        if (remain > 0) {
+          return { txt: 'Hồi sinh sau ~' + fmtCountdown(remain) + ' (' + nhan + ')', hot: false };
+        }
+        return { txt: 'ĐÃ TỚI GIỜ hồi sinh (ước tính, ' + nhan + ')', hot: true };
+      }
+      return { txt: 'Chưa rõ giờ hồi sinh — xem bảng Boss trong game (chưa có mốc hạ)', hot: false };
+    }
+
+    // ---------------- Đọc DOM của game ----------------
+    function autoBtn() {
+      return document.querySelector('#btn-auto') || document.querySelector('#btn-auto-touch');
+    }
+    function autoIsOn() {
+      var b = autoBtn();
+      return !!(b && b.classList.contains('active'));
+    }
+    function uuTienBossBtn() {
+      return document.querySelector('[data-uu-tien="boss"]');
+    }
+    function uuTienHienTai() {
+      var b = document.querySelector('[data-uu-tien].on');
+      return b ? (b.getAttribute('data-uu-tien') || '') : '';
+    }
+    function hudTargetEl() { return document.querySelector('#hud-target'); }
+    function targetVisible() {
+      var h = hudTargetEl();
+      return !!(h && !h.classList.contains('hidden'));
+    }
+    function targetName() {
+      var el = document.querySelector('#target-name');
+      return el ? el.textContent.trim() : '';
+    }
+    function targetHpText() {
+      var el = document.querySelector('#target-hp');
+      return el ? el.textContent.trim() : '';
+    }
+    // Đọc tỉ lệ HP từ chữ máu (dạng "x / y" hoặc "x/y"). Không đọc được thì null.
+    function parseHpFrac(txt) {
+      var nums = (txt || '').match(/[\d,\.]+/g);
+      if (!nums || nums.length < 2) return null;
+      var cur = parseFloat(nums[0].replace(/,/g, ''));
+      var max = parseFloat(nums[1].replace(/,/g, ''));
+      if (!max || isNaN(cur) || isNaN(max)) return null;
+      return Math.max(0, Math.min(1, cur / max));
+    }
+    // Tên mục tiêu có phải boss không? Trả về đối tượng boss hoặc null.
+    function bossFromTargetName(name) {
+      if (!name) return null;
+      for (var i = 0; i < BOSS_ORDER.length; i++) {
+        var b = BOSSES[BOSS_ORDER[i]];
+        if (name.indexOf(b.tenNgan) !== -1) return b;
+      }
+      return null;
+    }
+
+    // ---------------- Bấm nút của game ----------------
+    // Bật Auto (bấm nút, có chống bấm dồn dập; tick sau tự kiểm tra lại trạng thái).
+    function damBaoAuto() {
+      var b = autoBtn();
+      if (!b) return false;
+      if (autoIsOn()) return true;
+      var now = Date.now();
+      if (now - lastAutoClickAt < CFG.autoClickCooldownMs) return false;
+      lastAutoClickAt = now;
+      b.click();
+      return true;
+    }
+    // Đặt ưu tiên Tự Động Đánh = Boss (chỉ bấm được khi bảng Cài Đặt đang mở).
+    function damBaoUuTienBoss() {
+      var b = uuTienBossBtn();
+      if (!b) return false; // bảng Cài Đặt chưa mở — nhắc người dùng đặt tay
+      if (b.classList.contains('on')) return true;
+      var now = Date.now();
+      if (now - lastUuTienClickAt < CFG.uuTienClickCooldownMs) return false;
+      lastUuTienClickAt = now;
+      b.click();
+      log('Đã bấm ưu tiên Tự Động Đánh: Boss.');
+      return true;
+    }
+
+    // ---------------- Bảng điều khiển ----------------
+    var panel, miniBar, miniStatusEl, statusEl, detailEl, schedEl, statsEl, logEl, toggleBtn, bossBtns = {};
+    var collapsed = false; // bảng đang thu nhỏ?
+    function buildPanel() {
+      panel = document.createElement('div');
+      panel.id = 'tt2d-boss-panel';
+      panel.style.cssText = [
+        'position:fixed', 'top:10px', 'right:10px', 'z-index:999999',
+        'width:300px', 'background:rgba(20,14,8,0.88)', 'color:#ffe9b0',
+        'border:1px solid #8a6a2f', 'border-radius:10px', 'padding:10px 12px',
+        'font:12px/1.5 system-ui, sans-serif', 'box-shadow:0 4px 18px rgba(0,0,0,0.5)',
+      ].join(';');
+      var bossBtnHtml = BOSS_ORDER.map(function (id) {
+        var b = BOSSES[id];
+        return '<button data-boss="' + id + '" style="padding:3px 7px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">' + b.tenNgan + '</button>';
+      }).join(' ');
+      panel.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<b>🐉 Tool đánh boss Tu Tiên 2D</b>' +
+          '<span><button id="tt2d-boss-collapse" title="Thu nhỏ bảng (tool vẫn chạy)" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px">—</button>' +
+          '<button id="tt2d-boss-hide" title="Ẩn bảng (tool vẫn chạy nếu đang BẬT)" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px">×</button></span>' +
+        '</div>' +
+        '<div style="margin:8px 0">Đang săn: ' +
+          '<button data-boss="all" style="padding:3px 7px;border-radius:5px;border:1px solid #8a6a2f;background:#6b4d16;color:#ffe9b0;cursor:pointer">Tất cả</button> ' +
+          bossBtnHtml +
+        '</div>' +
+        '<div id="tt2d-boss-detail" style="margin:4px 0;color:#ffd27a"></div>' +
+        '<div style="margin:8px 0;display:flex;gap:6px">' +
+          '<button id="tt2d-boss-toggle" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT</button>' +
+        '</div>' +
+        '<div id="tt2d-boss-status" style="margin:6px 0;color:#bfe3ff">Chưa bật — đưa nhân vật tới đúng map boss rồi bấm BẬT.</div>' +
+        '<div id="tt2d-boss-sched" style="margin:6px 0;color:#d8c9a3;font-size:11px"></div>' +
+        '<div id="tt2d-boss-stats" style="color:#c9f2c9">Đã hạ 0 boss · Đã chờ nhặt 0 lần</div>' +
+        '<div id="tt2d-boss-log" style="margin-top:6px;max-height:96px;overflow:auto;color:#d8c9a3;font-size:11px"></div>' +
+        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Tool không tự di chuyển nhân vật (dùng script boss_go.py để tự đưa tới map boss). Chỉ bấm nút Auto + ưu tiên Boss của game. Đồ rơi game tự hút sau 5s — boss gục thì ở lại bãi ~60s.</div>';
+      Tong.tabBody('boss').appendChild(panel);
+
+      // Thanh thu nhỏ: chỉ hiện tên tool + trạng thái ngắn + nút mở lại.
+      miniBar = document.createElement('div');
+      miniBar.id = 'tt2d-boss-mini';
+      miniBar.style.cssText = [
+        'position:fixed', 'top:10px', 'right:10px', 'z-index:999999',
+        'display:none', 'align-items:center', 'gap:6px',
+        'background:rgba(20,14,8,0.88)', 'color:#ffe9b0',
+        'border:1px solid #8a6a2f', 'border-radius:8px', 'padding:4px 8px',
+        'font:12px/1.4 system-ui, sans-serif', 'box-shadow:0 4px 18px rgba(0,0,0,0.5)',
+        'max-width:260px',
+      ].join(';');
+      miniBar.innerHTML =
+        '<b>🐉 Boss</b>' +
+        '<span id="tt2d-boss-mini-status" style="color:#bfe3ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>' +
+        '<button id="tt2d-boss-expand" title="Mở lại bảng đầy đủ" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px">＋</button>';
+      Tong.tabBody('boss').appendChild(miniBar);
+      miniStatusEl = miniBar.querySelector('#tt2d-boss-mini-status');
+      miniBar.querySelector('#tt2d-boss-expand').addEventListener('click', function () { setCollapsed(false); });
+
+      toggleBtn = panel.querySelector('#tt2d-boss-toggle');
+      statusEl = panel.querySelector('#tt2d-boss-status');
+      detailEl = panel.querySelector('#tt2d-boss-detail');
+      schedEl = panel.querySelector('#tt2d-boss-sched');
+      statsEl = panel.querySelector('#tt2d-boss-stats');
+      logEl = panel.querySelector('#tt2d-boss-log');
+
+      toggleBtn.addEventListener('click', function () { setOn(!on); });
+      panel.querySelector('#tt2d-boss-collapse').addEventListener('click', function () { setCollapsed(true); });
+      panel.querySelector('#tt2d-boss-hide').addEventListener('click', function () {
+        setCollapsed(true);
+      });
+      panel.querySelectorAll('[data-boss]').forEach(function (btn) {
+        bossBtns[btn.getAttribute('data-boss')] = btn;
+        btn.addEventListener('click', function () { chonBoss(btn.getAttribute('data-boss')); });
+      });
+      setDetail();
+      capNhatLich();
+    }
+
+    // Thu nhỏ / mở lại bảng. Tool vẫn chạy khi bảng thu nhỏ.
+    function shortStatus() {
+      if (!on) return 'Tắt';
+      if (phase === 'fighting') return 'Đang đánh ' + (currentBossName || 'boss');
+      if (phase === 'looting') return 'Chờ nhặt đồ…';
+      return 'Chờ ' + (selectedBoss === 'all' ? 'boss' : BOSSES[selectedBoss].tenNgan);
+    }
+    function setCollapsed(v) {
+      collapsed = !!v;
+      if (panel) panel.style.display = collapsed ? 'none' : 'block';
+      if (miniBar) miniBar.style.display = collapsed ? 'flex' : 'none';
+      if (collapsed && miniStatusEl) miniStatusEl.textContent = shortStatus();
+    }
+
+    function setStatus(s) {
+      if (statusEl) statusEl.textContent = s;
+      if (miniStatusEl) miniStatusEl.textContent = s.length > 42 ? s.slice(0, 42) + '…' : s;
+    }
+    function setStats() {
+      if (statsEl) {
+        statsEl.textContent = 'Đã hạ ' + stats.killed + ' boss · Đã chờ nhặt ' + stats.looted + ' lần';
+      }
+    }
+    function log(msg) {
+      var line = new Date().toLocaleTimeString('vi-VN') + ' — ' + msg;
+      logLines.unshift(line);
+      if (logLines.length > 6) logLines.length = 6;
+      if (logEl) logEl.innerHTML = logLines.map(function (l) {
+        return '<div>' + l.replace(/</g, '&lt;') + '</div>';
+      }).join('');
+      try { console.log('[TT2D-Boss] ' + line); } catch (e) { /* bỏ qua */ }
+    }
+
+    function chonBoss(id) {
+      if (id !== 'all' && !BOSSES[id]) return;
+      selectedBoss = id;
+      Object.keys(bossBtns).forEach(function (k) {
+        bossBtns[k].style.background = k === selectedBoss ? '#6b4d16' : '#2a2113';
+      });
+      setDetail();
+      if (id === 'all') {
+        log('Đang săn: Tất cả boss (boss nào xuất hiện cũng đánh).');
+      } else {
+        log('Đang săn: ' + BOSSES[id].ten + ' — ' + BOSSES[id].mapTen + ' ' + BOSSES[id].toa + '.');
+      }
+    }
+    function setDetail() {
+      if (!detailEl) return;
+      if (selectedBoss === 'all') {
+        detailEl.textContent = 'Tất cả boss: Xích Long (Long Uyên, 3h) · Linh Hổ (Thạch Phong, 5h) · Nhện (Bãi Đá, 8h) · Ma Báo (Mỏ Linh Thạch, 11:00–21:00) · Giao Long (Chủ Nhật tối).';
+        return;
+      }
+      var b = BOSSES[selectedBoss];
+      detailEl.textContent = b.ten + ' (Cấp ' + b.cap + ') — ' + b.mapTen + ' ' + b.toa +
+        ' · HP ' + b.hp.toLocaleString('vi-VN') + ' · ' + b.respawnTen +
+        ' · Hộ vệ: ' + b.hoVe + '. Đồ: ' + b.drops;
+    }
+    // Vẽ lại lịch boss (gọi mỗi giây + khi có mốc hạ mới).
+    function capNhatLich() {
+      if (!schedEl) return;
+      var html = BOSS_ORDER.map(function (id) {
+        var b = BOSSES[id];
+        var st = trangThaiBoss(b);
+        var sel = (selectedBoss === id) ? ' style="color:#ffd27a"' : '';
+        return '<div' + sel + '>' + (st.hot ? '🔥 ' : '• ') + '<b>' + b.tenNgan + '</b> — ' + st.txt +
+          ' <button data-ghi="' + id + '" title="Ghi: vừa hạ boss này (để tính giờ hồi sinh)" style="padding:0 5px;border-radius:4px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">✓ hạ</button>' +
+          ' <button data-xoa="' + id + '" title="Xóa mốc hạ đã ghi" style="padding:0 5px;border-radius:4px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">✕</button></div>';
+      }).join('');
+      schedEl.innerHTML = html;
+      schedEl.querySelectorAll('[data-ghi]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = btn.getAttribute('data-ghi');
+          ghiHa(id, true);
+          log('Đã ghi mốc: vừa hạ ' + BOSSES[id].ten + ' lúc ' + fmtGio(Date.now()) + ' — hồi sinh sau ~' + BOSSES[id].respawnTen + '.');
+        });
+      });
+      schedEl.querySelectorAll('[data-xoa]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = btn.getAttribute('data-xoa');
+          xoaMoc(id);
+          log('Đã xóa mốc hạ của ' + BOSSES[id].ten + '.');
+        });
+      });
+    }
+
+    function setOn(v) {
+      on = v;
+      if (toggleBtn) {
+        toggleBtn.textContent = on ? 'DỪNG' : 'BẬT';
+        toggleBtn.style.background = on ? '#7a2d12' : '#3a2c12';
+      }
+      if (on) {
+        phase = 'waiting';
+        currentBoss = null;
+        currentBossName = '';
+        lastBossHpFrac = null;
+        lastHpMilestone = 1;
+        // Nhắc đặt ưu tiên Boss nếu chưa đặt (tool chỉ tự bấm được khi bảng Cài Đặt mở).
+        var ut = uuTienHienTai();
+        if (ut && ut !== 'boss') {
+          log('Ưu tiên Tự Động Đánh đang là "' + ut + '" — mở Cài Đặt chọn "Boss" để Auto ưu tiên đánh boss.');
+        } else if (!ut) {
+          log('Nhớ đặt ưu tiên Tự Động Đánh = "Boss" (Cài Đặt) trước khi săn boss.');
+        }
+        damBaoUuTienBoss();
+        damBaoAuto();
+        var ten = selectedBoss === 'all' ? 'Tất cả boss' : BOSSES[selectedBoss].ten;
+        setStatus('Đang chạy — săn ' + ten + '. Đang chờ boss xuất hiện…');
+        log('Tool BẬT (săn ' + ten + '). Auto sẽ tự đánh boss khi xuất hiện.');
+      } else {
+        setStatus('Đã dừng. Auto giữ nguyên trạng thái (tự tắt tay nếu cần).');
+        log('Tool DỪNG.');
+      }
+    }
+
+    // ---------------- Boss gục / biến mất ----------------
+    function bossBienMat(boss) {
+      var hpFrac = lastBossHpFrac;
+      if (hpFrac !== null && hpFrac < CFG.hpLogStep) {
+        // HP đã thấy xuống dưới 25% rồi biến mất → chắc chắn đã hạ.
+        ghiHa(boss.id, true);
+        stats.killed += 1;
+        setStats();
+        log('Đã hạ ' + boss.ten + '! (HP cuối thấy ~' + Math.round(hpFrac * 100) + '%) — đồ đang tự nhặt (nam châm game), ở lại bãi ~60s.');
+      } else {
+        // Biến mất mà HP còn cao/không rõ — có thể nhân vật chết hoặc boss hết giờ.
+        ghiHa(boss.id, false);
+        log(boss.ten + ' đã biến mất (HP cuối thấy ' + (hpFrac === null ? 'không rõ' : '~' + Math.round(hpFrac * 100) + '%') + ') — có thể đã bị hạ hoặc nhân vật chết/boss hết giờ. Mốc này chỉ để ƯỚC TÍNH giờ hồi sinh.');
+      }
+      phase = 'looting';
+      lootUntil = Date.now() + CFG.lootWaitMs;
+      currentBoss = null;
+      currentBossName = '';
+      lastBossHpFrac = null;
+      lastHpMilestone = 1;
+    }
+
+    // ---------------- Vòng lặp chính ----------------
+    function tick() {
+      if (!on) return;
+      // Luôn giữ Auto BẬT khi tool đang chạy (người dùng phải ở đúng map boss).
+      damBaoAuto();
+      // Cố đặt ưu tiên Boss nếu bảng Cài Đặt đang mở.
+      damBaoUuTienBoss();
+
+      var now = Date.now();
+      var coMucTieu = targetVisible();
+      var ten = coMucTieu ? targetName() : '';
+      var boss = coMucTieu ? bossFromTargetName(ten) : null;
+
+      if (boss) {
+        // Đang đánh boss.
+        if (phase !== 'fighting' || currentBoss !== boss) {
+          phase = 'fighting';
+          currentBoss = boss;
+          currentBossName = ten;
+          lastHpMilestone = 1;
+          var hp0 = parseHpFrac(targetHpText());
+          lastBossHpFrac = hp0;
+          if (selectedBoss !== 'all' && selectedBoss !== boss.id) {
+            log('Đang đánh ' + boss.ten + ' — KHÔNG phải boss đã chọn (' + BOSSES[selectedBoss].ten + '). Kiểm tra lại map?');
+          } else {
+            log('Đang đánh ' + boss.ten + ' (HP ' + (hp0 === null ? '?' : Math.round(hp0 * 100) + '%') + ').');
+          }
+          setStatus('Đang đánh ' + boss.ten + ' — HP ' + (hp0 === null ? '?' : Math.round(hp0 * 100) + '%') + '.');
+        } else {
+          // Đang đánh tiếp — theo dõi HP, ghi log theo mốc 25%.
+          var frac = parseHpFrac(targetHpText());
+          if (frac !== null) {
+            lastBossHpFrac = frac;
+            var milestone = frac >= 0.75 ? 1 : (frac >= 0.5 ? 0.75 : (frac >= 0.25 ? 0.5 : 0.25));
+            if (milestone < lastHpMilestone && now - lastBossHpLogAt >= CFG.hpLogMinMs) {
+              lastHpMilestone = milestone;
+              lastBossHpLogAt = now;
+              log(boss.ten + ' còn ~' + Math.round(frac * 100) + '% HP.');
+            }
+            setStatus('Đang đánh ' + boss.ten + ' — HP ~' + Math.round(frac * 100) + '%.');
+          } else {
+            setStatus('Đang đánh ' + boss.ten + ' — HP ' + (targetHpText() || '?') + '.');
+          }
+        }
+        return;
+      }
+
+      if (coMucTieu && ten) {
+        // Đang đánh quái/hộ vệ (không phải boss) — có thể đang dọn hộ vệ trước boss.
+        if (currentBossName !== ten) {
+          currentBossName = ten;
+          log('Đang đánh ' + ten + ' (quái/hộ vệ — dọn trước khi đánh boss).');
+        }
+        phase = 'fighting';
+        setStatus('Đang đánh ' + ten + ' (quái/hộ vệ)…');
+        return;
+      }
+
+      // Không có mục tiêu.
+      if (phase === 'fighting' && currentBoss) {
+        // Vừa đánh boss xong thì mục tiêu biến mất → boss gục/biến mất.
+        bossBienMat(currentBoss);
+        setStatus('Boss vừa biến mất — đang chờ nam châm nhặt đồ (~60s)…');
+        return;
+      }
+      if (phase === 'looting') {
+        if (now >= lootUntil) {
+          phase = 'waiting';
+          stats.looted += 1;
+          setStats();
+          log('Đã qua thời gian chờ nhặt đồ (~60s) — quay lại chờ boss hồi sinh.');
+          setStatus('Đang chờ boss hồi sinh…');
+        } else {
+          setStatus('Đang chờ nam châm nhặt đồ — còn ~' + Math.ceil((lootUntil - now) / 1000) + 's. Ở lại bãi, đừng rời map.');
+        }
+        return;
+      }
+      // Đang chờ boss xuất hiện.
+      if (phase !== 'waiting') phase = 'waiting';
+      var tenSan = selectedBoss === 'all' ? 'boss' : BOSSES[selectedBoss].ten;
+      var st = selectedBoss === 'all' ? null : trangThaiBoss(BOSSES[selectedBoss]);
+      setStatus('Đang chờ ' + tenSan + ' xuất hiện…' + (st ? ' (' + st.txt + ')' : ''));
+    }
+
+    // ---------------- Khởi động ----------------
+    buildPanel();
+    setInterval(tick, CFG.pollMs);
+    setInterval(capNhatLich, 1000);
+    setStatus('Chưa bật — đưa nhân vật tới đúng map boss rồi bấm BẬT.');
+    setStats();
+    log('Tool đã nạp (v1.1.0). Mặc định TẮT. 5 boss theo giờ: Xích Long 3h, Linh Hổ 5h, Nhện 8h, Ma Báo 11:00–21:00, Giao Long tối Chủ Nhật. Bấm "—" để thu nhỏ bảng.');
+    // Điều khiển từ Console khi cần debug: __TT2D_BOSS__.start() / .stop() / .select('xich_long'|'linh_ho'|'nhen'|'ma_bao'|'giao_long'|'all') / .status() / .ghiHa('xich_long') / .lich() / .setCollapsed(true|false)
+    window.__TT2D_BOSS__ = {
+      start: function () { setOn(true); },
+      stop: function () { setOn(false); },
+      select: function (id) { chonBoss(id); },
+      setCollapsed: function (v) { setCollapsed(v); },
+      collapsed: function () { return collapsed; },
+      ghiHa: function (id) { ghiHa(id, true); },
+      lich: function () {
+        return BOSS_ORDER.map(function (id) {
+          var st = trangThaiBoss(BOSSES[id]);
+          return { id: id, ten: BOSSES[id].ten, txt: st.txt, hot: st.hot };
+        });
+      },
+      status: function () {
+        return {
+          on: on, phase: phase, selectedBoss: selectedBoss,
+          currentBoss: currentBoss ? currentBoss.id : null,
+          currentTarget: currentBossName, lastBossHpFrac: lastBossHpFrac,
+          autoOn: autoIsOn(), uuTien: uuTienHienTai(), stats: stats,
+        };
+      },
+    };
+    Tong.register('boss', window.__TT2D_BOSS__);
+
+
+  })();
+
+
+  // ================= MODULE: duoc (Dược v1.1.0: Trúc Cơ "Tự Đi", Luyện Khí nhận việc tay theo DC; tự hủy việc dở đã nhận trước khi bật tool.) =================
+
+  (function () {
+
+
+    // ---------------- Cấu hình ----------------
+    var CFG = {
+      pollMs: 250,              // kiểm tra trạng thái mỗi 250ms
+      taskTimeoutMs: 10 * 60 * 1000, // việc quá 10 phút chưa xong → huỷ, đổi việc
+      maxKetLienTiep: 2,        // kẹt 2 lần liên tiếp → DỪNG tool
+      maxTuDiKhoiDongLai: 3,    // "Tự Đi" dừng giữa chừng thì bật lại tối đa 3 lần
+      joyHoldMs: 350,           // giữ joystick mỗi nhịp
+      joyLongMs: 900,           // nhịp dài khi kẹt
+      joyWaitMs: 250,           // nghỉ giữa các nhịp
+      portalHoldMs: 700,        // giữ joystick để bước qua cổng
+      portalTries: 6,           // số nhịp giữ tối đa để qua cổng
+      ganDaiPhu: 6,             // trong 6 ô quanh Đại Phu thì tính là "gần"
+      hpTuVe: 0.80,             // LK: HP dưới 80% thì bật Auto tự vệ
+      hpAnToan: 0.95,           // LK: HP trên 95% thì tắt Auto tự vệ
+      hpNguyHiem: 0.35,         // HP dưới 35% thì chờ hồi, không bật lại "Tự Đi"
+      choDoiMs: 3000,           // chờ hộp thoại mở sau khi bấm tương tác
+      nghiGiuaBuocMs: 600,      // nghỉ giữa các lần bấm nút
+    };
+
+    // ---------------- Bảng việc ----------------
+    // Thứ tự ưu tiên: DC cao nhất trước; hoà DC thì việc gần hơn trước.
+    var TASKS = {
+      cau_ca:        { id: 'cau_ca', ten: 'Câu Cá Làm Dược Liệu', tenNgan: 'Câu Cá', dc: 4, need: 3, kind: 'fishing',
+                       map: 'duoc_vien', x: 18, y: 16, choLam: 'Hồ Bích Thuỷ' },
+      duoc_moc:      { id: 'duoc_moc', ten: 'Thu Gom Dược Mộc', tenNgan: 'Thu Gom', dc: 3, need: 5, kind: 'chop',
+                       map: 'duoc_vien', x: 34, y: 25, choLam: 'Cổ Thụ Linh Mộc' },
+      ho_tong_chau:  { id: 'ho_tong_chau', ten: 'Đưa Người Về Làng', tenNgan: 'Đưa Người', dc: 2, need: 0, kind: 'escort',
+                       map: 'tan_vien', x: 9, y: 10, choLam: 'Thầy Ông Nội (làng)' },
+      truc_gia:      { id: 'truc_gia', ten: 'Trúc Tâm Dẫn Dược', tenNgan: 'Trúc Tâm', dc: 1, need: 4, kind: 'chop',
+                       map: 'thanh_truc_lam', spots: [[18, 5], [27, 12], [10, 20], [31, 8]], choLam: 'Rừng Trúc' },
+      linh_chi:      { id: 'linh_chi', ten: 'Linh Chi Dưới Chân Núi', tenNgan: 'Linh Chi', dc: 1, need: 3, kind: 'harvest',
+                       map: 'tan_vien',
+                       spots: [[19, 2], [20, 2], [18, 3], [21, 3], [23, 3], [25, 3], [28, 3], [32, 1], [31, 2], [33, 2], [30, 3], [33, 3], [6, 3], [7, 3]],
+                       choLam: 'Bắc làng Tản Viên' },
+    };
+    var THU_TU_UU_TIEN = ['cau_ca', 'duoc_moc', 'ho_tong_chau', 'truc_gia', 'linh_chi'];
+    var VIEC_CAM = { dai_hoi: 'Thắng Trận Đại Hội', van_tieu: 'Vận Tiêu Một Chuyến', chien_bang: 'Thắng Trận Tán Tu Chiến Bảng' };
+    var TONG_LUOT_NGAY = 15; // 5 việc thường × 3 lượt
+    var DAI_PHU = { map: 'duoc_vien', x: 14, y: 8 };
+    var MAP_TEN = { duoc_vien: 'Thảo Dược Cốc', thanh_truc_lam: 'Rừng Trúc', tan_vien: 'Chân Núi Tản Viên' };
+    // Cổng: từ map A tới map B — đi tới ô cổng rồi giữ joystick hướng ra ngoài.
+    var CONG = {
+      'duoc_vien>thanh_truc_lam': { x: 12, y: 0, dx: 0, dy: -1 },
+      'thanh_truc_lam>tan_vien': { x: 7, y: 0, dx: 0, dy: -1 },
+      'tan_vien>thanh_truc_lam': { x: 7, y: 29, dx: 0, dy: 1 },
+      'thanh_truc_lam>duoc_vien': { x: 12, y: 29, dx: 0, dy: 1 },
+    };
+    function duongDi(tuMap, toiMap) {
+      if (tuMap === toiMap) return [];
+      if (tuMap === 'duoc_vien' && toiMap === 'tan_vien')
+        return [{ map: 'thanh_truc_lam', cong: 'duoc_vien>thanh_truc_lam' }, { map: 'tan_vien', cong: 'thanh_truc_lam>tan_vien' }];
+      if (tuMap === 'tan_vien' && toiMap === 'duoc_vien')
+        return [{ map: 'thanh_truc_lam', cong: 'tan_vien>thanh_truc_lam' }, { map: 'duoc_vien', cong: 'thanh_truc_lam>duoc_vien' }];
+      if (tuMap === 'duoc_vien' && toiMap === 'thanh_truc_lam')
+        return [{ map: 'thanh_truc_lam', cong: 'duoc_vien>thanh_truc_lam' }];
+      if (tuMap === 'thanh_truc_lam' && toiMap === 'duoc_vien')
+        return [{ map: 'duoc_vien', cong: 'thanh_truc_lam>duoc_vien' }];
+      if (tuMap === 'thanh_truc_lam' && toiMap === 'tan_vien')
+        return [{ map: 'tan_vien', cong: 'thanh_truc_lam>tan_vien' }];
+      if (tuMap === 'tan_vien' && toiMap === 'thanh_truc_lam')
+        return [{ map: 'thanh_truc_lam', cong: 'tan_vien>thanh_truc_lam' }];
+      return null; // không biết đường
+    }
+
+    // ---------------- Trạng thái ----------------
+    var on = false;
+    var phase = 'idle'; // idle | cho_dai_phu | mo_menu | tu_di | nhan_viec | xac_nhan | di_lam | lam_viec | ve_nop | nop | ket_thuc
+    var realm = null;   // 'truc_co' | 'luyen_khi' (nhận biết từ menu Đại Phu)
+    var viecHienTai = null; // id việc đang làm (LK) hoặc việc bộ máy đang làm (TC, đọc từ tracker)
+    var luotDaLam = 0;      // số lượt đã nộp xong (đếm theo lần nộp tool thấy)
+    var luotConLai = {};    // id việc -> số lượt còn lại hôm nay (đọc từ bảng game)
+    var dcHienTai = null;   // điểm Dược Công hiện tại (đọc từ hộp thoại)
+    var dcLucBatDau = null;
+    var taskBatDauAt = 0;   // thời điểm bắt đầu việc hiện tại
+    var demKet = 0;         // số lần kẹt liên tiếp
+    var demTuDiLai = 0;     // số lần bật lại "Tự Đi"
+    var daNhanViec = false; // phiên này tool đã nhận được ít nhất 1 việc (để phân biệt việc dở có sẵn với việc của tool)
+    var tuVeDangBat = false;// LK: Auto tự vệ đang bật?
+    var choDoiTu = 0;       // mốc thời gian chờ (mở hộp thoại...)
+    var logLines = [];
+    var collapsed = false;  // bảng đang thu nhỏ?
+
+    function log(msg) {
+      var t = new Date();
+      var hh = ('0' + t.getHours()).slice(-2), mm = ('0' + t.getMinutes()).slice(-2), ss = ('0' + t.getSeconds()).slice(-2);
+      var line = hh + ':' + mm + ':' + ss + ' — ' + msg;
+      logLines.push(line);
+      if (logLines.length > 40) logLines.shift();
+      renderLog();
+    }
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function $(s) { return document.querySelector(s); }
+    function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+    function txt(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }
+
+    // ---------------- Đọc trạng thái game (chỉ đọc DOM) ----------------
+    function dialogMo() {
+      var d = $('#dialog');
+      return !!(d && d.offsetParent !== null && !d.classList.contains('hidden'));
+    }
+    // Đọc hộp thoại đang mở: tiêu đề, nội dung, các lựa chọn, nút hành động.
+    function docDialog() {
+      if (!dialogMo()) return null;
+      var choices = $$('#dialog-choices .btn-choice').map(function (b) {
+        var spans = b.querySelectorAll('span');
+        var label = spans.length ? txt(spans[0]) : txt(b);
+        var note = '';
+        b.querySelectorAll('.c-note').forEach(function (s) { note += (note ? ' ' : '') + txt(s); });
+        return { label: label, note: note, disabled: !!b.disabled, el: b };
+      });
+      var act = $('#dialog-action');
+      return {
+        title: txt($('#dialog-title')),
+        text: txt($('#dialog-text')),
+        choices: choices,
+        action: (act && act.offsetParent !== null) ? { label: txt(act), el: act } : null,
+      };
+    }
+    function timLuaChon(dlg, re) {
+      if (!dlg) return null;
+      for (var i = 0; i < dlg.choices.length; i++) {
+        if (re.test(dlg.choices[i].label)) return dlg.choices[i];
+      }
+      return null;
+    }
+    function bamLuaChon(re) {
+      var dlg = docDialog();
+      var c = timLuaChon(dlg, re);
+      if (!c) return false;
+      if (c.disabled) return 'disabled';
+      c.el.click();
+      return true;
+    }
+    function bamNutHanhDong(re) {
+      var dlg = docDialog();
+      if (!dlg || !dlg.action) return false;
+      if (re && !re.test(dlg.action.label)) return false;
+      dlg.action.el.click();
+      return true;
+    }
+    function dongDialog() {
+      var c = $('#dialog-close');
+      if (c && dialogMo()) c.click();
+    }
+    // Điểm Dược Công hiện tại ("Dược Công: X điểm" trong hộp thoại).
+    function docDC(dlg) {
+      var t = dlg ? dlg.text : '';
+      var m = t.match(/Dược Công:\s*(\d+)\s*điểm/);
+      return m ? parseInt(m[1], 10) : null;
+    }
+    // Lượt còn lại từng việc — đọc từ ghi chú "còn r/c lượt" / "Hết c/c lượt".
+    function docLuotTuDanhSach(dlg) {
+      var out = {};
+      if (!dlg) return out;
+      dlg.choices.forEach(function (c) {
+        var id = null;
+        Object.keys(TASKS).forEach(function (k) {
+          if (c.label.indexOf(TASKS[k].tenNgan) >= 0 || c.label === TASKS[k].ten || c.label.indexOf(TASKS[k].ten) >= 0) id = k;
+        });
+        if (!id) return;
+        var m = c.note.match(/còn\s*(\d+)\s*\/\s*(\d+)\s*lượt/);
+        if (m) { out[id] = parseInt(m[1], 10); return; }
+        var m2 = c.note.match(/Hết\s*(\d+)\s*\/\s*(\d+)\s*lượt/);
+        if (m2) { out[id] = 0; return; }
+        if (/Cần đạt/.test(c.note)) out[id] = null; // bị khoá cảnh giới
+      });
+      return out;
+    }
+    // Vị trí nhân vật + tên map — đọc từ chữ trong trang.
+    function docViTri() {
+      var t = document.body ? (document.body.innerText || '') : '';
+      var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+      var map = null;
+      var hm = document.querySelector('#hud-map');
+      var hmt = hm ? (hm.innerText || hm.textContent || '').trim() : '';
+      function nhanMap(s) {
+        if (/Hồ Tây/.test(s)) return 'van_can';
+        if (/Thảo Dược Cốc/.test(s)) return 'duoc_vien';
+        if (/Rừng Trúc/.test(s)) return 'thanh_truc_lam';
+        if (/Chân Núi Tản Viên/.test(s)) return 'tan_vien';
+        if (/Vườn Cá Nhân/.test(s)) return 'vuon_ca_nhan';
+        return null;
+      }
+      if (hmt) map = nhanMap(hmt);
+      if (!map) map = nhanMap(t);
+      return { x: m ? parseInt(m[1], 10) : null, y: m ? parseInt(m[2], 10) : null, map: map };
+    }
+    // HP người chơi — đọc từ thanh HP (.pl-bar.hp .pl-n "cur / max").
+    function docHP() {
+      var el = document.querySelector('.pl-bar.hp .pl-n');
+      if (!el) return null;
+      var m = txt(el).match(/(\d+)\s*\/\s*(\d+)/);
+      if (!m) return null;
+      var cur = parseInt(m[1], 10), max = parseInt(m[2], 10);
+      if (!max) return null;
+      return { cur: cur, max: max, tiLe: cur / max };
+    }
+    // Chữ thông báo của game (#ritual-caption).
+    function docCaption() { return txt($('#ritual-caption')); }
+    // Tiến độ việc đang làm — đọc từ #quest-objectives.
+    function docTracker() {
+      var el = $('#quest-objectives');
+      if (!el) return '';
+      return txt(el);
+    }
+    // Việc đang làm (đoán từ tracker + hộp thoại): trả về id việc hoặc null.
+    function doanViecDangLam() {
+      var t = docTracker() + ' ' + (docDialog() ? docDialog().text : '');
+      if (/Câu\s/.test(t) && /cá/i.test(t)) return 'cau_ca';
+      if (/Thu Gom|Cành Khô|cành khô/i.test(t)) return 'duoc_moc';
+      if (/Dẫn Cháu|Đưa Người|Thầy Ông Nội/i.test(t)) return 'ho_tong_chau';
+      if (/Linh Chi/i.test(t)) return 'linh_chi';
+      if (/Trúc Tâm|Trúc Già/i.test(t)) return 'truc_gia';
+      return null;
+    }
+    // Tên việc đang giữ (đoán từ tracker) — dùng để log khi tự huỷ việc dở
+    // đã nhận trước khi bật tool.
+    function tenViecDangGiu() {
+      var id = doanViecDangLam();
+      if (id && TASKS[id]) return TASKS[id].ten;
+      var tr = docTracker();
+      if (tr) return tr;
+      return 'việc chưa rõ tên';
+    }
+    // Tiến độ "a/b" trong tracker (vd "2/3").
+    function docTienDo() {
+      var t = docTracker();
+      var m = t.match(/(\d+)\s*\/\s*(\d+)/);
+      return m ? { cur: parseInt(m[1], 10), max: parseInt(m[2], 10) } : null;
+    }
+    function ganDaiPhu() {
+      var p = docViTri();
+      if (p.map !== 'duoc_vien' || p.x === null) return false;
+      return Math.abs(p.x - DAI_PHU.x) + Math.abs(p.y - DAI_PHU.y) <= CFG.ganDaiPhu;
+    }
+
+    // ---------------- Nút Auto / Phi Hành / Chạy ----------------
+    function nutAuto() { return $('#btn-auto-touch') || $('#btn-auto'); }
+    function autoDangBat() {
+      var b = nutAuto();
+      return !!(b && b.classList.contains('active'));
+    }
+    function datAuto(bat) {
+      var b = nutAuto();
+      if (!b) return false;
+      if (autoDangBat() === bat) return true;
+      b.click();
+      return true;
+    }
+    function flyDangBat() {
+      var b = $('#btn-fly');
+      return !!(b && b.classList.contains('active'));
+    }
+    function datFly(bat) {
+      var b = $('#btn-fly');
+      if (!b) return false;
+      if (flyDangBat() === bat) return true;
+      b.click();
+      return true;
+    }
+    function runDangBat() {
+      var b = $('#btn-run');
+      return !!(b && b.classList.contains('active'));
+    }
+    function datRun(bat) {
+      var b = $('#btn-run');
+      if (!b) return false;
+      if (runDangBat() === bat) return true;
+      // Nút Chạy nghe pointerdown — dispatch đúng loại sự kiện của nó.
+      var r = b.getBoundingClientRect();
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      ['pointerdown', 'pointerup'].forEach(function (ty) {
+        b.dispatchEvent(new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: cx, clientY: cy, pointerId: 1 }));
+      });
+      return true;
+    }
+    // Nút Tương Tác (#btn-attack đổi nhãn khi đứng gần NPC/vật).
+    function nutTuongTac() {
+      var b = $('#btn-attack');
+      if (!b || b.offsetParent === null) return null;
+      var aria = b.getAttribute('aria-label') || '';
+      var label = txt(b.querySelector('.skill-name')) || txt(b);
+      return { el: b, aria: aria, label: label, laTuongTac: /Tương tác/i.test(aria) || /Tương Tác/i.test(label) };
+    }
+
+    // ---------------- Lái nhân vật bằng joystick ----------------
+    // Dispatch pointerdown/move/up lên #joystick (client không kiểm tra
+    // isTrusted — đã xác minh 0 lần xuất hiện trong game.js).
+    function joyHold(dx, dy, ms) {
+      var joy = $('#joystick');
+      if (!joy) return false;
+      var r = joy.getBoundingClientRect();
+      if (!r.width || !r.height) return false;
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var pid = 12345;
+      function ev(ty, x, y) {
+        return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: pid, isPrimary: true });
+      }
+      joy.dispatchEvent(ev('pointerdown', cx, cy));
+      var steps = 4;
+      for (var i = 1; i <= steps; i++) {
+        joy.dispatchEvent(ev('pointermove', cx + dx * i / steps, cy + dy * i / steps));
+      }
+      return new Promise(function (resolve) {
+        setTimeout(function () {
+          joy.dispatchEvent(ev('pointerup', cx + dx, cy + dy));
+          setTimeout(resolve, CFG.joyWaitMs);
+        }, ms);
+      });
+    }
+    function joyHuong(dx, dy, ms) {
+      // Chỉ lái 1 trục mỗi nhịp (ưu tiên trục lệch nhiều hơn) để khỏi lạc.
+      if (Math.abs(dx) >= Math.abs(dy)) return joyHold(dx > 0 ? 40 : -40, 0, ms);
+      return joyHold(0, dy > 0 ? 40 : -40, ms);
+    }
+    // Đi tới ô (tx,ty) trong map hiện tại. Trả về true nếu tới nơi (sai số <=1).
+    async function diToi(tx, ty, maxBuoc) {
+      maxBuoc = maxBuoc || 60;
+      var last = null, ket = 0;
+      for (var i = 0; i < maxBuoc; i++) {
+        var p = docViTri();
+        if (p.x === null) { await sleep(2000); continue; }
+        if (Math.abs(p.x - tx) <= 1 && Math.abs(p.y - ty) <= 1) return true;
+        if (last && last.x === p.x && last.y === p.y) {
+          ket++;
+          if (ket >= 3) {
+            log('Kẹt ở (' + p.x + ',' + p.y + ') — thử nhịp dài.');
+            var dx = tx - p.x, dy = ty - p.y;
+            await joyHuong(dx, dy, CFG.joyLongMs);
+            ket = 0;
+            continue;
+          }
+        } else ket = 0;
+        last = { x: p.x, y: p.y };
+        await joyHuong(tx - p.x, ty - p.y, CFG.joyHoldMs);
+        if (i % 10 === 9) {
+          var q = docViTri();
+          if (q.map && q.map !== docViTri().map) return false;
+        }
+      }
+      return false;
+    }
+    // Bước qua cổng: tới ô cổng rồi giữ joystick hướng ra ngoài tới khi đổi map.
+    async function quaCong(congKey) {
+      var c = CONG[congKey];
+      if (!c) return false;
+      // Hạ cánh trước cổng (đang bay không qua được cổng).
+      if (flyDangBat()) datFly(false);
+      await sleep(400);
+      var ok = await diToi(c.x, c.y, 60);
+      if (!ok) { log('Không tới được cổng (' + c.x + ',' + c.y + ').'); return false; }
+      var mapCu = docViTri().map;
+      for (var i = 0; i < CFG.portalTries; i++) {
+        await joyHold(c.dx * 40, c.dy * 40, CFG.portalHoldMs);
+        var p = docViTri();
+        if (p.map && p.map !== mapCu) return true;
+      }
+      log('Không qua được cổng — có thể bị chặn.');
+      return false;
+    }
+    // Đi theo đường tới map đích (qua các cổng). Trả về true nếu tới đúng map.
+    async function diToiMap(toiMap) {
+      var p = docViTri();
+      if (p.map === toiMap) return true;
+      var duong = duongDi(p.map, toiMap);
+      if (!duong) { log('Không biết đường từ ' + (p.map || '?') + ' tới ' + toiMap + '.'); return false; }
+      for (var i = 0; i < duong.length; i++) {
+        var ok = await quaCong(duong[i].cong);
+        if (!ok) return false;
+        await sleep(800);
+      }
+      return docViTri().map === toiMap;
+    }
+
+    // ---------------- Chọn việc tốt nhất (LK) ----------------
+    function chonViecTotNhat() {
+      var best = null;
+      THU_TU_UU_TIEN.forEach(function (id) {
+        var r = luotConLai[id];
+        if (r === undefined || r === null || r <= 0) return;
+        if (!best || TASKS[id].dc > TASKS[best].dc) best = id;
+      });
+      return best;
+    }
+    function tongLuotConLai() {
+      var s = 0, biet = false;
+      THU_TU_UU_TIEN.forEach(function (id) {
+        if (typeof luotConLai[id] === 'number') { s += luotConLai[id]; biet = true; }
+      });
+      return biet ? s : null;
+    }
+    function capNhatLuotDaLam() {
+      var con = tongLuotConLai();
+      if (con !== null) luotDaLam = Math.max(luotDaLam, TONG_LUOT_NGAY - con);
+    }
+
+    // ---------------- Tự vệ (LK) ----------------
+    function kiemTraTuVe() {
+      if (realm !== 'luyen_khi') return;
+      var hp = docHP();
+      if (!hp) return;
+      if (!tuVeDangBat && hp.tiLe < CFG.hpTuVe) {
+        if (datAuto(true)) { tuVeDangBat = true; log('Bị quái đánh (HP ' + Math.round(hp.tiLe * 100) + '%) — bật Auto tự vệ.'); }
+      } else if (tuVeDangBat && hp.tiLe >= CFG.hpAnToan) {
+        if (datAuto(false)) { tuVeDangBat = false; log('HP đã hồi (' + Math.round(hp.tiLe * 100) + '%) — tắt Auto, làm việc tiếp.'); }
+      }
+    }
+
+    // Hộp thoại này có phải của Đại Phu không? (tránh mở nhầm hộp thoại
+    // của hồ/cây/NPC khác khi bấm nút Tương Tác ở xa Đại Phu.)
+    function laHopThoaiDaiPhu(dlg) {
+      if (!dlg) return false;
+      if (/Đại Phu/.test(dlg.title || '')) return true;
+      return dlg.choices.some(function (c) {
+        return /Mở Quầy Đổi Hạt|Nhận Việc Dược Công|Tự Đi Làm Việc Dược Công|Huỷ Nhiệm Vụ/.test(c.label);
+      });
+    }
+    // ---------------- Mở hộp thoại Đại Phu ----------------
+    // Bấm nút Tương Tác khi đứng gần Đại Phu, chờ hộp thoại mở.
+    // Nếu đang ở xa (vd vừa huỷ việc ở hồ) thì bước dần về Đại Phu.
+    async function moHopThoaiDaiPhu() {
+      var p0 = docViTri();
+      if (p0.map && p0.map !== 'duoc_vien') return null; // ở map khác — không đi bộ tới được
+      // Luôn đóng hộp thoại đang mở (nếu có) rồi mở lại từ đầu — menu Đại Phu
+      // được game dựng lại theo trạng thái hiện tại. Nếu tin hộp thoại cũ thì
+      // có thể đọc menu cũ (vd vừa BẬT lại tool mà hộp thoại còn mở từ phiên
+      // trước, trong khi acc đã nhận việc dở) và bỏ qua việc cần huỷ.
+      if (dialogMo()) { dongDialog(); await sleep(600); }
+      for (var lan = 0; lan < 30; lan++) {
+        var nt = nutTuongTac();
+        // Chỉ bấm khi nút Tương Tác đang chỉ vào Đại Phu (aria-label ghi rõ).
+        // Nếu aria trống thì bấm thử rồi kiểm tra hộp thoại mở ra.
+        if (nt && nt.laTuongTac && (!nt.aria || /Đại Phu/.test(nt.aria))) {
+          nt.el.click();
+          await sleep(CFG.choDoiMs);
+          if (dialogMo()) {
+            var d1 = docDialog();
+            if (laHopThoaiDaiPhu(d1)) return d1;
+            dongDialog();
+            await sleep(600);
+          }
+        }
+        // Chưa mở được — bước lại gần Đại Phu 1 nhịp.
+        var p = docViTri();
+        if (p.x !== null && p.map === 'duoc_vien') {
+          await joyHuong(DAI_PHU.x - p.x, DAI_PHU.y - p.y, CFG.joyHoldMs);
+        }
+        await sleep(800);
+      }
+      if (dialogMo()) {
+        var d2 = docDialog();
+        if (laHopThoaiDaiPhu(d2)) return d2;
+        dongDialog();
+      }
+      return null;
+    }
+
+    // ---------------- Chế độ Trúc Cơ: dùng "Tự Đi" của game ----------------
+    async function batTuDi() {
+      // Bật Phi Hành + Chạy + Auto trước khi bắt đầu (quy tắc đứng).
+      datFly(true); datRun(true); datAuto(true);
+      await sleep(500);
+      var dlg = await moHopThoaiDaiPhu();
+      if (!dlg) { log('Không mở được hộp thoại Đại Phu.'); return false; }
+      var tuDi = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
+      if (!tuDi) { log('Không thấy mục "Tự Đi Làm Việc Dược Công" trong menu.'); return false; }
+      if (tuDi.disabled) { log('"Tự Đi" đang bị khoá — ' + (tuDi.note || '') + '.'); return false; }
+      tuDi.el.click();
+      await sleep(CFG.choDoiMs);
+      var dlg2 = docDialog();
+      if (!dlg2) { log('Không mở được hộp thoại xác nhận "Tự Đi".'); return false; }
+      var ok = bamNutHanhDong(/Bắt Đầu Tự Làm/);
+      if (!ok) { log('Không thấy nút "Bắt Đầu Tự Làm".'); return false; }
+      log('Đã bấm "Bắt Đầu Tự Làm" — game tự làm dược.');
+      daNhanViec = true;
+      phase = 'tu_di';
+      return true;
+    }
+    // Kiểm tra bộ máy "Tự Đi" còn chạy không (theo dõi thụ động, KHÔNG chạm màn hình).
+    function tuDiDaDung() {
+      var cap = docCaption();
+      if (/Xong việc Dược Công hôm nay/.test(cap)) return 'xong';
+      if (/Kẹt đường|Không tìm được đường|Máy chủ chưa nhận|Chờ nguyên liệu quá lâu|Quái chặn đường quá lâu|Hạ phi hành/.test(cap)) return 'loi:' + cap;
+      return null;
+    }
+
+    // ---------------- Chế độ Luyện Khí: nhận việc tay ----------------
+    async function nhanViecTotNhat() {
+      var dlg = await moHopThoaiDaiPhu();
+      if (!dlg) { log('Không mở được hộp thoại Đại Phu.'); return false; }
+      // Nếu đang giữ việc: việc dở nhận từ trước khi bật tool thì TỰ HUỶ
+      // rồi nhận việc mới; việc khác (không phải việc thường) thì dừng để anh xem.
+      var dangGiu = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
+      if (dangGiu) {
+        if (!daNhanViec) {
+          log('Đã tự hủy việc dở đã nhận trước khi bật tool: ' + tenViecDangGiu() + '.');
+          var okHuy = await huyViec();
+          if (!okHuy) { log('Huỷ việc không được — dừng để anh xem.'); return 'giu_viec'; }
+          return 'da_huy'; // huỷ xong — vòng lặp quay lại mo_menu để nhận việc mới
+        }
+        log('Đang giữ một việc (không phải việc thường hoặc việc dở) — dừng để anh xem.');
+        return 'giu_viec';
+      }
+      var dc = docDC(dlg);
+      if (dc !== null) { dcHienTai = dc; if (dcLucBatDau === null) dcLucBatDau = dc; }
+      var ok = bamLuaChon(/Nhận Việc Dược Công/);
+      if (ok === 'disabled') { log('Hôm nay hết lượt nhận việc.'); return 'het_luot'; }
+      if (!ok) { log('Không thấy mục "Nhận Việc Dược Công".'); return false; }
+      await sleep(CFG.choDoiMs);
+      var ds = docDialog();
+      if (!ds) { log('Không mở được danh sách việc.'); return false; }
+      var luot = docLuotTuDanhSach(ds);
+      Object.keys(luot).forEach(function (k) { if (luot[k] !== null) luotConLai[k] = luot[k]; });
+      capNhatLuotDaLam();
+      var id = chonViecTotNhat();
+      if (!id) { log('Hết lượt các việc thường hôm nay.'); return 'het_luot'; }
+      var chon = null;
+      ds.choices.forEach(function (c) {
+        if (c.label === TASKS[id].ten || c.label.indexOf(TASKS[id].tenNgan) >= 0) chon = c;
+      });
+      if (!chon || chon.disabled) { log('Không chọn được việc ' + TASKS[id].ten + '.'); return false; }
+      chon.el.click();
+      await sleep(CFG.choDoiMs);
+      var xn = docDialog();
+      if (!xn) { log('Không mở được hộp thoại xác nhận nhận việc.'); return false; }
+      var ok2 = bamNutHanhDong(/Nhận Việc Này/);
+      if (!ok2) { log('Không thấy nút "Nhận Việc Này".'); return false; }
+      viecHienTai = id;
+      daNhanViec = true;
+      taskBatDauAt = Date.now();
+      log('Đã nhận việc: ' + TASKS[id].ten + ' (' + TASKS[id].dc + ' DC, còn ' + (luotConLai[id] - 1) + '/' + 3 + ' lượt).');
+      return true;
+    }
+
+    // ---------------- Làm việc (LK) ----------------
+    async function lamViecHienTai() {
+      var t = TASKS[viecHienTai];
+      if (!t) return false;
+      // Đi tới chỗ làm.
+      var toi = await diToiMap(t.map);
+      if (!toi) return 'ket';
+      var p = docViTri();
+      if (t.kind === 'fishing') {
+        var ok = await diToi(t.x, t.y, 60);
+        if (!ok) return 'ket';
+        // Tương tác với mặt nước → chọn "Tự động câu".
+        var nt = nutTuongTac();
+        if (!nt || !nt.laTuongTac) {
+          // Thử bước thêm 1-2 nhịp về phía hồ.
+          await joyHuong(t.x - docViTri().x, t.y - docViTri().y, CFG.joyHoldMs);
+          nt = nutTuongTac();
+        }
+        if (!nt || !nt.laTuongTac) { log('Không thấy nút tương tác với hồ.'); return 'ket'; }
+        nt.el.click();
+        await sleep(CFG.choDoiMs);
+        var chon = bamLuaChon(/Tự động câu/);
+        if (!chon) { log('Không thấy lựa chọn "Tự động câu".'); return 'ket'; }
+        log('Đã bật tự động câu — chờ đủ 3 cá.');
+        var t0 = Date.now();
+        while (on && Date.now() - t0 < CFG.taskTimeoutMs) {
+          kiemTraTuVe();
+          var td = docTienDo();
+          if (td && td.cur >= td.max) break;
+          var tr = docTracker();
+          if (/3\s*\/\s*3/.test(tr)) break;
+          await sleep(2000);
+        }
+        var stop = $('#btn-fishing-stop-touch');
+        if (stop) stop.click();
+        var td2 = docTienDo();
+        if (td2 && td2.cur >= td2.max) { log('Đã câu đủ ' + td2.cur + '/' + td2.max + ' cá.'); return true; }
+        log('Hết giờ chờ câu cá (chưa đủ 3 cá).');
+        return 'ket';
+      }
+      if (t.kind === 'chop' && t.id === 'duoc_moc') {
+        var ok2 = await diToi(t.x, t.y, 60);
+        if (!ok2) return 'ket';
+        // Chặt cây rồi đi nhặt cành rơi quanh gốc.
+        var t0b = Date.now();
+        while (on && Date.now() - t0b < CFG.taskTimeoutMs) {
+          kiemTraTuVe();
+          var td3 = docTienDo();
+          if (td3 && td3.cur >= td3.max) { log('Đã gom đủ ' + td3.cur + '/' + td3.max + ' Cành Khô.'); return true; }
+          var nt2 = nutTuongTac();
+          if (nt2 && nt2.laTuongTac) { nt2.el.click(); await sleep(2500); }
+          // Đi vòng quanh gốc cây để nhặt cành rơi.
+          var pp = docViTri();
+          var vong = [[2, 0], [0, 2], [-2, 0], [0, -2], [2, 2], [-2, -2]];
+          for (var i = 0; i < vong.length; i++) {
+            if (!on) return false;
+            await diToi(t.x + vong[i][0], t.y + vong[i][1], 12);
+            var td4 = docTienDo();
+            if (td4 && td4.cur >= td4.max) { log('Đã gom đủ ' + td4.cur + '/' + td4.max + ' Cành Khô.'); return true; }
+          }
+          await diToi(t.x, t.y, 20);
+        }
+        return 'ket';
+      }
+      if (t.kind === 'chop' && t.id === 'truc_gia') {
+        // Chặt 4 thân Trúc Già ở các điểm cố định.
+        for (var s = 0; s < t.spots.length; s++) {
+          if (!on) return false;
+          var td5 = docTienDo();
+          if (td5 && td5.cur >= td5.max) { log('Đã chặt đủ ' + td5.cur + '/' + td5.max + ' Trúc Tâm.'); return true; }
+          var ok3 = await diToi(t.spots[s][0], t.spots[s][1], 60);
+          if (!ok3) continue;
+          var nt3 = nutTuongTac();
+          if (nt3 && nt3.laTuongTac) { nt3.el.click(); await sleep(2500); }
+        }
+        var td6 = docTienDo();
+        if (td6 && td6.cur >= td6.max) { log('Đã chặt đủ ' + td6.cur + '/' + td6.max + ' Trúc Tâm.'); return true; }
+        return 'ket';
+      }
+      if (t.kind === 'harvest') {
+        // Hái Linh Chi: đi qua từng điểm, chỗ nào có nút Tương Tác thì hái.
+        for (var s2 = 0; s2 < t.spots.length; s2++) {
+          if (!on) return false;
+          var td7 = docTienDo();
+          if (td7 && td7.cur >= td7.max) { log('Đã hái đủ ' + td7.cur + '/' + td7.max + ' Linh Chi.'); return true; }
+          var ok4 = await diToi(t.spots[s2][0], t.spots[s2][1], 40);
+          if (!ok4) continue;
+          var nt4 = nutTuongTac();
+          if (nt4 && nt4.laTuongTac) { nt4.el.click(); await sleep(2000); }
+        }
+        var td8 = docTienDo();
+        if (td8 && td8.cur >= td8.max) { log('Đã hái đủ ' + td8.cur + '/' + td8.max + ' Linh Chi.'); return true; }
+        return 'ket';
+      }
+      if (t.kind === 'escort') {
+        var ok5 = await diToi(t.x, t.y, 60);
+        if (!ok5) return 'ket';
+        var nt5 = nutTuongTac();
+        if (!nt5 || !nt5.laTuongTac) { log('Không thấy Thầy Ông Nội để giao người.'); return 'ket'; }
+        nt5.el.click();
+        await sleep(CFG.choDoiMs);
+        // Giao xong công tự ghi — kiểm tra tracker không còn việc nữa.
+        await sleep(1500);
+        var tr2 = docTracker();
+        if (!/Dẫn Cháu|Đưa Người/.test(tr2)) { log('Đã giao cháu cho Thầy Ông Nội.'); return 'xong_khong_can_nop'; }
+        return 'ket';
+      }
+      return 'ket';
+    }
+
+    // ---------------- Nộp việc (LK) ----------------
+    async function nopViec() {
+      var dlg = await moHopThoaiDaiPhu();
+      if (!dlg) { log('Không mở được hộp thoại Đại Phu để nộp.'); return false; }
+      var act = dlg.action;
+      if (act && /Giao Ba Cá|Giao Nguyên Liệu/.test(act.label)) {
+        act.el.click();
+        await sleep(CFG.choDoiMs);
+        luotDaLam++;
+        if (typeof luotConLai[viecHienTai] === 'number' && luotConLai[viecHienTai] > 0) luotConLai[viecHienTai]--;
+        log('Đã nộp việc ' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ' — xong ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt.');
+        viecHienTai = null;
+        // Nộp xong game tự mở Quầy Đổi Hạt — đóng lại ngay, KHÔNG đổi gì.
+        await sleep(800);
+        if (dialogMo()) {
+          var d2 = docDialog();
+          if (d2 && /Đổi /.test(d2.text || '') || (d2 && timLuaChon(d2, /Đổi /))) dongDialog();
+          else if (dialogMo()) dongDialog();
+        }
+        return true;
+      }
+      // Chưa xong việc? Kiểm tra lại tracker.
+      var td = docTienDo();
+      if (td && td.cur < td.max) { log('Việc chưa đủ (' + td.cur + '/' + td.max + ') — quay lại làm tiếp.'); return 'chua_xong'; }
+      log('Không thấy nút nộp việc.');
+      return false;
+    }
+
+    // ---------------- Huỷ việc (LK) ----------------
+    async function huyViec() {
+      var dlg = await moHopThoaiDaiPhu();
+      if (!dlg) { log('Không mở được hộp thoại Đại Phu để huỷ việc.'); return false; }
+      var ok = bamLuaChon(/Huỷ Nhiệm Vụ/);
+      if (!ok) { log('Không thấy mục "Huỷ Nhiệm Vụ".'); return false; }
+      await sleep(CFG.choDoiMs);
+      // "Xác Nhận Huỷ" là nút LỰA CHỌN trong game thật (không phải nút hành động).
+      var ok2 = bamLuaChon(/Xác Nhận Huỷ/);
+      if (!ok2) ok2 = bamNutHanhDong(/Xác Nhận Huỷ/);
+      if (!ok2) { log('Không thấy nút "Xác Nhận Huỷ".'); return false; }
+      log('Đã huỷ việc (được hoàn lại lượt).');
+      viecHienTai = null;
+      return true;
+    }
+
+    // ---------------- Vòng lặp chính ----------------
+    var dangChay = false;
+    async function vongLap() {
+      if (dangChay) return;
+      dangChay = true;
+      try {
+        while (on) {
+          if (phase === 'idle' || phase === 'cho_dai_phu') {
+            if (!ganDaiPhu()) {
+              if (phase !== 'cho_dai_phu') { phase = 'cho_dai_phu'; log('Chưa ở gần Đại Phu (14,8) — đưa nhân vật tới Đại Phu rồi tool sẽ tự chạy.'); }
+              await sleep(2000);
+              continue;
+            }
+            phase = 'mo_menu';
+          }
+          if (phase === 'mo_menu') {
+            var dlg = await moHopThoaiDaiPhu();
+            if (!dlg) { await sleep(2000); continue; }
+            // Nhận biết cảnh giới từ menu: "Tự Đi" mở được = Trúc Cơ.
+            var tuDi = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
+            var nhanViec = timLuaChon(dlg, /Nhận Việc Dược Công/);
+            if (tuDi && !tuDi.disabled) {
+              if (realm !== 'truc_co') { realm = 'truc_co'; log('Nhận biết: acc Trúc Cơ — dùng "Tự Đi Làm Việc Dược Công" của game.'); }
+              var dc = docDC(dlg);
+              if (dc !== null) { dcHienTai = dc; if (dcLucBatDau === null) dcLucBatDau = dc; }
+              // Vừa BẬT mà acc đang giữ việc dở từ trước (nhận lúc đầu) thì
+              // TỰ HUỶ việc đó (miễn phí, hoàn lại lượt) rồi mới "Tự Đi" nhận việc mới.
+              var dangGiuTC = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
+              if (!daNhanViec && dangGiuTC) {
+                log('Đã tự hủy việc dở đã nhận trước khi bật tool: ' + tenViecDangGiu() + '.');
+                var okHuyTC = await huyViec();
+                if (!okHuyTC) { log('Huỷ việc không được — dừng để anh xem.'); await ketThuc('Không huỷ được việc đang giữ.'); continue; }
+                phase = 'mo_menu';
+                await sleep(1500);
+                continue;
+              }
+              var ok = await batTuDi();
+              if (!ok) { await sleep(3000); phase = 'mo_menu'; continue; }
+              demTuDiLai = 0;
+              continue;
+            }
+            if (tuDi && tuDi.disabled) {
+              if (realm !== 'luyen_khi') { realm = 'luyen_khi'; log('Nhận biết: acc Luyện Khí — tự nhận việc tay theo DC cao nhất.'); }
+              // Luyện Khí: bật Phi Hành + Chạy, TẮT Auto.
+              datFly(true); datRun(true); datAuto(false); tuVeDangBat = false;
+              phase = 'nhan_viec';
+              continue;
+            }
+            // Đang giữ việc (menu chỉ có "Huỷ Nhiệm Vụ", không có mục nhận việc —
+            // game thật cũng vậy khi đang giữ việc). KHÔNG được đóng/mở lại vô hạn.
+            var dangGiu = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
+            if (dangGiu && !tuDi && !nhanViec) {
+              if (!daNhanViec) {
+                // Vừa BẬT mà acc đang giữ việc dở từ trước (nhận lúc đầu) thì
+                // TỰ HUỶ việc đó (miễn phí, hoàn lại lượt) rồi nhận việc mới.
+                log('Đã tự hủy việc dở đã nhận trước khi bật tool: ' + tenViecDangGiu() + '.');
+                var okHuyLK = await huyViec();
+                if (!okHuyLK) { log('Huỷ việc không được — dừng để anh xem.'); await ketThuc('Không huỷ được việc đang giữ.'); continue; }
+                phase = 'mo_menu';
+                await sleep(1500);
+                continue;
+              }
+              var tr = docTracker();
+              var dungViec = viecHienTai && TASKS[viecHienTai] && tr && tr.indexOf(TASKS[viecHienTai].tenNgan) >= 0;
+              if (dungViec) {
+                log('Đang giữ việc ' + TASKS[viecHienTai].ten + ' — làm tiếp.');
+                phase = 'di_lam';
+                continue;
+              }
+              log('Đang giữ một việc khác — huỷ để nhận việc thường.');
+              var okHuy = await huyViec();
+              if (!okHuy) { log('Huỷ việc không được — dừng để anh xem.'); await ketThuc('Không huỷ được việc đang giữ.'); continue; }
+              phase = 'mo_menu';
+              await sleep(1500);
+              continue;
+            }
+            if (!tuDi && !nhanViec) {
+              // Hộp thoại khác (nhiệm vụ chính...) — bấm nút hành động để qua, rồi thử lại.
+              var act = dlg.action;
+              if (act) { act.el.click(); await sleep(CFG.choDoiMs); }
+              else { dongDialog(); await sleep(1500); }
+              continue;
+            }
+            if (!tuDi && nhanViec) {
+              // Menu có "Nhận Việc" nhưng không có "Tự Đi" — coi như Luyện Khí.
+              if (realm !== 'luyen_khi') { realm = 'luyen_khi'; log('Nhận biết: acc Luyện Khí — tự nhận việc tay theo DC cao nhất.'); }
+              datFly(true); datRun(true); datAuto(false); tuVeDangBat = false;
+              phase = 'nhan_viec';
+              continue;
+            }
+          }
+          if (phase === 'tu_di') {
+            // Theo dõi thụ động — KHÔNG chạm màn hình/joystick.
+            var kq = tuDiDaDung();
+            var tr = docTracker();
+            var conViec = /Câu |Thu Gom|Đưa Người|Linh Chi|Trúc Tâm|Dẫn Cháu/i.test(tr);
+            if (kq === 'xong') {
+              log('Bộ máy báo: "Xong việc Dược Công hôm nay".');
+              phase = 'kiem_tra_xong';
+              continue;
+            }
+            if (kq && kq.indexOf('loi:') === 0) {
+              log('Bộ máy dừng: ' + kq.slice(4));
+              var hp = docHP();
+              if (hp && hp.tiLe < CFG.hpNguyHiem) {
+                log('HP thấp (' + Math.round(hp.tiLe * 100) + '%) — chờ hồi trên 60% rồi thử lại.');
+                phase = 'cho_hoi';
+                continue;
+              }
+              if (demTuDiLai < CFG.maxTuDiKhoiDongLai) {
+                demTuDiLai++;
+                log('Bật lại "Tự Đi" (lần ' + demTuDiLai + '/' + CFG.maxTuDiKhoiDongLai + ').');
+                phase = 'mo_menu';
+                await sleep(2000);
+                continue;
+              }
+              log('Bật lại "Tự Đi" đã quá ' + CFG.maxTuDiKhoiDongLai + ' lần — dừng tool.');
+              await ketThuc('Bộ máy "Tự Đi" dừng nhiều lần.');
+              continue;
+            }
+            if (!conViec) {
+              // Không còn việc đang làm mà cũng không thấy báo xong — có thể
+              // bộ máy đã dừng mà caption đã ẩn. Kiểm tra lại bằng menu.
+              await sleep(8000);
+              if (!on) break;
+              var tr2 = docTracker();
+              if (!/Câu |Thu Gom|Đưa Người|Linh Chi|Trúc Tâm|Dẫn Cháu/i.test(tr2)) {
+                log('Không thấy việc đang làm — kiểm tra lại lượt còn.');
+                phase = 'kiem_tra_xong';
+                continue;
+              }
+            }
+            await sleep(2000);
+            continue;
+          }
+          if (phase === 'cho_hoi') {
+            var hp2 = docHP();
+            if (!hp2 || hp2.tiLe >= 0.6) { phase = 'mo_menu'; continue; }
+            await sleep(3000);
+            continue;
+          }
+          if (phase === 'kiem_tra_xong') {
+            var dlg2 = await moHopThoaiDaiPhu();
+            if (!dlg2) { await sleep(2000); continue; }
+            var ok3 = bamLuaChon(/Nhận Việc Dược Công/);
+            if (ok3 && ok3 !== 'disabled') {
+              await sleep(CFG.choDoiMs);
+              var ds2 = docDialog();
+              if (ds2) {
+                var luot2 = docLuotTuDanhSach(ds2);
+                Object.keys(luot2).forEach(function (k) { if (luot2[k] !== null) luotConLai[k] = luot2[k]; });
+                capNhatLuotDaLam();
+              }
+              dongDialog();
+            } else if (ok3 === 'disabled') {
+              luotDaLam = TONG_LUOT_NGAY;
+            }
+            var con2 = tongLuotConLai();
+            if (con2 === 0 || luotDaLam >= TONG_LUOT_NGAY) {
+              await ketThuc('Xong dược hôm nay.');
+              continue;
+            }
+            if (demTuDiLai < CFG.maxTuDiKhoiDongLai) {
+              demTuDiLai++;
+              log('Còn ' + con2 + ' lượt — bật lại "Tự Đi" (lần ' + demTuDiLai + ').');
+              phase = 'mo_menu';
+              await sleep(2000);
+              continue;
+            }
+            await ketThuc('Còn lượt nhưng "Tự Đi" không chạy tiếp được.');
+            continue;
+          }
+          if (phase === 'nhan_viec') {
+            var r = await nhanViecTotNhat();
+            if (r === true) { phase = 'di_lam'; continue; }
+            if (r === 'het_luot') { await ketThuc('Xong dược hôm nay.'); continue; }
+            if (r === 'giu_viec') { await ketThuc('Đang giữ việc khác — dừng để anh xem.'); continue; }
+            await sleep(3000);
+            phase = 'mo_menu';
+            continue;
+          }
+          if (phase === 'di_lam' || phase === 'lam_viec') {
+            if (Date.now() - taskBatDauAt > CFG.taskTimeoutMs) {
+              log('Việc ' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ' quá 10 phút chưa xong — huỷ, đổi việc khác.');
+              demKet++;
+              if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt 2 lần liên tiếp — dừng tool.'); continue; }
+              await huyViec();
+              phase = 'mo_menu';
+              await sleep(1500);
+              continue;
+            }
+            phase = 'lam_viec';
+            var kq2 = await lamViecHienTai();
+            if (kq2 === true) { demKet = 0; phase = 've_nop'; continue; }
+            if (kq2 === 'xong_khong_can_nop') {
+              demKet = 0;
+              luotDaLam++;
+              if (typeof luotConLai[viecHienTai] === 'number' && luotConLai[viecHienTai] > 0) luotConLai[viecHienTai]--;
+              log('Xong việc ' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ' (công tự ghi) — xong ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt.');
+              viecHienTai = null;
+              if (luotDaLam >= TONG_LUOT_NGAY) { await ketThuc('Xong dược hôm nay.'); continue; }
+              phase = 've_nop_nop_khong';
+              continue;
+            }
+            if (kq2 === 'ket' || kq2 === false) {
+              demKet++;
+              log('Làm việc kẹt (lần ' + demKet + '/' + CFG.maxKetLienTiep + ') — huỷ việc, đổi việc khác.');
+              if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt 2 lần liên tiếp — dừng tool.'); continue; }
+              await huyViec();
+              phase = 'mo_menu';
+              await sleep(1500);
+              continue;
+            }
+            await sleep(1000);
+            continue;
+          }
+          if (phase === 've_nop' || phase === 've_nop_nop_khong') {
+            var ve = await diToiMap('duoc_vien');
+            if (!ve) { demKet++; if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt đường về Đại Phu — dừng tool.'); continue; } await sleep(2000); continue; }
+            var toiDaiPhu = await diToi(DAI_PHU.x, DAI_PHU.y, 60);
+            if (!toiDaiPhu) { demKet++; if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt đường về Đại Phu — dừng tool.'); continue; } await sleep(2000); continue; }
+            demKet = 0;
+            if (phase === 've_nop_nop_khong') { phase = 'mo_menu'; continue; }
+            phase = 'nop';
+            continue;
+          }
+          if (phase === 'nop') {
+            var rn = await nopViec();
+            if (rn === true) {
+              if (luotDaLam >= TONG_LUOT_NGAY) { await ketThuc('Xong dược hôm nay.'); continue; }
+              phase = 'mo_menu';
+              await sleep(1000);
+              continue;
+            }
+            if (rn === 'chua_xong') { phase = 'lam_viec'; taskBatDauAt = Date.now(); continue; }
+            await sleep(2000);
+            phase = 'mo_menu';
+            continue;
+          }
+          await sleep(500);
+        }
+      } catch (e) {
+        log('Lỗi vòng lặp: ' + (e && e.message ? e.message : e));
+        on = false;
+        if (tuVeDangBat) { datAuto(false); tuVeDangBat = false; }
+        renderTrangThai();
+      } finally {
+        dangChay = false;
+        // Nếu tool được BẬT lại trong lúc vòng lặp cũ đang dừng dần thì chạy lại.
+        if (on) vongLap();
+      }
+    }
+    async function ketThuc(lyDo) {
+      // Bật lại Phi Hành ngay sau khi xong dược (quy tắc đứng).
+      datFly(true); datRun(true);
+      if (tuVeDangBat) { datAuto(false); tuVeDangBat = false; }
+      var dcSau = dcHienTai;
+      var tang = (dcLucBatDau !== null && dcSau !== null) ? (dcSau - dcLucBatDau) : null;
+      log('KẾT THÚC: ' + lyDo + ' Đã làm ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt' +
+        (tang !== null ? ', DC +' + tang + ' (từ ' + dcLucBatDau + ' lên ' + dcSau + ')' : '') + '.');
+      phase = 'ket_thuc';
+      setOn(false);
+    }
+
+    // ---------------- Bật / dừng ----------------
+    function setOn(v) {
+      if (v === on) return;
+      on = v;
+      if (on) {
+        phase = 'idle';
+        demKet = 0; demTuDiLai = 0;
+        // Reset bộ đếm ngày — lượt còn lại sẽ được đọc lại từ bảng game
+        // ở lần mở menu đầu tiên (capNhatLuotDaLam khôi phục đúng số).
+        luotDaLam = 0; luotConLai = {}; dcLucBatDau = null; dcHienTai = null;
+        viecHienTai = null; tuVeDangBat = false;
+        log('Tool BẬT — đưa nhân vật tới gần Đại Phu (14,8) nếu chưa tới.');
+        daNhanViec = false;
+        vongLap();
+      } else {
+        if (tuVeDangBat) { datAuto(false); tuVeDangBat = false; }
+        log('Tool DỪNG.');
+        if (phase !== 'ket_thuc') phase = 'idle';
+      }
+      renderTrangThai();
+    }
+
+    // ---------------- Bảng điều khiển (gọn nhẹ, thu nhỏ được) ----------------
+    var panel, panelHead, panelBody, miniBar, miniStatusEl, statusEl, turnsEl, taskEl, luotEl, logEl, toggleBtn;
+    function buildPanel() {
+      panel = document.createElement('div');
+      panel.id = 'tt2d-duoc-panel';
+      panel.style.cssText = [
+        'position:fixed', 'top:10px', 'right:10px', 'z-index:999999',
+        'width:248px', 'background:rgba(20,14,8,0.88)', 'color:#ffe9b0',
+        'border:1px solid #8a6a2f', 'border-radius:10px', 'padding:10px 12px',
+        'font:12px/1.5 system-ui, sans-serif', 'box-shadow:0 4px 18px rgba(0,0,0,0.5)',
+      ].join(';');
+      panel.innerHTML =
+        '<div id="tt2d-duoc-head" style="display:flex;justify-content:space-between;align-items:center">' +
+          '<b>🌿 Tool dược Đại Phu</b>' +
+          '<span>' +
+            '<button id="tt2d-duoc-min" title="Thu nhỏ bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 4px">—</button>' +
+            '<button id="tt2d-duoc-hide" title="Ẩn bảng (tool vẫn chạy nếu đang BẬT)" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 2px">×</button>' +
+          '</span>' +
+        '</div>' +
+        '<div id="tt2d-duoc-mini" style="display:none;align-items:center;justify-content:space-between;gap:6px">' +
+          '<b>🌿 Dược</b>' +
+          '<span id="tt2d-duoc-mini-status" style="color:#bfe3ff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>' +
+          '<button id="tt2d-duoc-expand" title="Mở rộng bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:16px;padding:0 2px">＋</button>' +
+        '</div>' +
+        '<div id="tt2d-duoc-body">' +
+        '<div style="margin:8px 0;display:flex;gap:6px">' +
+          '<button id="tt2d-duoc-toggle" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT</button>' +
+        '</div>' +
+        '<div id="tt2d-duoc-turns" style="color:#c9f2c9">Chưa bật — đưa nhân vật tới gần Đại Phu (14,8) rồi bấm BẬT.</div>' +
+        '<div id="tt2d-duoc-task" style="margin:4px 0;color:#ffd27a"></div>' +
+        '<div id="tt2d-duoc-luot" style="color:#c9f2c9;font-size:11px"></div>' +
+        '<div id="tt2d-duoc-status" style="margin:6px 0;color:#bfe3ff"></div>' +
+        '<div id="tt2d-duoc-log" style="margin-top:6px;max-height:96px;overflow:auto;color:#d8c9a3;font-size:11px"></div>' +
+        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Chỉ bấm nút của game. Chỉ làm 5 việc thường (không Đại Hội/Vận Tiêu/Tán Tu), không mở Quầy Đổi Hạt. Đủ 15 lượt/ngày thì tự dừng.</div>' +
+        '</div>';
+      Tong.tabBody('duoc').appendChild(panel);
+
+      panelHead = panel.querySelector('#tt2d-duoc-head');
+      panelBody = panel.querySelector('#tt2d-duoc-body');
+      miniBar = panel.querySelector('#tt2d-duoc-mini');
+      miniStatusEl = panel.querySelector('#tt2d-duoc-mini-status');
+      toggleBtn = panel.querySelector('#tt2d-duoc-toggle');
+      statusEl = panel.querySelector('#tt2d-duoc-status');
+      turnsEl = panel.querySelector('#tt2d-duoc-turns');
+      taskEl = panel.querySelector('#tt2d-duoc-task');
+      luotEl = panel.querySelector('#tt2d-duoc-luot');
+      logEl = panel.querySelector('#tt2d-duoc-log');
+
+      toggleBtn.addEventListener('click', function () { setOn(!on); });
+      panel.querySelector('#tt2d-duoc-hide').addEventListener('click', function () {
+        setCollapsed(true);
+      });
+      panel.querySelector('#tt2d-duoc-min').addEventListener('click', function () { setCollapsed(true); });
+      panel.querySelector('#tt2d-duoc-expand').addEventListener('click', function () { setCollapsed(false); });
+      renderTrangThai();
+    }
+
+    // Thu nhỏ / mở rộng bảng. Khi thu nhỏ chỉ còn 1 thanh (tên + trạng thái ngắn + nút ＋).
+    // Mặc định mở. Tool vẫn chạy bình thường khi bảng thu nhỏ.
+    function setCollapsed(v) {
+      collapsed = v;
+      if (panelHead) panelHead.style.display = v ? 'none' : '';
+      if (panelBody) panelBody.style.display = v ? 'none' : '';
+      if (miniBar) miniBar.style.display = v ? 'flex' : 'none';
+      if (panel) panel.style.width = v ? '230px' : '248px';
+      renderMini();
+    }
+    function trangThaiNgan() {
+      var con = tongLuotConLai();
+      return (on ? 'BẬT' : 'TẮT') + ' · ' + luotDaLam + '/15' +
+        (viecHienTai ? ' · ' + TASKS[viecHienTai].tenNgan : (phase === 'tu_di' ? ' · Tự Đi' : ''));
+    }
+    function renderMini() {
+      if (!miniStatusEl) return;
+      miniStatusEl.textContent = trangThaiNgan();
+    }
+    function renderTrangThai() {
+      if (!panel) return;
+      if (toggleBtn) toggleBtn.textContent = on ? 'DỪNG' : 'BẬT';
+      var realmTxt = realm === 'truc_co' ? 'Trúc Cơ (Tự Đi)' : realm === 'luyen_khi' ? 'Luyện Khí (tay)' : 'chưa rõ (mở menu Đại Phu để nhận biết)';
+      if (turnsEl) {
+        turnsEl.textContent = on
+          ? 'Đã làm ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt · ' + realmTxt +
+            (dcHienTai !== null ? ' · DC: ' + dcHienTai : '')
+          : 'Chưa bật — đưa nhân vật tới gần Đại Phu (14,8) rồi bấm BẬT.';
+      }
+      if (taskEl) {
+        taskEl.textContent = viecHienTai
+          ? 'Đang làm: ' + TASKS[viecHienTai].ten + ' (' + TASKS[viecHienTai].dc + ' DC)'
+          : (phase === 'tu_di' ? 'Đang làm: Tự Đi (game tự làm)' : '');
+      }
+      if (luotEl) {
+        var rows = THU_TU_UU_TIEN.map(function (id) {
+          var r = luotConLai[id];
+          var s = (typeof r === 'number') ? (r + '/3') : '?/3';
+          return TASKS[id].tenNgan + ' ' + TASKS[id].dc + 'DC: ' + s;
+        });
+        luotEl.textContent = 'Lượt còn: ' + rows.join(' · ');
+      }
+      if (statusEl) {
+        var ph = {
+          idle: 'Đang chờ.', cho_dai_phu: 'Chờ nhân vật tới gần Đại Phu…',
+          mo_menu: 'Đang mở menu Đại Phu…', tu_di: 'Game đang tự làm dược…',
+          cho_hoi: 'HP thấp — chờ hồi…', kiem_tra_xong: 'Đang kiểm tra lượt còn…',
+          nhan_viec: 'Đang chọn việc tốt nhất…', di_lam: 'Đang đi tới chỗ làm…',
+          lam_viec: 'Đang làm việc…', ve_nop: 'Đang về Đại Phu nộp…',
+          ve_nop_nop_khong: 'Đang về Đại Phu…', nop: 'Đang nộp việc…',
+          ket_thuc: 'Đã xong.',
+        };
+        statusEl.textContent = ph[phase] || phase;
+      }
+      renderMini();
+    }
+    function renderLog() {
+      if (!logEl) return;
+      logEl.innerHTML = logLines.slice(-12).map(function (l) {
+        return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>';
+      }).join('');
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // ---------------- Debug handle ----------------
+    window.__TT2D_DUOC__ = {
+      _cfg: CFG,
+      start: function () { setOn(true); },
+      stop: function () { setOn(false); },
+      setCollapsed: function (v) { setCollapsed(!!v); },
+      status: function () {
+        return {
+          on: on, phase: phase, realm: realm,
+          viecHienTai: viecHienTai,
+          luotDaLam: luotDaLam, luotConLai: JSON.parse(JSON.stringify(luotConLai)),
+          dcHienTai: dcHienTai, dcLucBatDau: dcLucBatDau,
+          demKet: demKet, demTuDiLai: demTuDiLai, dangChay: dangChay,
+          trangThai: trangThaiNgan(),
+        };
+      },
+    };
+
+    // ---------------- Khởi động ----------------
+    buildPanel();
+    setInterval(renderTrangThai, 1000);
+    log('Tool dược đã nạp. Đưa nhân vật tới gần Đại Phu (14,8) rồi bấm BẬT.');
+    Tong.register('duoc', window.__TT2D_DUOC__);
+
+
+  })();
+
+
+  // ================= MODULE: hx (Huyết Xích phụ v1.1.0: giữ Auto BẬT trong hầm, tự bấm Tương Tác khi đứng cạnh điểm thu hoạch.) =================
+
+  (function () {
+
+
+    var CFG = {
+      pollMs: 250,          // kiểm tra mỗi 250ms
+      interactCooldownMs: 6000, // sau mỗi lần bấm Tương Tác, chờ 6s (kênh hái ~3s)
+    };
+
+    var FLOOR_TEN = {
+      'Rừng Mãng Xà': 'Tầng 1 · Rừng Mãng Xà',
+      'Lòng Đất': 'Tầng 2 · Lòng Đất',
+      'Đầm Lầy': 'Tầng 3 · Đầm Lầy',
+    };
+
+    var on = false;
+    var collapsed = false;
+    var lastInteractAt = 0;
+    var harvesting = false;      // đang trong kênh hái?
+    var stats = { interact: 0, hai: 0, sealed: 0 };
+    var logLines = [];
+
+    function $(s) { return document.querySelector(s); }
+    function txt(s) { var e = $(s); return e ? (e.innerText || '').trim() : ''; }
+    function now() { return Date.now(); }
+
+    function log(msg) {
+      var t = new Date();
+      var hh = String(t.getHours()).padStart(2, '0');
+      var mm = String(t.getMinutes()).padStart(2, '0');
+      var ss = String(t.getSeconds()).padStart(2, '0');
+      logLines.push(hh + ':' + mm + ':' + ss + ' — ' + msg);
+      if (logLines.length > 8) logLines.shift();
+      render();
+    }
+
+    // ---------------- Đọc trạng thái game ----------------
+    function inDungeon() {
+      var hud = $('#huyet-sac-hud');
+      if (hud && !hud.hidden) return true;
+      var m = txt('#hud-map');
+      return /Huyết Xích/.test(m);
+    }
+    function floorName() {
+      var m = txt('#hud-map');
+      if (/Mãng Xà/.test(m)) return FLOOR_TEN['Rừng Mãng Xà'];
+      if (/Lòng Đất/.test(m)) return FLOOR_TEN['Lòng Đất'];
+      if (/Đầm Lầy/.test(m)) return FLOOR_TEN['Đầm Lầy'];
+      return m || '(chưa rõ)';
+    }
+    function timeLeft() {
+      var hud = $('#huyet-sac-hud');
+      if (hud && !hud.hidden) {
+        var s = hud.querySelector('span');
+        return s ? s.innerText.trim() : '';
+      }
+      return '';
+    }
+    function atkText() {
+      var el = document.querySelector('#btn-attack .skill-name');
+      return el ? el.textContent.trim() : '';
+    }
+    function atkLabel() {
+      var el = $('#btn-attack');
+      return el ? (el.getAttribute('aria-label') || '') : '';
+    }
+    function autoIsOn() {
+      var b = $('#btn-auto') || $('#btn-auto-touch');
+      return b ? b.classList.contains('active') : null;
+    }
+    function clickAuto() {
+      var b = $('#btn-auto') || $('#btn-auto-touch');
+      if (b) b.click();
+    }
+    function bodyHas(s) {
+      return (document.body.innerText || '').indexOf(s) >= 0;
+    }
+
+    // ---------------- Bảng tool ----------------
+    var panel, elFloor, elBoss, elHai, elTime, elState, elLog, elToggle, elBody, elMini;
+    function miniStatus() {
+      // Trang thai ngan hien tren thanh thu nho: vd "Đang chạy · T1 · 14:32" / "TẮT" / "ngoài hầm"
+      if (!on) return 'TẮT';
+      if (!inDungeon()) return 'Đang chạy · ngoài hầm';
+      var t = floorName();
+      var tShort = /Tầng 1/.test(t) ? 'T1' : /Tầng 2/.test(t) ? 'T2' : /Tầng 3/.test(t) ? 'T3' : '—';
+      var tl = timeLeft();
+      return (harvesting ? 'Đang hái…' : 'Đang chạy') + ' · ' + tShort + (tl ? ' · ' + tl : '');
+    }
+    function applyCollapsed() {
+      elBody.style.display = collapsed ? 'none' : '';
+      elMini.style.display = collapsed ? '' : 'none';
+      var btn = $('#tt2d-hx-collapse');
+      if (btn) btn.textContent = collapsed ? '＋' : '—';
+      panel.style.width = collapsed ? 'auto' : '230px';
+    }
+    function buildPanel() {
+      panel = document.createElement('div');
+      panel.id = 'tt2d-hx-panel';
+      panel.style.cssText = 'position:fixed;top:10px;right:10px;z-index:99999;' +
+        'background:rgba(20,16,12,.92);color:#f2e3c0;border:1px solid #8a6d3b;' +
+        'border-radius:8px;padding:8px 10px;font:12px/1.5 system-ui,sans-serif;' +
+        'width:230px;box-shadow:0 2px 10px rgba(0,0,0,.5)';
+      panel.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px">' +
+          '<b style="font-size:13px;white-space:nowrap">🩸 Huyết Xích (phụ)</b>' +
+          '<span id="tt2d-hx-mini" style="display:none;font-size:11px;color:#cbb87a;white-space:nowrap"></span>' +
+          '<button id="tt2d-hx-collapse" style="background:none;border:1px solid #8a6d3b;color:#f2e3c0;border-radius:4px;cursor:pointer;padding:0 6px;flex-shrink:0">—</button>' +
+        '</div>' +
+        '<div id="tt2d-hx-body">' +
+          '<div>Tầng: <span id="tt2d-hx-floor">—</span></div>' +
+          '<div>Boss: <span id="tt2d-hx-boss">—</span></div>' +
+          '<div>Đã hái: <span id="tt2d-hx-hai">0</span> lần</div>' +
+          '<div>Còn lại: <span id="tt2d-hx-time">—</span></div>' +
+          '<div>Trạng thái: <span id="tt2d-hx-state">TẮT</span></div>' +
+          '<div style="margin-top:6px;display:flex;gap:6px">' +
+            '<button id="tt2d-hx-toggle" style="flex:1;background:#2e7d32;color:#fff;border:0;border-radius:5px;padding:5px 0;cursor:pointer">BẬT</button>' +
+            '<button id="tt2d-hx-reset" style="background:#555;color:#fff;border:0;border-radius:5px;padding:5px 8px;cursor:pointer">Đặt lại</button>' +
+          '</div>' +
+          '<div id="tt2d-hx-log" style="margin-top:6px;max-height:110px;overflow:auto;font-size:11px;color:#cbb87a;white-space:pre-line"></div>' +
+          '<div style="margin-top:4px;font-size:10px;color:#9a8a68">Chỉ bấm nút Tương Tác + giữ Auto.<br>KHÔNG tự trả phí 100 LT, KHÔNG tự di chuyển.</div>' +
+        '</div>';
+      Tong.tabBody('hx').appendChild(panel);
+      elFloor = $('#tt2d-hx-floor'); elBoss = $('#tt2d-hx-boss');
+      elHai = $('#tt2d-hx-hai'); elTime = $('#tt2d-hx-time');
+      elState = $('#tt2d-hx-state'); elLog = $('#tt2d-hx-log');
+      elToggle = $('#tt2d-hx-toggle'); elBody = $('#tt2d-hx-body');
+      elMini = $('#tt2d-hx-mini');
+      $('#tt2d-hx-collapse').addEventListener('click', function () {
+        collapsed = !collapsed;
+        applyCollapsed();
+        render();
+      });
+      elToggle.addEventListener('click', function () { on ? stop() : start(); });
+      $('#tt2d-hx-reset').addEventListener('click', function () {
+        stats = { interact: 0, hai: 0, sealed: 0 };
+        logLines = [];
+        log('Đã đặt lại số đếm.');
+      });
+    }
+
+    function render() {
+      if (!panel) return;
+      elFloor.textContent = inDungeon() ? floorName() : 'ngoài hầm';
+      var tgt = txt('#target-name');
+      elBoss.textContent = tgt || '—';
+      elHai.textContent = stats.hai;
+      elTime.textContent = timeLeft() || '—';
+      elState.textContent = on ? (harvesting ? 'Đang hái…' : 'Đang chạy') : 'TẮT';
+      elToggle.textContent = on ? 'DỪNG' : 'BẬT';
+      elToggle.style.background = on ? '#b3261e' : '#2e7d32';
+      elLog.textContent = logLines.join('\n');
+      // Trang thai ngan tren thanh thu nho — cap nhat lien tuc ke ca khi thu nho
+      // (tool van chay binh thuong khi bang thu nho).
+      if (elMini) elMini.textContent = miniStatus();
+    }
+
+    // ---------------- Vòng lặp chính ----------------
+    function tick() {
+      if (!on) { render(); return; }
+      if (!inDungeon()) { render(); return; }
+      // 1. Giữ Auto BẬT trong hầm
+      if (autoIsOn() === false) {
+        clickAuto();
+        log('Đã bật lại Auto.');
+      }
+      // 2. Đang hái thì đứng yên — không bấm gì thêm
+      if (bodyHas('Đang thu hoạch')) {
+        if (!harvesting) { harvesting = true; stats.hai++; log('Đang hái (kênh ~3s)…'); }
+        render();
+        return;
+      }
+      if (harvesting) { harvesting = false; }
+      if (bodyHas('Cấm chế còn phong')) {
+        stats.sealed++;
+        // không spam log: chỉ ghi khi vừa chuyển sang trạng thái này
+        if (stats.sealed % 20 === 1) log('Cấm chế còn phong — còn quái sống, chờ Auto dọn.');
+        render();
+        return;
+      }
+      // 3. Nút Tương Tác hiện + hết cooldown -> bấm
+      if (atkText() === 'Tương Tác' && now() - lastInteractAt >= CFG.interactCooldownMs) {
+        var ten = atkLabel().replace('Tương tác với ', '');
+        var b = $('#btn-attack');
+        if (b) {
+          b.click();
+          lastInteractAt = now();
+          stats.interact++;
+          log('Đã bấm Tương Tác: ' + (ten || '?'));
+        }
+      }
+      render();
+    }
+
+    function start() {
+      on = true;
+      log('Tool phụ BẬT (chỉ trong Huyết Xích mới hoạt động).');
+      render();
+    }
+    function stop() {
+      on = false;
+      log('Tool phụ DỪNG.');
+      render();
+    }
+
+    function status() {
+      return {
+        on: on, inDungeon: inDungeon(), floor: floorName(),
+        boss: txt('#target-name'), targetHp: txt('#target-hp'),
+        timeLeft: timeLeft(), autoOn: autoIsOn(),
+        atkText: atkText(), atkLabel: atkLabel(),
+        stats: stats, harvesting: harvesting,
+      };
+    }
+
+    buildPanel();
+    render();
+    setInterval(tick, CFG.pollMs);
+    log('Tool phụ Huyết Xích đã nạp (v1.1.0). Mặc định TẮT — bấm BẬT để chạy. Bảng thu nhỏ được bằng nút —.');
+
+    window.__TT2D_HX__ = {
+      start: start, stop: stop, status: status,
+      _tick: tick,  // cho smoke test bom tick bang tay
+      setCollapsed: function (v) { collapsed = !!v; applyCollapsed(); render(); },
+    };
+    Tong.register('hx', window.__TT2D_HX__);
+
+
+  })();
+
+
+  // ================= MODULE: vantieu (Vận Tiêu phụ v1.0.0: giữ Auto TẮT + Chạy BẬT + Phi Hành TẮT khi mang tiêu, đồng hồ 6:00.) =================
+
+  (function () {
+
+
+    var CFG = {
+      pollMs: 500,
+      warnSec: 60,          // con <60s thi dong ho do
+    };
+
+    var state = {
+      on: true,             // tool dang bat (giữ trạng thái + cập nhật bảng)
+      collapsed: false,     // bang dang thu nho?
+      carrying: false,      // dang mang tieu?
+      hang: '',             // Tiêu Kỳ Trắng/Lục/Đỏ/Vàng
+      han: '',              // dong ho dem nguoc (MM:SS)
+      hanSec: null,
+      mauXe: null,          // % mau xe
+      dong: '',             // dong trang thai xe ("Xe tụt lại..." / "Cờ đỏ...")
+      lastLog: [],
+    };
+
+    function $(s) { return document.querySelector(s); }
+
+    function log(msg) {
+      var t = new Date();
+      var hh = String(t.getHours()).padStart(2, '0');
+      var mm = String(t.getMinutes()).padStart(2, '0');
+      var ss = String(t.getSeconds()).padStart(2, '0');
+      state.lastLog.unshift(hh + ':' + mm + ':' + ss + ' — ' + msg);
+      if (state.lastLog.length > 4) state.lastLog.length = 4;
+    }
+
+    function btnState(sel) {
+      var b = $(sel);
+      return b ? b.classList.contains('active') : null;
+    }
+    function setBtn(sel, wantOn) {
+      var b = $(sel);
+      if (!b) return null;
+      var cur = b.classList.contains('active');
+      if (cur !== wantOn) b.click();
+      return b.classList.contains('active');
+    }
+
+    function parseMMSS(s) {
+      var m = /(\d+):(\d+)/.exec(s || '');
+      return m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : null;
+    }
+
+    /* ---------------- bang dieu khien (thu nho duoc) ---------------- */
+    var panel, panelBody, panelBar, collapseBtn, expandBtn, statusLine;
+    var elHang, elHan, elMau, elNut, elLog;
+
+    function buildPanel() {
+      panel = document.createElement('div');
+      panel.id = 'tt2d-vantieu-panel';
+      panel.style.cssText = [
+        'position:fixed', 'top:8px', 'right:8px', 'z-index:99999',
+        'width:216px', 'font:12px/1.5 system-ui,sans-serif', 'color:#e8e0c8',
+        'background:rgba(20,16,10,.92)', 'border:1px solid #8a6d2f',
+        'border-radius:8px', 'box-shadow:0 2px 10px rgba(0,0,0,.5)',
+        'user-select:none',
+      ].join(';');
+
+      // --- thanh tieu de (luon hien, ke ca khi thu nho) ---
+      var head = document.createElement('div');
+      head.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:default;';
+      var title = document.createElement('b');
+      title.textContent = '🚚 Vận Tiêu';
+      title.style.cssText = 'flex:1;font-size:12px;color:#ffd36a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      collapseBtn = document.createElement('button');
+      collapseBtn.textContent = '—';
+      collapseBtn.title = 'Thu nhỏ bảng';
+      collapseBtn.style.cssText = 'width:20px;height:20px;padding:0;border:1px solid #8a6d2f;border-radius:4px;background:#2a2113;color:#ffd36a;cursor:pointer;font-size:12px;line-height:1;';
+      collapseBtn.addEventListener('click', function () { setCollapsed(true); });
+      head.appendChild(title);
+      head.appendChild(collapseBtn);
+      panel.appendChild(head);
+
+      // --- thanh thu nho (chi hien khi collapsed): ten + trang thai ngan + nut ＋ ---
+      panelBar = document.createElement('div');
+      panelBar.style.cssText = 'display:none;align-items:center;gap:6px;padding:0 8px 5px;';
+      statusLine = document.createElement('span');
+      statusLine.style.cssText = 'flex:1;font-size:11px;color:#cfc4a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      expandBtn = document.createElement('button');
+      expandBtn.textContent = '＋';
+      expandBtn.title = 'Mở lại bảng';
+      expandBtn.style.cssText = 'width:20px;height:20px;padding:0;border:1px solid #8a6d2f;border-radius:4px;background:#2a2113;color:#ffd36a;cursor:pointer;font-size:12px;line-height:1;';
+      expandBtn.addEventListener('click', function () { setCollapsed(false); });
+      panelBar.appendChild(statusLine);
+      panelBar.appendChild(expandBtn);
+      panel.appendChild(panelBar);
+
+      // --- than bang (an khi collapsed) ---
+      panelBody = document.createElement('div');
+      panelBody.style.cssText = 'padding:0 8px 8px;';
+      function row(label) {
+        var r = document.createElement('div');
+        r.style.cssText = 'display:flex;justify-content:space-between;gap:6px;';
+        var a = document.createElement('span');
+        a.textContent = label;
+        a.style.color = '#9d9172';
+        var b = document.createElement('b');
+        b.style.cssText = 'text-align:right;font-weight:600;';
+        r.appendChild(a);
+        r.appendChild(b);
+        panelBody.appendChild(r);
+        return b;
+      }
+      elHang = row('Tiêu kỳ');
+      elHan = row('Còn lại');
+      elMau = row('Máu xe');
+      elNut = row('Auto/Chạy/Phi');
+      var logBox = document.createElement('div');
+      logBox.style.cssText = 'margin-top:5px;border-top:1px solid #4a3a1c;padding-top:4px;font-size:11px;color:#b8ab84;white-space:pre-wrap;word-break:break-word;';
+      elLog = logBox;
+      panelBody.appendChild(logBox);
+
+      var foot = document.createElement('div');
+      foot.style.cssText = 'margin-top:5px;display:flex;gap:6px;';
+      var onBtn = document.createElement('button');
+      onBtn.textContent = 'BẬT';
+      onBtn.style.cssText = 'flex:1;padding:3px 0;border:1px solid #8a6d2f;border-radius:4px;background:#3a2c12;color:#ffd36a;cursor:pointer;font-size:12px;';
+      onBtn.addEventListener('click', function () { state.on = true; log('Tool BẬT (giữ trạng thái mang tiêu).'); render(); });
+      var offBtn = document.createElement('button');
+      offBtn.textContent = 'DỪNG';
+      offBtn.style.cssText = 'flex:1;padding:3px 0;border:1px solid #5a4a2a;border-radius:4px;background:#241d10;color:#9d9172;cursor:pointer;font-size:12px;';
+      offBtn.addEventListener('click', function () { state.on = false; log('Tool DỪNG (không giữ nút nữa).'); render(); });
+      foot.appendChild(onBtn);
+      foot.appendChild(offBtn);
+      panelBody.appendChild(foot);
+      panel.appendChild(panelBody);
+
+      Tong.tabBody('vantieu').appendChild(panel);
+    }
+
+    function setCollapsed(v) {
+      state.collapsed = !!v;
+      if (!panel) return;
+      panelBody.style.display = state.collapsed ? 'none' : 'block';
+      panelBar.style.display = state.collapsed ? 'flex' : 'none';
+      collapseBtn.style.display = state.collapsed ? 'none' : 'block';
+      panel.style.width = state.collapsed ? '216px' : '216px';
+      render();
+    }
+
+    function shortStatus() {
+      if (!state.carrying) return 'Chưa nhận tiêu';
+      var s = state.hang ? state.hang.replace('Tiêu Kỳ ', '') : 'Đang kéo';
+      if (state.han) s += ' · ' + state.han;
+      if (state.dong && state.dong.indexOf('tụt lại') >= 0) s += ' · xe tụt lại';
+      return s;
+    }
+
+    function render() {
+      if (!panel) return;
+      statusLine.textContent = shortStatus();
+      if (state.collapsed) return;
+      elHang.textContent = state.carrying ? (state.hang || '—') : 'Chưa nhận tiêu';
+      elHan.textContent = state.carrying ? (state.han || '—') : '—';
+      elHan.style.color = (state.hanSec !== null && state.hanSec < CFG.warnSec) ? '#ff6b5e' : '#e8e0c8';
+      elMau.textContent = (state.mauXe === null) ? '—' : state.mauXe + '%';
+      elMau.style.color = (state.mauXe !== null && state.mauXe < 30) ? '#ff6b5e' : '#e8e0c8';
+      var a = btnState('#btn-auto');
+      if (a === null) a = btnState('#btn-auto-touch');
+      elNut.textContent = (a === null ? '?' : (a ? 'BẬT' : 'TẮT')) + ' / ' +
+        (btnState('#btn-run') ? 'BẬT' : 'TẮT') + ' / ' +
+        (btnState('#btn-fly') ? 'BẬT' : 'TẮT');
+      elLog.textContent = state.lastLog.join('\n') || '—';
+    }
+
+    /* ---------------- vong poll ---------------- */
+    function tick() {
+      try {
+        var hud = $('#van-tieu-hud');
+        var carrying = !!(hud && !hud.hidden);
+        if (carrying !== state.carrying) {
+          state.carrying = carrying;
+          log(carrying ? 'Đã nhận tiêu — bắt đầu giữ Auto TẮT / Chạy BẬT / Phi Hành TẮT.'
+                       : 'Không còn mang tiêu (đã giao / hết / bị cướp).');
+        }
+        if (carrying) {
+          var hangEl = hud.querySelector('.vt-hang');
+          var hanEl = hud.querySelector('.vt-han');
+          var mauEl = hud.querySelector('.vt-mau i');
+          var dongEl = hud.querySelector('.vt-dong');
+          state.hang = hangEl ? (hangEl.textContent || '').trim() : '';
+          state.han = hanEl ? (hanEl.textContent || '').trim() : '';
+          state.hanSec = parseMMSS(state.han);
+          var w = mauEl ? parseFloat((mauEl.style.width || '').replace('%', '')) : NaN;
+          state.mauXe = isNaN(w) ? null : Math.round(w);
+          state.dong = dongEl ? (dongEl.textContent || '').trim() : '';
+          if (state.dong && state.dong.indexOf('tụt lại') >= 0) {
+            log('Xe tụt lại — script sẽ chờ xe kip (không kéo thêm).');
+          }
+          if (state.hanSec !== null && state.hanSec < CFG.warnSec && state.hanSec > 0) {
+            log('Sắp hết giờ 6:00! Còn ' + state.hanSec + 's.');
+          }
+          // Giữ đúng trạng thái mang tiêu — chỉ bấm khi sai trạng thái.
+          if (state.on) {
+            setBtn('#btn-auto', false);
+            setBtn('#btn-auto-touch', false);
+            setBtn('#btn-run', true);
+            setBtn('#btn-fly', false);
+          }
+        } else {
+          state.hang = ''; state.han = ''; state.hanSec = null;
+          state.mauXe = null; state.dong = '';
+        }
+      } catch (e) { /* khong lam roi game vi loi tool */ }
+      render();
+    }
+
+    /* ---------------- khoi dong ---------------- */
+    function boot() {
+      if (document.getElementById('tt2d-vantieu-panel')) return;
+      buildPanel();
+      log('Tool phụ Vận Tiêu đã nạp (v1.0.0). Mặc định BẬT, bảng MỞ.');
+      log('Nhận tiêu ở Huấn Sư Huynh (Rừng Trúc) 11:00–22:00, phí 400 LT.');
+      setInterval(tick, CFG.pollMs);
+      tick();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+
+    window.__TT2D_VANTIEU__ = {
+      start: function () { state.on = true; log('Tool BẬT (lệnh script).'); render(); },
+      stop: function () { state.on = false; log('Tool DỪNG (lệnh script).'); render(); },
+      setCollapsed: setCollapsed,
+      status: function () {
+        return {
+          on: state.on, collapsed: state.collapsed, carrying: state.carrying,
+          hang: state.hang, han: state.han, hanSec: state.hanSec,
+          mauXe: state.mauXe, dong: state.dong,
+        };
+      },
+    };
+    Tong.register('vantieu', window.__TT2D_VANTIEU__);
+
+
+  })();
+
+
+  // ================= MODULE: party (tổ đội + farm rùa, mới) =================
+
+// ================= MODULE: TỔ ĐỘI + FARM RÙA =================
+// Cơ chế đã xác minh từ client 24/11 (game.js) — xem party_farm_rua.py:
+//  - Mời: Gateway.partyInvite(targetId) gửi {op:"party",act:"invite",targetId}.
+//    Điều kiện: chưa cùng đội, đội < 6 người, phải đứng trong 180px (~5 ô).
+//    Tìm id trong Gateway.remotes theo tên đạo hiệu; khoảng cách tính bằng
+//    G.distTo(m, me) nếu có, không thì tự tính từ tọa độ (1 ô ≈ 32px).
+//  - Chấp nhận: bảng #invite-hud → nút #invite-accept (hoặc #invite-decline);
+//    không có nút thì gọi Gateway.partyAnswer(true).
+//  - Trạng thái đội: Gateway.party = {partyId, leaderId, members:{id:{name,x,y}}};
+//    Gateway.me.id là id của mình. Đội đồng bộ server (partyId + revision).
+//  - Map rùa: Miếu Ông Trường Con (dong_mach_ngam, 30×26, PK tự do), 13 Thạch Quy
+//    (Lv 7, HP 612), cụm Tây (6,3)(9,5)(6,7)(2,9)(2,12)(2,20)(5,22) + cụm Đông
+//    (22,3)(23,6)(27,9)(27,12)(27,16)(27,19). Bảng Khu (11,22), 20 khu — Khu 12
+//    chọn được. Vào: làng cổng đông (39,14) → Bãi Đá → (10,0) → MTC.
+//  - Tool này CHỈ quản lý tổ đội + giữ Auto farm rùa (không tự di chuyển nhân
+//    vật tới MTC — dùng script party_farm_rua.py để tự đưa cả đội tới đó).
+//  - Chia exp/LT khi farm chung do SERVER giữ, client không có — tool chỉ ghi
+//    LT từng acc để quan sát, không khẳng định.
+//  - MTC là đất PK tự do — farm có thể bị PK; tool chỉ theo dõi HP, không tự vệ
+//    ngoài Auto đánh trả.
+(function () {
+  'use strict';
+
+  var CFG = {
+    pollMs: 500,
+    inviteRangePx: 180,   // phải đứng trong 180px (~5 ô) mới mời được
+    tilePx: 32,           // 1 ô ≈ 32px (dùng khi không có G.distTo)
+    hpCanhBao: 0.3,       // HP dưới 30% thì cảnh báo (farm rùa)
+  };
+
+  var on = false;         // tool đang bật? (tự chấp nhận + giữ farm rùa)
+  var autoAccept = true;  // tự bấm Chấp nhận khi có lời mời vào đội
+  var farmRua = false;    // giữ Auto BẬT + ưu tiên Quái để farm rùa
+  var collapsed = false;
+  var logLines = [];
+  var lastParty = { ok: false, inParty: false, members: [] };
+
+  function $(s) { return document.querySelector(s); }
+  function txt(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }
+  function gw() { return (window.__ns_ && window.__ns_.Gateway) || null; }
+
+  function log(msg) {
+    var line = new Date().toLocaleTimeString('vi-VN') + ' — ' + msg;
+    logLines.unshift(line);
+    if (logLines.length > 6) logLines.length = 6;
+    render();
+  }
+
+  // ---------------- Đọc trạng thái đội ----------------
+  function partyStatus() {
+    var G = gw();
+    if (!G || !G.party) return { ok: false, inParty: false, partyId: null, leaderId: null, members: [], me: null };
+    var p = G.party || {};
+    var me = (G.me && G.me.id) || null;
+    var mems = [];
+    try {
+      var ms = p.members || {};
+      Object.keys(ms).forEach(function (id) {
+        var m = ms[id] || {};
+        mems.push({ id: id, name: m.name || '', x: m.x, y: m.y });
+      });
+    } catch (e) { /* bỏ qua */ }
+    return { ok: true, inParty: !!p.partyId, partyId: p.partyId || null, leaderId: p.leaderId || null, members: mems, me: me };
+  }
+  function findRemote(name) {
+    var G = gw();
+    if (!G) return { ok: false, why: 'no_ns' };
+    var rem = G.remotes || {};
+    var me = G.me || {};
+    var keys = Object.keys(rem);
+    for (var i = 0; i < keys.length; i++) {
+      var m = rem[keys[i]];
+      if (m && m.name === name) {
+        var d = null;
+        if (typeof G.distTo === 'function') {
+          try { d = G.distTo(m, me); } catch (e) { d = null; }
+        }
+        if (d === null && typeof m.x === 'number' && typeof me.x === 'number') {
+          var dx = (m.x - me.x) * CFG.tilePx, dy = (m.y - me.y) * CFG.tilePx;
+          d = Math.round(Math.sqrt(dx * dx + dy * dy));
+        }
+        return { ok: true, id: keys[i], x: m.x, y: m.y, dist: d };
+      }
+    }
+    return { ok: false, why: 'not_found' };
+  }
+  function invite(name) {
+    name = (name || '').trim();
+    if (!name) { log('Nhập tên đạo hiệu cần mời.'); return 'err'; }
+    var rem = findRemote(name);
+    if (!rem.ok) { log('Không thấy ' + name + ' ở gần (' + (rem.why || '?') + ').'); return 'err'; }
+    if (rem.dist !== null && rem.dist > CFG.inviteRangePx) {
+      log(name + ' ở (' + rem.x + ',' + rem.y + '), cách ' + rem.dist + 'px > 180px — đứng gần lại rồi hãy mời.');
+      return 'too_far';
+    }
+    var G = gw();
+    if (!G || typeof G.partyInvite !== 'function') { log('Gateway.partyInvite không gọi được.'); return 'err'; }
+    try { G.partyInvite(rem.id); } catch (e) { log('Mời ' + name + ' lỗi: ' + (e && e.message ? e.message : e)); return 'err'; }
+    log('Đã gửi lời mời cho ' + name + ' (cách ' + (rem.dist === null ? '?' : rem.dist) + 'px).');
+    return 'sent';
+  }
+  function acceptInvite() {
+    var hud = $('#invite-hud');
+    var vis = hud && hud.offsetParent !== null;
+    if (!vis) return 'none';
+    var b = $('#invite-accept');
+    if (b) { b.click(); log('Đã bấm Chấp nhận lời mời vào đội.'); return 'clicked'; }
+    var G = gw();
+    if (G && typeof G.partyAnswer === 'function') {
+      try { G.partyAnswer(true); log('Đã chấp nhận lời mời (qua partyAnswer).'); return 'clicked'; } catch (e) { /* bỏ qua */ }
+    }
+    log('Có bảng mời nhưng không thấy nút Chấp nhận.');
+    return 'no_btn';
+  }
+  function inviteVisible() {
+    var hud = $('#invite-hud');
+    return !!(hud && hud.offsetParent !== null);
+  }
+
+  // ---------------- Đọc vị trí / khu / HP (cho farm rùa) ----------------
+  // ƯU TIÊN #hud-map (tên map do game hiển thị) — body.innerText bị nhiễm
+  // chữ từ chính panel tool (panel Tổ đội có "Miếu Ông Trường Con"); nếu
+  // #hud-map trống mới soi body.
+  function docViTri() {
+    var t = document.body ? (document.body.innerText || '') : '';
+    var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    var map = null;
+    var hm = document.querySelector('#hud-map');
+    var hmt = hm ? (hm.innerText || hm.textContent || '').trim() : '';
+    function nhanMap(s) {
+      if (/Miếu Ông Trường Con/.test(s)) return 'Miếu Ông Trường Con';
+      if (/Thảo Dược Cốc/.test(s)) return 'Thảo Dược Cốc';
+      if (/Rừng Trúc/.test(s)) return 'Rừng Trúc';
+      if (/Chân Núi Tản Viên/.test(s)) return 'Chân Núi Tản Viên';
+      if (/Bãi Đá/.test(s)) return 'Bãi Đá Hang Gió';
+      if (/Phong Địa/.test(s)) return 'Phong Địa';
+      return null;
+    }
+    if (hmt) map = nhanMap(hmt);
+    if (!map) map = nhanMap(t);
+    return { x: m ? parseInt(m[1], 10) : null, y: m ? parseInt(m[2], 10) : null, map: map };
+  }
+  function docKhu() {
+    try {
+      var k = window.__ns_ && window.__ns_.KhuUI && window.__ns_.KhuUI.khu;
+      return (typeof k === 'number') ? k : null;
+    } catch (e) { return null; }
+  }
+  function docHP() {
+    var el = document.querySelector('.pl-bar.hp .pl-n');
+    if (!el) return null;
+    var m = txt(el).match(/(\d+)\s*\/\s*(\d+)/);
+    if (!m) return null;
+    var cur = parseInt(m[1], 10), max = parseInt(m[2], 10);
+    if (!max) return null;
+    return { cur: cur, max: max, tiLe: cur / max };
+  }
+  function autoIsOn() {
+    var b = $('#btn-auto') || $('#btn-auto-touch');
+    return !!(b && b.classList.contains('active'));
+  }
+  function damBaoAuto() {
+    var b = $('#btn-auto') || $('#btn-auto-touch');
+    if (!b) return false;
+    if (!autoIsOn()) b.click();
+    return true;
+  }
+  function datUuTienQuai() {
+    var b = document.querySelector('[data-uu-tien="quai"]');
+    if (!b) return false;
+    if (!b.classList.contains('on')) b.click();
+    return true;
+  }
+
+  // ---------------- Bảng điều khiển (trong tab Tổ đội) ----------------
+  var panel, panelBody, miniRow, miniStatusEl, elDoi, elList, elViTri, elLog, elToggle, elFarm, elAccept, elInviteName;
+  function shortStatus() {
+    var p = lastParty;
+    if (!p.ok) return 'Chưa đọc được đội';
+    if (!p.inParty) return 'Chưa vào đội';
+    return 'Trong đội · ' + p.members.length + ' người' + (farmRua ? ' · farm rùa' : '');
+  }
+  function buildPanel() {
+    var host = Tong.tabBody('party');
+    if (!host) return;
+    panel = document.createElement('div');
+    panel.id = 'tt2d-party-panel';
+    panel.style.cssText = 'position:static;width:100%;font:12px/1.5 system-ui,sans-serif;color:#ffe9b0';
+    panel.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<b>\uD83D\uDC65 Tổ đội + farm rùa</b>' +
+        '<button id="tt2d-party-collapse" title="Thu nhỏ khung" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 4px">—</button>' +
+      '</div>' +
+      '<div id="tt2d-party-mini" style="display:none;align-items:center;justify-content:space-between;gap:6px">' +
+        '<b>\uD83D\uDC65 Tổ đội</b>' +
+        '<span id="tt2d-party-mini-status" style="color:#bfe3ff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>' +
+        '<button id="tt2d-party-expand" title="Mở rộng khung" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:16px;padding:0 2px">＋</button>' +
+      '</div>' +
+      '<div id="tt2d-party-body">' +
+        '<div id="tt2d-party-doi" style="margin:6px 0;color:#ffd27a">Chưa đọc được đội.</div>' +
+        '<div id="tt2d-party-list" style="margin:4px 0;color:#c9f2c9"></div>' +
+        '<div style="margin:8px 0;display:flex;gap:6px">' +
+          '<input id="tt2d-party-invite-name" placeholder="Tên đạo hiệu cần mời" style="flex:1;padding:5px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0">' +
+          '<button id="tt2d-party-invite" style="padding:5px 10px;border-radius:5px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer">Mời vào đội</button>' +
+        '</div>' +
+        '<div style="margin:4px 0;display:flex;gap:6px">' +
+          '<button id="tt2d-party-accept" style="flex:1;padding:5px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Chấp nhận lời mời</button>' +
+          '<button id="tt2d-party-toggle" style="flex:1;padding:5px;border-radius:5px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT tự chấp nhận</button>' +
+        '</div>' +
+        '<div style="margin:4px 0;display:flex;gap:6px">' +
+          '<button id="tt2d-party-farm" style="flex:1;padding:5px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Farm rùa MTC Khu 12: TẮT</button>' +
+        '</div>' +
+        '<div id="tt2d-party-vitri" style="margin:4px 0;color:#bfe3ff"></div>' +
+        '<div id="tt2d-party-log" style="margin-top:6px;max-height:96px;overflow:auto;color:#d8c9a3;font-size:11px"></div>' +
+        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Mời chỉ được khi đứng trong ~5 ô (180px), đội tối đa 6 người. Farm rùa: giữ Auto BẬT + ưu tiên Quái ở Miếu Ông Trường Con Khu 12 — KHÔNG tự di chuyển tới MTC (dùng script party_farm_rua.py). MTC là đất PK tự do.</div>' +
+      '</div>';
+    host.appendChild(panel);
+    panelBody = panel.querySelector('#tt2d-party-body');
+    miniRow = panel.querySelector('#tt2d-party-mini');
+    miniStatusEl = panel.querySelector('#tt2d-party-mini-status');
+    elDoi = panel.querySelector('#tt2d-party-doi');
+    elList = panel.querySelector('#tt2d-party-list');
+    elViTri = panel.querySelector('#tt2d-party-vitri');
+    elLog = panel.querySelector('#tt2d-party-log');
+    elToggle = panel.querySelector('#tt2d-party-toggle');
+    elFarm = panel.querySelector('#tt2d-party-farm');
+    elAccept = panel.querySelector('#tt2d-party-accept');
+    elInviteName = panel.querySelector('#tt2d-party-invite-name');
+    panel.querySelector('#tt2d-party-collapse').addEventListener('click', function () { setCollapsed(true); });
+    panel.querySelector('#tt2d-party-expand').addEventListener('click', function () { setCollapsed(false); });
+    panel.querySelector('#tt2d-party-invite').addEventListener('click', function () { invite(elInviteName.value); });
+    elAccept.addEventListener('click', function () { acceptInvite(); });
+    elToggle.addEventListener('click', function () { setOn(!on); });
+    elFarm.addEventListener('click', function () {
+      farmRua = !farmRua;
+      elFarm.textContent = 'Farm rùa MTC Khu 12: ' + (farmRua ? 'BẬT' : 'TẮT');
+      elFarm.style.background = farmRua ? '#6b4d16' : '#2a2113';
+      log(farmRua ? 'Farm rùa BẬT — giữ Auto + ưu tiên Quái ở MTC Khu 12.' : 'Farm rùa TẮT.');
+      render();
+    });
+    render();
+  }
+
+  function setCollapsed(v) {
+    collapsed = !!v;
+    if (panelBody) panelBody.style.display = collapsed ? 'none' : '';
+    if (miniRow) miniRow.style.display = collapsed ? 'flex' : 'none';
+    render();
+  }
+  function render() {
+    if (!panel) return;
+    if (miniStatusEl) miniStatusEl.textContent = shortStatus();
+    if (elToggle) {
+      elToggle.textContent = on ? 'DỪNG tự chấp nhận' : 'BẬT tự chấp nhận';
+      elToggle.style.background = on ? '#7a2d12' : '#3a2c12';
+    }
+    if (elAccept) elAccept.style.background = inviteVisible() ? '#6b4d16' : '#2a2113';
+    if (elLog) {
+      elLog.innerHTML = logLines.map(function (l) { return '<div>' + l.replace(/</g, '&lt;') + '</div>'; }).join('');
+    }
+  }
+  function renderDoi() {
+    if (!elDoi || !elList) return;
+    var p = lastParty;
+    if (!p.ok) { elDoi.textContent = 'Chưa đọc được đội (Gateway chưa sẵn sàng).'; elList.textContent = ''; return; }
+    if (!p.inParty) { elDoi.textContent = 'Chưa vào đội.'; elList.textContent = ''; return; }
+    var isLeader = p.me && p.leaderId === p.me;
+    elDoi.textContent = 'Trong đội · ' + p.members.length + ' người · ' + (isLeader ? 'Bạn là đội trưởng' : 'Đội trưởng: ' + (p.leaderId || '?'));
+    elList.textContent = p.members.map(function (m) {
+      return (m.id === p.me ? '• ' + (m.name || m.id) + ' (bạn)' : '• ' + (m.name || m.id)) +
+        ((typeof m.x === 'number') ? ' (' + m.x + ',' + m.y + ')' : '');
+    }).join('  ');
+  }
+
+  // ---------------- Vòng lặp chính ----------------
+  function tick() {
+    try {
+      var p = partyStatus();
+      var changed = JSON.stringify(p.members) !== JSON.stringify(lastParty.members) || p.inParty !== lastParty.inParty;
+      lastParty = p;
+      if (changed) renderDoi();
+      if (on && autoAccept && inviteVisible()) acceptInvite();
+      if (farmRua) {
+        damBaoAuto();
+        datUuTienQuai();
+        var hp = docHP();
+        if (hp && hp.tiLe < CFG.hpCanhBao) log('HP thấp (' + Math.round(hp.tiLe * 100) + '%) — cẩn thận, MTC là đất PK tự do.');
+      }
+      var vt = docViTri();
+      var khu = docKhu();
+      if (elViTri) {
+        elViTri.textContent = 'Vị trí: ' + (vt.map || '?') + ' ' +
+          ((vt.x !== null) ? '(' + vt.x + ',' + vt.y + ')' : '') +
+          (khu !== null ? ' · Khu ' + khu : '') +
+          (farmRua ? ' · Auto ' + (autoIsOn() ? 'BẬT' : 'TẮT') : '');
+      }
+    } catch (e) { /* không làm rơi game vì lỗi tool */ }
+    render();
+  }
+
+  function setOn(v) {
+    on = !!v;
+    log(on ? 'Tool tổ đội BẬT (tự chấp nhận lời mời).' : 'Tool tổ đội DỪNG.');
+    render();
+  }
+  function status() {
+    var p = partyStatus();
+    var vt = docViTri();
+    return {
+      on: on, autoAccept: autoAccept, farmRua: farmRua,
+      inParty: p.inParty, partyId: p.partyId, leaderId: p.leaderId,
+      members: p.members, me: p.me, inviteVisible: inviteVisible(),
+      map: vt.map, x: vt.x, y: vt.y, khu: docKhu(), autoOn: autoIsOn(),
+    };
+  }
+
+  buildPanel();
+  setInterval(tick, CFG.pollMs);
+  tick();
+  log('Tool tổ đội đã nạp. Mời trong ~5 ô, đội tối đa 6 người.');
+
+  window.__TT2D_PARTY__ = {
+    start: function () { setOn(true); },
+    stop: function () { setOn(false); },
+    setAutoAccept: function (v) { autoAccept = !!v; },
+    setFarmRua: function (v) { farmRua = !!v; },
+    invite: invite,
+    accept: acceptInvite,
+    setCollapsed: setCollapsed,
+    status: status,
+    _tick: tick,
+  };
+  Tong.register('party', window.__TT2D_PARTY__);
+})();
+
+
+  // ================= MODULE: nav (điều hướng chung, mới) =================
+
+// ================= MODULE: ĐIỀU HƯỚNG CHUNG (joystick + BFS) =================
+// Dùng chung cho mọi tab + hook cho script Python (boss_go.py,
+// huyet_xich_run.py, fishing_go.py, van_tieu_run.py, party_farm_rua.py).
+//  - readWalkable(): đọc lưới thật lúc chạy từ __ns_.SceneWorld.map
+//    (w, h, blocked, id) — cùng cách fishing_go.py / van_tieu_run.py.
+//  - bfsPath(grid, sx, sy, tx, ty): BFS 4 hướng; đích bị chặn thì tìm ô
+//    trống gần nhất trong bán kính 2. Trả về mảng [x,y] hoặc null.
+//  - joyHold/joyHuong/diToi/quaCong/diToiMap: lái joystick (client không
+//    kiểm tra isTrusted — đã xác minh 0 lần xuất hiện trong game.js).
+//    diToi ƯU TIÊN BFS trên lưới thật; không đọc được lưới thì dùng
+//    step_toward + đi vòng khi kẹt (không đẩy dài vào cùng chỗ).
+//  - Bảng cổng CONG + đường duongDi: trích từ client 24/11 (MapData.portals)
+//    + fishing_go.py (bảng đường về Thảo Dược Cốc từ 12 map).
+//  - GIỚI HẠN: không có ground client nhúng sẵn cho mọi map (chỉ dùng lưới
+//    live); map chưa có trong bảng đường thì diToiMap trả về false và ghi
+//    log rõ — không đoán đường.
+(function () {
+  'use strict';
+
+  var CFG_NAV = {
+    joyHoldMs: 350,
+    joyLongMs: 900,
+    joyWaitMs: 250,
+    portalHoldMs: 700,
+    portalTries: 6,
+  };
+
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function $(s) { return document.querySelector(s); }
+  function txt(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }
+
+  // ---------------- Đọc vị trí / map ----------------
+  // ƯU TIÊN #hud-map (tên map do game hiển thị) — body.innerText bị nhiễm
+  // chữ từ chính panel tool (vd panel Câu cá có "Hồ Tây", panel Tổ đội có
+  // "Miếu Ông Trường Con"); nếu #hud-map trống mới soi body.
+  function docViTri() {
+    var t = document.body ? (document.body.innerText || '') : '';
+    var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    var map = null;
+    var hm = document.querySelector('#hud-map');
+    var hmt = hm ? (hm.innerText || hm.textContent || '').trim() : '';
+    function nhanMap(s) {
+      if (/Hồ Tây/.test(s)) return 'van_can';
+      if (/Thảo Dược Cốc/.test(s)) return 'duoc_vien';
+      if (/Rừng Trúc/.test(s)) return 'thanh_truc_lam';
+      if (/Chân Núi Tản Viên/.test(s)) return 'tan_vien';
+      if (/Miếu Ông Trường Con/.test(s)) return 'dong_mach_ngam';
+      if (/Bãi Đá/.test(s)) return 'bai_da_hang_gio';
+      if (/Miếu Hoang/.test(s)) return 'mieu_hoang';
+      if (/Phong Địa/.test(s)) return 'phong_dia';
+      if (/Vườn Cá Nhân/.test(s)) return 'vuon_ca_nhan';
+      if (/Huyết Xích/.test(s)) return 'huyet_xich';
+      if (/Long Uyên/.test(s)) return 'long_uyen';
+      return null;
+    }
+    if (hmt) map = nhanMap(hmt);
+    if (!map) map = nhanMap(t);
+    return { x: m ? parseInt(m[1], 10) : null, y: m ? parseInt(m[2], 10) : null, map: map };
+  }
+
+  // ---------------- Lưới thật + BFS ----------------
+  // blocked: mảng 2D [y][x] (true = chặn) hoặc mảng phẳng; id: map id.
+  function readWalkable() {
+    try {
+      var sw = window.__ns_ && window.__ns_.SceneWorld;
+      var mp = sw && sw.map;
+      if (!mp || !mp.blocked) return null;
+      var w = mp.w || mp.width, h = mp.h || mp.height;
+      if (!w || !h) return null;
+      return { w: w, h: h, blocked: mp.blocked, id: mp.id || null };
+    } catch (e) { return null; }
+  }
+  function isBlocked(grid, x, y) {
+    if (!grid) return true;
+    if (x < 0 || y < 0 || x >= grid.w || y >= grid.h) return true;
+    var b = grid.blocked;
+    if (Array.isArray(b)) {
+      if (Array.isArray(b[y])) return !!b[y][x];
+      return !!b[y * grid.w + x];
+    }
+    return true;
+  }
+  function bfsPath(grid, sx, sy, tx, ty) {
+    if (!grid) return null;
+    if (sx === tx && sy === ty) return [];
+    // Đích bị chặn → tìm ô trống gần nhất trong bán kính 2.
+    if (isBlocked(grid, tx, ty)) {
+      var found = null;
+      outer:
+      for (var r = 1; r <= 2; r++) {
+        for (var dy = -r; dy <= r; dy++) {
+          for (var dx = -r; dx <= r; dx++) {
+            if (Math.abs(dx) + Math.abs(dy) !== r) continue;
+            if (!isBlocked(grid, tx + dx, ty + dy)) { found = [tx + dx, ty + dy]; break outer; }
+          }
+        }
+      }
+      if (!found) return null;
+      tx = found[0]; ty = found[1];
+    }
+    var key = function (x, y) { return x + ',' + y; };
+    var prev = {};
+    var q = [[sx, sy]];
+    prev[key(sx, sy)] = null;
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (q.length) {
+      var cur = q.shift();
+      var cx = cur[0], cy = cur[1];
+      if (cx === tx && cy === ty) {
+        var path = [];
+        var k = key(tx, ty);
+        while (k !== null) {
+          var parts = k.split(',');
+          path.unshift([parseInt(parts[0], 10), parseInt(parts[1], 10)]);
+          k = prev[k];
+        }
+        path.shift(); // bỏ điểm xuất phát
+        return path;
+      }
+      for (var i = 0; i < dirs.length; i++) {
+        var nx = cx + dirs[i][0], ny = cy + dirs[i][1];
+        var nk = key(nx, ny);
+        if (prev.hasOwnProperty(nk)) continue;
+        if (isBlocked(grid, nx, ny)) continue;
+        prev[nk] = key(cx, cy);
+        q.push([nx, ny]);
+      }
+    }
+    return null; // không có đường
+  }
+
+  // ---------------- Joystick ----------------
+  function joyHold(dx, dy, ms) {
+    var joy = $('#joystick');
+    if (!joy) return Promise.resolve(false);
+    var r = joy.getBoundingClientRect();
+    if (!r.width || !r.height) return Promise.resolve(false);
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var pid = 12345;
+    function ev(ty, x, y) {
+      return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: pid, isPrimary: true });
+    }
+    joy.dispatchEvent(ev('pointerdown', cx, cy));
+    var steps = 4;
+    for (var i = 1; i <= steps; i++) {
+      joy.dispatchEvent(ev('pointermove', cx + dx * i / steps, cy + dy * i / steps));
+    }
+    return new Promise(function (resolve) {
+      setTimeout(function () {
+        joy.dispatchEvent(ev('pointerup', cx + dx, cy + dy));
+        setTimeout(function () { resolve(true); }, CFG_NAV.joyWaitMs);
+      }, ms);
+    });
+  }
+  function joyHuong(dx, dy, ms) {
+    if (Math.abs(dx) >= Math.abs(dy)) return joyHold(dx > 0 ? 40 : -40, 0, ms);
+    return joyHold(0, dy > 0 ? 40 : -40, ms);
+  }
+
+  // ---------------- Đi tới ô ----------------
+  // Ưu tiên BFS trên lưới thật; không có lưới thì step_toward + đi vòng.
+  async function diToi(tx, ty, maxBuoc) {
+    maxBuoc = maxBuoc || 60;
+    var vong = 0; // số lần đi vòng (đổi chiều mỗi lần)
+    var last = null, ket = 0;
+    for (var i = 0; i < maxBuoc; i++) {
+      var p = docViTri();
+      if (p.x === null) { await sleep(2000); continue; }
+      if (Math.abs(p.x - tx) <= 1 && Math.abs(p.y - ty) <= 1) return true;
+      // Thử BFS trên lưới thật mỗi vài nhịp (lưới có thể đổi khi quái di chuyển).
+      var grid = readWalkable();
+      if (grid) {
+        var path = bfsPath(grid, p.x, p.y, tx, ty);
+        if (path && path.length) {
+          var next = path[0];
+          await joyHuong(next[0] - p.x, next[1] - p.y, CFG_NAV.joyHoldMs);
+          continue;
+        }
+      }
+      // Không có lưới / không có đường BFS → step_toward + đi vòng khi kẹt.
+      if (last && last.x === p.x && last.y === p.y) {
+        ket++;
+        if (ket >= 3) {
+          if (vong >= 4) return false;
+          vong++;
+          var dx = tx - p.x, dy = ty - p.y;
+          // Lệch vuông góc 3 ô, đổi chiều mỗi lần (không đẩy dài vào cùng chỗ).
+          var sx = (vong % 2 === 1) ? 1 : -1;
+          if (Math.abs(dx) >= Math.abs(dy)) await joyHold(0, sx * 40, CFG_NAV.joyHoldMs);
+          else await joyHold(sx * 40, 0, CFG_NAV.joyHoldMs);
+          ket = 0;
+          continue;
+        }
+      } else ket = 0;
+      last = { x: p.x, y: p.y };
+      await joyHuong(tx - p.x, ty - p.y, CFG_NAV.joyHoldMs);
+    }
+    return false;
+  }
+
+  // ---------------- Cổng + đường giữa các map ----------------
+  // CONG: từ map A tới map B — đi tới ô cổng rồi giữ joystick hướng ra ngoài.
+  var CONG = {
+    'duoc_vien>thanh_truc_lam': { x: 12, y: 0, dx: 0, dy: -1 },
+    'thanh_truc_lam>tan_vien': { x: 7, y: 0, dx: 0, dy: -1 },
+    'tan_vien>thanh_truc_lam': { x: 7, y: 29, dx: 0, dy: 1 },
+    'thanh_truc_lam>duoc_vien': { x: 12, y: 29, dx: 0, dy: 1 },
+    'tan_vien>bai_da_hang_gio': { x: 39, y: 14, dx: 1, dy: 0 },
+    'bai_da_hang_gio>tan_vien': { x: 0, y: 27, dx: -1, dy: 0 },
+    'bai_da_hang_gio>dong_mach_ngam': { x: 10, y: 0, dx: 0, dy: -1 },
+    'dong_mach_ngam>bai_da_hang_gio': { x: 15, y: 25, dx: 0, dy: 1 },
+    'tan_vien>mieu_hoang': { x: 2, y: 15, dx: -1, dy: 0 },
+    'mieu_hoang>tan_vien': { x: 19, y: 6, dx: 1, dy: 0 },
+    'mieu_hoang>phong_dia': { x: 1, y: 6, dx: -1, dy: 0 },
+    'phong_dia>mieu_hoang': { x: 39, y: 14, dx: 1, dy: 0 },
+    'duoc_vien>van_can': { x: 0, y: 20, dx: -1, dy: 0 },
+    'van_can>duoc_vien': { x: 55, y: 13, dx: 1, dy: 0 },
+  };
+  function duongDi(tuMap, toiMap) {
+    if (tuMap === toiMap) return [];
+    var truc = ['duoc_vien', 'thanh_truc_lam', 'tan_vien'];
+    var i1 = truc.indexOf(tuMap), i2 = truc.indexOf(toiMap);
+    if (i1 >= 0 && i2 >= 0) {
+      var buoc = [];
+      var cur = tuMap;
+      while (cur !== toiMap) {
+        var nxt = truc[truc.indexOf(cur) + (i2 > i1 ? 1 : -1)];
+        buoc.push({ map: nxt, cong: cur + '>' + nxt });
+        cur = nxt;
+      }
+      return buoc;
+    }
+    // Đường đặc biệt ngoài trục chính.
+    if (tuMap === 'tan_vien' && toiMap === 'dong_mach_ngam')
+      return [{ map: 'bai_da_hang_gio', cong: 'tan_vien>bai_da_hang_gio' }, { map: 'dong_mach_ngam', cong: 'bai_da_hang_gio>dong_mach_ngam' }];
+    if (tuMap === 'dong_mach_ngam' && toiMap === 'tan_vien')
+      return [{ map: 'bai_da_hang_gio', cong: 'dong_mach_ngam>bai_da_hang_gio' }, { map: 'tan_vien', cong: 'bai_da_hang_gio>tan_vien' }];
+    if (tuMap === 'tan_vien' && toiMap === 'mieu_hoang')
+      return [{ map: 'mieu_hoang', cong: 'tan_vien>mieu_hoang' }];
+    if (tuMap === 'mieu_hoang' && toiMap === 'tan_vien')
+      return [{ map: 'tan_vien', cong: 'mieu_hoang>tan_vien' }];
+    if (tuMap === 'phong_dia' && toiMap === 'mieu_hoang')
+      return [{ map: 'mieu_hoang', cong: 'phong_dia>mieu_hoang' }];
+    if (tuMap === 'mieu_hoang' && toiMap === 'phong_dia')
+      return [{ map: 'phong_dia', cong: 'mieu_hoang>phong_dia' }];
+    if (tuMap === 'duoc_vien' && toiMap === 'van_can')
+      return [{ map: 'van_can', cong: 'duoc_vien>van_can' }];
+    if (tuMap === 'van_can' && toiMap === 'duoc_vien')
+      return [{ map: 'duoc_vien', cong: 'van_can>duoc_vien' }];
+    if (tuMap === 'duoc_vien' && toiMap === 'mieu_hoang')
+      return [{ map: 'thanh_truc_lam', cong: 'duoc_vien>thanh_truc_lam' }, { map: 'tan_vien', cong: 'thanh_truc_lam>tan_vien' }, { map: 'mieu_hoang', cong: 'tan_vien>mieu_hoang' }];
+    if (tuMap === 'phong_dia' && toiMap === 'duoc_vien')
+      return [{ map: 'mieu_hoang', cong: 'phong_dia>mieu_hoang' }, { map: 'tan_vien', cong: 'mieu_hoang>tan_vien' }, { map: 'thanh_truc_lam', cong: 'tan_vien>thanh_truc_lam' }, { map: 'duoc_vien', cong: 'thanh_truc_lam>duoc_vien' }];
+    return null; // không biết đường — không đoán
+  }
+  function flyDangBat() {
+    var b = $('#btn-fly');
+    return !!(b && b.classList.contains('active'));
+  }
+  function datFly(bat) {
+    var b = $('#btn-fly');
+    if (!b) return false;
+    if (flyDangBat() === bat) return true;
+    b.click();
+    return true;
+  }
+  async function quaCong(congKey) {
+    var c = CONG[congKey];
+    if (!c) return false;
+    if (flyDangBat()) datFly(false); // đang bay không qua được cổng
+    await sleep(400);
+    var ok = await diToi(c.x, c.y, 60);
+    if (!ok) return false;
+    var mapCu = docViTri().map;
+    for (var i = 0; i < CFG_NAV.portalTries; i++) {
+      await joyHold(c.dx * 40, c.dy * 40, CFG_NAV.portalHoldMs);
+      var p = docViTri();
+      if (p.map && p.map !== mapCu) return true;
+    }
+    return false;
+  }
+  async function diToiMap(toiMap) {
+    var p = docViTri();
+    if (p.map === toiMap) return true;
+    var duong = duongDi(p.map, toiMap);
+    if (!duong) return false;
+    for (var i = 0; i < duong.length; i++) {
+      var ok = await quaCong(duong[i].cong);
+      if (!ok) return false;
+      await sleep(800);
+    }
+    return docViTri().map === toiMap;
+  }
+
+  var navApi = {
+    docViTri: docViTri,
+    readWalkable: readWalkable,
+    bfsPath: bfsPath,
+    joyHold: joyHold,
+    joyHuong: joyHuong,
+    diToi: diToi,
+    quaCong: quaCong,
+    diToiMap: diToiMap,
+    duongDi: duongDi,
+    CONG: CONG,
+    status: function () {
+      var p = docViTri();
+      var g = readWalkable();
+      return { x: p.x, y: p.y, map: p.map, grid: g ? (g.w + 'x' + g.h + (g.id ? ' · ' + g.id : '')) : null };
+    },
+  };
+  if (window.__TT2D_TONG__) window.__TT2D_TONG__.nav = navApi;
+  window.__TT2D_NAV__ = navApi;
+})();
+
+})();
