@@ -3555,8 +3555,8 @@ window.__TT2D_TONG__ = {
 //  - QUY TẮC LẬP ĐỘI — CỨNG (Thanh 01:11 25/11): MTC là PK tự do, bên trong
 //    miếu KHÔNG lập được tổ đội. Chỉ mời/chấp nhận ở làng hoặc Bãi Đá.
 //    invite()/acceptInvite()/tự chấp nhận đều từ chối ('in_mtc') khi đang ở
-//    trong miếu. Rớt mạng trong miếu → ra Bãi Đá (cổng (18,22) nam → làng,
-//    rồi làng (39,14) đông → Bãi Đá) lập lại đội rồi vô lại
+//    trong miếu. Rớt mạng trong miếu → ra Bãi Đá thẳng cổng (15,22) nam
+//    (đã xác minh live 02:26 25/11) lập lại đội rồi vô lại
 //    (script party_farm_rua.py: reform_party_at_bai_da()).
 //  - Tool này CHỈ quản lý tổ đội + giữ Auto farm rùa (không tự di chuyển nhân
 //    vật tới MTC — dùng script party_farm_rua.py để tự đưa cả đội tới đó).
@@ -3942,9 +3942,11 @@ window.__TT2D_TONG__ = {
 // NGUỒN CỔNG (client 24/11): cổng làng (39,14) -> Bãi Đá (bị g() nối lại,
 //   gốc là -> Bát Quái); cổng làng (22,4) -> Động Mạch Ngầm BỊ XÓA lúc load
 //   (builder filter) — KHÔNG DÙNG, chỉ vào MTC qua Bãi Đá (9/10/11,0) bắc;
-//   cổng MTC (15,25) -> Bãi Đá KHÔNG TỒN TẠI (client chỉ có decoration
-//   mtc_cong ở (15,25), không có portal) — đã XÓA khỏi bảng cổng;
-//   đường ra MTC đã xác minh là (18,22) nam -> làng.
+//   cổng MTC (15,22) nam -> Bãi Đá (10,5) ĐÃ XÁC MINH LIVE 02:26 25/11
+//   (chặng chính: đẩy joystick nam từ (15,24) là qua cổng "Ra Bãi Đá");
+//   tọa độ cũ (15,25) là SAI (lệch 3 ô). Cổng MTC (18,22) nam -> làng
+//   vẫn trong client portals nhưng CHƯA xác minh live — giữ làm đường
+//   ra dự phòng (chỉ dùng khi cần về làng thật).
 //   Tọa độ Tam Giới Thành là TƯƠNG ĐỐI theo tầng (HUD game cũng hiện tương
 //   đối): bat_quai y0=21, u_uynh y0=81; chiều rộng ~100 ô.
 //   Cổng Cột Khí Bổng (Bát Quái <-> Thiên Đạo) có cooldown nhóm 5 giây;
@@ -4198,12 +4200,14 @@ window.__TT2D_TONG__ = {
     'hang_dong>long_uyen': { x: 14, y: 19, dx: 0, dy: 1 },
     // --- Làng — Bãi Đá — Miếu Ông Trường Con (dong_mach_ngam) ---
     'bai_da_hang_gio>dong_mach_ngam': { x: 10, y: 0, dx: 0, dy: -1 },
-    // Đường ra MTC đã xác minh: (18,22) nam -> làng (22,6). Nhờ đó duongDi
-    // MTC -> làng đi thẳng 1 cổng (trước đây phải vòng qua Bãi Đá).
+    // Đường ra MTC ĐÃ XÁC MINH LIVE 02:26 25/11 (chặng chính): (15,22) nam
+    // -> Bãi Đá (10,5) — đẩy joystick nam từ (15,24) là qua cổng "Ra Bãi Đá".
+    // Tọa độ cũ (15,25) là SAI (lệch 3 ô); duongDi MTC -> Bãi Đá nay 1 cổng
+    // trực tiếp, không cần vòng qua làng.
+    'dong_mach_ngam>bai_da_hang_gio': { x: 15, y: 22, dx: 0, dy: 1 },
+    // Đường ra MTC dự phòng: (18,22) nam -> làng (22,6) — có trong client
+    // portals nhưng CHƯA xác minh live; chỉ dùng khi cần về làng thật.
     'dong_mach_ngam>tan_vien': { x: 18, y: 22, dx: 0, dy: 1 },
-    // (15,25) trong miếu -> Bãi Đá: KHÔNG TỒN TẠI (chỉ decoration mtc_cong,
-    // không có portal) — đã XÓA; ra Bãi Đá đi qua làng (18,22) -> làng rồi
-    // làng (39,14) đông -> Bãi Đá.
     // --- Huyết Xích hầm: chỉ RA được (vào bằng đăng ký NPC), không đi VÀO
     // bằng đường bộ — duongDi chặn cạnh vào hầm từ ngoài (xem DUNGEON).
     'rung_mang_xa>tan_vien': { x: 18, y: 29, dx: 0, dy: 1 },
