@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm)
 // @namespace    https://tutienpixel.online/
-// @version      1.2.1
+// @version      1.3.0
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 7 tab — Câu cá Hồ Tây (v3.1: tỷ lệ cắn + Côn Bằng + thời tiết), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường tới map + khu đã chọn. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
 // @author       Muse (làm cho Thanh)
 // @match        https://tutienpixel.online/*
@@ -10,15 +10,23 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
-// TOOL TỔNG v1.2.1 — 1 bảng chung, 7 tab. v1.2.1 (25/11): SỬA LỖI Farm
-// không tự di chuyển — runToTarget tắt Auto TRƯỚC khi diToiMap (joystick
-// không chạy khi Auto BẬT), nav diToi/quaCong/diToiMap tắt Auto đầu mỗi
-// nhịp/cổng + tắt lại khi Auto tự bật giữa đường; datAuto bấm xong kiểm tra
-// lại (toggle). v1.2.0 (25/11): mở rộng điều
-// hướng chung thêm Mỏ Linh Thạch, Thạch Phong, Bát Quái, Thiên Đạo, Ma Động,
-// Hắc Phong Lĩnh, Hắc Thị + đường ra hầm Huyết Xích; duongDi thành BFS trên
-// đồ thị cổng; tab Farm thêm 7 map đích; sửa cổng làng->Miếu Hoang (0,12). Gộp từ 5 tool lẻ (giữ nguyên logic):
-//  - Câu cá Hồ Tây v3.1.0 | Boss v1.1.0 | Dược v1.1.0 | Huyết Xích phụ v1.1.0
+// TOOL TỔNG v1.3.0 — 1 bảng chung, 7 tab. v1.3.0 (25/11): tab Boss lên
+// v1.2.0 — TỰ ĐI tới map boss trước giờ hồi sinh (dùng nav chung, tắt Auto
+// trước khi di chuyển, bật lại Auto + ưu tiên Boss khi tới nơi; đi trước
+// 5 phút + 2 phút/cổng; thất bại 3 lần thì tắt tự đi) + TỰ HỒI SINH TẠI
+// CHỖ tối đa 3 lần/phiên khi chết lúc đánh boss (bấm #downed-spot, KHÔNG
+// bấm Về làng; hồi sinh xong đánh luôn, không chờ hồi HP; không hồi sinh
+// ở làng trong giờ Chính Ma) + giờ boss thật từ hook BossBoard (server)
+// và giờ cố định do người dùng ghi (mốc neo HH:MM + chu kỳ). v1.2.1
+// (25/11): SỬA LỖI Farm không tự di chuyển — runToTarget tắt Auto TRƯỚC
+// khi diToiMap (joystick không chạy khi Auto BẬT), nav diToi/quaCong/
+// diToiMap tắt Auto đầu mỗi nhịp/cổng + tắt lại khi Auto tự bật giữa
+// đường; datAuto bấm xong kiểm tra lại (toggle). v1.2.0 (25/11): mở rộng
+// điều hướng chung thêm Mỏ Linh Thạch, Thạch Phong, Bát Quái, Thiên Đạo,
+// Ma Động, Hắc Phong Lĩnh, Hắc Thị + đường ra hầm Huyết Xích; duongDi
+// thành BFS trên đồ thị cổng; tab Farm thêm 7 map đích; sửa cổng
+// làng->Miếu Hoang (0,12). Gộp từ 5 tool lẻ (giữ nguyên logic):
+//  - Câu cá Hồ Tây v3.1.0 | Boss v1.2.0 | Dược v1.1.0 | Huyết Xích phụ v1.1.0
 //    | Vận Tiêu phụ v1.0.0 — xem README.md trong thư mục tu-tien-2d-tool-tong.
 //  - Tổ đội + farm rùa: mời/chấp nhận trong 180px, tối đa 6 người, farm Thạch
 //    Quy Miếu Ông Trường Con Khu 12 (mới, viết cho Tool Tổng).
@@ -1354,7 +1362,7 @@ window.__TT2D_TONG__ = {
   })();
 
 
-  // ================= MODULE: boss (Boss v1.1.0: ưu tiên Boss, khóa mục tiêu qua HUD, ở lại bãi ~60s cho nam châm nhặt đồ.) =================
+  // ================= MODULE: boss (Boss v1.2.0: ưu tiên Boss, khóa mục tiêu qua HUD, ở lại bãi ~60s cho nam châm nhặt đồ; TỰ ĐI tới map boss trước giờ hồi sinh (nav chung) + TỰ HỒI SINH tại chỗ tối đa 3 lần rồi đánh tiếp ngay.) =================
 
   (function () {
 
@@ -1375,7 +1383,7 @@ window.__TT2D_TONG__ = {
       xich_long: {
         id: 'xich_long', type: 'than_thu_xich_long', ten: 'Thần Thú · Xích Long',
         tenNgan: 'Xích Long', cap: 3, map: 'long_uyen', mapTen: 'Long Uyên',
-        spawn: 'ttxl_1', toa: '(27,14) — ĐÃ ĐÍNH CHÍNH từ client (biến t=27)', hp: 100000, respawnSec: 10800,
+        spawn: 'ttxl_1', toa: '(27,14) — ĐÃ ĐÍNH CHÍNH từ client (biến t=27)', toaXY: [27, 14], hp: 100000, respawnSec: 10800,
         respawnTen: '3 giờ', hoVe: 'Xích Nhãn Ngưu ×3',
         ghi: 'Hộ vệ: 3 Xích Nhãn Ngưu — hạ hết trước. Tọa độ (27,14) đã xác minh từ code dựng map Long Uyên (t=27); số 13 cũ là biến cục bộ hàm khác.',
         drops: 'LT 10–40, Phá Cảnh Đan 5%, Tẩy Tâm Đan 5%, Thú Hồn 3. Tính TopBoss tuần.',
@@ -1384,6 +1392,7 @@ window.__TT2D_TONG__ = {
         id: 'linh_ho', type: 'linh_ho_tran_son', ten: 'Linh Hổ Trấn Sơn',
         tenNgan: 'Linh Hổ', cap: 4, map: 'thach_phong_thung_lung', mapTen: 'Thạch Phong Thung Lũng',
         spawn: 'boss_linh_ho_tran_son', toa: '(33,5) hoặc (30,8) tùy biến thể map',
+        toaXY: [33, 5],
         hp: 200000, respawnSec: 18000, respawnTen: '5 giờ', hoVe: 'Bạch Hổ Tuyết',
         ghi: 'Bạch Hổ Tuyết hộ vệ quanh ổ.',
         drops: 'Yêu Huyết Cấp 4 (20%), pháp bảo (1%), Ngựa Hắc Thố. Tính TopBoss tuần.',
@@ -1391,7 +1400,7 @@ window.__TT2D_TONG__ = {
       nhen: {
         id: 'nhen', type: 'nhen_bach_ngoc', ten: 'Nhện Bạch Ngọc',
         tenNgan: 'Nhện Bạch Ngọc', cap: 5, map: 'bai_da_hang_gio', mapTen: 'Bãi Đá Hang Gió',
-        spawn: 'boss_nhen_bach_ngoc', toa: '(21,11)', hp: 268000, respawnSec: 28800,
+        spawn: 'boss_nhen_bach_ngoc', toa: '(21,11)', toaXY: [21, 11], hp: 268000, respawnSec: 28800,
         respawnTen: '8 giờ', hoVe: 'Nhện Ngọc Con ×3',
         ghi: 'Ổ ở cuối lối cát đông-bắc Bãi Đá.',
         drops: 'Vũ khí/bí tịch (Hoa Kim Thương, Băng Linh Kiếm, Phá Sơn Chùy, Huyết Kiếm…), Cổ Bích Mộc ×10, Trấn Thần Thạch ×10.',
@@ -1400,6 +1409,7 @@ window.__TT2D_TONG__ = {
         id: 'ma_bao', type: 'song_duc_ma_bao', ten: 'Song Dực Ma Báo',
         tenNgan: 'Ma Báo', cap: 6, map: 'mo_linh_thach', mapTen: 'Mỏ Linh Thạch',
         spawn: 'boss_song_duc_ma_bao', toa: 'Động — sân mỏ sâu nhất (server chọn)',
+        toaXY: null, // Ma Báo: tọa độ động, chỉ tới map rồi chờ
         hp: 300000, respawnSec: 0, respawnTen: 'Mỗi ngày 1 lần', hoVe: 'Ngân Mao Hống ×3',
         ghi: 'Ngẫu nhiên 11:00–21:00 mỗi ngày, sống 2 giờ. Ở sân mỏ sâu nhất.',
         drops: 'Yêu Huyết Cấp 6 (20%), bí tịch (Ma Hồn Phệ 10%, Cửu U Ma Trảo 2%…), Y Phục/Quần (5%). Tính TopBoss tuần.',
@@ -1407,7 +1417,7 @@ window.__TT2D_TONG__ = {
       giao_long: {
         id: 'giao_long', type: 'giao_long', ten: 'Thượng Cổ Giao Long',
         tenNgan: 'Giao Long', cap: 8, map: 'thien_dao_khuyet', mapTen: 'Thiên Đạo Khuyết',
-        spawn: 'giao_long_1', toa: '(58,11)', hp: 2000000, respawnSec: 0,
+        spawn: 'giao_long_1', toa: '(58,11)', toaXY: [58, 11], hp: 2000000, respawnSec: 0,
         respawnTen: 'Tối Chủ Nhật', hoVe: '—',
         ghi: 'Mỗi tuần 1 lần, tối Chủ Nhật, ~10 phút sau Hòm Vết Nứt (Hòm nổ ngẫu nhiên 18:00–23:00; mặc định 22:00 → Giao Long ~22:10). Sống 2 giờ.',
         drops: 'Giao Long Vảy 12–20 (bốc thăm, tối đa 1/người/tuần), Tẩy Niệm Phù ×10, Linh Căn Tinh Hoa ×3, vũ khí/bí tịch Hậu Kỳ.',
@@ -1429,6 +1439,23 @@ window.__TT2D_TONG__ = {
     var lastUuTienClickAt = 0;
     var stats = { killed: 0, looted: 0 };
     var logLines = [];
+    // ---------------- v1.2.0: Tự đi tới boss + Tự hồi sinh tại chỗ ----------------
+    var tuDi = false;               // tự di chuyển tới map boss trước giờ hồi sinh?
+    var movePhase = 'idle';         // idle | moving | arrived (đang tự đi tới boss)
+    var moveFails = 0;              // số lần tự đi thất bại liên tiếp (tối đa 3)
+    var moveTargetId = null;        // boss đang tự đi tới
+    var lastNoRouteLogAt = 0;       // chống spam log "không có đường bộ"
+    var lastMoveStatus = '';
+    var boardData = {};             // bossId -> {at: ms|null, dead: bool, capAt: ms} (từ hook BossBoard)
+    var boardHooked = false;        // đã gắn hook __ns_.BossBoard.set chưa?
+    var reviveCount = 0;            // số lần tự hồi sinh tại chỗ trong phiên bật tool này (tối đa 3)
+    var lastReviveClickAt = 0;      // lần bấm Hồi sinh gần nhất (tránh bấm dồn dập)
+    var lastReviveLogAt = 0;        // chống spam log khi không hồi sinh được
+    var reviveStopped = false;      // đã dừng tool vì chết quá 3 lần?
+    var MOVE_BEFORE_MS = 5 * 60 * 1000;   // đi trước giờ hồi sinh 5 phút
+    var MOVE_PER_GATE_MS = 2 * 60 * 1000; // +2 phút mỗi cổng trên đường
+    var MAX_MOVE_FAILS = 3;
+    var MAX_REVIVES = 3;            // tối đa 3 lần tự hồi sinh/phiên (khớp MAX_REVIVES của game)
 
     function rand(a, b) { return a + Math.random() * (b - a); }
 
@@ -1484,34 +1511,70 @@ window.__TT2D_TONG__ = {
     }
 
     // ---------------- Trạng thái lịch của từng boss ----------------
-    // Trả về {txt, hot}: txt = dòng trạng thái, hot = đang trong khung giờ săn được.
+    // Trả về {txt, hot, nextAt, src}: txt = dòng trạng thái, hot = đang trong
+    // khung giờ săn được, nextAt = thời điểm hồi sinh kế (ms epoch, null nếu
+    // chưa rõ), src = nguồn giờ ('bang' | 'co-dinh' | 'uoc-tinh' | 'khung-gio'
+    // | 'chua-ro'). Thứ tự ưu tiên: bảng GIỜ BOSS server gửi (hook BossBoard)
+    // -> giờ cố định do người dùng ghi (mốc neo HH:MM + chu kỳ respawnSec)
+    // -> mốc hạ + respawnSec (ước tính) -> khung giờ ngày/tuần (Ma Báo /
+    // Giao Long) -> chưa rõ. KHÔNG tự đoán giờ cố định khi chưa có dữ kiện.
     function trangThaiBoss(b) {
       var now = vnNow();
       var day = now.getDay(); // 0 = Chủ Nhật
       var mins = now.getHours() * 60 + now.getMinutes();
+      var nowMs = Date.now();
       if (b.id === 'ma_bao') {
         if (mins >= 11 * 60 && mins < 21 * 60) {
-          return { txt: 'ĐANG TRONG GIỜ (11:00–21:00) — có thể xuất hiện bất cứ lúc nào', hot: true };
+          return { txt: 'ĐANG TRONG GIỜ (11:00–21:00) — có thể xuất hiện bất cứ lúc nào', hot: true, nextAt: nowMs, src: 'khung-gio' };
         }
         if (mins < 11 * 60) {
-          return { txt: 'Chờ 11:00 hôm nay (còn ' + fmtCountdown((11 * 60 - mins) * 60000) + ')', hot: false };
+          var t11 = new Date(nowMs); t11.setHours(11, 0, 0, 0);
+          return { txt: 'Chờ 11:00 hôm nay (còn ' + fmtCountdown((11 * 60 - mins) * 60000) + ')', hot: false, nextAt: t11.getTime(), src: 'khung-gio' };
         }
-        return { txt: 'Đã qua giờ hôm nay — chờ 11:00 ngày mai', hot: false };
+        var t11m = new Date(nowMs); t11m.setDate(t11m.getDate() + 1); t11m.setHours(11, 0, 0, 0);
+        return { txt: 'Đã qua giờ hôm nay — chờ 11:00 ngày mai', hot: false, nextAt: t11m.getTime(), src: 'khung-gio' };
       }
       if (b.id === 'giao_long') {
         if (day === 0) {
           if (mins >= 18 * 60 && mins < 23 * 60 + 30) {
-            return { txt: 'TỐI NAY — Hòm Vết Nứt nổ ngẫu nhiên 18:00–23:00, Giao Long giáng ~10 phút sau (mặc định ~22:10)', hot: true };
+            return { txt: 'TỐI NAY — Hòm Vết Nứt nổ ngẫu nhiên 18:00–23:00, Giao Long giáng ~10 phút sau (mặc định ~22:10)', hot: true, nextAt: nowMs, src: 'khung-gio' };
           }
           if (mins < 18 * 60) {
-            return { txt: 'Chờ tối nay (Hòm nổ 18:00–23:00)', hot: false };
+            var t18 = new Date(nowMs); t18.setHours(18, 0, 0, 0);
+            return { txt: 'Chờ tối nay (Hòm nổ 18:00–23:00)', hot: false, nextAt: t18.getTime(), src: 'khung-gio' };
           }
-          return { txt: 'Đã qua giờ tối nay', hot: false };
+          return { txt: 'Đã qua giờ tối nay', hot: false, nextAt: null, src: 'khung-gio' };
         }
         var daysToSun = (7 - day) % 7;
-        return { txt: 'Chờ Chủ Nhật (còn ' + daysToSun + ' ngày)', hot: false };
+        var tSun = new Date(nowMs); tSun.setDate(tSun.getDate() + daysToSun); tSun.setHours(18, 0, 0, 0);
+        return { txt: 'Chờ Chủ Nhật (còn ' + daysToSun + ' ngày)', hot: false, nextAt: tSun.getTime(), src: 'khung-gio' };
       }
-      // Boss hồi sinh định kỳ: tính từ mốc hạ (server giữ mốc thật, tool chỉ ước tính).
+      // 1) Bảng GIỜ BOSS server gửi (hook BossBoard) — giờ thật, chuẩn nhất.
+      var bd = boardData[b.id];
+      if (bd) {
+        if (bd.at === null) {
+          // Bảng báo "Đã hạ" (dead, chưa có giờ hồi sinh mới) -> rơi xuống
+          // các nguồn dưới (giờ cố định / mốc hạ).
+        } else if (bd.at > nowMs) {
+          return { txt: 'Hồi sinh sau ' + fmtCountdown(bd.at - nowMs) + ' (bảng game, lúc ' + fmtGio(bd.at) + ')', hot: false, nextAt: bd.at, src: 'bang' };
+        } else if (nowMs - bd.at < 15 * 60 * 1000) {
+          return { txt: 'SẮP XUẤT HIỆN (bảng game — đã tới giờ ' + fmtGio(bd.at) + ')', hot: true, nextAt: nowMs, src: 'bang' };
+        }
+        // Bảng quá cũ (>15 phút sau giờ) -> không dùng nữa, rơi xuống dưới.
+      }
+      // 2) Giờ cố định do người dùng ghi (mốc neo HH:MM + chu kỳ respawnSec).
+      var anchor = docAnchor(b.id);
+      if (anchor !== null && b.respawnSec > 0) {
+        var nextFx = mocCoDinhTiepTheo(anchor, b.respawnSec, nowMs);
+        if (nextFx !== null) {
+          var remainFx = nextFx - nowMs;
+          if (remainFx > 0) {
+            return { txt: 'Hồi sinh sau ~' + fmtCountdown(remainFx) + ' (giờ cố định, lúc ' + fmtGio(nextFx) + ')', hot: false, nextAt: nextFx, src: 'co-dinh' };
+          }
+          return { txt: 'ĐÃ TỚI GIỜ hồi sinh (giờ cố định)', hot: true, nextAt: nowMs, src: 'co-dinh' };
+        }
+      }
+      // 3) Mốc hạ + respawnSec (ước tính).
       var lk = mocHa(b.id);
       var lg = mocBienMat(b.id);
       var moc = lk || lg;
@@ -1520,11 +1583,43 @@ window.__TT2D_TONG__ = {
         var remain = next - Date.now();
         var nhan = lk ? ('từ mốc hạ ' + fmtGio(lk)) : ('ước tính từ lúc boss biến mất ' + fmtGio(lg));
         if (remain > 0) {
-          return { txt: 'Hồi sinh sau ~' + fmtCountdown(remain) + ' (' + nhan + ')', hot: false };
+          return { txt: 'Hồi sinh sau ~' + fmtCountdown(remain) + ' (' + nhan + ')', hot: false, nextAt: next, src: 'uoc-tinh' };
         }
-        return { txt: 'ĐÃ TỚI GIỜ hồi sinh (ước tính, ' + nhan + ')', hot: true };
+        return { txt: 'ĐÃ TỚI GIỜ hồi sinh (ước tính, ' + nhan + ')', hot: true, nextAt: nowMs, src: 'uoc-tinh' };
       }
-      return { txt: 'Chưa rõ giờ hồi sinh — xem bảng Boss trong game (chưa có mốc hạ)', hot: false };
+      return { txt: 'Chưa rõ giờ hồi sinh — xem bảng Boss trong game (chưa có mốc hạ)', hot: false, nextAt: null, src: 'chua-ro' };
+    }
+
+    // Mốc neo giờ cố định (phút từ 00:00, localStorage riêng của tool).
+    function docAnchor(id) {
+      try {
+        var v = window.localStorage.getItem('tt2d_boss_anchor_' + id);
+        if (v === null || v === '') return null;
+        var n = parseInt(v, 10);
+        if (isNaN(n) || n < 0 || n >= 1440) return null;
+        return n;
+      } catch (e) { return null; }
+    }
+    function ghiAnchor(id, mins) {
+      try { window.localStorage.setItem('tt2d_boss_anchor_' + id, String(mins)); } catch (e) {}
+      capNhatLich();
+    }
+    function xoaAnchor(id) {
+      try { window.localStorage.removeItem('tt2d_boss_anchor_' + id); } catch (e) {}
+      capNhatLich();
+    }
+    // Mốc cố định kế tiếp: neo (phút từ 00:00 hôm nay) + k * chu kỳ > now.
+    function mocCoDinhTiepTheo(anchorMins, respawnSec, nowMs) {
+      var d = new Date(nowMs);
+      var base = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime()
+        + anchorMins * 60000;
+      var step = respawnSec * 1000;
+      if (step <= 0) return null;
+      var t = base;
+      var guard = 0;
+      while (t <= nowMs && guard < 100) { t += step; guard++; }
+      if (guard >= 100) return null;
+      return t;
     }
 
     // ---------------- Đọc DOM của game ----------------
@@ -1599,8 +1694,283 @@ window.__TT2D_TONG__ = {
       return true;
     }
 
+    // ---------------- v1.2.0: Hook bảng GIỜ BOSS (giờ hồi sinh thật) ----------------
+    // Server gửi message `bosses` -> __ns_.BossBoard.set(t.boards); mỗi boss
+    // trong list có {name, dead, con} (con = số giây tới lúc hồi sinh; con<0
+    // nghĩa là đã hạ, chưa có giờ mới). Hook để lấy mốc `at` thật thay vì
+    // ước tính từ mốc hạ. Dữ liệu chỉ có khi server gửi bảng (thường khi đổi
+    // map / định kỳ); chưa có thì rơi xuống giờ cố định / ước tính.
+    function hookBossBoard() {
+      if (boardHooked) return;
+      try {
+        var ns = window.__ns_;
+        var bb = ns && ns.BossBoard;
+        if (!bb || typeof bb.set !== 'function') return;
+        var origSet = bb.set;
+        bb.set = function (t) {
+          try { ghiBoard(t); } catch (e) { /* bỏ qua */ }
+          return origSet.call(this, t);
+        };
+        boardHooked = true;
+        log('Đã gắn hook bảng GIỜ BOSS — giờ hồi sinh lấy từ server khi có bảng.');
+      } catch (e) { /* bỏ qua */ }
+    }
+    function bossFromBoardName(name) {
+      if (!name) return null;
+      for (var i = 0; i < BOSS_ORDER.length; i++) {
+        var b = BOSSES[BOSS_ORDER[i]];
+        if (name.indexOf(b.tenNgan) !== -1) return b;
+      }
+      return null;
+    }
+    function ghiBoard(t) {
+      if (!Array.isArray(t)) return;
+      var now = Date.now();
+      var doi = false;
+      t.forEach(function (board) {
+        (board.list || []).forEach(function (e) {
+          var b = bossFromBoardName(e.name);
+          if (!b) return;
+          var con = Number(e.con);
+          boardData[b.id] = {
+            at: (isNaN(con) || con < 0) ? null : now + con * 1000,
+            dead: !!e.dead,
+            capAt: now,
+          };
+          doi = true;
+        });
+      });
+      if (doi) capNhatLich();
+    }
+
+    // ---------------- v1.2.0: Điều hướng (nav chung của Tool Tổng) ----------------
+    function nav() {
+      return window.__TT2D_NAV__ || (window.__TT2D_TONG__ && window.__TT2D_TONG__.nav) || null;
+    }
+    // Map hiện tại (id client): ưu tiên nav.docViTri(), fallback đọc #hud-map.
+    function docMapHienTai() {
+      try {
+        var n = nav();
+        if (n && typeof n.docViTri === 'function') {
+          var p = n.docViTri();
+          if (p && p.map) return p.map;
+        }
+      } catch (e) { /* bỏ qua */ }
+      var hm = document.querySelector('#hud-map');
+      var s = hm ? (hm.innerText || hm.textContent || '') : '';
+      if (/Long Uyên/.test(s)) return 'long_uyen';
+      if (/Thạch Phong|Thung Lũng/.test(s)) return 'thach_phong_thung_lung';
+      if (/Bãi Đá/.test(s)) return 'bai_da_hang_gio';
+      if (/Mỏ Linh Thạch/.test(s)) return 'mo_linh_thach';
+      if (/Thiên Đạo|Chính Đảo/.test(s)) return 'thien_dao_khuyet';
+      if (/Chân Núi Tản Viên/.test(s)) return 'tan_vien';
+      if (/Phong Địa/.test(s)) return 'phong_dia';
+      if (/Thảo Dược Cốc/.test(s)) return 'duoc_vien';
+      if (/Rừng Trúc/.test(s)) return 'thanh_truc_lam';
+      if (/Miếu Hoang/.test(s)) return 'mieu_hoang';
+      return null;
+    }
+    function laMapBoss(mapId) {
+      if (!mapId) return false;
+      for (var i = 0; i < BOSS_ORDER.length; i++) {
+        if (BOSSES[BOSS_ORDER[i]].map === mapId) return true;
+      }
+      return false;
+    }
+    function laGioChinhMa(date) {
+      var d = date || new Date();
+      var mins = d.getHours() * 60 + d.getMinutes();
+      return mins >= 11 * 60 && mins < 12 * 60;
+    }
+    // HP hiện tại của nhân vật (đọc thanh máu .pl-bar.hp .pl-n "x / y").
+    function docHp() {
+      try {
+        var el = document.querySelector('.pl-bar.hp .pl-n');
+        var t = el ? (el.textContent || '') : '';
+        var nums = t.match(/[\d,\.]+/g);
+        if (!nums || nums.length < 2) return null;
+        return {
+          cur: parseFloat(nums[0].replace(/,/g, '')),
+          max: parseFloat(nums[1].replace(/,/g, '')),
+        };
+      } catch (e) { return null; }
+    }
+
+    // ---------------- v1.2.0: Tự di chuyển tới boss ----------------
+    // Khi TỰ ĐI đang BẬT + đã chọn 1 boss cụ thể: tới trước giờ hồi sinh
+    // (5 phút + 2 phút/cổng) thì tự dùng nav.diToiMap tới map boss, rồi
+    // diToi tới điểm spawn (trừ Ma Báo: tọa độ động, chỉ tới map), bật lại
+    // Auto + ưu tiên Boss rồi chờ. Thất bại 3 lần -> TẮT tự đi + báo rõ.
+    // KHÔNG dùng Truyền Tống Trận (đi bộ qua cổng; Giao Long đi qua Cột Khí
+    // Bổng Bát Quái -> Thiên Đạo, nav đã có đường).
+    function kiemTraDiBoss() {
+      if (!on || !tuDi || selectedBoss === 'all') return;
+      if (movePhase === 'moving') return;
+      if (phase === 'fighting' && currentBoss) return; // đang đánh boss rồi
+      if (phase === 'looting') return; // vừa hạ boss, đang chờ nhặt đồ
+      if (moveFails >= MAX_MOVE_FAILS) return; // đã tắt tự đi sau 3 lần lỗi
+      var b = BOSSES[selectedBoss];
+      if (!b) return;
+      var n = nav();
+      if (!n || typeof n.diToiMap !== 'function') {
+        if (Date.now() - lastNoRouteLogAt > 60000) {
+          lastNoRouteLogAt = Date.now();
+          log('TỰ ĐI cần module nav (chỉ có trong Tool Tổng) — tool lẻ không tự đi được.');
+        }
+        return;
+      }
+      var st = trangThaiBoss(b);
+      if (!st.nextAt) {
+        setMoveStatus('Chưa rõ giờ ' + b.tenNgan + ' — không tự đi được (xem bảng Boss trong game hoặc ghi giờ cố định).');
+        return;
+      }
+      var curMap = docMapHienTai();
+      if (curMap === b.map) {
+        if (movePhase !== 'idle') movePhase = 'idle';
+        setMoveStatus('Đã ở ' + b.mapTen + ' — chờ ' + b.tenNgan + ' (' + st.txt + ').');
+        return;
+      }
+      var duong = null;
+      try { duong = (typeof n.duongDi === 'function') ? n.duongDi(curMap, b.map) : null; } catch (e) { duong = null; }
+      if (duong === null) {
+        if (Date.now() - lastNoRouteLogAt > 60000) {
+          lastNoRouteLogAt = Date.now();
+          log('Không có đường bộ tới ' + b.mapTen + ' từ map hiện tại — không tự đi được.');
+        }
+        setMoveStatus('Không có đường bộ tới ' + b.mapTen + ' — tự đi tới đó rồi bật tool.');
+        return;
+      }
+      var gates = duong.length;
+      var leadMs = MOVE_BEFORE_MS + gates * MOVE_PER_GATE_MS;
+      var remain = st.nextAt - Date.now();
+      if (remain > leadMs) {
+        setMoveStatus('Sẽ tự đi tới ' + b.mapTen + ' lúc ' + fmtGio(st.nextAt - leadMs) +
+          ' (' + b.tenNgan + ' hồi sinh ' + fmtGio(st.nextAt) + ', đường ' + gates + ' cổng).');
+        return;
+      }
+      // Tới giờ đi.
+      movePhase = 'moving';
+      moveTargetId = b.id;
+      setMoveStatus('Đang tự đi tới ' + b.mapTen + ' (' + b.tenNgan + ' hồi sinh sau ' +
+        fmtCountdown(Math.max(0, remain)) + ')…');
+      diToiBoss(b);
+    }
+    async function diToiBoss(b) {
+      var n = nav();
+      try {
+        log('TỰ ĐI: ' + b.tenNgan + ' sắp xuất hiện — đang đi tới ' + b.mapTen + '…');
+        var okMap = await n.diToiMap(b.map);
+        if (!okMap) throw new Error('diToiMap false');
+        if (b.toaXY) {
+          var okToi = await n.diToi(b.toaXY[0], b.toaXY[1], 60);
+          if (!okToi) log('Đã tới ' + b.mapTen + ' nhưng chưa tới đúng điểm spawn ' + b.toa + ' — chờ boss ở đây.');
+        }
+        movePhase = 'arrived';
+        moveFails = 0;
+        log('Đã tới ' + b.mapTen + ' — bật Auto + ưu tiên Boss, chờ ' + b.tenNgan + ' xuất hiện.');
+        damBaoUuTienBoss();
+        damBaoAuto();
+        setMoveStatus('Đã tới ' + b.mapTen + ' — chờ ' + b.tenNgan + ' xuất hiện.');
+      } catch (e) {
+        moveFails++;
+        movePhase = 'idle';
+        log('TỰ ĐI tới ' + b.mapTen + ' thất bại lần ' + moveFails + '/' + MAX_MOVE_FAILS + '.');
+        if (moveFails >= MAX_MOVE_FAILS) {
+          tuDi = false;
+          capNhatNutTuDi();
+          setMoveStatus('Tự đi tới boss thất bại 3 lần — đã TẮT tự đi.');
+          log('Đã TẮT tự di chuyển sau 3 lần thất bại — tự đi tới map boss rồi bật lại.');
+        }
+      }
+    }
+    function setMoveStatus(s) {
+      lastMoveStatus = s;
+      var el = document.querySelector('#tt2d-boss-move');
+      if (el) el.textContent = s;
+    }
+
+    // ---------------- v1.2.0: Tự hồi sinh tại chỗ khi chết lúc đánh boss ----------------
+    // Phát hiện gục: __ns_.SceneWorld.player.downed HOẶC bảng #downed hiện.
+    // Chỉ hồi sinh khi tool đang BẬT + đang đánh/chờ boss ở map boss; bấm
+    // #downed-spot (Hồi sinh tại chỗ, ~35% HP + khiên 3s), KHÔNG BAO GIỜ
+    // bấm #downed-home (Về làng = mất boss). Hồi sinh xong ĐÁNH LUÔN, không
+    // chờ hồi HP (lệnh Thanh 05:54 25/11). Tối đa 3 lần/phiên bật tool.
+    function dangChet() {
+      try {
+        var p = window.__ns_ && window.__ns_.SceneWorld && window.__ns_.SceneWorld.player;
+        if (p && p.downed) return true;
+      } catch (e) { /* bỏ qua */ }
+      var d = document.querySelector('#downed');
+      return !!(d && !d.classList.contains('hidden'));
+    }
+    // Trả {ok, lyDo}: lyDo = 'ok' | 'het-luot' | 'chinh-ma' | 'khong-o-map-boss'
+    // | 'khong-phai-luc-danh' | 'tool-tat'. nowMs để test truyền giờ giả.
+    function coNenHoiSinh(nowMs) {
+      if (!on) return { ok: false, lyDo: 'tool-tat' };
+      if (phase !== 'fighting' && phase !== 'waiting' && phase !== 'looting') {
+        return { ok: false, lyDo: 'khong-phai-luc-danh' };
+      }
+      if (reviveCount >= MAX_REVIVES) return { ok: false, lyDo: 'het-luot' };
+      var mapId = docMapHienTai();
+      if (mapId === 'tan_vien' && laGioChinhMa(new Date(nowMs || Date.now()))) {
+        return { ok: false, lyDo: 'chinh-ma' };
+      }
+      if (selectedBoss !== 'all') {
+        if (mapId !== BOSSES[selectedBoss].map) return { ok: false, lyDo: 'khong-o-map-boss' };
+      } else if (!laMapBoss(mapId)) {
+        return { ok: false, lyDo: 'khong-o-map-boss' };
+      }
+      return { ok: true, lyDo: 'ok' };
+    }
+    function xuLyChet() {
+      if (reviveStopped) return;
+      if (reviveCount >= MAX_REVIVES) {
+        reviveStopped = true;
+        setOn(false);
+        setStatus('Chết quá 3 lần trong phiên săn này — đã DỪNG tool. Boss quá mạnh hoặc cần hồi HP/đồ tốt hơn.');
+        log('Chết quá 3 lần — đã DỪNG tool (boss quá mạnh hoặc cần hồi HP/đồ tốt hơn).');
+        return;
+      }
+      var q = coNenHoiSinh();
+      if (!q.ok) {
+        if (q.lyDo === 'chinh-ma') {
+          if (Date.now() - lastReviveLogAt > 60000) {
+            lastReviveLogAt = Date.now();
+            log('Chết ở làng trong giờ Chính Ma — KHÔNG tự hồi sinh (chờ qua 12:00).');
+          }
+        } else if (q.lyDo === 'khong-o-map-boss') {
+          if (Date.now() - lastReviveLogAt > 60000) {
+            lastReviveLogAt = Date.now();
+            log('Gục nhưng không ở map boss — KHÔNG tự hồi sinh (chỉ hồi sinh khi đang săn boss ở map boss).');
+          }
+        }
+        return;
+      }
+      var spot = document.querySelector('#downed-spot');
+      if (!spot) return; // bảng chưa hiện hẳn (PANEL_DELAY 1.2s) — tick sau thử lại
+      if (spot.disabled) {
+        // Hết lượt hồi sinh tại chỗ (game khóa nút khi reviveLeft = 0).
+        reviveStopped = true;
+        setOn(false);
+        setStatus('Hết lượt hồi sinh tại chỗ (game khóa nút) — đã DỪNG tool.');
+        log('Hết lượt hồi sinh tại chỗ — nút Hồi sinh bị khóa, đã DỪNG tool.');
+        return;
+      }
+      if (Date.now() - lastReviveClickAt < 3000) return; // tránh bấm dồn dập
+      lastReviveClickAt = Date.now();
+      spot.click();
+      reviveCount++;
+      var hp = docHp();
+      var hpTxt = hp ? (' (HP sau hồi sinh ~' + hp.cur + '/' + hp.max + ')') : '';
+      log('Đã bấm HỒI SINH TẠI CHỖ lần ' + reviveCount + '/' + MAX_REVIVES + hpTxt + ' — đánh tiếp ngay, không chờ hồi HP.');
+      setStatus('Đã hồi sinh tại chỗ lần ' + reviveCount + '/' + MAX_REVIVES + ' — đánh tiếp ngay.');
+      // ĐÁNH LUÔN: bật Auto + ưu tiên Boss ngay (tick sau cũng làm vậy).
+      damBaoUuTienBoss();
+      damBaoAuto();
+    }
+
     // ---------------- Bảng điều khiển ----------------
-    var panel, miniBar, miniStatusEl, statusEl, detailEl, schedEl, statsEl, logEl, toggleBtn, bossBtns = {};
+    var panel, miniBar, miniStatusEl, statusEl, detailEl, schedEl, statsEl, logEl, toggleBtn, tudiBtn, bossBtns = {};
     var collapsed = false; // bảng đang thu nhỏ?
     function buildPanel() {
       panel = document.createElement('div');
@@ -1628,12 +1998,20 @@ window.__TT2D_TONG__ = {
         '<div id="tt2d-boss-detail" style="margin:4px 0;color:#ffd27a"></div>' +
         '<div style="margin:8px 0;display:flex;gap:6px">' +
           '<button id="tt2d-boss-toggle" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT</button>' +
+          '<button id="tt2d-boss-tudi" title="Tự di chuyển tới map boss trước giờ hồi sinh (cần chọn 1 boss cụ thể; chỉ có trong Tool Tổng)" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">TỰ ĐI: TẮT</button>' +
         '</div>' +
         '<div id="tt2d-boss-status" style="margin:6px 0;color:#bfe3ff">Chưa bật — đưa nhân vật tới đúng map boss rồi bấm BẬT.</div>' +
+        '<div id="tt2d-boss-move" style="margin:6px 0;color:#ffd27a;font-size:11px"></div>' +
         '<div id="tt2d-boss-sched" style="margin:6px 0;color:#d8c9a3;font-size:11px"></div>' +
+        '<div id="tt2d-boss-anchor-row" style="margin:6px 0;color:#d8c9a3;font-size:11px;display:none">' +
+          'Giờ hồi sinh đã biết (giờ cố định): <input id="tt2d-boss-anchor" placeholder="HH:MM" maxlength="5" style="width:52px;padding:2px 4px;border-radius:4px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0">' +
+          ' <button id="tt2d-boss-anchor-set" style="padding:2px 6px;border-radius:4px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Ghi giờ</button>' +
+          ' <button id="tt2d-boss-anchor-clear" title="Xóa giờ cố định đã ghi" style="padding:2px 6px;border-radius:4px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">✕</button>' +
+          ' <span id="tt2d-boss-anchor-cur"></span>' +
+        '</div>' +
         '<div id="tt2d-boss-stats" style="color:#c9f2c9">Đã hạ 0 boss · Đã chờ nhặt 0 lần</div>' +
         '<div id="tt2d-boss-log" style="margin-top:6px;max-height:96px;overflow:auto;color:#d8c9a3;font-size:11px"></div>' +
-        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Tool không tự di chuyển nhân vật (dùng script boss_go.py để tự đưa tới map boss). Chỉ bấm nút Auto + ưu tiên Boss của game. Đồ rơi game tự hút sau 5s — boss gục thì ở lại bãi ~60s.</div>';
+        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">TỰ ĐI: tự tới map boss trước giờ hồi sinh (chỉ trong Tool Tổng). Chết lúc đánh boss: tool tự bấm Hồi sinh tại chỗ (tối đa 3 lần/phiên) rồi đánh tiếp ngay — không bấm Về làng. Đồ rơi game tự hút sau 5s — boss gục thì ở lại bãi ~60s.</div>';
       Tong.tabBody('boss').appendChild(panel);
 
       // Thanh thu nhỏ: chỉ hiện tên tool + trạng thái ngắn + nút mở lại.
@@ -1663,6 +2041,30 @@ window.__TT2D_TONG__ = {
       logEl = panel.querySelector('#tt2d-boss-log');
 
       toggleBtn.addEventListener('click', function () { setOn(!on); });
+      tudiBtn = panel.querySelector('#tt2d-boss-tudi');
+      if (tudiBtn) tudiBtn.addEventListener('click', function () { setTuDi(!tuDi); });
+      var anchorSetBtn = panel.querySelector('#tt2d-boss-anchor-set');
+      if (anchorSetBtn) anchorSetBtn.addEventListener('click', function () {
+        var inp = panel.querySelector('#tt2d-boss-anchor');
+        var v = inp ? (inp.value || '').trim() : '';
+        var m = /^(\d{1,2}):(\d{2})$/.exec(v);
+        if (!m) { log('Giờ cố định phải dạng HH:MM (vd 21:00).'); return; }
+        var hh = parseInt(m[1], 10), mm = parseInt(m[2], 10);
+        if (hh < 0 || hh > 23 || mm < 0 || mm > 59) { log('Giờ cố định không hợp lệ (HH 0–23, MM 0–59).'); return; }
+        if (selectedBoss === 'all') { log('Chọn 1 boss cụ thể rồi mới ghi giờ cố định.'); return; }
+        ghiAnchor(selectedBoss, hh * 60 + mm);
+        log('Đã ghi giờ cố định cho ' + BOSSES[selectedBoss].tenNgan + ': ' +
+          (hh < 10 ? '0' + hh : hh) + ':' + (mm < 10 ? '0' + mm : mm) +
+          ' (mốc neo, các mốc tiếp theo cách nhau ' + BOSSES[selectedBoss].respawnTen + ').');
+        capNhatAnchorRow();
+      });
+      var anchorClearBtn = panel.querySelector('#tt2d-boss-anchor-clear');
+      if (anchorClearBtn) anchorClearBtn.addEventListener('click', function () {
+        if (selectedBoss === 'all') return;
+        xoaAnchor(selectedBoss);
+        log('Đã xóa giờ cố định của ' + BOSSES[selectedBoss].tenNgan + '.');
+        capNhatAnchorRow();
+      });
       panel.querySelector('#tt2d-boss-collapse').addEventListener('click', function () { setCollapsed(true); });
       panel.querySelector('#tt2d-boss-hide').addEventListener('click', function () {
         setCollapsed(true);
@@ -1673,6 +2075,52 @@ window.__TT2D_TONG__ = {
       });
       setDetail();
       capNhatLich();
+      capNhatNutTuDi();
+      capNhatAnchorRow();
+    }
+
+    // Nút TỰ ĐI: bật/tắt + cập nhật nhãn/trạng thái khóa.
+    function setTuDi(v) {
+      if (v && selectedBoss === 'all') {
+        log('TỰ ĐI cần chọn 1 boss cụ thể (không đi được 5 map cùng lúc).');
+        return;
+      }
+      if (v && !nav()) {
+        log('TỰ ĐI cần module nav — chỉ có trong Tool Tổng (tool lẻ chạy một mình không tự đi được).');
+        return;
+      }
+      tuDi = !!v;
+      if (!tuDi) { movePhase = 'idle'; setMoveStatus(''); }
+      else log('Đã BẬT tự di chuyển tới boss ' + BOSSES[selectedBoss].tenNgan + ' — tool sẽ tự đi trước giờ hồi sinh.');
+      capNhatNutTuDi();
+    }
+    function capNhatNutTuDi() {
+      if (!tudiBtn) return;
+      var coNav = !!nav();
+      var khoa = (selectedBoss === 'all') || !coNav;
+      tudiBtn.textContent = tuDi ? 'TỰ ĐI: BẬT' : 'TỰ ĐI: TẮT';
+      tudiBtn.style.background = tuDi ? '#6b4d16' : '#2a2113';
+      tudiBtn.style.opacity = khoa ? '0.55' : '1';
+      tudiBtn.title = khoa
+        ? (selectedBoss === 'all'
+          ? 'Chọn 1 boss cụ thể để bật TỰ ĐI'
+          : 'TỰ ĐI cần module nav — chỉ có trong Tool Tổng')
+        : 'Tự di chuyển tới map boss trước giờ hồi sinh';
+    }
+    // Hàng ghi giờ cố định: chỉ hiện khi chọn 1 boss cụ thể có chu kỳ hồi sinh.
+    function capNhatAnchorRow() {
+      var row = document.querySelector('#tt2d-boss-anchor-row');
+      if (!row) return;
+      var b = selectedBoss === 'all' ? null : BOSSES[selectedBoss];
+      if (!b || !b.respawnSec) { row.style.display = 'none'; return; }
+      row.style.display = 'block';
+      var cur = document.querySelector('#tt2d-boss-anchor-cur');
+      var a = docAnchor(b.id);
+      if (cur) {
+        cur.textContent = a !== null
+          ? ('đã ghi: ' + (Math.floor(a / 60) < 10 ? '0' : '') + Math.floor(a / 60) + ':' + (a % 60 < 10 ? '0' : '') + (a % 60) + ' (cách nhau ' + b.respawnTen + ')')
+          : '(chưa ghi)';
+      }
     }
 
     // Thu nhỏ / mở lại bảng. Tool vẫn chạy khi bảng thu nhỏ.
@@ -1711,11 +2159,19 @@ window.__TT2D_TONG__ = {
     function chonBoss(id) {
       if (id !== 'all' && !BOSSES[id]) return;
       selectedBoss = id;
+      // Đổi boss -> reset trạng thái tự đi (đi tới boss cũ không còn đúng).
+      movePhase = 'idle';
+      moveFails = 0;
+      moveTargetId = null;
+      setMoveStatus('');
       Object.keys(bossBtns).forEach(function (k) {
         bossBtns[k].style.background = k === selectedBoss ? '#6b4d16' : '#2a2113';
       });
       setDetail();
+      capNhatNutTuDi();
+      capNhatAnchorRow();
       if (id === 'all') {
+        if (tuDi) { tuDi = false; capNhatNutTuDi(); log('Đã TẮT tự di chuyển (TỰ ĐI chỉ đi được khi chọn 1 boss cụ thể).'); }
         log('Đang săn: Tất cả boss (boss nào xuất hiện cũng đánh).');
       } else {
         log('Đang săn: ' + BOSSES[id].ten + ' — ' + BOSSES[id].mapTen + ' ' + BOSSES[id].toa + '.');
@@ -1730,16 +2186,19 @@ window.__TT2D_TONG__ = {
       var b = BOSSES[selectedBoss];
       detailEl.textContent = b.ten + ' (Cấp ' + b.cap + ') — ' + b.mapTen + ' ' + b.toa +
         ' · HP ' + b.hp.toLocaleString('vi-VN') + ' · ' + b.respawnTen +
-        ' · Hộ vệ: ' + b.hoVe + '. Đồ: ' + b.drops;
+        ' · Hộ vệ: ' + b.hoVe + '. Đồ: ' + b.drops +
+        (nav() ? ' · TỰ ĐI có sẵn.' : ' · TỰ ĐI chỉ có trong Tool Tổng.');
     }
     // Vẽ lại lịch boss (gọi mỗi giây + khi có mốc hạ mới).
     function capNhatLich() {
       if (!schedEl) return;
+      var srcTag = { 'bang': 'bảng game', 'co-dinh': 'giờ cố định', 'uoc-tinh': 'ước tính', 'khung-gio': 'khung giờ', 'chua-ro': '' };
       var html = BOSS_ORDER.map(function (id) {
         var b = BOSSES[id];
         var st = trangThaiBoss(b);
         var sel = (selectedBoss === id) ? ' style="color:#ffd27a"' : '';
-        return '<div' + sel + '>' + (st.hot ? '🔥 ' : '• ') + '<b>' + b.tenNgan + '</b> — ' + st.txt +
+        var tag = srcTag[st.src] ? (' <span style="color:#9a8a6a">[' + srcTag[st.src] + ']</span>') : '';
+        return '<div' + sel + '>' + (st.hot ? '🔥 ' : '• ') + '<b>' + b.tenNgan + '</b> — ' + st.txt + tag +
           ' <button data-ghi="' + id + '" title="Ghi: vừa hạ boss này (để tính giờ hồi sinh)" style="padding:0 5px;border-radius:4px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">✓ hạ</button>' +
           ' <button data-xoa="' + id + '" title="Xóa mốc hạ đã ghi" style="padding:0 5px;border-radius:4px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">✕</button></div>';
       }).join('');
@@ -1772,6 +2231,17 @@ window.__TT2D_TONG__ = {
         currentBossName = '';
         lastBossHpFrac = null;
         lastHpMilestone = 1;
+        // Phiên săn mới: reset bộ đếm tự hồi sinh + trạng thái tự đi.
+        reviveCount = 0;
+        reviveStopped = false;
+        movePhase = 'idle';
+        moveFails = 0;
+        moveTargetId = null;
+        lastReviveClickAt = 0;
+        hookBossBoard();
+        if (tuDi && selectedBoss !== 'all') {
+          log('TỰ ĐI đang BẬT — sẽ tự đi tới ' + BOSSES[selectedBoss].mapTen + ' trước giờ ' + BOSSES[selectedBoss].tenNgan + ' hồi sinh.');
+        }
         // Nhắc đặt ưu tiên Boss nếu chưa đặt (tool chỉ tự bấm được khi bảng Cài Đặt mở).
         var ut = uuTienHienTai();
         if (ut && ut !== 'boss') {
@@ -1815,6 +2285,17 @@ window.__TT2D_TONG__ = {
     // ---------------- Vòng lặp chính ----------------
     function tick() {
       if (!on) return;
+      // Gắn hook bảng GIỜ BOSS (game có thể nạp sau tool).
+      hookBossBoard();
+      // ƯU TIÊN 1 — CHẾT: tự hồi sinh tại chỗ rồi đánh tiếp ngay (không chờ HP).
+      if (dangChet()) { xuLyChet(); return; }
+      // ƯU TIÊN 2 — TỰ ĐI: tới giờ thì tự di chuyển tới map boss. Khi đang đi
+      // thì không chạy luồng đánh (Auto phải TẮT để joystick chạy được).
+      if (tuDi) kiemTraDiBoss();
+      if (movePhase === 'moving') {
+        setStatus(lastMoveStatus || 'Đang tự đi tới map boss…');
+        return;
+      }
       // Luôn giữ Auto BẬT khi tool đang chạy (người dùng phải ở đúng map boss).
       damBaoAuto();
       // Cố đặt ưu tiên Boss nếu bảng Cài Đặt đang mở.
@@ -1902,8 +2383,8 @@ window.__TT2D_TONG__ = {
     setInterval(capNhatLich, 1000);
     setStatus('Chưa bật — đưa nhân vật tới đúng map boss rồi bấm BẬT.');
     setStats();
-    log('Tool đã nạp (v1.1.0). Mặc định TẮT. 5 boss theo giờ: Xích Long 3h, Linh Hổ 5h, Nhện 8h, Ma Báo 11:00–21:00, Giao Long tối Chủ Nhật. Bấm "—" để thu nhỏ bảng.');
-    // Điều khiển từ Console khi cần debug: __TT2D_BOSS__.start() / .stop() / .select('xich_long'|'linh_ho'|'nhen'|'ma_bao'|'giao_long'|'all') / .status() / .ghiHa('xich_long') / .lich() / .setCollapsed(true|false)
+    log('Tool đã nạp (v1.2.0). Mặc định TẮT. 5 boss theo giờ: Xích Long 3h, Linh Hổ 5h, Nhện 8h, Ma Báo 11:00–21:00, Giao Long tối Chủ Nhật. MỚI: TỰ ĐI tới map boss trước giờ hồi sinh + TỰ HỒI SINH tại chỗ tối đa 3 lần rồi đánh tiếp ngay. Bấm "—" để thu nhỏ bảng.');
+    // Điều khiển từ Console khi cần debug: __TT2D_BOSS__.start() / .stop() / .select('xich_long'|'linh_ho'|'nhen'|'ma_bao'|'giao_long'|'all') / .status() / .ghiHa('xich_long') / .lich() / .setCollapsed(true|false) / .setTuDi(true|false) / .ghiAnchor('xich_long', 21*60) / ._debug
     window.__TT2D_BOSS__ = {
       start: function () { setOn(true); },
       stop: function () { setOn(false); },
@@ -1911,10 +2392,15 @@ window.__TT2D_TONG__ = {
       setCollapsed: function (v) { setCollapsed(v); },
       collapsed: function () { return collapsed; },
       ghiHa: function (id) { ghiHa(id, true); },
+      setTuDi: function (v) { setTuDi(!!v); },
+      tuDi: function () { return tuDi; },
+      moveStatus: function () { return { movePhase: movePhase, moveFails: moveFails, moveTargetId: moveTargetId, lastMoveStatus: lastMoveStatus }; },
+      ghiAnchor: function (id, mins) { ghiAnchor(id, mins); },
+      xoaAnchor: function (id) { xoaAnchor(id); },
       lich: function () {
         return BOSS_ORDER.map(function (id) {
           var st = trangThaiBoss(BOSSES[id]);
-          return { id: id, ten: BOSSES[id].ten, txt: st.txt, hot: st.hot };
+          return { id: id, ten: BOSSES[id].ten, txt: st.txt, hot: st.hot, nextAt: st.nextAt, src: st.src };
         });
       },
       status: function () {
@@ -1923,7 +2409,23 @@ window.__TT2D_TONG__ = {
           currentBoss: currentBoss ? currentBoss.id : null,
           currentTarget: currentBossName, lastBossHpFrac: lastBossHpFrac,
           autoOn: autoIsOn(), uuTien: uuTienHienTai(), stats: stats,
+          tuDi: tuDi, movePhase: movePhase, moveFails: moveFails,
+          reviveCount: reviveCount, boardHooked: boardHooked,
         };
+      },
+      // Hook cho test tự động (không dùng khi chơi thật).
+      _debug: {
+        dangChet: dangChet,
+        coNenHoiSinh: coNenHoiSinh,
+        laGioChinhMa: laGioChinhMa,
+        docMapHienTai: docMapHienTai,
+        trangThaiBoss: function (id) { return trangThaiBoss(BOSSES[id]); },
+        ghiBoard: ghiBoard,
+        boardData: function () { return boardData; },
+        reviveCount: function () { return reviveCount; },
+        setReviveCount: function (n) { reviveCount = n; },
+        docAnchor: docAnchor,
+        mocCoDinhTiepTheo: mocCoDinhTiepTheo,
       },
     };
     Tong.register('boss', window.__TT2D_BOSS__);
