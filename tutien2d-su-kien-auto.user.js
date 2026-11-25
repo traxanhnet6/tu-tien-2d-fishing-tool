@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Săn Sự Kiện (Thương Đội + Xổng Chuồng)
 // @namespace    https://traxanhnet6.github.io/tu-tien-2d-su-kien-tool
-// @version      1.0.0
+// @version      1.0.1
 // @description  Canh kênh Thế Giới, tự chạy tới săn Thương Đội và Yêu Thú Xổng Chuồng cho 2 acc traxanhnet + traxanhnet2, xong tự về farm.
 // @author       Muse (cho Thanh)
 // @match        https://tutienpixel.online/*
@@ -10,7 +10,8 @@
 // @run-at       document-idle
 // ==/UserScript==
 /* =====================================================================
-   TOOL SĂN SỰ KIỆN — Thương Đội + Yêu Thú Xổng Chuồng (v1.0.0)
+   TOOL SĂN SỰ KIỆN — Thương Đội + Yêu Thú Xổng Chuồng (v1.0.1)
+   v1.0.1 (25/11): sửa cổng tan_vien>mieu_hoang (2,15)->(2,13) hàng 13 — xác minh live 25/11, (2,15) sai do hàng 14-16 bị cây chắn ở x=1.
    ---------------------------------------------------------------------
    Canh kênh Thế Giới (poll DOM ~4s). Thấy Thiên Đạo xướng sự kiện thì
    tự di chuyển tới map + khu đó, bật Auto + Phi Hành + Chạy, ưu tiên
@@ -107,7 +108,7 @@
     'bai_da_hang_gio>tan_vien': { x: 0, y: 27, dx: -1, dy: 0 },
     'bai_da_hang_gio>dong_mach_ngam': { x: 10, y: 0, dx: 0, dy: -1 },
     'dong_mach_ngam>bai_da_hang_gio': { x: 15, y: 25, dx: 0, dy: 1 },
-    'tan_vien>mieu_hoang': { x: 2, y: 15, dx: -1, dy: 0 },
+    'tan_vien>mieu_hoang': { x: 2, y: 13, dx: -1, dy: 0 },
     'mieu_hoang>tan_vien': { x: 19, y: 6, dx: 1, dy: 0 },
     'mieu_hoang>phong_dia': { x: 1, y: 6, dx: -1, dy: 0 },
     'phong_dia>mieu_hoang': { x: 39, y: 14, dx: 1, dy: 0 },
@@ -167,7 +168,7 @@
   // thường dùng, 40x30, ô biên chặn TRỪ ô cổng (cổng phải đi được).
   var CLIENT_GROUND = (function () {
     var g = {};
-    var congO = [[7, 29], [7, 0], [12, 29], [12, 0], [39, 14], [0, 27], [2, 15], [19, 6], [1, 6], [39, 14], [0, 20], [10, 0]];
+    var congO = [[7, 29], [7, 0], [12, 29], [12, 0], [39, 14], [0, 27], [2, 13], [19, 6], [1, 6], [39, 14], [0, 20], [10, 0]];
     ['tan_vien', 'thanh_truc_lam', 'duoc_vien', 'bai_da_hang_gio', 'mieu_hoang', 'phong_dia'].forEach(function (m) {
       var grid = [];
       for (var y = 0; y < 30; y++) {
