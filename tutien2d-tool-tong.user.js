@@ -1,7 +1,9 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm)
 // @namespace    https://tutienpixel.online/
-// @version      1.3.1
+// @version      1.3.2
+// @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
+// @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 7 tab — Câu cá Hồ Tây (v3.2: tỷ lệ cắn + Côn Bằng + thời tiết + TỰ ĐI tới điểm câu), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường tới map + khu đã chọn. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
 // @author       Muse (làm cho Thanh)
 // @match        https://tutienpixel.online/*
@@ -10,7 +12,14 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
-// TOOL TỔNG v1.3.1 — 1 bảng chung, 7 tab. v1.3.1 (25/11): tab Câu cá lên
+// TOOL TỔNG v1.3.2 — 1 bảng chung, 7 tab. v1.3.2 (25/11): tab Dược lên
+// v1.1.1 — SỬA LỖI "tự động làm dược và di chuyển không hoạt động": bấm
+// nút game bằng tap() (pointerdown+pointerup+click — nút HUD của game chỉ
+// bind pointerdown, .click() là no-op) + diToi/quaCong tắt Auto trước khi
+// lái joystick rồi bật lại nếu là Trúc Cơ; CHỐNG TRÙNG BẢNG: script dừng
+// ngay nếu trang đã có bảng Tool Tổng (nhập script mới không hiện 2 bảng),
+// thêm @updateURL/@downloadURL để Tampermonkey cập nhật đúng bản cũ.
+// v1.3.1 (25/11): tab Câu cá lên
 // v3.2.0 — TỰ ĐI tới điểm câu đã chọn (dùng nav chung: diToiMap('van_can')
 // + diToi(x, y); tắt Auto trước khi di chuyển, tới nơi tự bắt đầu câu khi
 // giao diện câu xuất hiện; đang câu thì không di chuyển; kẹt 3 lần thì tắt
@@ -34,7 +43,7 @@
 // Ma Động, Hắc Phong Lĩnh, Hắc Thị + đường ra hầm Huyết Xích; duongDi
 // thành BFS trên đồ thị cổng; tab Farm thêm 7 map đích; sửa cổng
 // làng->Miếu Hoang (0,12). Gộp từ 5 tool lẻ (giữ nguyên logic):
-//  - Câu cá Hồ Tây v3.2.0 | Boss v1.2.0 | Dược v1.1.0 | Huyết Xích phụ v1.1.0
+//  - Câu cá Hồ Tây v3.2.0 | Boss v1.2.0 | Dược v1.1.1 | Huyết Xích phụ v1.1.0
 //    | Vận Tiêu phụ v1.0.0 — xem README.md trong thư mục tu-tien-2d-tool-tong.
 //  - Tổ đội + farm rùa: mời/chấp nhận trong 180px, tối đa 6 người, farm Thạch
 //    Quy Miếu Ông Trường Con Khu 12 (mới, viết cho Tool Tổng).
@@ -68,6 +77,16 @@
 //    (tên + trạng thái ngắn của tab đang dùng + nút "＋"). Tool vẫn chạy.
 //  - Mỗi module vẫn giữ nút "—" riêng của nó (thu gọn khung của module
 //    đó thành tên + trạng thái ngắn + "＋", tool vẫn chạy).
+
+// Chống chạy trùng: nếu trang đã có bảng Tool Tổng (do nhập script mới
+// mà bản cũ vẫn bật, hoặc script chạy 2 lần) thì dừng ngay để chỉ còn
+// 1 bảng — không dựng bảng thứ hai. (Lỗi 25/11: nhập script mới thì
+// hiện hẳn 2 bảng tool. LƯU Ý: guard này chỉ chặn trùng Tool Tổng với
+// nhau; script LẺ (Câu cá/Boss/Dược/Huyết Xích/Vận Tiêu) vẫn tạo bảng
+// riêng của nó — phải TẮT script lẻ trong Tampermonkey khi dùng Tool
+// Tổng, xem README mục "Cài đặt".)
+if (document.getElementById('tt2d-tong-panel')) return;
+
 var TABS = [
   { id: 'fish', icon: '\uD83C\uDFA3', ten: 'Câu cá' },
   { id: 'boss', icon: '\uD83D\uDC09', ten: 'Boss' },
@@ -2874,7 +2893,7 @@ window.__TT2D_TONG__ = {
   })();
 
 
-  // ================= MODULE: duoc (Dược v1.1.0: Trúc Cơ "Tự Đi", Luyện Khí nhận việc tay theo DC; tự hủy việc dở đã nhận trước khi bật tool.) =================
+  // ================= MODULE: duoc (Dược v1.1.1: Trúc Cơ "Tự Đi", Luyện Khí nhận việc tay theo DC; tự hủy việc dở đã nhận trước khi bật tool; bấm nút game bằng tap() (pointerdown+pointerup+click) + tắt Auto trước khi lái joystick.) =================
 
   (function () {
 
@@ -3009,19 +3028,19 @@ window.__TT2D_TONG__ = {
       var c = timLuaChon(dlg, re);
       if (!c) return false;
       if (c.disabled) return 'disabled';
-      c.el.click();
+      tap(c.el);
       return true;
     }
     function bamNutHanhDong(re) {
       var dlg = docDialog();
       if (!dlg || !dlg.action) return false;
       if (re && !re.test(dlg.action.label)) return false;
-      dlg.action.el.click();
+      tap(dlg.action.el);
       return true;
     }
     function dongDialog() {
       var c = $('#dialog-close');
-      if (c && dialogMo()) c.click();
+      if (c && dialogMo()) tap(c);
     }
     // Điểm Dược Công hiện tại ("Dược Công: X điểm" trong hộp thoại).
     function docDC(dlg) {
@@ -3115,6 +3134,35 @@ window.__TT2D_TONG__ = {
       return Math.abs(p.x - DAI_PHU.x) + Math.abs(p.y - DAI_PHU.y) <= CFG.ganDaiPhu;
     }
 
+    // ---------------- Bấm nút game bằng sự kiện pointer ----------------
+    // game.js (client 24/11): nút HUD (#btn-attack, #btn-fly,
+    // #btn-auto-touch, #btn-target, #btn-fishing-stop-touch,
+    // #btn-meditate-touch, #btn-run) CHỈ bind "pointerdown" (helper k()
+    // trong TouchUI: addEventListener "pointerdown" duy nhất, KHÔNG có
+    // listener "click") — .click() lên các nút này là no-op, đã làm tool
+    // Dược liệt hoàn toàn (không mở được hộp thoại Đại Phu, không bật/tắt
+    // được Auto/Phi Hành — Thanh báo lỗi 25/11). Nút hộp thoại
+    // (.btn-choice, #dialog-action, #dialog-close) thì bind "click".
+    // tap() phát pointerdown + pointerup + click nên bấm được cả hai
+    // loại; mỗi nút chỉ bind 1 loại nên không bấm đúp.
+    // LƯU Ý: pressAutoToggle/pressFlyToggle chỉ đặt cờ _autoToggle/
+    // _flyToggle, game tiêu thụ cờ ở frame sau nên class "active" đổi
+    // CHẬM hơn lệnh bấm ~1 frame — KHÔNG kiểm tra lại trạng thái ngay
+    // sau khi bấm (đọc class cũ sẽ tưởng chưa đổi rồi bấm lần nữa =
+    // toggle 2 lần về trạng thái cũ). Bấm đúng 1 lần rồi thôi.
+    function tap(el) {
+      if (!el) return false;
+      var r = el.getBoundingClientRect();
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      function ev(ty) {
+        return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: cx, clientY: cy, pointerId: 12345, isPrimary: true });
+      }
+      el.dispatchEvent(ev('pointerdown'));
+      el.dispatchEvent(ev('pointerup'));
+      el.click();
+      return true;
+    }
+
     // ---------------- Nút Auto / Phi Hành / Chạy ----------------
     function nutAuto() { return $('#btn-auto-touch') || $('#btn-auto'); }
     function autoDangBat() {
@@ -3125,8 +3173,9 @@ window.__TT2D_TONG__ = {
       var b = nutAuto();
       if (!b) return false;
       if (autoDangBat() === bat) return true;
-      b.click();
-      return true;
+      // Chỉ bấm 1 lần bằng tap() (nút nghe pointerdown, không nghe click);
+      // trạng thái đổi ở frame sau nên không kiểm tra lại ngay tại đây.
+      return tap(b);
     }
     function flyDangBat() {
       var b = $('#btn-fly');
@@ -3136,8 +3185,7 @@ window.__TT2D_TONG__ = {
       var b = $('#btn-fly');
       if (!b) return false;
       if (flyDangBat() === bat) return true;
-      b.click();
-      return true;
+      return tap(b);
     }
     function runDangBat() {
       var b = $('#btn-run');
@@ -3195,13 +3243,20 @@ window.__TT2D_TONG__ = {
       return joyHold(0, dy > 0 ? 40 : -40, ms);
     }
     // Đi tới ô (tx,ty) trong map hiện tại. Trả về true nếu tới nơi (sai số <=1).
+    // Joystick KHÔNG chạy khi Auto BẬT — tắt Auto ngay từ nhịp đầu, tắt lại
+    // nếu Auto tự bật giữa đường (vào combat); tới nơi (hoặc kẹt) thì bật
+    // lại Auto nếu là Trúc Cơ. Luyện Khí giữ Auto TẮT sau khi đi (chỉ bật
+    // lại khi tự vệ do kiemTraTuVe lo).
     async function diToi(tx, ty, maxBuoc) {
       maxBuoc = maxBuoc || 60;
-      var last = null, ket = 0;
+      var autoCu = autoDangBat();
+      if (autoCu) datAuto(false);
+      var last = null, ket = 0, kq = false;
       for (var i = 0; i < maxBuoc; i++) {
         var p = docViTri();
         if (p.x === null) { await sleep(2000); continue; }
-        if (Math.abs(p.x - tx) <= 1 && Math.abs(p.y - ty) <= 1) return true;
+        if (Math.abs(p.x - tx) <= 1 && Math.abs(p.y - ty) <= 1) { kq = true; break; }
+        if (autoDangBat()) datAuto(false);
         if (last && last.x === p.x && last.y === p.y) {
           ket++;
           if (ket >= 3) {
@@ -3216,10 +3271,11 @@ window.__TT2D_TONG__ = {
         await joyHuong(tx - p.x, ty - p.y, CFG.joyHoldMs);
         if (i % 10 === 9) {
           var q = docViTri();
-          if (q.map && q.map !== docViTri().map) return false;
+          if (q.map && q.map !== docViTri().map) break;
         }
       }
-      return false;
+      if (autoCu && realm !== 'luyen_khi') datAuto(true);
+      return kq;
     }
     // Bước qua cổng: tới ô cổng rồi giữ joystick hướng ra ngoài tới khi đổi map.
     async function quaCong(congKey) {
@@ -3232,6 +3288,7 @@ window.__TT2D_TONG__ = {
       if (!ok) { log('Không tới được cổng (' + c.x + ',' + c.y + ').'); return false; }
       var mapCu = docViTri().map;
       for (var i = 0; i < CFG.portalTries; i++) {
+        if (autoDangBat()) datAuto(false); // đẩy cổng cũng cần Auto TẮT
         await joyHold(c.dx * 40, c.dy * 40, CFG.portalHoldMs);
         var p = docViTri();
         if (p.map && p.map !== mapCu) return true;
@@ -3284,6 +3341,9 @@ window.__TT2D_TONG__ = {
         if (datAuto(true)) { tuVeDangBat = true; log('Bị quái đánh (HP ' + Math.round(hp.tiLe * 100) + '%) — bật Auto tự vệ.'); }
       } else if (tuVeDangBat && hp.tiLe >= CFG.hpAnToan) {
         if (datAuto(false)) { tuVeDangBat = false; log('HP đã hồi (' + Math.round(hp.tiLe * 100) + '%) — tắt Auto, làm việc tiếp.'); }
+      } else if (tuVeDangBat && hp.tiLe < CFG.hpTuVe && !autoDangBat()) {
+        // Auto tự vệ bị diToi tắt lúc di chuyển — bật lại (không log để khỏi spam).
+        datAuto(true);
       }
     }
 
@@ -3307,16 +3367,21 @@ window.__TT2D_TONG__ = {
       // có thể đọc menu cũ (vd vừa BẬT lại tool mà hộp thoại còn mở từ phiên
       // trước, trong khi acc đã nhận việc dở) và bỏ qua việc cần huỷ.
       if (dialogMo()) { dongDialog(); await sleep(600); }
+      // Bước lại gần Đại Phu bằng joystick — cần Auto TẮT (joystick không
+      // chạy khi Auto BẬT); xong thì bật lại Auto nếu là Trúc Cơ.
+      var autoCu = autoDangBat();
+      if (autoCu) datAuto(false);
+      function khoiPhucAuto() { if (autoCu && realm !== 'luyen_khi') datAuto(true); }
       for (var lan = 0; lan < 30; lan++) {
         var nt = nutTuongTac();
         // Chỉ bấm khi nút Tương Tác đang chỉ vào Đại Phu (aria-label ghi rõ).
         // Nếu aria trống thì bấm thử rồi kiểm tra hộp thoại mở ra.
         if (nt && nt.laTuongTac && (!nt.aria || /Đại Phu/.test(nt.aria))) {
-          nt.el.click();
+          tap(nt.el);
           await sleep(CFG.choDoiMs);
           if (dialogMo()) {
             var d1 = docDialog();
-            if (laHopThoaiDaiPhu(d1)) return d1;
+            if (laHopThoaiDaiPhu(d1)) { khoiPhucAuto(); return d1; }
             dongDialog();
             await sleep(600);
           }
@@ -3330,9 +3395,10 @@ window.__TT2D_TONG__ = {
       }
       if (dialogMo()) {
         var d2 = docDialog();
-        if (laHopThoaiDaiPhu(d2)) return d2;
+        if (laHopThoaiDaiPhu(d2)) { khoiPhucAuto(); return d2; }
         dongDialog();
       }
+      khoiPhucAuto();
       return null;
     }
 
@@ -3346,7 +3412,7 @@ window.__TT2D_TONG__ = {
       var tuDi = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
       if (!tuDi) { log('Không thấy mục "Tự Đi Làm Việc Dược Công" trong menu.'); return false; }
       if (tuDi.disabled) { log('"Tự Đi" đang bị khoá — ' + (tuDi.note || '') + '.'); return false; }
-      tuDi.el.click();
+      tap(tuDi.el);
       await sleep(CFG.choDoiMs);
       var dlg2 = docDialog();
       if (!dlg2) { log('Không mở được hộp thoại xác nhận "Tự Đi".'); return false; }
@@ -3400,7 +3466,7 @@ window.__TT2D_TONG__ = {
         if (c.label === TASKS[id].ten || c.label.indexOf(TASKS[id].tenNgan) >= 0) chon = c;
       });
       if (!chon || chon.disabled) { log('Không chọn được việc ' + TASKS[id].ten + '.'); return false; }
-      chon.el.click();
+      tap(chon.el);
       await sleep(CFG.choDoiMs);
       var xn = docDialog();
       if (!xn) { log('Không mở được hộp thoại xác nhận nhận việc.'); return false; }
@@ -3432,7 +3498,7 @@ window.__TT2D_TONG__ = {
           nt = nutTuongTac();
         }
         if (!nt || !nt.laTuongTac) { log('Không thấy nút tương tác với hồ.'); return 'ket'; }
-        nt.el.click();
+        tap(nt.el);
         await sleep(CFG.choDoiMs);
         var chon = bamLuaChon(/Tự động câu/);
         if (!chon) { log('Không thấy lựa chọn "Tự động câu".'); return 'ket'; }
@@ -3447,7 +3513,7 @@ window.__TT2D_TONG__ = {
           await sleep(2000);
         }
         var stop = $('#btn-fishing-stop-touch');
-        if (stop) stop.click();
+        if (stop) tap(stop);
         var td2 = docTienDo();
         if (td2 && td2.cur >= td2.max) { log('Đã câu đủ ' + td2.cur + '/' + td2.max + ' cá.'); return true; }
         log('Hết giờ chờ câu cá (chưa đủ 3 cá).');
@@ -3463,7 +3529,7 @@ window.__TT2D_TONG__ = {
           var td3 = docTienDo();
           if (td3 && td3.cur >= td3.max) { log('Đã gom đủ ' + td3.cur + '/' + td3.max + ' Cành Khô.'); return true; }
           var nt2 = nutTuongTac();
-          if (nt2 && nt2.laTuongTac) { nt2.el.click(); await sleep(2500); }
+          if (nt2 && nt2.laTuongTac) { tap(nt2.el); await sleep(2500); }
           // Đi vòng quanh gốc cây để nhặt cành rơi.
           var pp = docViTri();
           var vong = [[2, 0], [0, 2], [-2, 0], [0, -2], [2, 2], [-2, -2]];
@@ -3486,7 +3552,7 @@ window.__TT2D_TONG__ = {
           var ok3 = await diToi(t.spots[s][0], t.spots[s][1], 60);
           if (!ok3) continue;
           var nt3 = nutTuongTac();
-          if (nt3 && nt3.laTuongTac) { nt3.el.click(); await sleep(2500); }
+          if (nt3 && nt3.laTuongTac) { tap(nt3.el); await sleep(2500); }
         }
         var td6 = docTienDo();
         if (td6 && td6.cur >= td6.max) { log('Đã chặt đủ ' + td6.cur + '/' + td6.max + ' Trúc Tâm.'); return true; }
@@ -3501,7 +3567,7 @@ window.__TT2D_TONG__ = {
           var ok4 = await diToi(t.spots[s2][0], t.spots[s2][1], 40);
           if (!ok4) continue;
           var nt4 = nutTuongTac();
-          if (nt4 && nt4.laTuongTac) { nt4.el.click(); await sleep(2000); }
+          if (nt4 && nt4.laTuongTac) { tap(nt4.el); await sleep(2000); }
         }
         var td8 = docTienDo();
         if (td8 && td8.cur >= td8.max) { log('Đã hái đủ ' + td8.cur + '/' + td8.max + ' Linh Chi.'); return true; }
@@ -3512,7 +3578,7 @@ window.__TT2D_TONG__ = {
         if (!ok5) return 'ket';
         var nt5 = nutTuongTac();
         if (!nt5 || !nt5.laTuongTac) { log('Không thấy Thầy Ông Nội để giao người.'); return 'ket'; }
-        nt5.el.click();
+        tap(nt5.el);
         await sleep(CFG.choDoiMs);
         // Giao xong công tự ghi — kiểm tra tracker không còn việc nữa.
         await sleep(1500);
@@ -3529,7 +3595,7 @@ window.__TT2D_TONG__ = {
       if (!dlg) { log('Không mở được hộp thoại Đại Phu để nộp.'); return false; }
       var act = dlg.action;
       if (act && /Giao Ba Cá|Giao Nguyên Liệu/.test(act.label)) {
-        act.el.click();
+        tap(act.el);
         await sleep(CFG.choDoiMs);
         luotDaLam++;
         if (typeof luotConLai[viecHienTai] === 'number' && luotConLai[viecHienTai] > 0) luotConLai[viecHienTai]--;
@@ -3646,7 +3712,7 @@ window.__TT2D_TONG__ = {
             if (!tuDi && !nhanViec) {
               // Hộp thoại khác (nhiệm vụ chính...) — bấm nút hành động để qua, rồi thử lại.
               var act = dlg.action;
-              if (act) { act.el.click(); await sleep(CFG.choDoiMs); }
+              if (act) { tap(act.el); await sleep(CFG.choDoiMs); }
               else { dongDialog(); await sleep(1500); }
               continue;
             }
@@ -3977,6 +4043,13 @@ window.__TT2D_TONG__ = {
     // ---------------- Debug handle ----------------
     window.__TT2D_DUOC__ = {
       _cfg: CFG,
+      _debug: {
+        tap: tap, datAuto: datAuto, datFly: datFly, datRun: datRun,
+        autoDangBat: autoDangBat, flyDangBat: flyDangBat, runDangBat: runDangBat,
+        diToi: diToi, diToiMap: diToiMap, quaCong: quaCong,
+        moHopThoaiDaiPhu: moHopThoaiDaiPhu, nutTuongTac: nutTuongTac,
+        docViTri: docViTri, kiemTraTuVe: kiemTraTuVe,
+      },
       start: function () { setOn(true); },
       stop: function () { setOn(false); },
       setCollapsed: function (v) { setCollapsed(!!v); },
