@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm | Đại Hội | Vạn Hoang | Tam Lộ | Chính Ma | Canh | Tàng Kinh | Sổ LT | Tông Chiến | Linh Thụ | Săn Boss | Xổng Chuồng | HX Tổ Đội | Nhiệm vụ | Hồi Sinh | Báo Cáo)
 // @namespace    https://tutienpixel.online/
-// @version      1.5.1
+// @version      1.5.2
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 22 tab — Câu cá Hồ Tây (v3.2), Boss theo giờ, Dược Đại Phu (15 lượt/ngày), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường, Đại Hội tự ghi danh + đổi Nhân vật ở phòng chờ, Vạn Hoang tự vào bo, Tam Lộ tự bấm "Chơi luôn!", Chính Ma tự trú ẩn 10:55, Canh Phi Hành/trôi khu/Giáp, Tàng Kinh free + Điểm Danh, Sổ Linh Thạch + bảng tổng 4 acc, Tông Môn Chiến tự vào phòng chờ 21:00, Tranh Linh Thụ 20:16 T3/T7, Săn Boss theo lịch cả ngày, Yêu Thú Xổng Chuồng tự đi đánh bầy, Huyết Xích tổ đội cho thanhvan2, Nhiệm vụ chính GĐ0–38 (chỉ hiển thị), Hồi Sinh thông minh, Báo cáo cuối ngày + nhận thưởng Thư, Sáng map Tam Lộ + Vạn Hoang. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
@@ -12,7 +12,12 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
-// TOOL TỔNG v1.5.1 — 1 bảng chung, 22 tab. v1.5.1 (25/11, lệnh Thanh 22:10):
+// TOOL TỔNG v1.5.2 — 1 bảng chung, 22 tab. v1.5.2 (25/11, lệnh Thanh 22:45):
+//  SỬA GỐC vụ tool không di chuyển được nhân vật: joyHold lái trực tiếp
+//  qua Input.setJoystick thay vì dispatch PointerEvent giả lên #joystick
+//  (handler joystick của game gọi setPointerCapture không try/catch,
+//  pointerId giả throw NotFoundError nên nhân vật không nhúc nhích).
+// v1.5.1 (25/11, lệnh Thanh 22:10):
 //  ẩn tên acc ở dòng trạng thái tab Báo cáo (chỉ hiện LT/quái/Thư) + Nhiệm vụ;
 //  + sửa diToi chống kẹt (đi vòng khi 3 nhịp không đổi vị trí, áp cả nhánh BFS)
 //  + cổng dự phòng Thung Lũng→Mỏ (2,27) (lệnh Thanh 22:15).
@@ -498,14 +503,14 @@ tongBuildShell();
 // Debug handle chung: __TT2D_TONG__.status() / .showTab(id) /
 // .setCollapsed(v) / .setTabCollapsed(v) / .tab(id) / .nav (module Điều hướng).
 window.__TT2D_TONG__ = {
-  version: '1.5.1',
+  version: '1.5.2',
   showTab: tongShowTab,
   setCollapsed: tongSetCollapsed,
   setTabCollapsed: tongSetTabCollapsed,
   activeTab: function () { return activeTab; },
   tab: function (id) { return apis[id] || null; },
   status: function () {
-    var out = { version: '1.5.1', activeTab: activeTab, tabs: {} };
+    var out = { version: '1.5.2', activeTab: activeTab, tabs: {} };
     Object.keys(apis).forEach(function (id) {
       try { out.tabs[id] = apis[id].status ? apis[id].status() : null; } catch (e) { out.tabs[id] = null; }
     });
@@ -6413,7 +6418,30 @@ window.__TT2D_TONG__ = {
   }
 
   // ---------------- Joystick ----------------
+  // v1.5.2 (lệnh Thanh 22:45 25/11) — NGUYÊN NHÂN GỐC vụ "tool không tự
+  // động di chuyển nhân vật": joyHold cũ dispatch PointerEvent giả lên
+  // #joystick, nhưng handler joystick của game gọi setPointerCapture(
+  // pointerId) KHÔNG try/catch — với pointerId giả (12345) Chrome throw
+  // NotFoundError (đã xác minh bằng Playwright 22:45), state kéo (s)
+  // không bao giờ được set, h(t) ở pointermove đọc s null cũng throw,
+  // nên nhân vật KHÔNG NHÚC NHÍCH (diToi cứ đẩy 60 nhịp rồi báo kẹt).
+  // Cách sửa: lái TRỰC TIẾP qua Input.setJoystick(x, y, active) của
+  // game (client: joy.x/y chuẩn hoá, clamp |v|<=1, active=true để đi,
+  // (0,0,false) để dừng) — không qua DOM event nữa. Chỉ fallback về
+  // dispatch PointerEvent khi không đọc được Input.
   function joyHold(dx, dy, ms) {
+    var IN = null;
+    try { IN = window.__ns_ && window.__ns_.Input; } catch (e) { IN = null; }
+    if (IN && typeof IN.setJoystick === 'function') {
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      try { IN.setJoystick(dx / len, dy / len, true); } catch (e) { return Promise.resolve(false); }
+      return new Promise(function (resolve) {
+        setTimeout(function () {
+          try { IN.setJoystick(0, 0, false); } catch (e) {}
+          setTimeout(function () { resolve(true); }, CFG_NAV.joyWaitMs);
+        }, ms);
+      });
+    }
     var joy = $('#joystick');
     if (!joy) return Promise.resolve(false);
     var r = joy.getBoundingClientRect();
