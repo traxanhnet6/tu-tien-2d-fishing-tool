@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm)
 // @namespace    https://tutienpixel.online/
-// @version      1.3.4
+// @version      1.3.5
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 7 tab — Câu cá Hồ Tây (v3.2: tỷ lệ cắn + Côn Bằng + thời tiết + TỰ ĐI tới điểm câu), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường tới map + khu đã chọn. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
@@ -12,6 +12,23 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
+// TOOL TỔNG v1.3.5 — 1 bảng chung, 7 tab. v1.3.5 (25/11): Vận Tiêu phụ lên
+// v1.0.2 — TỰ CHẠY TIÊU từ chuyến 2 (Thanh chốt 12:49 25/11 "Dùng tự chạy
+// tiêu từ chuyến 2"). Học theo đúng mã client game.js 24/11 (VanTieu.moTuChay
+// + SceneWorld.tuChayBat/tuChayDung/tick tự chạy + VanTieuUI), không tự chế
+// đường/logic: helper chỉ bấm nút #van-tieu-hud .vt-tu khi game cho hiện nút
+// (moTuChay: đủ 2 chuyến đã xong — chuyến 1 nút ẩn nên vẫn chạy tay), 1 lần/
+// chuyến; game tự kéo theo TUYEN + tự nhận/giao tới hết lượt; helper vẫn giữ
+// Auto TẮT + Chạy BẬT + Phi Hành TẮT cả khi đang tự chạy (game không tự tắt
+// Auto); KHÔNG tự bấm lại khi game dừng giữa chuyến (ghi lý do từ caption);
+// DỪNG chuỗi sau chuyến 3 vì checkNhan của game chỉ kiểm tra "đủ LT đóng phí"
+// nên chuỗi tự chạy sẽ tự nhận cả chuyến 4–6 phí 1.000 (quy tắc cứng phí ≠400
+// -> DỪNG) — đọc phí chuyến sau từ VanTieu.phiNhan (ưu tiên số server);
+// 2 chuyến timeout liên tiếp -> DỪNG chuỗi (timeout suy từ đồng hồ HUD chạm
+// 0:00 hai nhịp rồi mất tiêu, vì tick game không kiểm tra đồng hồ — server
+// kết thúc chuyến khi hết 6:00). CHƯA đồng bộ van_tieu_run.py (script Python
+// lái tay bằng joystick sẽ hủy tự chạy ngay — cập nhật sau khi lượt cron
+// Vận Tiêu 12:00 25/11 kết thúc). Các tab khác không đổi.
 // TOOL TỔNG v1.3.4 — 1 bảng chung, 7 tab. v1.3.4 (25/11): ĐÍNH CHÍNH cổng làng→Miếu Hoang — cổng dự phòng (2,15) SAI (các hàng 14–16 bị cây chắn ở x=1), đổi thành (2,13) đã xác minh live 08:35 25/11 (chặng net13 đẩy tây từ (2,13) ~4s qua được). v1.3.3 (25/11): SỬA LỖI "bật
 // auto farm ở tool không di chuyển được" (Thanh báo 07:15) — cùng lỗi
 // .click() như tab Dược ở v1.3.2, nhưng ở tab Farm + tab Boss + helper
@@ -67,7 +84,7 @@
 // thành BFS trên đồ thị cổng; tab Farm thêm 7 map đích; sửa cổng
 // làng->Miếu Hoang (0,12). Gộp từ 5 tool lẻ (giữ nguyên logic):
 //  - Câu cá Hồ Tây v3.2.0 | Boss v1.2.1 | Dược v1.1.1 | Huyết Xích phụ v1.1.1
-//    | Vận Tiêu phụ v1.0.1 — xem README.md trong thư mục tu-tien-2d-tool-tong.
+//    | Vận Tiêu phụ v1.0.2 — xem README.md trong thư mục tu-tien-2d-tool-tong.
 //  - Tổ đội + farm rùa: mời/chấp nhận trong 180px, tối đa 6 người, farm Thạch
 //    Quy Miếu Ông Trường Con Khu 12 (mới, viết cho Tool Tổng).
 //  - Farm tự tìm đường (mới v1.1.0): chọn map + khu -> tool tự đi tới (BFS +
@@ -4505,7 +4522,7 @@ window.__TT2D_TONG__ = {
   })();
 
 
-  // ================= MODULE: vantieu (Vận Tiêu phụ v1.0.1: giữ Auto TẮT + Chạy BẬT + Phi Hành TẮT khi mang tiêu, đồng hồ 6:00; bấm nút HUD bằng tap() (chỉ bấm #btn-auto-touch, #btn-auto không có listener).) =================
+  // ================= MODULE: vantieu (Vận Tiêu phụ v1.0.2: giữ Auto TẮT + Chạy BẬT + Phi Hành TẮT khi mang tiêu, đồng hồ 6:00; TỰ BẤM nút "Tự chạy tiêu" của game từ chuyến 2 (game tự kéo + tự nhận/giao tới hết lượt — học theo mã client: moTuChay/TUYEN/tick tự chạy); DỪNG chuỗi sau chuyến 3 (phí sau 1.000 ≠400) hoặc 2 timeout liên tiếp; không tự bấm lại khi game dừng giữa chuyến. Bấm nút HUD bằng tap() (chỉ bấm #btn-auto-touch, #btn-auto không có listener).) =================
 
   (function () {
 
@@ -4513,6 +4530,8 @@ window.__TT2D_TONG__ = {
     var CFG = {
       pollMs: 500,
       warnSec: 60,          // con <60s thi dong ho do
+      phiChuan: 400,        // phi chuan 3 chuyen dau (VanTieu.PHI); chuyen 4-6 phi 1000
+      timeoutToiDa: 2,      // 2 chuyen timeout lien tiep -> DUNG chuoi (quy tac cung)
     };
 
     var state = {
@@ -4525,7 +4544,59 @@ window.__TT2D_TONG__ = {
       mauXe: null,          // % mau xe
       dong: '',             // dong trang thai xe ("Xe tụt lại..." / "Cờ đỏ...")
       lastLog: [],
+      // --- tu chay tieu (v1.0.2) ---
+      tuChayOn: true,       // tinh nang tu chay BẬT (Thanh chot 12:49 25/11)
+      tuChay: false,        // game DANG tu chay (doc tu game, khong tu doan)
+      daBamTuChay: false,   // da bam nut cho chuyen dang mang nay (1 lan/chuyen)
+      tuChayDungGiuaChuyen: false,  // game tu dung giua chuyen (bi danh/HP thap/...)
+      lyDoDung: '',         // ly do game dung (doc tu #ritual-caption)
+      dungViPhi: false,     // da dung chuoi vi chuyen sau phi != 400
+      dungViTimeout: false, // da dung chuoi vi 2 chuyen timeout lien tiep
+      timeoutLienTiep: 0,   // so chuyen timeout lien tiep (persist theo ngay)
+      hetGioChuyenNay: false, // dong ho chuyen dang mang da cham 0:00
+      hetGioDem: 0,         // so nhip lien tiep thay hanSec<=0 (chong bao ao)
+      chuyenDem: 0,         // so chuyen helper QUAN SAT thay xong hom nay (fallback khi khong doc duoc __ns_)
+      ngay: '',             // ngay VN hien tai (de reset co theo ngay)
     };
+
+    // --- bo dem persist theo ngay (chi la FALLBACK khi khong doc duoc __ns_; so lieu that nam o server) ---
+    var LS_NGAY = 'tt2d_vantieu_ngay', LS_CHUYEN = 'tt2d_vantieu_chuyen', LS_TIMEOUT = 'tt2d_vantieu_timeout';
+    function ngayVN() {
+      try { return new Date(Date.now() + 252e5).toISOString().slice(0, 10); }
+      catch (e) { return ''; }
+    }
+    function taiBoDem() {
+      try {
+        var ngay = ngayVN();
+        if (localStorage.getItem(LS_NGAY) !== ngay) {
+          localStorage.setItem(LS_NGAY, ngay);
+          localStorage.setItem(LS_CHUYEN, '0');
+          localStorage.setItem(LS_TIMEOUT, '0');
+        }
+        state.ngay = ngay;
+        state.chuyenDem = parseInt(localStorage.getItem(LS_CHUYEN) || '0', 10) || 0;
+        state.timeoutLienTiep = parseInt(localStorage.getItem(LS_TIMEOUT) || '0', 10) || 0;
+      } catch (e) { /* localStorage khong co -> dem trong phien */ }
+    }
+    function luuBoDem() {
+      try {
+        localStorage.setItem(LS_NGAY, ngayVN());
+        localStorage.setItem(LS_CHUYEN, String(state.chuyenDem));
+        localStorage.setItem(LS_TIMEOUT, String(state.timeoutLienTiep));
+      } catch (e) {}
+    }
+    function resetTheoNgay() {
+      // Sang ngay moi: reset co dung chuoi + bo dem (chuyen moi tinh lai tu dau).
+      if (state.ngay && state.ngay !== ngayVN()) {
+        state.ngay = ngayVN();
+        state.chuyenDem = 0;
+        state.timeoutLienTiep = 0;
+        state.dungViPhi = false;
+        state.dungViTimeout = false;
+        luuBoDem();
+        log('Sang ngày mới — reset bộ đếm chuyến/timeout, mở lại tự chạy tiêu.');
+      }
+    }
 
     function $(s) { return document.querySelector(s); }
 
@@ -4574,9 +4645,115 @@ window.__TT2D_TONG__ = {
       return m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : null;
     }
 
+    /* ---------------- tu chay tieu: doc dung trang thai game (client) ---------------- */
+    function ns() {
+      try { return window.__ns_ || null; }
+      catch (e) { return null; }
+    }
+    function nutTuChay() {
+      var hud = $('#van-tieu-hud');
+      return hud ? hud.querySelector('.vt-tu') : null;
+    }
+    function docSoChuyen() {
+      // So chuyen DA XONG hom nay — uu tien bo dem SERVER cua game:
+      // Quest.flags[vanTieuVan] (client khong tu tang, chi server tang khi
+      // nhan/giao). Fallback: bo dem helper quan sat duoc.
+      try {
+        var n = ns();
+        if (n && n.VanTieu && n.Quest && n.Quest.flags) {
+          var f = n.Quest.flags, day = n.VanTieu.day(Date.now());
+          if (f[n.VanTieu.CO_NGAY] !== day) return 0;
+          return Math.max(0, Number(f[n.VanTieu.CO_VAN]) || 0);
+        }
+      } catch (e) {}
+      return state.chuyenDem;
+    }
+    function docPhiTiep() {
+      // Phi chuyen SAU (VanTieu.phiNhan: <3 chuyen thi 400, tu chuyen 4 thi
+      // 1000). Fallback: suy tu bo dem helper.
+      try {
+        var n = ns();
+        if (n && n.VanTieu && n.Quest && n.Quest.flags) {
+          return n.VanTieu.phiNhan(n.Quest.flags, Date.now());
+        }
+      } catch (e) {}
+      return (docSoChuyen() < 3) ? CFG.phiChuan : 1000;
+    }
+    function dangTuChayGame() {
+      // Trang thai that cua game: SceneWorld.dangTuChay(); fallback: nut
+      // .vt-tu dang ghi "Dừng tự chạy".
+      try {
+        var n = ns();
+        if (n && n.SceneWorld && typeof n.SceneWorld.dangTuChay === 'function') {
+          return !!n.SceneWorld.dangTuChay();
+        }
+      } catch (e) {}
+      var b = nutTuChay();
+      return !!(b && !b.hidden && (b.textContent || '').indexOf('Dừng tự chạy') >= 0);
+    }
+    function docLyDoDung() {
+      // Ly do game dung tu chay (vd "Bị đánh — dừng tự chạy tiêu") hien qua
+      // caption #ritual-caption ~2,8s; poll 500ms nen doc kip.
+      var c = $('#ritual-caption');
+      var t = c ? (c.textContent || '').trim() : '';
+      return (t.indexOf('dừng tự chạy tiêu') >= 0) ? t : '';
+    }
+    function dungTuChay(lyDo) {
+      // Dung dung nhu nut "Dừng tự chạy" cua game: uu tien goi dung ham game
+      // tuChayDung() ma nut do goi (dung khi HUD da an, khong con nut de bam
+      // — vd giua 2 chuyen); neu con nut thi bam nut.
+      var ok = false;
+      try {
+        var n = ns();
+        if (n && n.SceneWorld && typeof n.SceneWorld.tuChayDung === 'function') {
+          n.SceneWorld.tuChayDung(lyDo);
+          ok = true;
+        }
+      } catch (e) {}
+      if (!ok) {
+        var nut = nutTuChay();
+        if (nut && !nut.hidden && (nut.textContent || '').indexOf('Dừng tự chạy') >= 0) {
+          tap(nut);
+          ok = true;
+        }
+      }
+      if (ok) log('Đã dừng tự chạy tiêu — ' + lyDo);
+      else log('KHÔNG dừng được tự chạy tiêu (' + lyDo + ') — không thấy hàm game/nút.');
+      state.tuChay = false;
+      return ok;
+    }
+    function bamTuChay() {
+      // Bam nut "Tự chạy tiêu" NGAY neu game dang cho hien nut (danh cho
+      // script van_tieu_run.py goi lai sau khi xu ly xong vu dung giua
+      // chuyen, hoac nguoi choi bam tay qua debug). Tra false neu khong
+      // bam duoc (chuyen 1 / dang chay roi / tinh nang tat).
+      if (!state.on || !state.tuChayOn || state.dungViPhi || state.dungViTimeout) return false;
+      var nut = nutTuChay();
+      if (!nut || nut.hidden) return false;
+      if ((nut.textContent || '').indexOf('Tự chạy tiêu') < 0) return false;
+      tap(nut);
+      state.daBamTuChay = true;
+      state.tuChayDungGiuaChuyen = false;
+      state.lyDoDung = '';
+      log('Đã bấm "Tự chạy tiêu" (lệnh ngoài) — game tự kéo + tự giao.');
+      return true;
+    }
+    function setTuChay(v) {
+      state.tuChayOn = !!v;
+      if (state.tuChayOn && (state.dungViPhi || state.dungViTimeout)) {
+        // Bật lại bằng tay = quyết định tiếp tục chuỗi: xóa cờ dừng (chuỗi
+        // sẽ dừng lại ngay nếu chuyến sau vẫn phí ≠400 — đúng quy tắc).
+        state.dungViPhi = false;
+        state.dungViTimeout = false;
+        log('Bật lại tự chạy tiêu — đã xóa cờ dừng chuỗi (phí/timeout).');
+      }
+      log('Tự chạy tiêu: ' + (state.tuChayOn ? 'BẬT (từ chuyến 2 trở đi)' : 'TẮT (chỉ chạy tay)') + '.');
+      render();
+    }
+
     /* ---------------- bang dieu khien (thu nho duoc) ---------------- */
     var panel, panelBody, panelBar, collapseBtn, expandBtn, statusLine;
-    var elHang, elHan, elMau, elNut, elLog;
+    var elHang, elHan, elMau, elNut, elTuChay, elLog;
 
     function buildPanel() {
       panel = document.createElement('div');
@@ -4638,6 +4815,7 @@ window.__TT2D_TONG__ = {
       elHan = row('Còn lại');
       elMau = row('Máu xe');
       elNut = row('Auto/Chạy/Phi');
+      elTuChay = row('Tự chạy tiêu');
       var logBox = document.createElement('div');
       logBox.style.cssText = 'margin-top:5px;border-top:1px solid #4a3a1c;padding-top:4px;font-size:11px;color:#b8ab84;white-space:pre-wrap;word-break:break-word;';
       elLog = logBox;
@@ -4656,6 +4834,16 @@ window.__TT2D_TONG__ = {
       foot.appendChild(onBtn);
       foot.appendChild(offBtn);
       panelBody.appendChild(foot);
+      var foot2 = document.createElement('div');
+      foot2.style.cssText = 'margin-top:5px;display:flex;gap:6px;';
+      var tuBtn = document.createElement('button');
+      tuBtn.id = 'tt2d-vantieu-tuchay-btn';
+      tuBtn.textContent = 'Tự chạy: BẬT';
+      tuBtn.title = 'Bật/tắt tự bấm nút "Tự chạy tiêu" từ chuyến 2 (Thanh chốt 12:49 25/11)';
+      tuBtn.style.cssText = 'flex:1;padding:3px 0;border:1px solid #8a6d2f;border-radius:4px;background:#3a2c12;color:#ffd36a;cursor:pointer;font-size:12px;';
+      tuBtn.addEventListener('click', function () { setTuChay(!state.tuChayOn); });
+      foot2.appendChild(tuBtn);
+      panelBody.appendChild(foot2);
       panel.appendChild(panelBody);
 
       Tong.tabBody('vantieu').appendChild(panel);
@@ -4672,11 +4860,26 @@ window.__TT2D_TONG__ = {
     }
 
     function shortStatus() {
-      if (!state.carrying) return 'Chưa nhận tiêu';
+      if (!state.carrying) {
+        if (state.dungViPhi) return 'Dừng chuỗi (phí sau ≠400)';
+        if (state.dungViTimeout) return 'Dừng chuỗi (2 timeout)';
+        return 'Chưa nhận tiêu';
+      }
       var s = state.hang ? state.hang.replace('Tiêu Kỳ ', '') : 'Đang kéo';
       if (state.han) s += ' · ' + state.han;
       if (state.dong && state.dong.indexOf('tụt lại') >= 0) s += ' · xe tụt lại';
+      if (state.tuChay) s += ' · tự chạy';
       return s;
+    }
+
+    function tuChayText() {
+      if (!state.tuChayOn) return 'TẮT';
+      if (state.dungViPhi) return 'DỪNG (phí sau ≠400)';
+      if (state.dungViTimeout) return 'DỪNG (2 timeout)';
+      if (state.tuChay) return 'ĐANG CHẠY';
+      if (state.tuChayDungGiuaChuyen) return 'ĐÃ DỪNG' + (state.lyDoDung ? ' — ' + state.lyDoDung : '');
+      if (state.carrying) return 'chờ chuyến 2 (chuyến ' + (docSoChuyen() + 1) + '/6)';
+      return 'BẬT · chờ chuyến 2';
     }
 
     function render() {
@@ -4693,18 +4896,73 @@ window.__TT2D_TONG__ = {
       elNut.textContent = (a === null ? '?' : (a ? 'BẬT' : 'TẮT')) + ' / ' +
         (btnState('#btn-run') ? 'BẬT' : 'TẮT') + ' / ' +
         (btnState('#btn-fly') ? 'BẬT' : 'TẮT');
+      elTuChay.textContent = tuChayText();
+      elTuChay.style.color = state.tuChay ? '#7ddc8a' :
+        (state.dungViPhi || state.dungViTimeout || state.tuChayDungGiuaChuyen) ? '#ff6b5e' : '#e8e0c8';
+      var tb = panel.querySelector('#tt2d-vantieu-tuchay-btn');
+      if (tb) tb.textContent = 'Tự chạy: ' + (state.tuChayOn ? 'BẬT' : 'TẮT');
       elLog.textContent = state.lastLog.join('\n') || '—';
     }
 
     /* ---------------- vong poll ---------------- */
     function tick() {
       try {
+        resetTheoNgay();
         var hud = $('#van-tieu-hud');
         var carrying = !!(hud && !hud.hidden);
+        var dangChayTruoc = state.tuChay;
+        state.tuChay = dangTuChayGame();
         if (carrying !== state.carrying) {
+          var vuaNhan = carrying && !state.carrying;
+          var vuaHet = !carrying && state.carrying;
           state.carrying = carrying;
-          log(carrying ? 'Đã nhận tiêu — bắt đầu giữ Auto TẮT / Chạy BẬT / Phi Hành TẮT.'
-                       : 'Không còn mang tiêu (đã giao / hết / bị cướp).');
+          if (vuaNhan) {
+            state.daBamTuChay = false;
+            state.hetGioChuyenNay = false;
+            state.hetGioDem = 0;
+            state.tuChayDungGiuaChuyen = false;
+            state.lyDoDung = '';
+            log('Đã nhận tiêu (chuyến ' + (docSoChuyen() + 1) + '/6) — giữ Auto TẮT / Chạy BẬT / Phi Hành TẮT.');
+          }
+          if (vuaHet) {
+            // --- 1 chuyen vua ket thuc (giao xong / het gio / bi cuop / xe vo) ---
+            state.chuyenDem++;
+            var cap = (function () {
+              var c = $('#ritual-caption');
+              return c ? (c.textContent || '').trim() : '';
+            })();
+            if (state.hetGioChuyenNay) {
+              state.timeoutLienTiep++;
+              luuBoDem();
+              log('Hết giờ 6:00 — chuyến timeout (timeout liên tiếp: ' + state.timeoutLienTiep + '/' + CFG.timeoutToiDa + ').');
+            } else {
+              state.timeoutLienTiep = 0;
+              luuBoDem();
+              if (cap.indexOf('Giao hàng xong') >= 0) {
+                log('Giao hàng xong (chuyến ' + docSoChuyen() + '/6 đã xong).');
+              } else {
+                log('Đã hết 1 chuyến (giao xong hoặc mất tiêu — xem thông báo game).');
+              }
+            }
+            // --- DUNG CHUOI theo quy tac cung (chi khi game van dang tu chay) ---
+            if (state.tuChay) {
+              if (state.timeoutLienTiep >= CFG.timeoutToiDa) {
+                state.dungViTimeout = true;
+                dungTuChay('2 chuyến timeout liên tiếp — dừng tự chạy tiêu.');
+              } else {
+                var phi = docPhiTiep();
+                if (phi !== null && phi !== CFG.phiChuan) {
+                  state.dungViPhi = true;
+                  dungTuChay('Chuyến sau phí ' + phi + ' LT (≠400) — dừng tự chạy tiêu, không nhận chuyến 4–6.');
+                }
+              }
+            }
+            state.daBamTuChay = false;
+            state.hetGioChuyenNay = false;
+            state.hetGioDem = 0;
+            state.tuChayDungGiuaChuyen = false;
+            state.lyDoDung = '';
+          }
         }
         if (carrying) {
           var hangEl = hud.querySelector('.vt-hang');
@@ -4723,9 +4981,43 @@ window.__TT2D_TONG__ = {
           if (state.hanSec !== null && state.hanSec < CFG.warnSec && state.hanSec > 0) {
             log('Sắp hết giờ 6:00! Còn ' + state.hanSec + 's.');
           }
+          // Het gio: dong ho cham 0:00 hai nhip lien tiep moi danh dau (chong
+          // bao ao khi giao dung luc 0:00). Server tu ket thuc chuyen khi
+          // het 6:00 — tick cua game khong kiem tra dong ho.
+          if (state.hanSec !== null && state.hanSec <= 0) {
+            state.hetGioDem++;
+            if (state.hetGioDem >= 2) state.hetGioChuyenNay = true;
+          } else {
+            state.hetGioDem = 0;
+          }
+          // --- BAM NUT "Tu chay tieu": chi khi game cho hien nut (moTuChay
+          // dung = tu chuyen 2), nut ghi "Tự chạy tiêu" (chua chay), 1
+          // lan/chuyen. Chuyen 1 nut AN nen khong bao gio bam nham.
+          if (state.on && state.tuChayOn && !state.dungViPhi && !state.dungViTimeout && !state.tuChay) {
+            var nut = nutTuChay();
+            if (nut && !nut.hidden && (nut.textContent || '').indexOf('Tự chạy tiêu') >= 0 && !state.daBamTuChay) {
+              tap(nut);
+              state.daBamTuChay = true;
+              log('Đã bấm "Tự chạy tiêu" — game tự kéo xe + tự giao (chuyến ' + (docSoChuyen() + 1) + '/6).');
+            }
+          }
+          // --- GAME TU DUNG giua chuyen (bi danh / HP <35% / xe lac / ket
+          // duong...): ghi ly do, KHONG tu bam lai — cho script/nguoi choi
+          // xu ly (di chuyen khoi ke danh roi goi bamTuChay()).
+          if (dangChayTruoc && !state.tuChay) {
+            state.tuChayDungGiuaChuyen = true;
+            state.lyDoDung = docLyDoDung();
+            log('Tự chạy tiêu đã DỪNG giữa chuyến' + (state.lyDoDung ? ' — ' + state.lyDoDung : '') + '. Không tự bấm lại.');
+          }
           // Giữ đúng trạng thái mang tiêu — chỉ bấm khi sai trạng thái.
-          // Chỉ bấm #btn-auto-touch (cùng trạng thái với #btn-auto, mà
-          // #btn-auto không có listener — bấm cả 2 sẽ toggle ngược).
+          // Chi bam #btn-auto-touch (cung trang thai voi #btn-auto, ma
+          // #btn-auto khong co listener — bam ca 2 se toggle nguoc).
+          // VAN GIU ca khi game dang tu chay: tuChayBat() KHONG tat Auto
+          // chien dau (autoOn) — chi ha canh neu dang bay; helper phai
+          // giu Auto TAT (neu khong Auto danh quai se giat duong cua
+          // tu chay). Bam nut HUD khong tao Input.tap (listener
+          // pointerdown cua game chi gan tren canvas) nen khong huy
+          // tu chay.
           if (state.on) {
             setBtn('#btn-auto-touch', false);
             setBtn('#btn-run', true);
@@ -4734,6 +5026,16 @@ window.__TT2D_TONG__ = {
         } else {
           state.hang = ''; state.han = ''; state.hanSec = null;
           state.mauXe = null; state.dong = '';
+          // Kiem tra dung chuoi ngay ca khi khong phai nhip chuyen doi (vd
+          // helper nap giua 2 chuyen luc game van dang tu chay): chuyen
+          // sau phi != 400 thi dung truoc khi game tu nhan chuyen 4–6.
+          if (state.tuChay && !state.dungViPhi && !state.dungViTimeout) {
+            var phi2 = docPhiTiep();
+            if (phi2 !== null && phi2 !== CFG.phiChuan) {
+              state.dungViPhi = true;
+              dungTuChay('Chuyến sau phí ' + phi2 + ' LT (≠400) — dừng tự chạy tiêu, không nhận chuyến 4–6.');
+            }
+          }
         }
       } catch (e) { /* khong lam roi game vi loi tool */ }
       render();
@@ -4742,9 +5044,11 @@ window.__TT2D_TONG__ = {
     /* ---------------- khoi dong ---------------- */
     function boot() {
       if (document.getElementById('tt2d-vantieu-panel')) return;
+      taiBoDem();
       buildPanel();
-      log('Tool phụ Vận Tiêu đã nạp (v1.0.1). Mặc định BẬT, bảng MỞ.');
+      log('Tool phụ Vận Tiêu đã nạp (v1.0.2). Mặc định BẬT, bảng MỞ.');
       log('Nhận tiêu ở Huấn Sư Huynh (Rừng Trúc) 11:00–22:00, phí 400 LT.');
+      log('Tự chạy tiêu BẬT: chuyến 1 chạy tay, từ chuyến 2 game tự kéo + tự giao; dừng chuỗi sau chuyến 3 (phí sau ≠400) hoặc 2 timeout liên tiếp.');
       setInterval(tick, CFG.pollMs);
       tick();
     }
@@ -4759,15 +5063,23 @@ window.__TT2D_TONG__ = {
       start: function () { state.on = true; log('Tool BẬT (lệnh script).'); render(); },
       stop: function () { state.on = false; log('Tool DỪNG (lệnh script).'); render(); },
       setCollapsed: setCollapsed,
+      setTuChay: setTuChay,
+      bamTuChay: bamTuChay,
+      dungTuChay: dungTuChay,
       status: function () {
         return {
           on: state.on, collapsed: state.collapsed, carrying: state.carrying,
           hang: state.hang, han: state.han, hanSec: state.hanSec,
           mauXe: state.mauXe, dong: state.dong,
+          tuChayOn: state.tuChayOn, tuChay: state.tuChay,
+          chuyenHomNay: docSoChuyen(), phiTiep: docPhiTiep(),
+          timeoutLienTiep: state.timeoutLienTiep,
+          dungViPhi: state.dungViPhi, dungViTimeout: state.dungViTimeout,
+          tuChayDungGiuaChuyen: state.tuChayDungGiuaChuyen, lyDoDung: state.lyDoDung,
         };
       },
       _tick: tick,
-      _debug: { tap: tap, setBtn: setBtn, btnState: btnState },
+      _debug: { tap: tap, setBtn: setBtn, btnState: btnState, bamTuChay: bamTuChay, dungTuChay: dungTuChay, docPhiTiep: docPhiTiep, docSoChuyen: docSoChuyen, nutTuChay: nutTuChay, dangTuChayGame: dangTuChayGame },
     };
     Tong.register('vantieu', window.__TT2D_VANTIEU__);
 
