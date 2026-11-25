@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm)
 // @namespace    https://tutienpixel.online/
-// @version      1.3.5
+// @version      1.3.6
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 7 tab — Câu cá Hồ Tây (v3.2: tỷ lệ cắn + Côn Bằng + thời tiết + TỰ ĐI tới điểm câu), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường tới map + khu đã chọn. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
@@ -12,6 +12,14 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
+// TOOL TỔNG v1.3.6 — 1 bảng chung, 7 tab. v1.3.6 (25/11): Vận Tiêu phụ lên
+// v1.0.3 — BỎ CHẶN PHÍ 1.000 (Thanh chốt 13:18 25/11 "Cứ để nhận tuyến 1k"):
+// chuỗi tự chạy NHẬN CẢ chuyến 4–6 với phí 1.000 LT/chuyến (thưởng ~1.800
+// LT/chuyến nên vẫn lãi); helper không còn dừng chuỗi sau chuyến 3 — chỉ
+// dừng khi hết 6 chuyến/ngày (game tự dừng "Hết lượt hôm nay"), 2 chuyến
+// timeout liên tiếp, game dừng giữa chuyến, hoặc người dùng tắt nút "Tự
+// chạy" trên bảng. Trường dungViPhi trong status() giữ lại để tương thích
+// (luôn false). Các tab khác không đổi.
 // TOOL TỔNG v1.3.5 — 1 bảng chung, 7 tab. v1.3.5 (25/11): Vận Tiêu phụ lên
 // v1.0.2 — TỰ CHẠY TIÊU từ chuyến 2 (Thanh chốt 12:49 25/11 "Dùng tự chạy
 // tiêu từ chuyến 2"). Học theo đúng mã client game.js 24/11 (VanTieu.moTuChay
@@ -84,7 +92,7 @@
 // thành BFS trên đồ thị cổng; tab Farm thêm 7 map đích; sửa cổng
 // làng->Miếu Hoang (0,12). Gộp từ 5 tool lẻ (giữ nguyên logic):
 //  - Câu cá Hồ Tây v3.2.0 | Boss v1.2.1 | Dược v1.1.1 | Huyết Xích phụ v1.1.1
-//    | Vận Tiêu phụ v1.0.2 — xem README.md trong thư mục tu-tien-2d-tool-tong.
+//    | Vận Tiêu phụ v1.0.3 — xem README.md trong thư mục tu-tien-2d-tool-tong.
 //  - Tổ đội + farm rùa: mời/chấp nhận trong 180px, tối đa 6 người, farm Thạch
 //    Quy Miếu Ông Trường Con Khu 12 (mới, viết cho Tool Tổng).
 //  - Farm tự tìm đường (mới v1.1.0): chọn map + khu -> tool tự đi tới (BFS +
@@ -4522,7 +4530,7 @@ window.__TT2D_TONG__ = {
   })();
 
 
-  // ================= MODULE: vantieu (Vận Tiêu phụ v1.0.2: giữ Auto TẮT + Chạy BẬT + Phi Hành TẮT khi mang tiêu, đồng hồ 6:00; TỰ BẤM nút "Tự chạy tiêu" của game từ chuyến 2 (game tự kéo + tự nhận/giao tới hết lượt — học theo mã client: moTuChay/TUYEN/tick tự chạy); DỪNG chuỗi sau chuyến 3 (phí sau 1.000 ≠400) hoặc 2 timeout liên tiếp; không tự bấm lại khi game dừng giữa chuyến. Bấm nút HUD bằng tap() (chỉ bấm #btn-auto-touch, #btn-auto không có listener).) =================
+  // ================= MODULE: vantieu (Vận Tiêu phụ v1.0.3: giữ Auto TẮT + Chạy BẬT + Phi Hành TẮT khi mang tiêu, đồng hồ 6:00; TỰ BẤM nút "Tự chạy tiêu" của game từ chuyến 2 (game tự kéo + tự nhận/giao tới hết lượt — học theo mã client: moTuChay/TUYEN/tick tự chạy); NHẬN CẢ TUYẾN 1k (Thanh chốt 13:18 25/11 "Cứ để nhận tuyến 1k": chuỗi 4–6 phí 1.000 LT/chuyến vẫn chạy tiếp vì thưởng ~1.800 LT/chuyến, chỉ dừng khi hết 6 chuyến hoặc 2 timeout liên tiếp); không tự bấm lại khi game dừng giữa chuyến. Bấm nút HUD bằng tap() (chỉ bấm #btn-auto-touch, #btn-auto không có listener).) =================
 
   (function () {
 
@@ -4550,7 +4558,6 @@ window.__TT2D_TONG__ = {
       daBamTuChay: false,   // da bam nut cho chuyen dang mang nay (1 lan/chuyen)
       tuChayDungGiuaChuyen: false,  // game tu dung giua chuyen (bi danh/HP thap/...)
       lyDoDung: '',         // ly do game dung (doc tu #ritual-caption)
-      dungViPhi: false,     // da dung chuoi vi chuyen sau phi != 400
       dungViTimeout: false, // da dung chuoi vi 2 chuyen timeout lien tiep
       timeoutLienTiep: 0,   // so chuyen timeout lien tiep (persist theo ngay)
       hetGioChuyenNay: false, // dong ho chuyen dang mang da cham 0:00
@@ -4591,7 +4598,6 @@ window.__TT2D_TONG__ = {
         state.ngay = ngayVN();
         state.chuyenDem = 0;
         state.timeoutLienTiep = 0;
-        state.dungViPhi = false;
         state.dungViTimeout = false;
         luuBoDem();
         log('Sang ngày mới — reset bộ đếm chuyến/timeout, mở lại tự chạy tiêu.');
@@ -4727,7 +4733,7 @@ window.__TT2D_TONG__ = {
       // script van_tieu_run.py goi lai sau khi xu ly xong vu dung giua
       // chuyen, hoac nguoi choi bam tay qua debug). Tra false neu khong
       // bam duoc (chuyen 1 / dang chay roi / tinh nang tat).
-      if (!state.on || !state.tuChayOn || state.dungViPhi || state.dungViTimeout) return false;
+      if (!state.on || !state.tuChayOn || state.dungViTimeout) return false;
       var nut = nutTuChay();
       if (!nut || nut.hidden) return false;
       if ((nut.textContent || '').indexOf('Tự chạy tiêu') < 0) return false;
@@ -4740,12 +4746,11 @@ window.__TT2D_TONG__ = {
     }
     function setTuChay(v) {
       state.tuChayOn = !!v;
-      if (state.tuChayOn && (state.dungViPhi || state.dungViTimeout)) {
+      if (state.tuChayOn && state.dungViTimeout) {
         // Bật lại bằng tay = quyết định tiếp tục chuỗi: xóa cờ dừng (chuỗi
-        // sẽ dừng lại ngay nếu chuyến sau vẫn phí ≠400 — đúng quy tắc).
-        state.dungViPhi = false;
+        // sẽ dừng lại ngay nếu lại 2 timeout liên tiếp — đúng quy tắc).
         state.dungViTimeout = false;
-        log('Bật lại tự chạy tiêu — đã xóa cờ dừng chuỗi (phí/timeout).');
+        log('Bật lại tự chạy tiêu — đã xóa cờ dừng chuỗi (timeout).');
       }
       log('Tự chạy tiêu: ' + (state.tuChayOn ? 'BẬT (từ chuyến 2 trở đi)' : 'TẮT (chỉ chạy tay)') + '.');
       render();
@@ -4861,7 +4866,6 @@ window.__TT2D_TONG__ = {
 
     function shortStatus() {
       if (!state.carrying) {
-        if (state.dungViPhi) return 'Dừng chuỗi (phí sau ≠400)';
         if (state.dungViTimeout) return 'Dừng chuỗi (2 timeout)';
         return 'Chưa nhận tiêu';
       }
@@ -4874,7 +4878,6 @@ window.__TT2D_TONG__ = {
 
     function tuChayText() {
       if (!state.tuChayOn) return 'TẮT';
-      if (state.dungViPhi) return 'DỪNG (phí sau ≠400)';
       if (state.dungViTimeout) return 'DỪNG (2 timeout)';
       if (state.tuChay) return 'ĐANG CHẠY';
       if (state.tuChayDungGiuaChuyen) return 'ĐÃ DỪNG' + (state.lyDoDung ? ' — ' + state.lyDoDung : '');
@@ -4898,7 +4901,7 @@ window.__TT2D_TONG__ = {
         (btnState('#btn-fly') ? 'BẬT' : 'TẮT');
       elTuChay.textContent = tuChayText();
       elTuChay.style.color = state.tuChay ? '#7ddc8a' :
-        (state.dungViPhi || state.dungViTimeout || state.tuChayDungGiuaChuyen) ? '#ff6b5e' : '#e8e0c8';
+        (state.dungViTimeout || state.tuChayDungGiuaChuyen) ? '#ff6b5e' : '#e8e0c8';
       var tb = panel.querySelector('#tt2d-vantieu-tuchay-btn');
       if (tb) tb.textContent = 'Tự chạy: ' + (state.tuChayOn ? 'BẬT' : 'TẮT');
       elLog.textContent = state.lastLog.join('\n') || '—';
@@ -4945,16 +4948,14 @@ window.__TT2D_TONG__ = {
               }
             }
             // --- DUNG CHUOI theo quy tac cung (chi khi game van dang tu chay) ---
+            // Chi dung vi 2 timeout lien tiep. v1.0.3 (Thanh chot 13:18
+            // 25/11 "Cu de nhan tuyen 1k"): phi chuyen sau 1.000 LT KHONG
+            // dung chuoi nua — game tu nhan chuyen 4–6, thuong ~1.800 LT/
+            // chuyen van lai. Het 6 chuyen thi game tu dung ("Het luot hom nay").
             if (state.tuChay) {
               if (state.timeoutLienTiep >= CFG.timeoutToiDa) {
                 state.dungViTimeout = true;
                 dungTuChay('2 chuyến timeout liên tiếp — dừng tự chạy tiêu.');
-              } else {
-                var phi = docPhiTiep();
-                if (phi !== null && phi !== CFG.phiChuan) {
-                  state.dungViPhi = true;
-                  dungTuChay('Chuyến sau phí ' + phi + ' LT (≠400) — dừng tự chạy tiêu, không nhận chuyến 4–6.');
-                }
               }
             }
             state.daBamTuChay = false;
@@ -4993,7 +4994,7 @@ window.__TT2D_TONG__ = {
           // --- BAM NUT "Tu chay tieu": chi khi game cho hien nut (moTuChay
           // dung = tu chuyen 2), nut ghi "Tự chạy tiêu" (chua chay), 1
           // lan/chuyen. Chuyen 1 nut AN nen khong bao gio bam nham.
-          if (state.on && state.tuChayOn && !state.dungViPhi && !state.dungViTimeout && !state.tuChay) {
+          if (state.on && state.tuChayOn && !state.dungViTimeout && !state.tuChay) {
             var nut = nutTuChay();
             if (nut && !nut.hidden && (nut.textContent || '').indexOf('Tự chạy tiêu') >= 0 && !state.daBamTuChay) {
               tap(nut);
@@ -5026,16 +5027,9 @@ window.__TT2D_TONG__ = {
         } else {
           state.hang = ''; state.han = ''; state.hanSec = null;
           state.mauXe = null; state.dong = '';
-          // Kiem tra dung chuoi ngay ca khi khong phai nhip chuyen doi (vd
-          // helper nap giua 2 chuyen luc game van dang tu chay): chuyen
-          // sau phi != 400 thi dung truoc khi game tu nhan chuyen 4–6.
-          if (state.tuChay && !state.dungViPhi && !state.dungViTimeout) {
-            var phi2 = docPhiTiep();
-            if (phi2 !== null && phi2 !== CFG.phiChuan) {
-              state.dungViPhi = true;
-              dungTuChay('Chuyến sau phí ' + phi2 + ' LT (≠400) — dừng tự chạy tiêu, không nhận chuyến 4–6.');
-            }
-          }
+          // v1.0.3: KHONG con kiem tra phi chuyen sau o day (phi 1.000
+          // khong dung chuoi nua — Thanh chot 13:18 25/11). Game tu nhan
+          // chuyen sau khi con luot; het 6 chuyen thi game tu dung.
         }
       } catch (e) { /* khong lam roi game vi loi tool */ }
       render();
@@ -5046,9 +5040,9 @@ window.__TT2D_TONG__ = {
       if (document.getElementById('tt2d-vantieu-panel')) return;
       taiBoDem();
       buildPanel();
-      log('Tool phụ Vận Tiêu đã nạp (v1.0.2). Mặc định BẬT, bảng MỞ.');
+      log('Tool phụ Vận Tiêu đã nạp (v1.0.3). Mặc định BẬT, bảng MỞ.');
       log('Nhận tiêu ở Huấn Sư Huynh (Rừng Trúc) 11:00–22:00, phí 400 LT.');
-      log('Tự chạy tiêu BẬT: chuyến 1 chạy tay, từ chuyến 2 game tự kéo + tự giao; dừng chuỗi sau chuyến 3 (phí sau ≠400) hoặc 2 timeout liên tiếp.');
+      log('Tự chạy tiêu BẬT: chuyến 1 chạy tay, từ chuyến 2 game tự kéo + tự giao; nhận cả tuyến 1k (chuyến 4–6 phí 1.000 LT); chỉ dừng chuỗi khi 2 timeout liên tiếp.');
       setInterval(tick, CFG.pollMs);
       tick();
     }
@@ -5074,7 +5068,8 @@ window.__TT2D_TONG__ = {
           tuChayOn: state.tuChayOn, tuChay: state.tuChay,
           chuyenHomNay: docSoChuyen(), phiTiep: docPhiTiep(),
           timeoutLienTiep: state.timeoutLienTiep,
-          dungViPhi: state.dungViPhi, dungViTimeout: state.dungViTimeout,
+          dungViPhi: false, // giữ để tương thích (script van_tieu_run.py) — luôn false từ v1.0.3, phí 1.000 không còn dừng chuỗi
+          dungViTimeout: state.dungViTimeout,
           tuChayDungGiuaChuyen: state.tuChayDungGiuaChuyen, lyDoDung: state.lyDoDung,
         };
       },
