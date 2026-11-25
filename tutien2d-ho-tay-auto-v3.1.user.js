@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Tu Tiên 2D — Tool câu cá Hồ Tây (v3.1: Côn Bằng + thời tiết)
+// @name         Tu Tiên 2D — Tool câu cá Hồ Tây (v3.3: Câu Dược Cốc Hồ Bích Thủy)
 // @namespace    https://tutienpixel.online/
-// @version      3.1.0
-// @description  Tự động câu cá Hồ Tây: chọn mục tiêu Linh/Yêu/Giao/Tự do/Tự động (theo tỷ lệ cắn tốt nhất), tự đổi mồi + tự tìm vùng quăng, theo dõi tỷ lệ cắn/câu được theo vùng, mồi và thời tiết theo thời gian thực, ghi nhận "luồng cá" từ dữ liệu cắn, quăng lại sau khi câu được cá. Tự vào Côn Bằng 12:30/19:30 (gắn dây + kéo tập thể). Bảng điều khiển thu nhỏ được. Chỉ bấm nút của game, không đổi tỉ lệ cắn câu (server giữ).
+// @version      3.3.1
+// @description  Tự động câu cá Hồ Tây: chọn mục tiêu Linh/Yêu/Giao/Tự do/Tự động (theo tỷ lệ cắn tốt nhất), tự đổi mồi + tự tìm vùng quăng, theo dõi tỷ lệ cắn/câu được theo vùng, mồi và thời tiết theo thời gian thực, ghi nhận "luồng cá" từ dữ liệu cắn, quăng lại sau khi câu được cá. Tự vào Côn Bằng 12:30/19:30 (gắn dây + kéo tập thể). TỰ ĐI tới điểm câu đã chọn (chỉ trong Tool Tổng, dùng nav chung; điểm có người đứng yên thì tự lui sang điểm trống khác). Thêm chế độ Câu ở Dược Cốc (Hồ Bích Thủy): tự đi tới Đài câu cá (18,15)/(18,16), chuyển khu đông người trước khi câu, bật "Tự động câu" của game, canh Giáp + kẹt ngầm. Bảng điều khiển thu nhỏ được. Chỉ bấm nút của game, không đổi tỉ lệ cắn câu (server giữ).
 // @author       Muse (làm cho Thanh)
 // @match        https://tutienpixel.online/*
 // @match        https://tutien2d.com/*
@@ -12,7 +12,8 @@
 //
 // CÁCH DÙNG (v3)
 //  1. Nạp tool (extension hoặc dán vào Console).
-//  2. Vào Hồ Tây (khu 1), đứng ở cầu câu (40,15)/(39,14)/(38,14).
+//  2. Vào Hồ Tây (khu 1), đứng ở cầu câu (40,15)/(39,14)/(38,14) —
+//     hoặc BẬT "TỰ ĐI" để tool tự đi tới điểm câu đã chọn (mục 12).
 //  3. Chọn MỤC TIÊU trên bảng: Linh Ngư / Yêu Ngư / Giao Ngư / Tự do /
 //     Tự động ★ (tự chọn vùng + mồi theo tỷ lệ cắn tốt nhất đã quan sát).
 //     Tool tự đổi mồi + tự chọn vùng quăng phù hợp với mục tiêu.
@@ -49,6 +50,57 @@
 //     game (vd Linh Triều → Giao Ngư vùng Sâu, Nắng Gắt → vùng Sâu,
 //     Mưa Bụi → vùng Giữa).
 //
+// 12. TỰ ĐI TỚI ĐIỂM CÂU (mới v3.2, chỉ trong Tool Tổng — cần module nav
+//     chung): chọn ĐIỂM CÂU trong bảng (mặc định Cầu (38,14); 14 điểm trên
+//     cầu đã xác minh từ client: đi được + kề nước theo ganNuoc, TILE=32,
+//     SAT_NUOC_PX=52) rồi bật "TỰ ĐI". Tool tự đi từ map hiện tại tới cầu
+//     bằng nav.diToiMap('van_can') + nav.diToi(x, y) (tắt Auto trước khi
+//     di chuyển — joystick không chạy khi Auto BẬT; tới nơi tool câu tự
+//     bắt đầu khi giao diện câu xuất hiện). Đang câu (đã quăng cần) thì
+//     không di chuyển. Kẹt quá 3 lần thì TỰ ĐI tự tắt + báo rõ. ĐIỂM CÓ
+//     NGƯỜI: khi điểm đã chọn có người chơi khác đứng yên (≥5s) đúng ô
+//     đó thì tool tự lui sang điểm trống gần nhất rồi câu ở đó; nếu cả
+//     14 điểm đều có người thì DỪNG + báo rõ, bấm TỰ ĐI lại sau để thử lại.
+//     Tool lẻ chạy một mình (không có nav) thì nút TỰ ĐI bị khóa.
+//
+// 13. CÂU Ở DƯỢC CỐC — HỒ BÍCH THỦY (mới v3.3, tính năng 13 Tool Tổng
+//     v1.4.0): chọn Địa điểm "Dược Cốc — Hồ Bích Thủy" trong bảng. Cơ chế
+//     câu ở đây KHÁC Hồ Tây (xác minh client 24/11): không có giao diện
+//     VanCanUI quăng/giật/kéo — đứng ở Đài câu cá (18,15)/(18,16), tương
+//     tác với Hồ Bích Thủy (18,16) rồi chọn "Tự động câu" trong hộp thoại
+//     (nút "Dừng câu" #btn-fishing-stop-touch để dừng; di chuyển cũng dừng
+//     câu). Mỗi lượt chờ 3–6 giây, tỷ lệ cắn 80%, 5% số cá cắn là Linh Ngư
+//     còn lại là Cá Sông (client Fishing: MIN_WAIT 3, MAX_WAIT 6,
+//     CATCH_RATE .8, SPIRIT_FISH_RATE .05).
+//     v3.3.1 (25/11): SỬA dangTuDongCau() báo nhầm đang câu — bỏ quét text
+//     toàn body (nút lựa chọn "Tự động câu" trong hộp thoại Hồ Bích Thủy
+//     cũng match → tool tưởng đã câu trong khi chưa câu, poll (23e) pass
+//     sớm khi chưa tới bến). Chỉ tin 2 tín hiệu riêng của game: nút Dừng
+//     câu hiện + caption "Tự động câu".
+//     Luồng v3.3: (a) tự tìm đường từ map hiện tại bất kỳ tới Thảo Dược
+//     Cốc bằng nav.duongDi()/diToiMap() (tính năng 12); (b) tới Bảng Khu
+//     (14,5), CHUYỂN KHU ĐÔNG NGƯỜI NHẤT còn chỗ trước khi câu (lệnh Thanh
+//     19:43 — chỉ áp cho câu Dược Cốc, farm quái vẫn giữ khu ÍT người);
+//     số người mỗi khu game KHÔNG hiện số exact trong DOM — chỉ có class
+//     bucket của nút [data-khu] (KhuUI.r: "day" đầy / "dong" đông >50% /
+//     "vang" có người / "" trống), nên tool chọn khu "dong" đầu tiên, rồi
+//     tới "vang", không có thì ở khu hiện tại; (c) đi tới bến BẰNG BẤM ĐẤT
+//     (click-to-move trên canvas, Auto BẬT tự vệ — joystick đứng yên khi
+//     Auto BẬT nên không dùng joystick trên đường tới bến; bấm đất không
+//     đi được sau 5s thì fallback joystick + ghi rõ); TRÁNH khe cổng hàng
+//     rào phía tây (11,6)/(11,7) vào Vườn Cá Nhân — bến ở phía đông nên
+//     đường đi không qua đó, nhưng BFS đi tắt qua (11,6) là dừng lại;
+//     (d) CHỈ tắt Auto khi ĐÃ ĐỨNG VỮNG ở bến (18,15)/(18,16) với Giáp đầy
+//     (≥95% — chưa đầy thì thiền hồi trước); (e) tương tác với Hồ Bích
+//     Thủy rồi bấm "Tự động câu"; (f) giám sát trong lúc câu: Auto KHÔNG
+//     tự vệ khi đang câu — Độc Đằng có thể giết trong ~2 phút, nên kiểm
+//     tra Giáp mỗi 60 giây, Giáp <50% thì dừng câu + bật Auto đánh trả /
+//     rút về chỗ an toàn rồi thiền hồi; (g) sau mỗi lần đăng nhập lại,
+//     "Tự động câu" của game bị DỪNG — tool tự kiểm tra (caption "Tự động
+//     câu... còn" + nút Dừng câu) và bật lại; (h) kẹt ngầm: CHỈ coi là kẹt
+//     khi CÁ SÔNG cũng đứng yên qua 2 lần kiểm tra (Linh Ngư đứng yên một
+//     mình là do hiếm 5%, không phải kẹt) — kẹt thì dừng câu rồi bật lại.
+//
 // GIỚI HẠN CỨNG (đã xác minh, đọc kỹ trước khi dùng):
 //  - Game KHÔNG hiện vị trí cá trên mặt nước; server mới quyết định cá cắn.
 //    Tool KHÔNG thể nhìn thấy luồng cá thật — "luồng" ở đây chỉ là SUY RA
@@ -59,7 +111,8 @@
 //  - "Câu được" ở đây nghĩa là "kéo xong một lượt" (nút về "Quăng" sau khi
 //    kéo) — đó là tín hiệu quan sát được gần nhất; tool không phân biệt được
 //    cá cắn câu thành công với đứt dây/trượt cá chỉ từ nút bấm.
-//  - Tool KHÔNG tự di chuyển nhân vật — nhân vật phải đứng sẵn ở cầu câu.
+//  - Tool lẻ (chạy một mình, không có nav) KHÔNG tự di chuyển nhân vật —
+//    nhân vật phải đứng sẵn ở cầu câu; TỰ ĐI chỉ có trong Tool Tổng.
 //  - Mồi hết thì tool tự đổi sang mồi dự phòng, hết nữa thì dùng Giun Đất.
 //  - CÔN BẰNG (v3.1): tool nhận biết sự kiện qua NÚT game ("Côn"/"Nối X"
 //    — nguồn tin từ server, tin cậy nhất) và đồng hồ (12:30/19:30 giờ VN,
@@ -135,6 +188,7 @@
     conTruocMs: 60000,        // v3.1: trước giờ Côn Bằng N ms thì không quăng mới, chờ gắn dây
     conChoToiDaMs: 90000,     // v3.1: chờ nút Côn tối đa N ms sau khi vào khung giờ rồi quay lại câu thường
     tiLeToiThieuMauTT: 3,     // v3.1: cần tối thiểu N lần quăng/(thời tiết+vùng) mới tin tỷ lệ theo thời tiết
+    chiemDungYenMs: 5000,     // v3.2: người khác đứng yên N ms đúng ô điểm câu thì tính là chiếm chỗ
   };
 
   // ---------------- Mục tiêu: mồi + vùng ----------------
@@ -182,6 +236,56 @@
   // --- v3.1: thời tiết ---
   var ratesTT = {};            // key id thời tiết -> { vung: {nong,giua,sau}, moi: {key: {...}} }
   var castTT = null;           // thời tiết của lượt quăng đang chạy (để ghi tỷ lệ đúng)
+  // --- v3.2: TỰ ĐI tới điểm câu (chỉ trong Tool Tổng — cần module nav) ---
+  // 14 điểm cầu đã xác minh từ client 24/11 (map van_can, TILE=32,
+  // SAT_NUOC_PX=52): ô '=' đi được + kề nước theo đúng hàm ganNuoc của
+  // game (tâm nhân vật cách mép ô nước ≤52px). (49,14) KHÔNG phải điểm
+  // câu hợp lệ — quăng được nhưng phao không tới nước (89 lần, 0 cắn).
+  var SPOTS = [
+    { x: 38, y: 14, ten: 'Cầu (38,14)' }, { x: 39, y: 14, ten: 'Cầu (39,14)' },
+    { x: 40, y: 14, ten: 'Cầu (40,14)' }, { x: 41, y: 14, ten: 'Cầu (41,14)' },
+    { x: 42, y: 14, ten: 'Cầu (42,14)' }, { x: 43, y: 14, ten: 'Cầu (43,14)' },
+    { x: 44, y: 14, ten: 'Cầu (44,14)' }, { x: 45, y: 14, ten: 'Cầu (45,14)' },
+    { x: 38, y: 15, ten: 'Cầu (38,15)' }, { x: 39, y: 15, ten: 'Cầu (39,15)' },
+    { x: 40, y: 15, ten: 'Cầu (40,15)' }, { x: 41, y: 15, ten: 'Cầu (41,15)' },
+    { x: 42, y: 15, ten: 'Cầu (42,15)' }, { x: 43, y: 15, ten: 'Cầu (43,15)' },
+  ];
+  var spotIdx = 0;             // điểm câu đã chọn (mặc định 0 = Cầu (38,14))
+  var spotDoi = false;         // người dùng vừa đổi điểm câu (cần đi tới điểm mới)
+  var tuDi = false;            // tự di chuyển tới điểm câu đã chọn?
+  var movePhase = 'idle';      // idle | moving | arrived (đang tự đi tới điểm câu)
+  var moveFails = 0;           // số lần tự đi thất bại liên tiếp (tối đa 3)
+  var MAX_MOVE_FAILS = 3;
+  var lastMoveCheckAt = 0;     // lần cuối kiểm tra vị trí/điểm câu (tối đa 2 lần/giây)
+  var sanSangCau = false;      // kết quả kiểm tra lần cuối (đã ở điểm câu?)
+  var lastMoveStatus = '';     // dòng trạng thái tự đi hiện tại
+  var lastNoRouteLogAt = 0;    // chống spam log "không có đường bộ"
+  var lastUiLogAt = 0;         // chống spam log "chưa thấy giao diện câu"
+  var moUiLan = 0;             // số lần đã thử mở giao diện câu sau khi tới nơi
+  var remoteSeen = {};         // id người chơi khác -> {tx, ty, since} (theo dõi đứng yên)
+  var lastRemoteScanAt = 0;    // lần cuối quét vị trí người chơi khác (tối đa 1 lần/giây)
+  // --- v3.3: Câu ở Dược Cốc — Hồ Bích Thủy (tính năng 13) ---
+  // Cơ chế khác hẳn Hồ Tây: không quăng/giật/kéo — bật "Tự động câu" của
+  // game rồi để game tự câu (xem mục 13 trong header).
+  var diaDiem = 'ho_tay';      // 'ho_tay' | 'duoc_coc' (lưu localStorage)
+  try {
+    var _dd = localStorage.getItem('tt2d_fish_diadiem');
+    if (_dd === 'duoc_coc' || _dd === 'ho_tay') diaDiem = _dd;
+  } catch (e) { /* bỏ qua */ }
+  var SPOTS_DC = [
+    { x: 18, y: 15, ten: 'Đài câu cá (18,15)' },
+    { x: 18, y: 16, ten: 'Đài câu cá (18,16)' },
+  ];
+  var spotDcIdx = 0;           // điểm bến Dược Cốc đã chọn (mặc định (18,15))
+  var daDoiKhuDong = false;    // đã chuyển khu đông người trong phiên câu DC này
+  var dcDangThien = false;     // đang thiền hồi Giáp (chờ Giáp đầy mới câu)
+  var dcDangBatCau = false;    // đang trong quá trình bật "Tự động câu" (tránh bấm chồng)
+  var lastGiapCheckAt = 0;     // lần cuối kiểm tra Giáp khi đang câu DC
+  var lastTuDongCauCheckAt = 0;// lần cuối kiểm tra "Tự động câu" còn bật không
+  var lastCaCheckAt = 0;       // lần cuối kiểm tra số cá (kẹt ngầm)
+  var caSongTruoc = null;      // số Cá Sông lần kiểm tra trước (kẹt ngầm)
+  var caSongTruoc2 = null;     // số Cá Sông lần kiểm tra trước nữa
+  var lastKetLogAt = 0;        // chống spam log kẹt ngầm
 
   function rand(a, b) { return a + Math.random() * (b - a); }
   function randInt(a, b) { return Math.round(rand(a, b)); }
@@ -681,8 +785,806 @@
     setTargetLine();
   }
 
+  // ---------------- v3.2: TỰ ĐI tới điểm câu (chỉ trong Tool Tổng) ----------------
+  // Theo đúng mẫu tab Boss v1.2.0 (nút TỰ ĐI, movePhase, kẹt 3 lần thì tắt).
+  // nav.diToiMap/diToi tự tắt Auto trước khi đẩy joystick (joystick không
+  // chạy khi Auto BẬT) nên tab này không cần tắt Auto tay. Tới điểm câu
+  // rồi thì giao diện câu tự hiện (VanCanUI.update) và tick câu bình thường.
+  function nav() {
+    return window.__TT2D_NAV__ || (window.__TT2D_TONG__ && window.__TT2D_TONG__.nav) || null;
+  }
+  // Map hiện tại (id client): ưu tiên nav.docViTri(), fallback đọc #hud-map.
+  function docMapHienTai() {
+    try {
+      var n = nav();
+      if (n && typeof n.docViTri === 'function') {
+        var p = n.docViTri();
+        if (p && p.map) return p.map;
+      }
+    } catch (e) { /* bỏ qua */ }
+    var hm = document.querySelector('#hud-map');
+    var s = hm ? (hm.innerText || hm.textContent || '') : '';
+    if (/Hồ Tây/.test(s)) return 'van_can';
+    if (/Thảo Dược Cốc/.test(s)) return 'duoc_vien';
+    if (/Rừng Trúc/.test(s)) return 'thanh_truc_lam';
+    if (/Chân Núi Tản Viên/.test(s)) return 'tan_vien';
+    if (/Miếu Hoang/.test(s)) return 'mieu_hoang';
+    if (/Phong Địa/.test(s)) return 'phong_dia';
+    return null;
+  }
+  // Vị trí hiện tại (ô x, y): ưu tiên nav.docViTri(), fallback đọc (x,y)
+  // trong body text (cùng cách nav đọc).
+  function docViTriHienTai() {
+    try {
+      var n = nav();
+      if (n && typeof n.docViTri === 'function') {
+        var p = n.docViTri();
+        if (p && p.x !== null && p.y !== null) return { x: p.x, y: p.y };
+      }
+    } catch (e) { /* bỏ qua */ }
+    var t = document.body ? (document.body.innerText || '') : '';
+    var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    if (m) return { x: parseInt(m[1], 10), y: parseInt(m[2], 10) };
+    return null;
+  }
+  // Quét vị trí người chơi khác: Gateway.remotes {id: {x, y}} — x/y là
+  // PIXEL (TILE=32), khác với mock test của tab Tổ đội (x/y là ô). Chỉ ghi
+  // nhận lần đầu thấy ở 1 ô (since) — đứng yên thì since giữ nguyên.
+  function quetNguoiDung(now) {
+    if (now - lastRemoteScanAt < 1000) return; // quét tối đa 1 lần/giây
+    lastRemoteScanAt = now;
+    var rems = null;
+    try {
+      var gw = window.__ns_ && window.__ns_.Gateway;
+      rems = gw && gw.remotes;
+    } catch (e) { rems = null; }
+    var thay = {};
+    if (rems) {
+      Object.keys(rems).forEach(function (id) {
+        var r = rems[id];
+        if (!r || typeof r.x !== 'number' || typeof r.y !== 'number') return;
+        var tx = Math.floor(r.x / 32), ty = Math.floor(r.y / 32);
+        var cu = remoteSeen[id];
+        if (cu && cu.tx === tx && cu.ty === ty) thay[id] = cu;
+        else thay[id] = { tx: tx, ty: ty, since: now };
+      });
+    }
+    remoteSeen = thay;
+  }
+  // Có người khác đứng yên >= chiemDungYenMs ĐÚNG ô điểm câu này không?
+  // Chỉ tính đúng ô (không tính ô kề) — người đi ngang qua (đứng <5s) thì
+  // không tính, khỏi nhảy điểm liên tục.
+  function diemBiChiem(spot, now) {
+    var ids = Object.keys(remoteSeen);
+    for (var i = 0; i < ids.length; i++) {
+      var s = remoteSeen[ids[i]];
+      if (s.tx === spot.x && s.ty === spot.y && now - s.since >= CFG.chiemDungYenMs) return true;
+    }
+    return false;
+  }
+  // Điểm câu sẽ tới: điểm đã chọn nếu còn trống, không thì điểm trống gần
+  // vị trí hiện tại nhất (Manhattan). Hết điểm trống -> null. tru (nếu có)
+  // là điểm cần loại ra (vd đang đứng ở đó mà bị chiếm).
+  function chonDiemTrong(now, tru) {
+    quetNguoiDung(now);
+    var cur = docViTriHienTai();
+    var chon = SPOTS[spotIdx];
+    if ((!tru || chon !== tru) && !diemBiChiem(chon, now)) return chon;
+    var tot = null, totD = Infinity;
+    SPOTS.forEach(function (sp) {
+      if (tru && sp === tru) return;
+      if (diemBiChiem(sp, now)) return;
+      var d = cur ? (Math.abs(sp.x - cur.x) + Math.abs(sp.y - cur.y)) : 0;
+      if (d < totD) { tot = sp; totD = d; }
+    });
+    return tot;
+  }
+  // Đang quăng/chờ/giật/kéo (kể cả Côn Bằng) -> không di chuyển.
+  function dangCau() {
+    return state === 'casting' || state === 'waiting' || state === 'jerking' ||
+      state === 'pulling' || state === 'con-wait' || state === 'con-tapped';
+  }
+  // Giao diện câu có đang mở không (button.vc-nut hiện trên màn hình)?
+  function giaoDienCauMo() {
+    var b = nutBtn();
+    return !!(b && b.offsetParent !== null);
+  }
+  // Giao diện câu (button.vc-nut) TỰ HIỆN khi vào Hồ Tây trong giờ mở
+  // (VanCanUI.update) — không cần bấm nút tương tác để mở. Nếu chưa thấy
+  // (vừa qua cổng, game chưa kịp mở) thì thử bấm nút tương tác với hồ tối
+  // đa 3 lần; quá 3 lần thì thôi, báo rõ để người dùng bấm tay.
+  function moGiaoDienCau() {
+    if (giaoDienCauMo()) { moUiLan = 0; return true; }
+    if (moUiLan >= 3) {
+      if (Date.now() - lastUiLogAt > 60000) {
+        lastUiLogAt = Date.now();
+        log('Chưa thấy giao diện câu sau khi tới điểm câu — bấm nút tương tác với hồ rồi bấm BẬT lại (hoặc chờ game mở giao diện).');
+      }
+      return false;
+    }
+    var btn = null;
+    var atk = document.querySelector('#btn-attack');
+    var lab = atk ? ((atk.getAttribute('aria-label') || '') + ' ' + (atk.textContent || '')) : '';
+    if (atk && /tương tác/i.test(lab) && /hồ|câu|nước/i.test(lab)) btn = atk;
+    if (!btn) {
+      var all = document.querySelectorAll('button');
+      for (var i = 0; i < all.length; i++) {
+        var b2 = all[i];
+        if (!b2.offsetParent) continue;
+        var t2 = (b2.innerText || b2.textContent || '');
+        if (/tương tác/i.test(t2) && /hồ|câu|nước/i.test(t2)) { btn = b2; break; }
+      }
+    }
+    moUiLan++;
+    if (btn) {
+      // Nút game chỉ bind pointerdown (đã xác minh 06:01 25/11) — dispatch
+      // pointerdown/pointerup như bấm tay thật, KHÔNG dùng .click().
+      try {
+        btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true }));
+        setTimeout(function () {
+          try { btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true })); } catch (e) {}
+        }, 60);
+        log('Đã bấm nút tương tác với hồ để mở giao diện câu (lần ' + moUiLan + '/3).');
+      } catch (e) { /* bỏ qua */ }
+    } else if (moUiLan === 1) {
+      log('Chờ game mở giao diện câu (vừa tới điểm câu)…');
+    }
+    return false;
+  }
+  // TẮT tự đi vì hết điểm trống — báo rõ, bấm TỰ ĐI lại sau để thử lại.
+  function tatTuDiHetCho() {
+    tuDi = false;
+    capNhatNutTuDi();
+    setMoveStatus('Các điểm câu đều có người — đã TẮT tự đi (bấm TỰ ĐI lại sau để thử lại).');
+    log('Các điểm câu đều có người đứng — đã TẮT tự đi. Bấm TỰ ĐI lại sau để thử lại.');
+  }
+  // Kiểm tra có cần tự đi tới điểm câu không. Trả về true = đã ở điểm câu
+  // (sẵn sàng câu), false = chưa ở điểm câu (đang đi / không đi được).
+  // Gọi từ tick() — kiểm tra vị trí tối đa 2 lần/giây (khỏi đọc body liên tục).
+  function kiemTraDiHo() {
+    if (!on || !tuDi) return true;
+    if (dangCau()) return true; // đang câu thì không di chuyển (đã ở điểm câu)
+    if (movePhase === 'moving') return false;
+    var now = Date.now();
+    if (now - lastMoveCheckAt < 500) return sanSangCau;
+    lastMoveCheckAt = now;
+    if (moveFails >= MAX_MOVE_FAILS) return false; // đã tắt tự đi sau 3 lần lỗi
+    var n = nav();
+    if (!n || typeof n.diToiMap !== 'function' || typeof n.diToi !== 'function') {
+      if (now - lastNoRouteLogAt > 60000) {
+        lastNoRouteLogAt = now;
+        log('TỰ ĐI cần module nav (chỉ có trong Tool Tổng) — tool lẻ không tự đi được.');
+      }
+      sanSangCau = false;
+      return false;
+    }
+    var curMap = docMapHienTai();
+    if (curMap === 'van_can') {
+      var cur = docViTriHienTai();
+      var dich = chonDiemTrong(now, null);
+      if (!dich) { tatTuDiHetCho(); sanSangCau = false; return false; }
+      if (cur && cur.x === dich.x && cur.y === dich.y) {
+        // Đang đứng đúng điểm sẽ câu — nhưng nếu có người khác đứng yên
+        // ĐÚNG ô này thì lui sang điểm trống khác (không chen chúc).
+        if (diemBiChiem(dich, now)) {
+          var khac = chonDiemTrong(now, dich);
+          if (!khac) { tatTuDiHetCho(); sanSangCau = false; return false; }
+          movePhase = 'moving';
+          setMoveStatus('Điểm ' + dich.ten + ' có người đứng — đang lui sang ' + khac.ten + '…');
+          log('Điểm câu ' + dich.ten + ' có người đứng yên — tự lui sang ' + khac.ten + '.');
+          diToiDiem(khac);
+          sanSangCau = false;
+          return false;
+        }
+        if (movePhase !== 'idle') movePhase = 'idle';
+        sanSangCau = true;
+        if (!giaoDienCauMo()) moGiaoDienCau();
+        return true;
+      }
+      if (cur && !spotDoi) {
+        // Đang đứng ở 1 điểm cầu hợp lệ khác (vd nav chuyển hướng do điểm
+        // đã chọn có người) — câu luôn ở đây, đồng bộ ô chọn theo vị trí thật.
+        var oHien = null;
+        for (var i = 0; i < SPOTS.length; i++) {
+          if (SPOTS[i].x === cur.x && SPOTS[i].y === cur.y) { oHien = SPOTS[i]; break; }
+        }
+        if (oHien) {
+          if (SPOTS[spotIdx].x !== cur.x || SPOTS[spotIdx].y !== cur.y) {
+            dongBoDiemCau(SPOTS.indexOf(oHien));
+            log('Đang đứng ở điểm câu ' + oHien.ten + ' — câu luôn ở đây.');
+          }
+          sanSangCau = true;
+          if (!giaoDienCauMo()) moGiaoDienCau();
+          return true;
+        }
+      }
+      movePhase = 'moving';
+      diToiDiem(dich);
+      sanSangCau = false;
+      return false;
+    }
+    // Chưa ở Hồ Tây: cần đường bộ tới van_can (qua Thảo Dược Cốc).
+    var duong = null;
+    try { duong = (typeof n.duongDi === 'function') ? n.duongDi(curMap, 'van_can') : null; } catch (e) { duong = null; }
+    if (duong === null) {
+      if (now - lastNoRouteLogAt > 60000) {
+        lastNoRouteLogAt = now;
+        log('Không có đường bộ tới Hồ Tây từ map hiện tại — không tự đi được.');
+      }
+      sanSangCau = false;
+      return false;
+    }
+    var dich2 = chonDiemTrong(now, null);
+    if (!dich2) { tatTuDiHetCho(); sanSangCau = false; return false; }
+    movePhase = 'moving';
+    setMoveStatus('Đang tự đi tới Hồ Tây, điểm câu ' + dich2.ten + '…');
+    diToiDiem(dich2);
+    sanSangCau = false;
+    return false;
+  }
+  async function diToiDiem(dich) {
+    var n = nav();
+    try {
+      log('TỰ ĐI: đang đi tới điểm câu ' + dich.ten + '…');
+      setMoveStatus('Đang tự đi tới điểm câu ' + dich.ten + '…');
+      var curMap = docMapHienTai();
+      if (curMap !== 'van_can') {
+        var okMap = await n.diToiMap('van_can');
+        if (!okMap) throw new Error('diToiMap false');
+      }
+      var okToi = await n.diToi(dich.x, dich.y, 60);
+      if (!okToi) throw new Error('diToi false');
+      // Tới nơi: xác nhận vị trí thật.
+      var cur = docViTriHienTai();
+      if (cur && cur.x === dich.x && cur.y === dich.y) {
+        movePhase = 'arrived';
+        moveFails = 0;
+        spotDoi = false;
+        var idxDich = SPOTS.indexOf(dich);
+        if (idxDich >= 0 && idxDich !== spotIdx) {
+          log('Điểm câu ' + SPOTS[spotIdx].ten + ' có người đứng — chuyển sang ' + dich.ten + ' để câu.');
+          dongBoDiemCau(idxDich);
+        }
+        log('Đã tới điểm câu ' + dich.ten + ' — chờ giao diện câu mở rồi tự câu.');
+        setMoveStatus('Đã tới điểm câu ' + dich.ten + ' — bắt đầu câu.');
+      } else if (cur) {
+        // Tới được Hồ Tây nhưng chưa đúng ô điểm câu (vd bị chuyển hướng
+        // sang ô cầu khác) — nếu ô hiện tại cũng là điểm câu hợp lệ thì
+        // câu luôn ở đó, không thì tính là kẹt.
+        var oHien2 = null;
+        for (var j = 0; j < SPOTS.length; j++) {
+          if (SPOTS[j].x === cur.x && SPOTS[j].y === cur.y) { oHien2 = SPOTS[j]; break; }
+        }
+        if (oHien2) {
+          movePhase = 'arrived';
+          moveFails = 0;
+          spotDoi = false;
+          var idx2 = SPOTS.indexOf(oHien2);
+          if (idx2 !== spotIdx) {
+            log('Điểm câu ' + SPOTS[spotIdx].ten + ' có người đứng — chuyển sang ' + oHien2.ten + ' để câu.');
+            dongBoDiemCau(idx2);
+          }
+          log('Đã tới điểm câu ' + oHien2.ten + ' — chờ giao diện câu mở rồi tự câu.');
+          setMoveStatus('Đã tới điểm câu ' + oHien2.ten + ' — bắt đầu câu.');
+        } else {
+          throw new Error('chưa tới đúng điểm câu (đang ở ' + cur.x + ',' + cur.y + ')');
+        }
+      } else {
+        throw new Error('không đọc được vị trí sau khi di chuyển');
+      }
+    } catch (e) {
+      moveFails++;
+      movePhase = 'idle';
+      log('TỰ ĐI tới điểm câu thất bại lần ' + moveFails + '/' + MAX_MOVE_FAILS + ' (' + (e && e.message ? e.message : e) + ').');
+      setMoveStatus('Tự đi tới điểm câu thất bại lần ' + moveFails + '/' + MAX_MOVE_FAILS + '.');
+      if (moveFails >= MAX_MOVE_FAILS) {
+        tuDi = false;
+        capNhatNutTuDi();
+        setMoveStatus('Tự đi tới điểm câu thất bại 3 lần — đã TẮT tự đi.');
+        log('Đã TẮT tự di chuyển sau 3 lần thất bại — tự đi tới điểm câu rồi bật lại.');
+      }
+    }
+  }
+  function setMoveStatus(s) {
+    lastMoveStatus = s;
+    if (moveEl) moveEl.textContent = s;
+  }
+  // Chọn điểm câu (người dùng đổi ô chọn / gọi setSpot): đánh dấu cần đi
+  // tới điểm mới nếu TỰ ĐI đang BẬT.
+  function datDiemCau(idx) {
+    var spots = diaDiem === 'duoc_coc' ? SPOTS_DC : SPOTS;
+    if (idx < 0 || idx >= spots.length) return;
+    if (diaDiem === 'duoc_coc') spotDcIdx = idx; else spotIdx = idx;
+    spotDoi = true;
+    if (spotSel) spotSel.value = String(idx);
+    log('Điểm câu: ' + spots[idx].ten + (tuDi ? ' — TỰ ĐI sẽ tới điểm này.' : '.'));
+  }
+  // Đồng bộ ô chọn theo vị trí thật (khi nav chuyển hướng sang điểm khác) —
+  // không đánh dấu là người dùng đổi điểm.
+  function dongBoDiemCau(idx) {
+    if (idx < 0 || idx >= SPOTS.length) return;
+    spotIdx = idx;
+    if (spotSel) spotSel.value = String(idx);
+  }
+  // Bật/tắt TỰ ĐI. Tool lẻ (không có nav) thì từ chối.
+  function setTuDi(v) {
+    if (v && !nav()) {
+      log('TỰ ĐI cần module nav — chỉ có trong Tool Tổng (tool lẻ chạy một mình không tự đi được).');
+      return;
+    }
+    tuDi = !!v;
+    if (!tuDi) { movePhase = 'idle'; sanSangCau = false; setMoveStatus(''); }
+    else {
+      moveFails = 0;
+      lastMoveCheckAt = 0; // kiểm tra ngay nhịp sau
+      var diemTen = diaDiem === 'duoc_coc' ? SPOTS_DC[spotDcIdx].ten : SPOTS[spotIdx].ten;
+      log('Đã BẬT tự đi tới điểm câu ' + diemTen + ' — tool sẽ tự đi khi chưa ở điểm câu.');
+      setMoveStatus('TỰ ĐI đang BẬT — đang tới điểm câu ' + diemTen + '…');
+    }
+    capNhatNutTuDi();
+  }
+  function capNhatNutTuDi() {
+    if (!tudiBtn) return;
+    var coNav = !!nav();
+    tudiBtn.textContent = tuDi ? 'TỰ ĐI: BẬT' : 'TỰ ĐI: TẮT';
+    tudiBtn.style.background = tuDi ? '#6b4d16' : '#2a2113';
+    tudiBtn.style.opacity = coNav ? '1' : '0.55';
+    tudiBtn.title = coNav ? 'Tự di chuyển tới điểm câu đã chọn (chỉ trong Tool Tổng)' : 'TỰ ĐI cần module nav — chỉ có trong Tool Tổng';
+  }
+
+  // ---------------- v3.3: Câu ở Dược Cốc — Hồ Bích Thủy ----------------
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function txt(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }
+  // Giáp %: đọc width của <s> trong .pl-bar.hp (cùng cách tab Farm đọc).
+  function docGiapPct() {
+    try {
+      var s = document.querySelector('.pl-bar.hp s');
+      if (!s) return null;
+      var w = parseFloat((s.style && s.style.width) || '');
+      return isFinite(w) ? w : null;
+    } catch (e) { return null; }
+  }
+  function docHpPct() {
+    try {
+      var el = document.querySelector('.pl-bar.hp .pl-n');
+      if (!el) return null;
+      var m = txt(el).match(/(\d+)\s*\/\s*(\d+)/);
+      if (!m || +m[2] === 0) return null;
+      return Math.round(100 * (+m[1]) / (+m[2]));
+    } catch (e) { return null; }
+  }
+  // Số cá trong túi: Inventory.count('ca_song'|'linh_ngu') — client
+  // Fishing COMMON_FISH:"ca_song", SPIRIT_FISH:"linh_ngu".
+  function docCa() {
+    try {
+      var inv = window.__ns_ && window.__ns_.Inventory;
+      if (inv && typeof inv.count === 'function') {
+        return { caSong: inv.count('ca_song'), linhNgu: inv.count('linh_ngu') };
+      }
+    } catch (e) { /* bỏ qua */ }
+    return null;
+  }
+  // Game có đang "Tự động câu" không? Tín hiệu tin cậy nhất là nút Dừng
+  // câu (#btn-fishing-stop-touch) đang hiện — game chỉ hiện nút này khi
+  // đang câu. Caption HUD "Tự động câu... còn Xs" là tín hiệu phụ — KHÔNG
+  // quét cả body.innerText (panel tool cũng chứa chữ "Tự động câu" trong
+  // phần hướng dẫn, quét cả body sẽ luôn trả true).
+  function dangTuDongCau() {
+    try {
+      var b = document.querySelector('#btn-fishing-stop-touch') || document.querySelector('#btn-fishing-stop');
+      if (b && b.offsetParent !== null && !b.classList.contains('hidden')) return true;
+      var cap = document.querySelector('#hud-caption');
+      if (cap && /Tự động câu/.test(cap.textContent || '')) return true;
+      // KHÔNG quét text toàn body nữa (v3.3.0 cũ): nút lựa chọn "Tự động
+      // câu" trong hộp thoại Hồ Bích Thủy cũng match → báo đang câu trong
+      // khi chưa câu (test 25/11 bắt được: poll (23e) pass sớm khi chưa tới
+      // bến). Caption + nút Dừng câu là 2 tín hiệu riêng của game khi đang
+      // tự động câu, đủ tin cậy.
+    } catch (e) { /* bỏ qua */ }
+    return false;
+  }
+  // Bấm nút HUD của game (chỉ bind pointerdown) — dùng cho nút Dừng câu,
+  // nút thiền, nút Tương Tác.
+  function tapHud(sel) {
+    var b = document.querySelector(sel);
+    if (!b) return false;
+    try {
+      b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true }));
+      setTimeout(function () {
+        try { b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true })); } catch (e) {}
+      }, 60);
+      return true;
+    } catch (e) { return false; }
+  }
+  // Dừng câu ở Dược Cốc: bấm nút "Dừng câu" của game.
+  function dungCauDc() {
+    if (tapHud('#btn-fishing-stop-touch') || tapHud('#btn-fishing-stop')) {
+      log('Đã bấm Dừng câu (Dược Cốc).');
+      return true;
+    }
+    log('Không thấy nút Dừng câu — câu có thể đã tự dừng.');
+    return false;
+  }
+  // Bật "Tự động câu" ở Hồ Bích Thủy: tương tác với hồ rồi bấm lựa chọn
+  // "Tự động câu" trong hộp thoại (.btn-choice, bind click — .click() đúng).
+  // Trả true khi thấy caption "Tự động câu" hiện (tối đa 3 lần thử).
+  async function batTuDongCau() {
+    if (dcDangBatCau) return dangTuDongCau();
+    dcDangBatCau = true;
+    try {
+      for (var lan = 1; lan <= 3; lan++) {
+        if (dangTuDongCau()) return true;
+        // Bấm nút Tương Tác với hồ (aria-label chứa Hồ/nước/câu) như moGiaoDienCau.
+        var btn = null;
+        var atk = document.querySelector('#btn-attack');
+        var lab = atk ? ((atk.getAttribute('aria-label') || '') + ' ' + (atk.textContent || '')) : '';
+        if (atk && /tương tác/i.test(lab) && /hồ|câu|nước|bích/i.test(lab)) btn = atk;
+        if (btn) tapHud('#btn-attack');
+        else {
+          var all = document.querySelectorAll('button');
+          for (var i = 0; i < all.length; i++) {
+            var b2 = all[i];
+            if (!b2.offsetParent) continue;
+            var t2 = (b2.innerText || b2.textContent || '');
+            if (/tương tác/i.test(t2) && /hồ|câu|nước|bích/i.test(t2)) { tapHud('#btn-attack'); btn = b2; break; }
+          }
+        }
+        await sleep(800);
+        // Hộp thoại lựa chọn: bấm "Tự động câu" (không bấm "Thả câu").
+        var chon = null;
+        var chs = document.querySelectorAll('.btn-choice, #dialog-choices button, #dialog button');
+        for (var j = 0; j < chs.length; j++) {
+          var t3 = (chs[j].innerText || chs[j].textContent || '').trim();
+          if (/Tự động câu/.test(t3)) { chon = chs[j]; break; }
+        }
+        if (chon) {
+          chon.click();
+          log('Đã chọn "Tự động câu" ở Hồ Bích Thủy (lần ' + lan + '/3).');
+        } else if (lan === 1) {
+          log('Chờ hộp thoại Hồ Bích Thủy mở…');
+        }
+        await sleep(1200);
+        if (dangTuDongCau()) return true;
+      }
+      log('Không bật được "Tự động câu" sau 3 lần — đứng sát mép hồ (18,15)/(18,16) rồi bấm lại.');
+      return false;
+    } finally {
+      dcDangBatCau = false;
+    }
+  }
+  // Bấm ô đất để đi (di chuyển khi Auto BẬT — joystick đứng yên khi Auto
+  // BẬT nên không dùng joystick trên đường tới bến). Camera của game luôn
+  // theo nhân vật nên nhân vật ở gần giữa canvas; bấm lệch ~160px theo
+  // hướng ô đích rồi lặp lại, lái vòng kín bằng docViTriHienTai() (BFS qua
+  // nav để tránh vật chắn). Trả false nếu kẹt 5s không nhúc nhích hoặc
+  // không có canvas — bên gọi fallback sang joystick (Auto TẮT tạm).
+  // CHƯA XÁC MINH LIVE (canvas tile→screen chưa đối chiếu client) — nếu
+  // live bấm đất không đi thì fallback joystick sẽ lo phần còn lại.
+  async function bamDatDiToi(tx, ty, maxMs) {
+    var cv = document.querySelector('canvas');
+    if (!cv) return false;
+    var n = nav();
+    var t0 = Date.now();
+    var lastPos = docViTriHienTai();
+    var lastMoveAt = Date.now();
+    while (Date.now() - t0 < (maxMs || 60000)) {
+      var cur = docViTriHienTai();
+      if (!cur) return false;
+      if (cur.x === tx && cur.y === ty) return true;
+      if (lastPos && (cur.x !== lastPos.x || cur.y !== lastPos.y)) { lastPos = cur; lastMoveAt = Date.now(); }
+      if (Date.now() - lastMoveAt > 5000) return false; // kẹt 5s không nhúc nhích
+      // Ô kề tiếp theo trên đường BFS (tránh vật chắn); không có BFS thì
+      // đi thẳng về đích. TRÁNH (11,6)/(11,7): khe cổng hàng rào phía tây
+      // vào Vườn Cá Nhân (bị Dược Linh Thú đánh).
+      var nx = tx, ny = ty;
+      try {
+        var g = n && typeof n.readWalkable === 'function' ? n.readWalkable() : null;
+        var path = (g && typeof n.bfsPath === 'function') ? n.bfsPath(g, cur.x, cur.y, tx, ty) : null;
+        if (path && path.length) { nx = path[0][0]; ny = path[0][1]; }
+      } catch (e) { /* đi thẳng */ }
+      if ((nx === 11 && (ny === 6 || ny === 7))) return false; // không đi qua khe Vườn Cá Nhân
+      var r = cv.getBoundingClientRect();
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var dx = nx - cur.x, dy = ny - cur.y;
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var px = cx + (dx / len) * 160, py = cy + (dy / len) * 160;
+      try {
+        cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true, clientX: px, clientY: py }));
+        cv.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true, clientX: px, clientY: py }));
+      } catch (e) { return false; }
+      // Hộp thoại mở nhầm (bấm trúng NPC) thì đóng rồi đi tiếp.
+      var dlg = document.querySelector('#dialog');
+      if (dlg && !dlg.classList.contains('hidden')) {
+        var cl = document.querySelector('#dialog-close');
+        if (cl) cl.click();
+      }
+      await sleep(600);
+    }
+    return false;
+  }
+  // Khu hiện tại: KhuUI.khu (client) hoặc .khu-note "Đang ở khu N".
+  function docKhuHien() {
+    try {
+      var k = window.__ns_ && window.__ns_.KhuUI && window.__ns_.KhuUI.khu;
+      if (typeof k === 'number' && k >= 1) return k;
+    } catch (e) { /* bỏ qua */ }
+    try {
+      var note = document.querySelector('.khu-note');
+      var m = note ? txt(note).match(/Đang ở khu\s*(\d+)/) : null;
+      if (m) return parseInt(m[1], 10);
+    } catch (e) { /* bỏ qua */ }
+    return null;
+  }
+  // Mở Bảng Khu: bấm nút Tương Tác (aria-label "Tương tác với Bảng Khu"),
+  // không thì bấm Space (cùng cách tab Farm mở bảng).
+  async function moBangKhuDc() {
+    if (document.querySelectorAll('[data-khu]').length > 0) return true;
+    var atk = document.querySelector('#btn-attack');
+    var lab = atk ? ((atk.getAttribute('aria-label') || '') + ' ' + (atk.textContent || '')) : '';
+    if (atk && /bảng khu/i.test(lab)) tapHud('#btn-attack');
+    else document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true }));
+    for (var i = 0; i < 8; i++) {
+      await sleep(500);
+      if (document.querySelectorAll('[data-khu]').length > 0) return true;
+    }
+    return false;
+  }
+  // CHUYỂN KHU ĐÔNG NGƯỜI NHẤT còn chỗ (chỉ câu Dược Cốc — lệnh Thanh
+  // 19:43; farm quái vẫn giữ khu ÍT người). Số người exact KHÔNG có trong
+  // DOM — nút [data-khu] chỉ mang class bucket (client KhuUI.r: "day" đầy
+  // / "dong" đông >50% / "vang" có người / "" trống). Chọn khu "dong" đầu
+  // tiên, không có thì "vang" đầu tiên, không có nữa thì ở khu hiện tại.
+  // Không mở được bảng thì câu ở khu hiện tại (không chặn).
+  async function chonKhuDongNhat() {
+    var n = nav();
+    // Tới biển KHU (14,5) bằng bấm đất (Auto BẬT) — fallback joystick.
+    var okBen = await bamDatDiToi(14, 5, 30000);
+    if (!okBen && n && typeof n.diToi === 'function') {
+      log('Bấm đất tới biển Khu không được — dùng joystick (Auto TẮT tạm).');
+      try { okBen = await n.diToi(14, 5, 60); } catch (e) { okBen = false; }
+    }
+    if (!okBen) { log('Không tới được biển Khu (14,5) — câu ở khu hiện tại.'); return false; }
+    if (!await moBangKhuDc()) { log('Không mở được Bảng Khu — câu ở khu hiện tại.'); return false; }
+    await sleep(1500); // chờ server gửi danh sách khu (KhuUI.onList)
+    var cur = docKhuHien();
+    var chon = null, chonHang = '';
+    var btns = document.querySelectorAll('[data-khu]');
+    for (var i = 0; i < btns.length; i++) {
+      var b = btns[i];
+      var k = parseInt(b.getAttribute('data-khu'), 10);
+      if (!k || k === cur) continue;
+      var cls = (b.className || '');
+      var hang = /\bday\b/.test(cls) ? 'day' : /\bdong\b/.test(cls) ? 'dong' : /\bvang\b/.test(cls) ? 'vang' : 'trong';
+      if (hang === 'day') continue; // đầy — không vào được
+      if (hang === 'dong') { chon = k; chonHang = 'dong'; break; }
+      if (hang === 'vang' && !chon) { chon = k; chonHang = 'vang'; }
+      if (hang === 'trong' && !chon) { chon = k; chonHang = 'trong'; }
+    }
+    if (!chon) { log('Bảng Khu không có khu đông còn chỗ — câu ở khu hiện tại.'); return false; }
+    var btnChon = document.querySelector('[data-khu="' + chon + '"]');
+    if (!btnChon) return false;
+    btnChon.click();
+    var t0 = Date.now();
+    while (Date.now() - t0 < 5000) {
+      await sleep(500);
+      if (docKhuHien() === chon) {
+        log('Đã chuyển sang khu ĐÔNG người nhất còn chỗ: Khu ' + chon + ' (' + chonHang + ') — câu Dược Cốc.');
+        return true;
+      }
+      if (document.querySelectorAll('[data-khu]').length === 0) break;
+    }
+    if (docKhuHien() === chon) { log('Đã chuyển sang Khu ' + chon + ' (' + chonHang + ').'); return true; }
+    log('Bấm Khu ' + chon + ' không vào được (đầy) — câu ở khu hiện tại.');
+    return false;
+  }
+  // Đi tới bến Dược Cốc (đã ở trong map): bấm đất với Auto BẬT, fallback
+  // joystick. Trả true khi đứng đúng bến.
+  async function diToiBenDc(dich) {
+    var n = nav();
+    // Đảm bảo Auto BẬT để tự vệ trên đường (joystick thì ngược lại — chỉ
+    // dùng joystick khi bấm đất thất bại, lúc đó Auto TẮT tạm).
+    try { if (n && typeof n.datAuto === 'function' && !n.autoDangBat()) n.datAuto(true); } catch (e) { /* bỏ qua */ }
+    var ok = await bamDatDiToi(dich.x, dich.y, 60000);
+    if (!ok && n && typeof n.diToi === 'function') {
+      log('Bấm đất tới bến không được — dùng joystick (Auto TẮT tạm, có canh Giáp).');
+      try { ok = await n.diToi(dich.x, dich.y, 60); } catch (e) { ok = false; }
+    }
+    if (!ok) return false;
+    var cur = docViTriHienTai();
+    return !!(cur && cur.x === dich.x && cur.y === dich.y);
+  }
+  // Kiểm tra TỰ ĐI Dược Cốc (gọi từ tick, tối đa 2 lần/giây). Trả true =
+  // đã ở bến, sẵn sàng câu; false = đang đi / không đi được.
+  function kiemTraDiHoDc() {
+    if (!on || !tuDi) return true;
+    if (movePhase === 'moving') return false;
+    var now = Date.now();
+    if (now - lastMoveCheckAt < 500) return sanSangCau;
+    lastMoveCheckAt = now;
+    if (moveFails >= MAX_MOVE_FAILS) return false;
+    var n = nav();
+    if (!n || typeof n.diToiMap !== 'function' || typeof n.diToi !== 'function') {
+      if (now - lastNoRouteLogAt > 60000) {
+        lastNoRouteLogAt = now;
+        log('TỰ ĐI cần module nav (chỉ có trong Tool Tổng) — tool lẻ không tự đi được.');
+      }
+      sanSangCau = false;
+      return false;
+    }
+    var curMap = docMapHienTai();
+    if (curMap !== 'duoc_vien') {
+      var duong = null;
+      try { duong = (typeof n.duongDi === 'function') ? n.duongDi(curMap, 'duoc_vien') : null; } catch (e) { duong = null; }
+      if (duong === null) {
+        if (now - lastNoRouteLogAt > 60000) {
+          lastNoRouteLogAt = now;
+          var ld = null;
+          try { ld = (typeof n.lyDoKhongDuong === 'function') ? n.lyDoKhongDuong(curMap, 'duoc_vien') : null; } catch (e) { ld = null; }
+          log('Không có đường bộ tới Thảo Dược Cốc từ map hiện tại' + (ld ? ' — ' + ld.tieuDe + '. ' + ld.huongDan : '.'));
+        }
+        sanSangCau = false;
+        return false;
+      }
+      movePhase = 'moving';
+      setMoveStatus('Đang tự đi tới Thảo Dược Cốc, bến ' + SPOTS_DC[spotDcIdx].ten + '…');
+      diToiBenDcAsync();
+      sanSangCau = false;
+      return false;
+    }
+    // Đã ở Thảo Dược Cốc: chuyển khu đông người trước (1 lần/phiên), rồi ra bến.
+    if (!daDoiKhuDong) {
+      movePhase = 'moving';
+      setMoveStatus('Đang chuyển khu đông người nhất để câu…');
+      chonKhuDongNhat().then(function () {
+        daDoiKhuDong = true;
+        movePhase = 'idle';
+        lastMoveCheckAt = 0;
+      });
+      sanSangCau = false;
+      return false;
+    }
+    var cur = docViTriHienTai();
+    var dich = SPOTS_DC[spotDcIdx];
+    if (cur && cur.x === dich.x && cur.y === dich.y) {
+      // ĐÃ ĐỨNG VỮNG ở bến: kiểm tra Giáp đầy rồi mới TẮT Auto.
+      var gp = docGiapPct();
+      if (gp !== null && gp < 95) {
+        if (!dcDangThien) {
+          dcDangThien = true;
+          log('Đứng vững ở bến nhưng Giáp chỉ ' + Math.round(gp) + '% — thiền hồi đầy rồi mới câu.');
+          tapHud('#btn-meditate-touch');
+          setTimeout(function () { dcDangThien = false; }, 30000);
+        }
+        setMoveStatus('Đang thiền hồi Giáp ở bến (' + Math.round(gp) + '%)…');
+        sanSangCau = false;
+        return false;
+      }
+      // Giáp đầy (hoặc không đọc được): TẮT Auto rồi câu.
+      try { if (n.autoDangBat()) n.datAuto(false); } catch (e) { /* bỏ qua */ }
+      if (movePhase !== 'idle') movePhase = 'idle';
+      sanSangCau = true;
+      return true;
+    }
+    // Chưa ở bến: đi tới bến bằng bấm đất (Auto BẬT tự vệ).
+    movePhase = 'moving';
+    setMoveStatus('Đang đi tới bến ' + dich.ten + ' (Auto BẬT tự vệ)…');
+    diToiBenDcAsync();
+    sanSangCau = false;
+    return false;
+  }
+  // Async đi tới bến (từ map bất kỳ): diToiMap tới Dược Cốc rồi ra bến.
+  async function diToiBenDcAsync() {
+    var n = nav();
+    var dich = SPOTS_DC[spotDcIdx];
+    try {
+      log('TỰ ĐI: đang đi tới bến Dược Cốc ' + dich.ten + '…');
+      var curMap = docMapHienTai();
+      if (curMap !== 'duoc_vien') {
+        var okMap = await n.diToiMap('duoc_vien');
+        if (!okMap) throw new Error('diToiMap false');
+      }
+      if (!daDoiKhuDong) {
+        await chonKhuDongNhat();
+        daDoiKhuDong = true;
+      }
+      var ok = await diToiBenDc(dich);
+      if (!ok) throw new Error('không tới được bến');
+      movePhase = 'arrived';
+      moveFails = 0;
+      log('Đã tới bến ' + dich.ten + ' — kiểm tra Giáp rồi câu.');
+      setMoveStatus('Đã tới bến ' + dich.ten + '.');
+    } catch (e) {
+      moveFails++;
+      movePhase = 'idle';
+      log('TỰ ĐI tới bến Dược Cốc thất bại lần ' + moveFails + '/' + MAX_MOVE_FAILS + ' (' + (e && e.message ? e.message : e) + ').');
+      setMoveStatus('Tự đi tới bến thất bại lần ' + moveFails + '/' + MAX_MOVE_FAILS + '.');
+      if (moveFails >= MAX_MOVE_FAILS) {
+        tuDi = false;
+        capNhatNutTuDi();
+        setMoveStatus('Tự đi tới bến thất bại 3 lần — đã TẮT tự đi.');
+        log('Đã TẮT tự di chuyển sau 3 lần thất bại — tự đi tới bến rồi bật lại.');
+      }
+    } finally {
+      lastMoveCheckAt = 0; // kiểm tra lại ngay nhịp sau
+    }
+  }
+  // Giám sát Giáp trong lúc câu DC (mỗi 60s): Auto KHÔNG tự vệ khi đang
+  // câu — Độc Đằng có thể giết trong ~2 phút. Giáp <50% (hoặc HP <50%)
+  // thì dừng câu + bật Auto đánh trả / thiền hồi.
+  function kiemTraGiapKhiCau(now) {
+    if (now - lastGiapCheckAt < 60000) return;
+    lastGiapCheckAt = now;
+    var gp = docGiapPct();
+    var hp = docHpPct();
+    if ((gp !== null && gp < 50) || (hp !== null && hp < 50)) {
+      log('Giáp ' + (gp === null ? '?' : Math.round(gp) + '%') + ' / HP ' + (hp === null ? '?' : hp + '%') + ' khi đang câu — dừng câu, bật Auto đánh trả.');
+      dungCauDc();
+      var n = nav();
+      try { if (n && typeof n.datAuto === 'function') n.datAuto(true); } catch (e) { /* bỏ qua */ }
+      // Thiền hồi Giáp ở bến (Auto BẬT tự vệ trong lúc chờ thiền xong thì
+      // thiền xong mới tắt Auto câu tiếp — thiền tự tắt Auto khi ngồi).
+      tapHud('#btn-meditate-touch');
+      lastTuDongCauCheckAt = now; // khỏi bật lại câu ngay khi đang thiền
+    }
+  }
+  // Kẹt ngầm DC: CHỈ coi là kẹt khi CÁ SÔNG cũng đứng yên qua 2 lần kiểm
+  // tra (mỗi 60s). Linh Ngư đứng yên một mình là do hiếm (5%), không
+  // phải kẹt. Kẹt thì dừng câu rồi bật lại "Tự động câu".
+  function kiemTraKetCa(now) {
+    if (now - lastCaCheckAt < 60000) return false;
+    lastCaCheckAt = now;
+    var ca = docCa();
+    if (!ca || typeof ca.caSong !== 'number') return false;
+    var ket = (caSongTruoc !== null && caSongTruoc2 !== null &&
+      ca.caSong === caSongTruoc && ca.caSong === caSongTruoc2);
+    caSongTruoc2 = caSongTruoc;
+    caSongTruoc = ca.caSong;
+    if (ket) {
+      if (now - lastKetLogAt > 300000) {
+        lastKetLogAt = now;
+        log('Kẹt ngầm? Cá Sông đứng yên ' + ca.caSong + ' qua 2 lần kiểm tra — dừng câu rồi bật lại "Tự động câu".');
+      }
+      dungCauDc();
+      return true;
+    }
+    return false;
+  }
+  // Đổi địa điểm câu: ho_tay | duoc_coc (lưu localStorage; đổi điểm câu
+  // trong bảng theo địa điểm).
+  function datDiaDiem(dd) {
+    if (dd !== 'ho_tay' && dd !== 'duoc_coc') return;
+    diaDiem = dd;
+    try { localStorage.setItem('tt2d_fish_diadiem', dd); } catch (e) { /* bỏ qua */ }
+    daDoiKhuDong = false; // đổi địa điểm thì chuyển khu lại từ đầu
+    movePhase = 'idle';
+    sanSangCau = false;
+    lastMoveCheckAt = 0;
+    caSongTruoc = null; caSongTruoc2 = null;
+    if (diaDiemSel) diaDiemSel.value = dd;
+    capNhatOChonDiem();
+    log('Địa điểm câu: ' + (dd === 'duoc_coc' ? 'Dược Cốc — Hồ Bích Thủy (Đài câu cá (18,15)/(18,16))' : 'Hồ Tây (cầu câu)') + '.');
+  }
+  // Đồng bộ ô chọn điểm câu theo địa điểm (Hồ Tây: 14 điểm cầu; Dược Cốc:
+  // 2 điểm bến). Ẩn hàng "Vùng quăng" khi câu Dược Cốc (game tự câu).
+  function capNhatOChonDiem() {
+    if (!spotSel) return;
+    var opts = diaDiem === 'duoc_coc' ? SPOTS_DC : SPOTS;
+    spotSel.innerHTML = '';
+    opts.forEach(function (sp, i) {
+      var o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = sp.ten;
+      spotSel.appendChild(o);
+    });
+    spotSel.value = String(diaDiem === 'duoc_coc' ? spotDcIdx : spotIdx);
+    if (vungRowEl) vungRowEl.style.display = diaDiem === 'duoc_coc' ? 'none' : '';
+    if (diaDiemSel) diaDiemSel.value = diaDiem;
+  }
+
   // ---------------- Bảng điều khiển ----------------
   var panel, panelHead, panelBody, miniBar, miniStatusEl, statusEl, statsEl, logEl, toggleBtn, targetLineEl, luongEl, ratesEl, conEl, ttEl, zoneBtns = {}, targetBtns = {};
+  var tudiBtn, spotSel, moveEl; // v3.2: nút TỰ ĐI + ô chọn điểm câu + dòng trạng thái tự đi
+  var diaDiemSel, vungRowEl; // v3.3: ô chọn địa điểm + hàng vùng quăng (ẩn khi câu Dược Cốc)
   var collapsed = false; // bảng đang thu nhỏ?
   function buildPanel() {
     panel = document.createElement('div');
@@ -695,14 +1597,14 @@
     ].join(';');
     panel.innerHTML =
       '<div id="tt2d-fish-head" style="display:flex;justify-content:space-between;align-items:center">' +
-        '<b>🎣 Tool câu Hồ Tây v3.1</b>' +
+        '<b>🎣 Tool câu cá v3.3.1</b>' +
         '<span>' +
           '<button id="tt2d-fish-min" title="Thu nhỏ bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 4px">—</button>' +
           '<button id="tt2d-fish-hide" title="Ẩn bảng (tool vẫn chạy nếu đang BẬT)" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 2px">×</button>' +
         '</span>' +
       '</div>' +
       '<div id="tt2d-fish-mini" style="display:none;align-items:center;justify-content:space-between;gap:6px">' +
-        '<b>🎣 Hồ Tây v3.1</b>' +
+        '<b>🎣 Câu cá v3.3.1</b>' +
         '<span id="tt2d-fish-mini-status" style="color:#bfe3ff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>' +
         '<button id="tt2d-fish-expand" title="Mở rộng bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:16px;padding:0 2px">＋</button>' +
       '</div>' +
@@ -718,19 +1620,47 @@
       '<div style="margin:8px 0;display:flex;gap:6px">' +
         '<button id="tt2d-fish-toggle" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT</button>' +
       '</div>' +
-      '<div style="margin:4px 0">Vùng quăng: ' +
+      '<div style="margin:4px 0;display:flex;gap:6px;align-items:center">' +
+        '<button id="tt2d-fish-tudi" title="Tự di chuyển tới điểm câu đã chọn (chỉ trong Tool Tổng)" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">TỰ ĐI: TẮT</button>' +
+      '</div>' +
+      '<div style="margin:4px 0">Địa điểm: ' +
+        '<select id="tt2d-fish-diadiem" title="Hồ Tây: câu cầu (quăng/giật/kéo). Dược Cốc: tự tới Đài câu cá Hồ Bích Thủy, chuyển khu đông người, bật Tự động câu của game" style="background:#2a2113;color:#ffe9b0;border:1px solid #8a6a2f;border-radius:5px;padding:3px">' +
+        '<option value="ho_tay">Hồ Tây (cầu câu)</option>' +
+        '<option value="duoc_coc">Dược Cốc — Hồ Bích Thủy</option>' +
+        '</select>' +
+      '</div>' +
+      '<div style="margin:4px 0">Điểm câu: ' +
+        '<select id="tt2d-fish-spot" title="Điểm câu trên cầu Hồ Tây (đã xác minh: đi được + kề nước)" style="background:#2a2113;color:#ffe9b0;border:1px solid #8a6a2f;border-radius:5px;padding:3px">' +
+        '<option value="0" selected>Cầu (38,14)</option>' +
+        '<option value="1">Cầu (39,14)</option>' +
+        '<option value="2">Cầu (40,14)</option>' +
+        '<option value="3">Cầu (41,14)</option>' +
+        '<option value="4">Cầu (42,14)</option>' +
+        '<option value="5">Cầu (43,14)</option>' +
+        '<option value="6">Cầu (44,14)</option>' +
+        '<option value="7">Cầu (45,14)</option>' +
+        '<option value="8">Cầu (38,15)</option>' +
+        '<option value="9">Cầu (39,15)</option>' +
+        '<option value="10">Cầu (40,15)</option>' +
+        '<option value="11">Cầu (41,15)</option>' +
+        '<option value="12">Cầu (42,15)</option>' +
+        '<option value="13">Cầu (43,15)</option>' +
+        '</select>' +
+      '</div>' +
+      '<div id="tt2d-fish-move" style="margin:4px 0;color:#8fd8ff"></div>' +
+      '<div id="tt2d-fish-vung-row" style="margin:4px 0">Vùng quăng: ' +
         '<button data-zone="nong" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Nông</button> ' +
         '<button data-zone="giua" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#6b4d16;color:#ffe9b0;cursor:pointer">Giữa</button> ' +
         '<button data-zone="sau" style="padding:3px 8px;border-radius:5px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">Sâu</button>' +
       '</div>' +
-      '<div id="tt2d-fish-status" style="margin:6px 0;color:#bfe3ff">Chưa bật — vào Hồ Tây, đứng ở cầu câu rồi bấm BẬT.</div>' +
+      '<div id="tt2d-fish-status" style="margin:6px 0;color:#bfe3ff">Chưa bật — bấm BẬT rồi bật TỰ ĐI để tự tới điểm câu, hoặc đứng ở cầu câu rồi bấm BẬT.</div>' +
       '<div id="tt2d-fish-con" style="margin:4px 0;color:#ffd36a">Côn Bằng: …</div>' +
       '<div id="tt2d-fish-thoitiet" style="margin:4px 0;color:#8fd8ff">Thời tiết: …</div>' +
       '<div id="tt2d-fish-stats" style="color:#c9f2c9">Quăng 0 · Giật 0 · Kéo 0 · Côn 0</div>' +
       '<div id="tt2d-fish-luong" style="margin:4px 0;color:#ffd27a">Luồng: chưa có (chưa thấy cá cắn)</div>' +
       '<div id="tt2d-fish-rates" style="color:#c9f2c9"></div>' +
       '<div id="tt2d-fish-log" style="margin-top:6px;max-height:96px;overflow:auto;color:#d8c9a3;font-size:11px"></div>' +
-      '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Chỉ bấm nút của game. Dừng khi rời hồ. Tool không thấy được luồng cá thật và không đổi được tỷ lệ cắn của server — chỉ chọn vùng/mồi theo tỷ lệ đã quan sát.</div>' +
+      '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Chỉ bấm nút của game. Dừng khi rời hồ. TỰ ĐI: tự tới điểm câu đã chọn (chỉ trong Tool Tổng); điểm có người đứng yên thì tự lui sang điểm trống khác. Dược Cốc: tự tới Đài câu cá, chuyển khu đông người trước khi câu, bật "Tự động câu" của game; canh Giáp mỗi 60s, kẹt chỉ tính khi Cá Sông đứng yên 2 lần kiểm tra. Tool không thấy được luồng cá thật và không đổi được tỷ lệ cắn của server — chỉ chọn vùng/mồi theo tỷ lệ đã quan sát.</div>' +
       '</div>';
     document.body.appendChild(panel);
 
@@ -740,6 +1670,11 @@
     miniStatusEl = panel.querySelector('#tt2d-fish-mini-status');
     toggleBtn = panel.querySelector('#tt2d-fish-toggle');
     statusEl = panel.querySelector('#tt2d-fish-status');
+    tudiBtn = panel.querySelector('#tt2d-fish-tudi');
+    spotSel = panel.querySelector('#tt2d-fish-spot');
+    diaDiemSel = panel.querySelector('#tt2d-fish-diadiem');
+    vungRowEl = panel.querySelector('#tt2d-fish-vung-row');
+    moveEl = panel.querySelector('#tt2d-fish-move');
     statsEl = panel.querySelector('#tt2d-fish-stats');
     logEl = panel.querySelector('#tt2d-fish-log');
     targetLineEl = panel.querySelector('#tt2d-fish-target');
@@ -749,6 +1684,11 @@
     ttEl = panel.querySelector('#tt2d-fish-thoitiet');
 
     toggleBtn.addEventListener('click', function () { setOn(!on); });
+    if (tudiBtn) tudiBtn.addEventListener('click', function () { setTuDi(!tuDi); });
+    if (spotSel) spotSel.addEventListener('change', function () { datDiemCau(parseInt(spotSel.value, 10)); });
+    if (diaDiemSel) diaDiemSel.addEventListener('change', function () { datDiaDiem(diaDiemSel.value); });
+    capNhatOChonDiem();
+    capNhatNutTuDi();
     panel.querySelector('#tt2d-fish-hide').addEventListener('click', function () {
       panel.style.display = 'none';
     });
@@ -912,6 +1852,8 @@
     if (on) {
       state = 'idle';
       nextCastAt = Date.now() + 500;
+      moveFails = 0; // v3.2: bật lại là thử tự đi lại từ đầu
+      lastMoveCheckAt = 0;
       // BẬT là tự động đi tìm chỗ: đảm bảo đúng mồi + vùng cho mục tiêu rồi quăng
       if (target === 'auto') chonTuDong(null); // chọn lại vùng + mồi theo tỷ lệ mới nhất
       damBaoMoi();
@@ -927,6 +1869,7 @@
       renderThoiTiet();
     } else {
       if (holding) release();
+      movePhase = 'idle'; // v3.2: dừng tool thì thôi chờ tự đi (chuyến đang đi sẽ tự hết)
       setStatus('Đã dừng.');
       log('Tool DỪNG.');
     }
@@ -962,8 +1905,71 @@
   }
 
   // ---------------- Vòng lặp chính ----------------
+  // Nhịp chính khi câu ở Dược Cốc: TỰ ĐI tới bến -> canh Giáp -> giữ
+  // "Tự động câu" bật -> phát hiện kẹt ngầm. Không dùng logic quăng/
+  // giật/kéo của Hồ Tây.
+  function tickDuocCoc() {
+    var now = Date.now();
+    if (tuDi) {
+      var sanSang = kiemTraDiHoDc();
+      if (movePhase === 'moving') {
+        setStatus(lastMoveStatus || 'Đang tự đi tới bến Dược Cốc…');
+        return;
+      }
+      if (!sanSang) {
+        setStatus(lastMoveStatus || 'Chưa ở bến — TỰ ĐI chưa đi được (xem nhật ký).');
+        return;
+      }
+    } else {
+      // Không bật TỰ ĐI: chỉ câu khi ĐÃ đứng ở bến; chưa ở bến thì báo.
+      var cur0 = docViTriHienTai();
+      var dich0 = SPOTS_DC[spotDcIdx];
+      if (!cur0 || cur0.x !== dich0.x || cur0.y !== dich0.y) {
+        setStatus('Chưa ở bến ' + dich0.ten + ' — bật TỰ ĐI để tự tới bến, hoặc đi tay tới bến rồi bật lại.');
+        return;
+      }
+    }
+    // Đang ở bến: canh Giáp (60s) rồi giữ "Tự động câu" bật (5s).
+    kiemTraGiapKhiCau(now);
+    if (kiemTraKetCa(now)) {
+      setStatus('Kẹt ngầm? Cá Sông đứng yên — đã dừng câu, đang bật lại "Tự động câu"…');
+      batTuDongCau();
+      return;
+    }
+    if (now - lastTuDongCauCheckAt >= 5000) {
+      lastTuDongCauCheckAt = now;
+      if (!dangTuDongCau()) {
+        setStatus('Chưa thấy "Tự động câu" — đang bật lại ở Hồ Bích Thủy…');
+        batTuDongCau();
+        return;
+      }
+    }
+    var ca = docCa();
+    var gp = docGiapPct();
+    setStatus('Đang câu tự động ở Hồ Bích Thủy ' + SPOTS_DC[spotDcIdx].ten +
+      (ca ? ' · Cá Sông ' + ca.caSong + ' · Linh Ngư ' + ca.linhNgu : '') +
+      (gp !== null ? ' · Giáp ' + Math.round(gp) + '%' : ''));
+  }
   function tick() {
     if (!on) return;
+    // --- v3.3: Câu Dược Cốc — Hồ Bích Thủy (luồng riêng, không dùng
+    // giao diện quăng/giật/kéo của Hồ Tây) ---
+    if (diaDiem === 'duoc_coc') {
+      tickDuocCoc();
+      return;
+    }
+    // --- v3.2: TỰ ĐI tới điểm câu (trước mọi logic câu) ---
+    if (tuDi) {
+      var sanSang = kiemTraDiHo();
+      if (movePhase === 'moving') {
+        setStatus(lastMoveStatus || 'Đang tự đi tới điểm câu…');
+        return;
+      }
+      if (!sanSang) {
+        setStatus(lastMoveStatus || 'Chưa ở điểm câu — TỰ ĐI chưa đi được (xem nhật ký).');
+        return;
+      }
+    }
     var b = nutBtn();
     if (!b) {
       setStatus('Chưa thấy giao diện câu cá — vào Hồ Tây, đứng ở cầu câu.');
@@ -1175,12 +2181,14 @@
   taiRates(); // nạp lại dữ liệu tỷ lệ đã lưu (nếu có)
   buildPanel();
   setInterval(tick, CFG.pollMs);
-  setStatus('Chưa bật — vào Hồ Tây, đứng ở cầu câu rồi bấm BẬT.');
+  setStatus('Chưa bật — bấm BẬT rồi bật TỰ ĐI để tự tới điểm câu, hoặc đứng ở cầu câu rồi bấm BẬT.');
   setTargetLine();
-  log('Tool đã nạp (v3.1). Mặc định TẮT.');
+  log('Tool đã nạp (v3.2). Mặc định TẮT.');
   // Điều khiển từ Console khi cần debug: __TT2D_FISH__.start() / .stop() /
-  // .setTarget('linh'|'yeu'|'giao'|'tudo'|'auto') / .status()
-  // (_tick và _cfg chỉ để test/debug.)
+  // .setTarget('linh'|'yeu'|'giao'|'tudo'|'auto') / .status() /
+  // .setTuDi(true|false) / .setSpot(0..13) / .spot() / .spots() /
+  // .setDiaDiem('ho_tay'|'duoc_coc') / .diaDiem() / .spotsDc()
+  // (_tick, _cfg và _debug chỉ để test/debug.)
   window.__TT2D_FISH__ = {
     start: function () { setOn(true); },
     stop: function () { setOn(false); },
@@ -1200,9 +2208,18 @@
       });
       var rTT = thoiTietHienTai();
       var ct = conTrangThai(Date.now());
+      var caDc = docCa();
       return {
         on: on, state: state, holding: holding, target: target, vung: vungHien,
         choTimDuoc: choTimDuoc, moi: moiDangDung, stats: stats,
+        tuDi: tuDi, spot: { idx: spotIdx, x: SPOTS[spotIdx].x, y: SPOTS[spotIdx].y, ten: SPOTS[spotIdx].ten },
+        movePhase: movePhase, moveFails: moveFails, moveStatus: lastMoveStatus,
+        diaDiem: diaDiem,
+        dc: {
+          spot: { idx: spotDcIdx, x: SPOTS_DC[spotDcIdx].x, y: SPOTS_DC[spotDcIdx].y, ten: SPOTS_DC[spotDcIdx].ten },
+          daDoiKhuDong: daDoiKhuDong, dangTuDongCau: dangTuDongCau(),
+          giapPct: docGiapPct(), caSong: caDc ? caDc.caSong : null, linhNgu: caDc ? caDc.linhNgu : null,
+        },
         tiLe: {
           vung: { nong: rateObj(ratesVung.nong), giua: rateObj(ratesVung.giua), sau: rateObj(ratesVung.sau) },
           moi: moiOut,
@@ -1216,7 +2233,26 @@
         },
       };
     },
+    setTuDi: function (v) { setTuDi(v); },
+    tuDi: function () { return tuDi; },
+    setSpot: function (i) { datDiemCau(i); },
+    spot: function () { return { idx: spotIdx, x: SPOTS[spotIdx].x, y: SPOTS[spotIdx].y, ten: SPOTS[spotIdx].ten }; },
+    spots: function () { return SPOTS.map(function (s) { return { x: s.x, y: s.y, ten: s.ten }; }); },
+    setDiaDiem: function (dd) { datDiaDiem(dd); },
+    diaDiem: function () { return diaDiem; },
+    spotsDc: function () { return SPOTS_DC.map(function (s) { return { x: s.x, y: s.y, ten: s.ten }; }); },
+    moveStatus: function () { return { movePhase: movePhase, moveFails: moveFails, lastMoveStatus: lastMoveStatus }; },
     _tick: tick,
     _cfg: CFG,
+    _debug: {
+      kiemTraDiHo: kiemTraDiHo, chonDiemTrong: chonDiemTrong,
+      diemBiChiem: diemBiChiem, quetNguoiDung: quetNguoiDung,
+      dangCau: dangCau, giaoDienCauMo: giaoDienCauMo,
+      kiemTraDiHoDc: kiemTraDiHoDc, chonKhuDongNhat: chonKhuDongNhat,
+      bamDatDiToi: bamDatDiToi, batTuDongCau: batTuDongCau,
+      dangTuDongCau: dangTuDongCau, dungCauDc: dungCauDc,
+      docGiapPct: docGiapPct, docCa: docCa,
+      kiemTraGiapKhiCau: kiemTraGiapKhiCau, kiemTraKetCa: kiemTraKetCa,
+    },
   };
 })();
