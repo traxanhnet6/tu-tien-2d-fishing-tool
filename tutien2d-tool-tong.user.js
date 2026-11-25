@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm | Đại Hội | Vạn Hoang | Tam Lộ | Chính Ma | Canh | Tàng Kinh | Sổ LT | Tông Chiến | Linh Thụ | Săn Boss | Xổng Chuồng | HX Tổ Đội | Nhiệm vụ | Hồi Sinh | Báo Cáo)
 // @namespace    https://tutienpixel.online/
-// @version      1.5.0
+// @version      1.5.1
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 22 tab — Câu cá Hồ Tây (v3.2), Boss theo giờ, Dược Đại Phu (15 lượt/ngày), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường, Đại Hội tự ghi danh + đổi Nhân vật ở phòng chờ, Vạn Hoang tự vào bo, Tam Lộ tự bấm "Chơi luôn!", Chính Ma tự trú ẩn 10:55, Canh Phi Hành/trôi khu/Giáp, Tàng Kinh free + Điểm Danh, Sổ Linh Thạch + bảng tổng 4 acc, Tông Môn Chiến tự vào phòng chờ 21:00, Tranh Linh Thụ 20:16 T3/T7, Săn Boss theo lịch cả ngày, Yêu Thú Xổng Chuồng tự đi đánh bầy, Huyết Xích tổ đội cho thanhvan2, Nhiệm vụ chính GĐ0–38 (chỉ hiển thị), Hồi Sinh thông minh, Báo cáo cuối ngày + nhận thưởng Thư, Sáng map Tam Lộ + Vạn Hoang. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
@@ -12,7 +12,11 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
-// TOOL TỔNG v1.5.0 — 1 bảng chung, 22 tab. v1.5.0 (25/11, lệnh Thanh 19:36
+// TOOL TỔNG v1.5.1 — 1 bảng chung, 22 tab. v1.5.1 (25/11, lệnh Thanh 22:10):
+//  ẩn tên acc ở dòng trạng thái tab Báo cáo (chỉ hiện LT/quái/Thư) + Nhiệm vụ;
+//  + sửa diToi chống kẹt (đi vòng khi 3 nhịp không đổi vị trí, áp cả nhánh BFS)
+//  + cổng dự phòng Thung Lũng→Mỏ (2,27) (lệnh Thanh 22:15).
+// v1.5.0 (25/11, lệnh Thanh 19:36
 // "Làm đi" — đợt 2): THÊM 8 TÍNH NĂNG MỚI (8 tab mới):
 //  1. Tab Tông Môn Chiến: T3/T7 21:00–21:30, sổ mở 20:45; KHÔNG cần ghi
 //     danh — đúng 21:00 tông nào có >=3 thành viên đủ tư cách (vào tông
@@ -494,14 +498,14 @@ tongBuildShell();
 // Debug handle chung: __TT2D_TONG__.status() / .showTab(id) /
 // .setCollapsed(v) / .setTabCollapsed(v) / .tab(id) / .nav (module Điều hướng).
 window.__TT2D_TONG__ = {
-  version: '1.5.0',
+  version: '1.5.1',
   showTab: tongShowTab,
   setCollapsed: tongSetCollapsed,
   setTabCollapsed: tongSetTabCollapsed,
   activeTab: function () { return activeTab; },
   tab: function (id) { return apis[id] || null; },
   status: function () {
-    var out = { version: '1.5.0', activeTab: activeTab, tabs: {} };
+    var out = { version: '1.5.1', activeTab: activeTab, tabs: {} };
     Object.keys(apis).forEach(function (id) {
       try { out.tabs[id] = apis[id].status ? apis[id].status() : null; } catch (e) { out.tabs[id] = null; }
     });
@@ -6462,7 +6466,30 @@ window.__TT2D_TONG__ = {
       // Joystick không chạy khi Auto BẬT (vd nhân vật đang farm sẵn) — tắt
       // ngay từ nhịp đầu, và tắt lại nếu Auto tự bật lại giữa đường (vào combat).
       if (autoDangBat()) datAuto(false);
-      // Thử BFS trên lưới thật mỗi vài nhịp (lưới có thể đổi khi quái di chuyển).
+      // Chống kẹt (v1.5.1 — vụ net2 22:15 25/11: Thung Lũng (15,26) đi
+      // cổng Mỏ (1,27): BFS có đường nhưng nhân vật không nhúc nhích
+      // (kẹt cột đá/quái chắn), diToi cứ đẩy cùng hướng hết 60 nhịp rồi
+      // báo "không tới được ô cổng". Trước đây chỉ nhánh không-lưới mới
+      // có đếm kẹt + đi vòng; nay áp cho CẢ nhánh BFS: 3 nhịp liền không
+      // đổi vị trí thì lệch vuông góc 1 nhịp, đổi chiều mỗi lần, tối đa
+      // 4 lần đi vòng rồi mới chịu thua.
+      if (last && last.x === p.x && last.y === p.y) {
+        ket++;
+        if (ket >= 3) {
+          if (vong >= 4) return false;
+          vong++;
+          var dx = tx - p.x, dy = ty - p.y;
+          // Lệch vuông góc, đổi chiều mỗi lần (không đẩy dài vào cùng chỗ).
+          var sx = (vong % 2 === 1) ? 1 : -1;
+          if (Math.abs(dx) >= Math.abs(dy)) await joyHold(0, sx * 40, CFG_NAV.joyHoldMs);
+          else await joyHold(sx * 40, 0, CFG_NAV.joyHoldMs);
+          if (biHuy(tok)) return false;
+          ket = 0;
+          continue;
+        }
+      } else ket = 0;
+      last = { x: p.x, y: p.y };
+      // Thử BFS trên lưới thật mỗi nhịp (lưới có thể đổi khi quái di chuyển).
       var grid = readWalkable();
       if (grid) {
         var path = bfsPath(grid, p.x, p.y, tx, ty);
@@ -6473,23 +6500,7 @@ window.__TT2D_TONG__ = {
           continue;
         }
       }
-      // Không có lưới / không có đường BFS → step_toward + đi vòng khi kẹt.
-      if (last && last.x === p.x && last.y === p.y) {
-        ket++;
-        if (ket >= 3) {
-          if (vong >= 4) return false;
-          vong++;
-          var dx = tx - p.x, dy = ty - p.y;
-          // Lệch vuông góc 3 ô, đổi chiều mỗi lần (không đẩy dài vào cùng chỗ).
-          var sx = (vong % 2 === 1) ? 1 : -1;
-          if (Math.abs(dx) >= Math.abs(dy)) await joyHold(0, sx * 40, CFG_NAV.joyHoldMs);
-          else await joyHold(sx * 40, 0, CFG_NAV.joyHoldMs);
-          if (biHuy(tok)) return false;
-          ket = 0;
-          continue;
-        }
-      } else ket = 0;
-      last = { x: p.x, y: p.y };
+      // Không có lưới / không có đường BFS → step_toward.
       await joyHuong(tx - p.x, ty - p.y, CFG_NAV.joyHoldMs);
       if (biHuy(tok)) return false;
     }
@@ -6554,7 +6565,12 @@ window.__TT2D_TONG__ = {
     'bai_da_hang_gio>mo_linh_thach': { x: 21, y: 10, dx: 0, dy: -1 },
     'mo_linh_thach>bai_da_hang_gio': { x: 1, y: 13, dx: -1, dy: 0 },
     'mo_linh_thach>thach_phong_thung_lung': { x: 38, y: 16, dx: 1, dy: 0 },
-    'thach_phong_thung_lung>mo_linh_thach': { x: 1, y: 27, dx: -1, dy: 0 },
+    // Cổng (1,27) theo đúng MapData.portals client (label "Về Mỏ Linh
+    // Thạch", spawn bên Mỏ (4,27)); dự phòng (2,27): đứng lùi 1 ô rồi
+    // đẩy tây — bước lên (1,27) là cổng mở. Vụ net2 22:15 25/11 kẹt ở
+    // (15,26) không tới được (1,27) (xem diToi chống kẹt v1.5.1).
+    'thach_phong_thung_lung>mo_linh_thach': { x: 1, y: 27, dx: -1, dy: 0,
+      fallback: { x: 2, y: 27, dx: -1, dy: 0 } },
     'thach_phong_thung_lung>bat_quai_thach_phan': { x: 38, y: 2, dx: 1, dy: 0 },
     'bat_quai_thach_phan>thach_phong_thung_lung': { x: 0, y: 8, dx: -1, dy: 0 },
     // Cột Khí Bổng (Bát Quái <-> Thiên Đạo): cổng (45,7) là cột Trung Trục;
@@ -12135,7 +12151,8 @@ window.__TT2D_TONG__ = {
     var st = stageHienTai();
     var stage = st ? st.stage : null;
     if (elTrangThai) {
-      elTrangThai.textContent = 'Acc: ' + cfg.acc + ' · ' +
+      // v1.5.1 (lệnh Thanh 22:10 25/11): KHÔNG hiện tên acc ở dòng trạng thái.
+      elTrangThai.textContent =
         (stage !== null ? 'Giai đoạn ' + stage + '/' + STAGE_COUNT + ' (' + (st.src || '') + ')' : 'Chưa đọc được giai đoạn từ game — nhập tay bên dưới hoặc mở nhiệm vụ trong game để xem.');
     }
     // Checklist GĐ0–38.
@@ -12874,8 +12891,10 @@ window.__TT2D_TONG__ = {
     if (elTrangThai) {
       var sd = docSoDo();
       var thu = docThuChuaDoc();
-      elTrangThai.textContent = 'Acc: ' + cfg.acc +
-        (sd && typeof sd.lt === 'number' ? ' · LT ' + sd.lt : '') +
+      // v1.5.1 (lệnh Thanh 22:10 25/11): KHÔNG hiện tên acc ở dòng trạng thái
+      // (chỉ LT/quái/Thư) — tên acc không hiển thị trên tên nhân vật đã đăng nhập.
+      elTrangThai.textContent =
+        (sd && typeof sd.lt === 'number' ? 'LT ' + sd.lt : '—') +
         (sd && typeof sd.quai === 'number' ? ' · quái ' + sd.quai : '') +
         (thu !== null ? ' · Thư chưa đọc: ' + thu : '');
     }
