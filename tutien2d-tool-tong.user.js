@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm)
 // @namespace    https://tutienpixel.online/
-// @version      1.3.2
+// @version      1.3.3
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 7 tab — Câu cá Hồ Tây (v3.2: tỷ lệ cắn + Côn Bằng + thời tiết + TỰ ĐI tới điểm câu), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường tới map + khu đã chọn. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
@@ -12,7 +12,27 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
-// TOOL TỔNG v1.3.2 — 1 bảng chung, 7 tab. v1.3.2 (25/11): tab Dược lên
+// TOOL TỔNG v1.3.3 — 1 bảng chung, 7 tab. v1.3.3 (25/11): SỬA LỖI "bật
+// auto farm ở tool không di chuyển được" (Thanh báo 07:15) — cùng lỗi
+// .click() như tab Dược ở v1.3.2, nhưng ở tab Farm + tab Boss + helper
+// Huyết Xích/Vận Tiêu + Tổ đội + nav chung: mọi chỗ bấm nút HUD
+// (#btn-attack, #btn-fly, #btn-auto-touch, #btn-target, #btn-run,
+// #btn-meditate-touch) chuyển sang tap() (pointerdown+pointerup+click);
+// datAuto/datFly/datRun/setBtn chỉ bấm đúng 1 lần khi trạng thái cần đổi,
+// KHÔNG kiểm tra lại ngay sau khi bấm (game tiêu thụ toggle ở frame sau),
+// ưu tiên #btn-auto-touch (#btn-auto không có listener); Vận Tiêu chỉ
+// bấm #btn-auto-touch (bấm cả 2 sẽ toggle ngược). BỎ Hắc Thị khỏi danh
+// sách map đích tab Farm (chợ đen, không có quái để farm — Thanh hỏi
+// 07:17 "cho nhân vật qua hắc thị làm gì vậy"); cổng Hắc Thị vẫn giữ
+// trong nav.js. Boss lên v1.2.1, Huyết Xích phụ v1.1.1, Vận Tiêu phụ
+// v1.0.1. BỔ SUNG (vụ Thanh báo 07:29): Farm tới Miếu Hoang báo nhầm
+// "không có đường" — nguyên nhân thật là Phi Hành BẬT (datFly cũ .click()
+// là no-op) nên đẩy cổng không qua; quaCong nay hạ cánh bằng tap() trước
+// khi đẩy cổng + cổng tan_vien>mieu_hoang có dự phòng (0,12) không qua
+// được thì thử lại (2,15) (tọa độ live); Farm báo lỗi phân biệt 3 trường
+// hợp (không có đường / không tới được ô cổng / đẩy cổng không qua, kèm
+// tọa độ cổng + trạng thái Phi Hành/Auto) + log từng bước quaCong.
+// v1.3.2 (25/11): tab Dược lên
 // v1.1.1 — SỬA LỖI "tự động làm dược và di chuyển không hoạt động": bấm
 // nút game bằng tap() (pointerdown+pointerup+click — nút HUD của game chỉ
 // bind pointerdown, .click() là no-op) + diToi/quaCong tắt Auto trước khi
@@ -38,13 +58,16 @@
 // (25/11): SỬA LỖI Farm không tự di chuyển — runToTarget tắt Auto TRƯỚC
 // khi diToiMap (joystick không chạy khi Auto BẬT), nav diToi/quaCong/
 // diToiMap tắt Auto đầu mỗi nhịp/cổng + tắt lại khi Auto tự bật giữa
-// đường; datAuto bấm xong kiểm tra lại (toggle). v1.2.0 (25/11): mở rộng
+// đường; datAuto bấm xong kiểm tra lại (toggle) — CÁCH NÀY ĐÃ SAI (nút
+// HUD chỉ bind pointerdown nên .click() là no-op; kiểm tra lại ngay sau
+// khi bấm đọc trạng thái cũ), đã sửa lại ở v1.3.3 (tap() + bấm 1 lần).
+// v1.2.0 (25/11): mở rộng
 // điều hướng chung thêm Mỏ Linh Thạch, Thạch Phong, Bát Quái, Thiên Đạo,
 // Ma Động, Hắc Phong Lĩnh, Hắc Thị + đường ra hầm Huyết Xích; duongDi
 // thành BFS trên đồ thị cổng; tab Farm thêm 7 map đích; sửa cổng
 // làng->Miếu Hoang (0,12). Gộp từ 5 tool lẻ (giữ nguyên logic):
-//  - Câu cá Hồ Tây v3.2.0 | Boss v1.2.0 | Dược v1.1.1 | Huyết Xích phụ v1.1.0
-//    | Vận Tiêu phụ v1.0.0 — xem README.md trong thư mục tu-tien-2d-tool-tong.
+//  - Câu cá Hồ Tây v3.2.0 | Boss v1.2.1 | Dược v1.1.1 | Huyết Xích phụ v1.1.1
+//    | Vận Tiêu phụ v1.0.1 — xem README.md trong thư mục tu-tien-2d-tool-tong.
 //  - Tổ đội + farm rùa: mời/chấp nhận trong 180px, tối đa 6 người, farm Thạch
 //    Quy Miếu Ông Trường Con Khu 12 (mới, viết cho Tool Tổng).
 //  - Farm tự tìm đường (mới v1.1.0): chọn map + khu -> tool tự đi tới (BFS +
@@ -1821,7 +1844,7 @@ window.__TT2D_TONG__ = {
   })();
 
 
-  // ================= MODULE: boss (Boss v1.2.0: ưu tiên Boss, khóa mục tiêu qua HUD, ở lại bãi ~60s cho nam châm nhặt đồ; TỰ ĐI tới map boss trước giờ hồi sinh (nav chung) + TỰ HỒI SINH tại chỗ tối đa 3 lần rồi đánh tiếp ngay.) =================
+  // ================= MODULE: boss (Boss v1.2.1: ưu tiên Boss, khóa mục tiêu qua HUD, ở lại bãi ~60s cho nam châm nhặt đồ; TỰ ĐI tới map boss trước giờ hồi sinh (nav chung) + TỰ HỒI SINH tại chỗ tối đa 3 lần rồi đánh tiếp ngay; bấm Auto bằng tap() (nút HUD chỉ bind pointerdown).) =================
 
   (function () {
 
@@ -2082,12 +2105,29 @@ window.__TT2D_TONG__ = {
     }
 
     // ---------------- Đọc DOM của game ----------------
+    // Bấm nút game bằng tap() (pointerdown+pointerup+click): nút HUD của
+    // game (#btn-auto-touch, #btn-fly...) CHỈ bind "pointerdown" (helper k()
+    // trong TouchUI, game.js client 24/11) — .click() là no-op (lỗi Farm
+    // "bật auto không di chuyển được" 07:15 25/11). #btn-auto KHÔNG có
+    // listener — ưu tiên #btn-auto-touch. Game tiêu thụ cờ toggle ở frame
+    // sau nên KHÔNG kiểm tra lại trạng thái ngay sau khi bấm.
+    function tap(el) {
+      if (!el) return;
+      var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      var x = r ? r.left + r.width / 2 : 0, y = r ? r.top + r.height / 2 : 0;
+      function ev(ty) {
+        return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true });
+      }
+      el.dispatchEvent(ev('pointerdown'));
+      el.dispatchEvent(ev('pointerup'));
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+    }
     function autoBtn() {
-      return document.querySelector('#btn-auto') || document.querySelector('#btn-auto-touch');
+      return document.querySelector('#btn-auto-touch') || document.querySelector('#btn-auto');
     }
     function autoIsOn() {
-      var b = autoBtn();
-      return !!(b && b.classList.contains('active'));
+      var b1 = document.querySelector('#btn-auto'), b2 = document.querySelector('#btn-auto-touch');
+      return !!((b1 && b1.classList.contains('active')) || (b2 && b2.classList.contains('active')));
     }
     function uuTienBossBtn() {
       return document.querySelector('[data-uu-tien="boss"]');
@@ -2129,7 +2169,9 @@ window.__TT2D_TONG__ = {
     }
 
     // ---------------- Bấm nút của game ----------------
-    // Bật Auto (bấm nút, có chống bấm dồn dập; tick sau tự kiểm tra lại trạng thái).
+    // Bật Auto (bấm đúng 1 lần qua tap(), có chống bấm dồn dập; tick sau tự
+    // kiểm tra lại trạng thái — KHÔNG kiểm tra ngay sau khi bấm vì game tiêu
+    // thụ toggle ở frame sau).
     function damBaoAuto() {
       var b = autoBtn();
       if (!b) return false;
@@ -2137,7 +2179,7 @@ window.__TT2D_TONG__ = {
       var now = Date.now();
       if (now - lastAutoClickAt < CFG.autoClickCooldownMs) return false;
       lastAutoClickAt = now;
-      b.click();
+      tap(b);
       return true;
     }
     // Đặt ưu tiên Tự Động Đánh = Boss (chỉ bấm được khi bảng Cài Đặt đang mở).
@@ -2842,7 +2884,7 @@ window.__TT2D_TONG__ = {
     setInterval(capNhatLich, 1000);
     setStatus('Chưa bật — đưa nhân vật tới đúng map boss rồi bấm BẬT.');
     setStats();
-    log('Tool đã nạp (v1.2.0). Mặc định TẮT. 5 boss theo giờ: Xích Long 3h, Linh Hổ 5h, Nhện 8h, Ma Báo 11:00–21:00, Giao Long tối Chủ Nhật. MỚI: TỰ ĐI tới map boss trước giờ hồi sinh + TỰ HỒI SINH tại chỗ tối đa 3 lần rồi đánh tiếp ngay. Bấm "—" để thu nhỏ bảng.');
+    log('Tool đã nạp (v1.2.1). Mặc định TẮT. 5 boss theo giờ: Xích Long 3h, Linh Hổ 5h, Nhện 8h, Ma Báo 11:00–21:00, Giao Long tối Chủ Nhật. MỚI: TỰ ĐI tới map boss trước giờ hồi sinh + TỰ HỒI SINH tại chỗ tối đa 3 lần rồi đánh tiếp ngay. Bấm "—" để thu nhỏ bảng.');
     // Điều khiển từ Console khi cần debug: __TT2D_BOSS__.start() / .stop() / .select('xich_long'|'linh_ho'|'nhen'|'ma_bao'|'giao_long'|'all') / .status() / .ghiHa('xich_long') / .lich() / .setCollapsed(true|false) / .setTuDi(true|false) / .ghiAnchor('xich_long', 21*60) / ._debug
     window.__TT2D_BOSS__ = {
       start: function () { setOn(true); },
@@ -2885,6 +2927,9 @@ window.__TT2D_TONG__ = {
         setReviveCount: function (n) { reviveCount = n; },
         docAnchor: docAnchor,
         mocCoDinhTiepTheo: mocCoDinhTiepTheo,
+        damBaoAuto: damBaoAuto,
+        autoIsOn: autoIsOn,
+        tap: tap,
       },
     };
     Tong.register('boss', window.__TT2D_BOSS__);
@@ -2975,6 +3020,7 @@ window.__TT2D_TONG__ = {
     var demKet = 0;         // số lần kẹt liên tiếp
     var demTuDiLai = 0;     // số lần bật lại "Tự Đi"
     var daNhanViec = false; // phiên này tool đã nhận được ít nhất 1 việc (để phân biệt việc dở có sẵn với việc của tool)
+    var viecNhanTay = false; // đang tiếp tục việc NHẬN BẰNG TAY (không phải việc tool tự nhận): kẹt đường thì DỪNG báo rõ, KHÔNG tự huỷ
     var tuVeDangBat = false;// LK: Auto tự vệ đang bật?
     var choDoiTu = 0;       // mốc thời gian chờ (mở hộp thoại...)
     var logLines = [];
@@ -3113,14 +3159,48 @@ window.__TT2D_TONG__ = {
       if (/Trúc Tâm|Trúc Già/i.test(t)) return 'truc_gia';
       return null;
     }
-    // Tên việc đang giữ (đoán từ tracker) — dùng để log khi tự huỷ việc dở
-    // đã nhận trước khi bật tool.
+    // Tên việc đang giữ (đoán từ tracker) — dùng để log khi dừng vì việc lạ.
     function tenViecDangGiu() {
       var id = doanViecDangLam();
       if (id && TASKS[id]) return TASKS[id].ten;
       var tr = docTracker();
       if (tr) return tr;
       return 'việc chưa rõ tên';
+    }
+    // Việc dược ĐANG GIỮ — nhận diện từ tracker (#quest-objectives) + hộp
+    // thoại đang mở. Trả về {id, kind, ten} hoặc null nếu không giữ việc
+    // dược nào nhận diện được. Khớp Đại Hội / Tán Tu / Vận Tiêu TRƯỚC
+    // (tên riêng), rồi mới tới 5 việc thường. Dùng cho: nút "TỰ ĐI LÀM
+    // VIỆC ĐÃ NHẬN" + quyết định tiếp tục / huỷ / dừng khi bật tool.
+    // (Tên việc lấy từ client 24/11 — game.js: dai_hoi "Thắng Trận Đại Hội"
+    // kind "tournament"; chien_bang "Thắng Trận Tán Tu Chiến Bảng" kind
+    // "chien_bang"; van_tieu "Vận Tiêu Một Chuyến" kind "convoy".)
+    var VIEC_DAC_BIET = {
+      dai_hoi: { id: 'dai_hoi', kind: 'tournament', ten: 'Thắng Trận Đại Hội', re: /Thắng Trận Đại Hội|Đại Hội Tu Tiên/ },
+      chien_bang: { id: 'chien_bang', kind: 'chien_bang', ten: 'Thắng Trận Tán Tu Chiến Bảng', re: /Tán Tu/ },
+      van_tieu: { id: 'van_tieu', kind: 'convoy', ten: 'Vận Tiêu Một Chuyến', re: /Vận Tiêu/ },
+    };
+    // Tên việc cấm nhận — chặn cuối ở bộ chọn việc (phòng nhận nhầm từ
+    // danh sách hộp thoại). Chỉ 5 việc thường được nhận.
+    function laViecCam(tenViec) {
+      return /Đại Hội|Tán Tu|Vận Tiêu/.test(tenViec || '');
+    }
+    function docViecDangGiu() {
+      var dlg = docDialog();
+      var t = docTracker() + ' ' + (dlg ? ((dlg.text || '') + ' ' + (dlg.title || '')) : '');
+      var k;
+      for (k in VIEC_DAC_BIET) {
+        if (VIEC_DAC_BIET[k].re.test(t)) return VIEC_DAC_BIET[k];
+      }
+      var id = doanViecDangLam();
+      if (id && TASKS[id]) return { id: id, kind: TASKS[id].kind, ten: TASKS[id].ten };
+      return null;
+    }
+    // Việc đang giữ đã đủ điều kiện nộp chưa (tiến độ a/b đầy; cần max > 0
+    // vì việc Đưa Người không có số a/b trong tracker).
+    function viecDaXong() {
+      var td = docTienDo();
+      return !!(td && td.max > 0 && td.cur >= td.max);
     }
     // Tiến độ "a/b" trong tracker (vd "2/3").
     function docTienDo() {
@@ -3435,17 +3515,29 @@ window.__TT2D_TONG__ = {
     async function nhanViecTotNhat() {
       var dlg = await moHopThoaiDaiPhu();
       if (!dlg) { log('Không mở được hộp thoại Đại Phu.'); return false; }
-      // Nếu đang giữ việc: việc dở nhận từ trước khi bật tool thì TỰ HUỶ
-      // rồi nhận việc mới; việc khác (không phải việc thường) thì dừng để anh xem.
+      // Nếu đang giữ việc: quyết định theo LOẠI việc (lệnh Thanh 07:23 +
+      // 07:26 25/11) — việc thường thì TIẾP TỤC làm; Đại Hội / Tán Tu thì
+      // TỰ HUỶ rồi nhận việc thường; Vận Tiêu / việc lạ thì DỪNG báo rõ.
       var dangGiu = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
       if (dangGiu) {
-        if (!daNhanViec) {
-          log('Đã tự hủy việc dở đã nhận trước khi bật tool: ' + tenViecDangGiu() + '.');
+        var giuNv = docViecDangGiu();
+        if (giuNv && TASKS[giuNv.id]) {
+          if (!daNhanViec) { viecNhanTay = true; log('Đang giữ việc ' + giuNv.ten + ' — tiếp tục làm (không huỷ).'); }
+          viecHienTai = giuNv.id; daNhanViec = true; taskBatDauAt = Date.now();
+          dongDialog();
+          return 'tiep_tuc';
+        }
+        if (giuNv && (giuNv.id === 'dai_hoi' || giuNv.id === 'chien_bang')) {
+          log('Đang giữ việc ' + giuNv.ten + ' — tự huỷ (không làm Đại Hội/Tán Tu), nhận việc thường tiếp theo.');
           var okHuy = await huyViec();
           if (!okHuy) { log('Huỷ việc không được — dừng để anh xem.'); return 'giu_viec'; }
           return 'da_huy'; // huỷ xong — vòng lặp quay lại mo_menu để nhận việc mới
         }
-        log('Đang giữ một việc (không phải việc thường hoặc việc dở) — dừng để anh xem.');
+        if (giuNv && giuNv.id === 'van_tieu') {
+          log('Đang giữ việc Vận Tiêu — tool không tự huỷ (đã trả phí 400 LT). Giao xong hoặc huỷ tay rồi bật lại tool.');
+          return 'giu_viec';
+        }
+        log('Đang giữ việc không nhận diện được (' + tenViecDangGiu() + ') — dừng để anh xem.');
         return 'giu_viec';
       }
       var dc = docDC(dlg);
@@ -3466,6 +3558,9 @@ window.__TT2D_TONG__ = {
         if (c.label === TASKS[id].ten || c.label.indexOf(TASKS[id].tenNgan) >= 0) chon = c;
       });
       if (!chon || chon.disabled) { log('Không chọn được việc ' + TASKS[id].ten + '.'); return false; }
+      // Chặn cuối: không bao giờ nhận việc Đại Hội / Tán Tu / Vận Tiêu dù
+      // danh sách có ghi gì (phòng trường hợp chọn nhầm từ hộp thoại).
+      if (laViecCam(chon.label)) { log('Từ chối nhận việc cấm: ' + chon.label + ' — chỉ làm 5 việc thường.'); return false; }
       tap(chon.el);
       await sleep(CFG.choDoiMs);
       var xn = docDialog();
@@ -3483,6 +3578,9 @@ window.__TT2D_TONG__ = {
     async function lamViecHienTai() {
       var t = TASKS[viecHienTai];
       if (!t) return false;
+      // Việc đã đủ điều kiện (vd nhận bằng tay rồi câu đủ 3 cá trước khi
+      // bật tool) thì khỏi đi đâu nữa — về Đại Phu nộp luôn.
+      if (viecDaXong()) { var td0 = docTienDo(); log('Việc đã đủ ' + td0.cur + '/' + td0.max + ' — về Đại Phu nộp.'); return true; }
       // Đi tới chỗ làm.
       var toi = await diToiMap(t.map);
       if (!toi) return 'ket';
@@ -3600,6 +3698,7 @@ window.__TT2D_TONG__ = {
         luotDaLam++;
         if (typeof luotConLai[viecHienTai] === 'number' && luotConLai[viecHienTai] > 0) luotConLai[viecHienTai]--;
         log('Đã nộp việc ' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ' — xong ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt.');
+        viecNhanTay = false;
         viecHienTai = null;
         // Nộp xong game tự mở Quầy Đổi Hạt — đóng lại ngay, KHÔNG đổi gì.
         await sleep(800);
@@ -3629,6 +3728,7 @@ window.__TT2D_TONG__ = {
       if (!ok2) ok2 = bamNutHanhDong(/Xác Nhận Huỷ/);
       if (!ok2) { log('Không thấy nút "Xác Nhận Huỷ".'); return false; }
       log('Đã huỷ việc (được hoàn lại lượt).');
+      viecNhanTay = false;
       viecHienTai = null;
       return true;
     }
@@ -3641,6 +3741,14 @@ window.__TT2D_TONG__ = {
       try {
         while (on) {
           if (phase === 'idle' || phase === 'cho_dai_phu') {
+            // Tiếp tục việc đã nhận bằng tay (nút "TỰ ĐI LÀM VIỆC ĐÃ NHẬN"):
+            // không cần qua Đại Phu trước — Luyện Khí đi thẳng tới chỗ làm,
+            // Trúc Cơ thì về Đại Phu rồi bấm "Tự Đi" của game.
+            if (viecNhanTay && viecHienTai && TASKS[viecHienTai]) {
+              if (realm === 'truc_co') { phase = 've_nop_nop_khong'; continue; }
+              phase = viecDaXong() ? 've_nop' : 'di_lam';
+              continue;
+            }
             if (!ganDaiPhu()) {
               if (phase !== 'cho_dai_phu') { phase = 'cho_dai_phu'; log('Chưa ở gần Đại Phu (14,8) — đưa nhân vật tới Đại Phu rồi tool sẽ tự chạy.'); }
               await sleep(2000);
@@ -3651,24 +3759,59 @@ window.__TT2D_TONG__ = {
           if (phase === 'mo_menu') {
             var dlg = await moHopThoaiDaiPhu();
             if (!dlg) { await sleep(2000); continue; }
-            // Nhận biết cảnh giới từ menu: "Tự Đi" mở được = Trúc Cơ.
+            // ƯU TIÊN: xử lý việc ĐANG GIỮ (nhận bằng tay trước khi bật tool,
+            // hoặc việc của tool đang làm dở) TRƯỚC khi nhận biết cảnh giới —
+            // menu khi đang giữ việc có thể hiện "Tự Đi" bị khoá, không được
+            // lầm là acc Luyện Khí. Quyết định theo LOẠI việc (07:23 + 07:26):
+            // việc thường → TIẾP TỤC; Đại Hội / Tán Tu → TỰ HUỶ rồi nhận
+            // việc thường; Vận Tiêu / việc lạ → DỪNG báo rõ (không huỷ).
+            var dangGiuMenu = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
+            if (dangGiuMenu) {
+              var giuMm = docViecDangGiu();
+              if (giuMm && TASKS[giuMm.id]) {
+                if (!daNhanViec) { viecNhanTay = true; log('Đang giữ việc ' + giuMm.ten + ' — tiếp tục làm (không huỷ).'); }
+                viecHienTai = giuMm.id; daNhanViec = true; taskBatDauAt = Date.now();
+                var tuDiTiep = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
+                if (tuDiTiep && !tuDiTiep.disabled) {
+                  // Trúc Cơ: dùng "Tự Đi" của game để tiếp tục việc đang giữ
+                  // (client: canAutoSeed() cho phép khi đang giữ việc thường).
+                  if (realm !== 'truc_co') { realm = 'truc_co'; log('Nhận biết: acc Trúc Cơ — dùng "Tự Đi Làm Việc Dược Công" của game.'); }
+                  var dcTiep = docDC(dlg);
+                  if (dcTiep !== null) { dcHienTai = dcTiep; if (dcLucBatDau === null) dcLucBatDau = dcTiep; }
+                  var okTiep = await batTuDi();
+                  if (!okTiep) { await sleep(3000); phase = 'mo_menu'; continue; }
+                  demTuDiLai = 0;
+                  continue;
+                }
+                // Luyện Khí (không có "Tự Đi" mở): tool tự làm việc đang giữ.
+                if (realm !== 'luyen_khi') { realm = 'luyen_khi'; log('Nhận biết: acc Luyện Khí — tự làm việc đang giữ.'); }
+                datFly(true); datRun(true); datAuto(false); tuVeDangBat = false;
+                dongDialog();
+                phase = viecDaXong() ? 've_nop' : 'di_lam';
+                continue;
+              }
+              if (giuMm && (giuMm.id === 'dai_hoi' || giuMm.id === 'chien_bang')) {
+                log('Đang giữ việc ' + giuMm.ten + ' — tự huỷ (không làm Đại Hội/Tán Tu), nhận việc thường tiếp theo.');
+                var okHuyMm = await huyViec();
+                if (!okHuyMm) { log('Huỷ việc không được — dừng để anh xem.'); await ketThuc('Không huỷ được việc đang giữ.'); continue; }
+                phase = 'mo_menu';
+                await sleep(1500);
+                continue;
+              }
+              if (giuMm && giuMm.id === 'van_tieu') {
+                await ketThuc('Đang giữ việc Vận Tiêu — tool không tự huỷ (đã trả phí 400 LT). Giao xong hoặc huỷ tay rồi bật lại tool.');
+                continue;
+              }
+              await ketThuc('Đang giữ việc không nhận diện được (' + tenViecDangGiu() + ') — dừng để anh xem.');
+              continue;
+            }
+            // Không giữ việc — nhận biết cảnh giới từ menu: "Tự Đi" mở được = Trúc Cơ.
             var tuDi = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
             var nhanViec = timLuaChon(dlg, /Nhận Việc Dược Công/);
             if (tuDi && !tuDi.disabled) {
               if (realm !== 'truc_co') { realm = 'truc_co'; log('Nhận biết: acc Trúc Cơ — dùng "Tự Đi Làm Việc Dược Công" của game.'); }
               var dc = docDC(dlg);
               if (dc !== null) { dcHienTai = dc; if (dcLucBatDau === null) dcLucBatDau = dc; }
-              // Vừa BẬT mà acc đang giữ việc dở từ trước (nhận lúc đầu) thì
-              // TỰ HUỶ việc đó (miễn phí, hoàn lại lượt) rồi mới "Tự Đi" nhận việc mới.
-              var dangGiuTC = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
-              if (!daNhanViec && dangGiuTC) {
-                log('Đã tự hủy việc dở đã nhận trước khi bật tool: ' + tenViecDangGiu() + '.');
-                var okHuyTC = await huyViec();
-                if (!okHuyTC) { log('Huỷ việc không được — dừng để anh xem.'); await ketThuc('Không huỷ được việc đang giữ.'); continue; }
-                phase = 'mo_menu';
-                await sleep(1500);
-                continue;
-              }
               var ok = await batTuDi();
               if (!ok) { await sleep(3000); phase = 'mo_menu'; continue; }
               demTuDiLai = 0;
@@ -3679,34 +3822,6 @@ window.__TT2D_TONG__ = {
               // Luyện Khí: bật Phi Hành + Chạy, TẮT Auto.
               datFly(true); datRun(true); datAuto(false); tuVeDangBat = false;
               phase = 'nhan_viec';
-              continue;
-            }
-            // Đang giữ việc (menu chỉ có "Huỷ Nhiệm Vụ", không có mục nhận việc —
-            // game thật cũng vậy khi đang giữ việc). KHÔNG được đóng/mở lại vô hạn.
-            var dangGiu = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
-            if (dangGiu && !tuDi && !nhanViec) {
-              if (!daNhanViec) {
-                // Vừa BẬT mà acc đang giữ việc dở từ trước (nhận lúc đầu) thì
-                // TỰ HUỶ việc đó (miễn phí, hoàn lại lượt) rồi nhận việc mới.
-                log('Đã tự hủy việc dở đã nhận trước khi bật tool: ' + tenViecDangGiu() + '.');
-                var okHuyLK = await huyViec();
-                if (!okHuyLK) { log('Huỷ việc không được — dừng để anh xem.'); await ketThuc('Không huỷ được việc đang giữ.'); continue; }
-                phase = 'mo_menu';
-                await sleep(1500);
-                continue;
-              }
-              var tr = docTracker();
-              var dungViec = viecHienTai && TASKS[viecHienTai] && tr && tr.indexOf(TASKS[viecHienTai].tenNgan) >= 0;
-              if (dungViec) {
-                log('Đang giữ việc ' + TASKS[viecHienTai].ten + ' — làm tiếp.');
-                phase = 'di_lam';
-                continue;
-              }
-              log('Đang giữ một việc khác — huỷ để nhận việc thường.');
-              var okHuy = await huyViec();
-              if (!okHuy) { log('Huỷ việc không được — dừng để anh xem.'); await ketThuc('Không huỷ được việc đang giữ.'); continue; }
-              phase = 'mo_menu';
-              await sleep(1500);
               continue;
             }
             if (!tuDi && !nhanViec) {
@@ -3808,6 +3923,7 @@ window.__TT2D_TONG__ = {
           if (phase === 'nhan_viec') {
             var r = await nhanViecTotNhat();
             if (r === true) { phase = 'di_lam'; continue; }
+            if (r === 'tiep_tuc') { phase = viecDaXong() ? 've_nop' : 'di_lam'; continue; }
             if (r === 'het_luot') { await ketThuc('Xong dược hôm nay.'); continue; }
             if (r === 'giu_viec') { await ketThuc('Đang giữ việc khác — dừng để anh xem.'); continue; }
             await sleep(3000);
@@ -3829,6 +3945,7 @@ window.__TT2D_TONG__ = {
             if (kq2 === true) { demKet = 0; phase = 've_nop'; continue; }
             if (kq2 === 'xong_khong_can_nop') {
               demKet = 0;
+              viecNhanTay = false;
               luotDaLam++;
               if (typeof luotConLai[viecHienTai] === 'number' && luotConLai[viecHienTai] > 0) luotConLai[viecHienTai]--;
               log('Xong việc ' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ' (công tự ghi) — xong ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt.');
@@ -3839,6 +3956,13 @@ window.__TT2D_TONG__ = {
             }
             if (kq2 === 'ket' || kq2 === false) {
               demKet++;
+              // Việc nhận bằng tay đang tiếp tục: kẹt đường / không tới được
+              // chỗ làm thì DỪNG báo rõ (việc vẫn còn giữ, thử lại sau) —
+              // KHÔNG tự huỷ việc của anh.
+              if (viecNhanTay) {
+                await ketThuc('Không tới/làm được việc đang giữ (' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ') — việc vẫn còn, anh thử lại sau khi tới gần chỗ làm.');
+                continue;
+              }
               log('Làm việc kẹt (lần ' + demKet + '/' + CFG.maxKetLienTiep + ') — huỷ việc, đổi việc khác.');
               if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt 2 lần liên tiếp — dừng tool.'); continue; }
               await huyViec();
@@ -3897,6 +4021,50 @@ window.__TT2D_TONG__ = {
       setOn(false);
     }
 
+    // ---------------- Nút "TỰ ĐI LÀM VIỆC ĐÃ NHẬN" ----------------
+    // Thanh nhận việc bằng tay ở Đại Phu rồi bấm nút này: tool đọc việc
+    // đang giữ từ bảng nhiệm vụ (#quest-objectives), tự tìm đường tới chỗ
+    // làm, làm xong thì tự về Đại Phu nộp — như luồng tự động làm dược.
+    // - Việc thường: tiếp tục làm (Trúc Cơ: về Đại Phu rồi bấm "Tự Đi" của
+    //   game; Luyện Khí / chưa rõ cảnh giới: lái thẳng tới chỗ làm).
+    // - Đại Hội / Tán Tu: BẬT tool thường — vòng lặp sẽ tự huỷ việc đó rồi
+    //   nhận việc thường tiếp theo (cần đứng gần Đại Phu để huỷ).
+    // - Vận Tiêu: KHÔNG huỷ (đã trả phí 400 LT) — chỉ log báo rõ.
+    // - Không giữ việc gì / việc lạ: chỉ log báo rõ, không bật tool.
+    function tiepTucViecDangGiu() {
+      if (on) { log('Tool đang chạy rồi — không cần bấm "TỰ ĐI LÀM VIỆC ĐÃ NHẬN".'); return; }
+      var giu = docViecDangGiu();
+      if (!giu) {
+        log('Không thấy việc dược đang giữ (bảng nhiệm vụ trống). Nhận việc ở Đại Phu rồi bấm lại — hoặc bấm BẬT để tool tự nhận việc mới.');
+        renderTrangThai();
+        return;
+      }
+      if (giu.id === 'dai_hoi' || giu.id === 'chien_bang') {
+        log('Đang giữ việc ' + giu.ten + ' — tool sẽ tự huỷ rồi nhận việc thường tiếp theo. Đưa nhân vật tới gần Đại Phu (14,8) nếu chưa tới.');
+        setOn(true);
+        return;
+      }
+      if (giu.id === 'van_tieu') {
+        log('Đang giữ việc Vận Tiêu — tool không tự huỷ (đã trả phí 400 LT). Giao xong hoặc huỷ tay rồi bật lại tool.');
+        renderTrangThai();
+        return;
+      }
+      if (TASKS[giu.id]) {
+        viecHienTai = giu.id; daNhanViec = true; viecNhanTay = true; taskBatDauAt = Date.now();
+        if (realm === 'truc_co') {
+          log('Tiếp tục việc ' + giu.ten + ' — về Đại Phu rồi bấm "Tự Đi" của game.');
+        } else if (realm === 'luyen_khi') {
+          log('Tiếp tục việc ' + giu.ten + ' — tự đi tới chỗ làm.');
+        } else {
+          log('Tiếp tục việc ' + giu.ten + ' — chưa rõ cảnh giới nên làm bằng tay (lái tới chỗ làm).');
+        }
+        setOn(true);
+        return;
+      }
+      log('Việc đang giữ không nhận diện được (' + tenViecDangGiu() + ') — không tiếp tục được.');
+      renderTrangThai();
+    }
+
     // ---------------- Bật / dừng ----------------
     function setOn(v) {
       if (v === on) return;
@@ -3907,11 +4075,16 @@ window.__TT2D_TONG__ = {
         // Reset bộ đếm ngày — lượt còn lại sẽ được đọc lại từ bảng game
         // ở lần mở menu đầu tiên (capNhatLuotDaLam khôi phục đúng số).
         luotDaLam = 0; luotConLai = {}; dcLucBatDau = null; dcHienTai = null;
-        viecHienTai = null; tuVeDangBat = false;
-        log('Tool BẬT — đưa nhân vật tới gần Đại Phu (14,8) nếu chưa tới.');
-        daNhanViec = false;
+        tuVeDangBat = false;
+        // Tiếp tục việc nhận bằng tay (nút "TỰ ĐI LÀM VIỆC ĐÃ NHẬN" đặt
+        // viecNhanTay + viecHienTai TRƯỚC khi gọi setOn) thì giữ nguyên
+        // việc đó, không reset như lần BẬT thường.
+        if (!viecNhanTay) { viecHienTai = null; daNhanViec = false; }
+        if (viecNhanTay && viecHienTai) log('Tool BẬT — tiếp tục việc đã nhận: ' + TASKS[viecHienTai].ten + '.');
+        else log('Tool BẬT — đưa nhân vật tới gần Đại Phu (14,8) nếu chưa tới.');
         vongLap();
       } else {
+        viecNhanTay = false;
         if (tuVeDangBat) { datAuto(false); tuVeDangBat = false; }
         log('Tool DỪNG.');
         if (phase !== 'ket_thuc') phase = 'idle';
@@ -3947,6 +4120,9 @@ window.__TT2D_TONG__ = {
         '<div style="margin:8px 0;display:flex;gap:6px">' +
           '<button id="tt2d-duoc-toggle" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT</button>' +
         '</div>' +
+        '<div style="margin:0 0 8px;display:flex;gap:6px">' +
+          '<button id="tt2d-duoc-tiep-tuc" title="Tiếp tục việc dược đã nhận bằng tay: tự tìm đường tới chỗ làm, đủ điều kiện thì tự về Đại Phu nộp" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#2c3a12;color:#ffe9b0;cursor:pointer;font-weight:bold">TỰ ĐI LÀM VIỆC ĐÃ NHẬN</button>' +
+        '</div>' +
         '<div id="tt2d-duoc-turns" style="color:#c9f2c9">Chưa bật — đưa nhân vật tới gần Đại Phu (14,8) rồi bấm BẬT.</div>' +
         '<div id="tt2d-duoc-task" style="margin:4px 0;color:#ffd27a"></div>' +
         '<div id="tt2d-duoc-luot" style="color:#c9f2c9;font-size:11px"></div>' +
@@ -3968,6 +4144,7 @@ window.__TT2D_TONG__ = {
       logEl = panel.querySelector('#tt2d-duoc-log');
 
       toggleBtn.addEventListener('click', function () { setOn(!on); });
+      panel.querySelector('#tt2d-duoc-tiep-tuc').addEventListener('click', function () { tiepTucViecDangGiu(); });
       panel.querySelector('#tt2d-duoc-hide').addEventListener('click', function () {
         setCollapsed(true);
       });
@@ -4007,7 +4184,7 @@ window.__TT2D_TONG__ = {
       }
       if (taskEl) {
         taskEl.textContent = viecHienTai
-          ? 'Đang làm: ' + TASKS[viecHienTai].ten + ' (' + TASKS[viecHienTai].dc + ' DC)'
+          ? (viecNhanTay ? 'Đang tiếp tục việc đã nhận: ' : 'Đang làm: ') + TASKS[viecHienTai].ten + ' (' + TASKS[viecHienTai].dc + ' DC)'
           : (phase === 'tu_di' ? 'Đang làm: Tự Đi (game tự làm)' : '');
       }
       if (luotEl) {
@@ -4049,6 +4226,9 @@ window.__TT2D_TONG__ = {
         diToi: diToi, diToiMap: diToiMap, quaCong: quaCong,
         moHopThoaiDaiPhu: moHopThoaiDaiPhu, nutTuongTac: nutTuongTac,
         docViTri: docViTri, kiemTraTuVe: kiemTraTuVe,
+        docViecDangGiu: docViecDangGiu, doanViecDangLam: doanViecDangLam,
+        docTienDo: docTienDo, laViecCam: laViecCam,
+        tiepTucViecDangGiu: tiepTucViecDangGiu,
       },
       start: function () { setOn(true); },
       stop: function () { setOn(false); },
@@ -4056,7 +4236,7 @@ window.__TT2D_TONG__ = {
       status: function () {
         return {
           on: on, phase: phase, realm: realm,
-          viecHienTai: viecHienTai,
+          viecHienTai: viecHienTai, viecNhanTay: viecNhanTay,
           luotDaLam: luotDaLam, luotConLai: JSON.parse(JSON.stringify(luotConLai)),
           dcHienTai: dcHienTai, dcLucBatDau: dcLucBatDau,
           demKet: demKet, demTuDiLai: demTuDiLai, dangChay: dangChay,
@@ -4075,7 +4255,7 @@ window.__TT2D_TONG__ = {
   })();
 
 
-  // ================= MODULE: hx (Huyết Xích phụ v1.1.0: giữ Auto BẬT trong hầm, tự bấm Tương Tác khi đứng cạnh điểm thu hoạch.) =================
+  // ================= MODULE: hx (Huyết Xích phụ v1.1.1: giữ Auto BẬT trong hầm, tự bấm Tương Tác khi đứng cạnh điểm thu hoạch; bấm Auto/Tương Tác bằng tap() (nút HUD chỉ bind pointerdown).) =================
 
   (function () {
 
@@ -4142,13 +4322,30 @@ window.__TT2D_TONG__ = {
       var el = $('#btn-attack');
       return el ? (el.getAttribute('aria-label') || '') : '';
     }
+    // Bấm nút game bằng tap() (pointerdown+pointerup+click): nút HUD của
+    // game (#btn-attack, #btn-auto-touch...) CHỈ bind "pointerdown" (helper
+    // k() trong TouchUI, game.js client 24/11) — .click() là no-op (lỗi
+    // Farm 07:15 25/11). #btn-auto KHÔNG có listener — ưu tiên
+    // #btn-auto-touch. Game tiêu thụ cờ toggle ở frame sau nên KHÔNG kiểm
+    // tra lại trạng thái ngay sau khi bấm.
+    function tap(el) {
+      if (!el) return;
+      var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      var x = r ? r.left + r.width / 2 : 0, y = r ? r.top + r.height / 2 : 0;
+      function ev(ty) {
+        return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true });
+      }
+      el.dispatchEvent(ev('pointerdown'));
+      el.dispatchEvent(ev('pointerup'));
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+    }
     function autoIsOn() {
-      var b = $('#btn-auto') || $('#btn-auto-touch');
-      return b ? b.classList.contains('active') : null;
+      var b1 = $('#btn-auto'), b2 = $('#btn-auto-touch');
+      return !!((b1 && b1.classList.contains('active')) || (b2 && b2.classList.contains('active')));
     }
     function clickAuto() {
-      var b = $('#btn-auto') || $('#btn-auto-touch');
-      if (b) b.click();
+      var b = $('#btn-auto-touch') || $('#btn-auto');
+      if (b) tap(b);
     }
     function bodyHas(s) {
       return (document.body.innerText || '').indexOf(s) >= 0;
@@ -4261,7 +4458,7 @@ window.__TT2D_TONG__ = {
         var ten = atkLabel().replace('Tương tác với ', '');
         var b = $('#btn-attack');
         if (b) {
-          b.click();
+          tap(b);
           lastInteractAt = now();
           stats.interact++;
           log('Đã bấm Tương Tác: ' + (ten || '?'));
@@ -4294,12 +4491,13 @@ window.__TT2D_TONG__ = {
     buildPanel();
     render();
     setInterval(tick, CFG.pollMs);
-    log('Tool phụ Huyết Xích đã nạp (v1.1.0). Mặc định TẮT — bấm BẬT để chạy. Bảng thu nhỏ được bằng nút —.');
+    log('Tool phụ Huyết Xích đã nạp (v1.1.1). Mặc định TẮT — bấm BẬT để chạy. Bảng thu nhỏ được bằng nút —.');
 
     window.__TT2D_HX__ = {
       start: start, stop: stop, status: status,
       _tick: tick,  // cho smoke test bom tick bang tay
       setCollapsed: function (v) { collapsed = !!v; applyCollapsed(); render(); },
+      _debug: { tap: tap, clickAuto: clickAuto, autoIsOn: autoIsOn },
     };
     Tong.register('hx', window.__TT2D_HX__);
 
@@ -4307,7 +4505,7 @@ window.__TT2D_TONG__ = {
   })();
 
 
-  // ================= MODULE: vantieu (Vận Tiêu phụ v1.0.0: giữ Auto TẮT + Chạy BẬT + Phi Hành TẮT khi mang tiêu, đồng hồ 6:00.) =================
+  // ================= MODULE: vantieu (Vận Tiêu phụ v1.0.1: giữ Auto TẮT + Chạy BẬT + Phi Hành TẮT khi mang tiêu, đồng hồ 6:00; bấm nút HUD bằng tap() (chỉ bấm #btn-auto-touch, #btn-auto không có listener).) =================
 
   (function () {
 
@@ -4340,6 +4538,24 @@ window.__TT2D_TONG__ = {
       if (state.lastLog.length > 4) state.lastLog.length = 4;
     }
 
+    // Bấm nút game bằng tap() (pointerdown+pointerup+click): nút HUD của
+    // game (#btn-auto-touch, #btn-run, #btn-fly) CHỈ bind "pointerdown"
+    // (helper k() trong TouchUI, game.js client 24/11) — .click() là no-op
+    // (lỗi Farm 07:15 25/11). #btn-auto KHÔNG có listener — mọi chỗ bấm
+    // Auto chỉ dùng #btn-auto-touch (cả 2 nút cùng phản ánh 1 trạng thái
+    // autoOn của game). Game tiêu thụ cờ toggle ở frame sau nên KHÔNG đọc
+    // lại trạng thái ngay sau khi bấm — bấm đúng 1 lần rồi thôi.
+    function tap(el) {
+      if (!el) return;
+      var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      var x = r ? r.left + r.width / 2 : 0, y = r ? r.top + r.height / 2 : 0;
+      function ev(ty) {
+        return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true });
+      }
+      el.dispatchEvent(ev('pointerdown'));
+      el.dispatchEvent(ev('pointerup'));
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+    }
     function btnState(sel) {
       var b = $(sel);
       return b ? b.classList.contains('active') : null;
@@ -4348,8 +4564,9 @@ window.__TT2D_TONG__ = {
       var b = $(sel);
       if (!b) return null;
       var cur = b.classList.contains('active');
-      if (cur !== wantOn) b.click();
-      return b.classList.contains('active');
+      if (cur === wantOn) return cur;
+      tap(b);
+      return wantOn; // đã bấm 1 lần; trạng thái game đổi ở frame sau
     }
 
     function parseMMSS(s) {
@@ -4507,8 +4724,9 @@ window.__TT2D_TONG__ = {
             log('Sắp hết giờ 6:00! Còn ' + state.hanSec + 's.');
           }
           // Giữ đúng trạng thái mang tiêu — chỉ bấm khi sai trạng thái.
+          // Chỉ bấm #btn-auto-touch (cùng trạng thái với #btn-auto, mà
+          // #btn-auto không có listener — bấm cả 2 sẽ toggle ngược).
           if (state.on) {
-            setBtn('#btn-auto', false);
             setBtn('#btn-auto-touch', false);
             setBtn('#btn-run', true);
             setBtn('#btn-fly', false);
@@ -4525,7 +4743,7 @@ window.__TT2D_TONG__ = {
     function boot() {
       if (document.getElementById('tt2d-vantieu-panel')) return;
       buildPanel();
-      log('Tool phụ Vận Tiêu đã nạp (v1.0.0). Mặc định BẬT, bảng MỞ.');
+      log('Tool phụ Vận Tiêu đã nạp (v1.0.1). Mặc định BẬT, bảng MỞ.');
       log('Nhận tiêu ở Huấn Sư Huynh (Rừng Trúc) 11:00–22:00, phí 400 LT.');
       setInterval(tick, CFG.pollMs);
       tick();
@@ -4548,6 +4766,8 @@ window.__TT2D_TONG__ = {
           mauXe: state.mauXe, dong: state.dong,
         };
       },
+      _tick: tick,
+      _debug: { tap: tap, setBtn: setBtn, btnState: btnState },
     };
     Tong.register('vantieu', window.__TT2D_VANTIEU__);
 
@@ -4736,14 +4956,30 @@ window.__TT2D_TONG__ = {
     if (!max) return null;
     return { cur: cur, max: max, tiLe: cur / max };
   }
+  // Bấm nút game bằng tap() (pointerdown+pointerup+click): nút HUD của
+  // game (#btn-auto-touch, #btn-fly...) CHỈ bind "pointerdown" (helper k()
+  // trong TouchUI, game.js client 24/11) — .click() là no-op (lỗi Farm
+  // 07:15 25/11). #btn-auto KHÔNG có listener — ưu tiên #btn-auto-touch.
+  function tap(el) {
+    if (!el) return;
+    var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    var x = r ? r.left + r.width / 2 : 0, y = r ? r.top + r.height / 2 : 0;
+    function ev(ty) {
+      return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true });
+    }
+    el.dispatchEvent(ev('pointerdown'));
+    el.dispatchEvent(ev('pointerup'));
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+  }
   function autoIsOn() {
-    var b = $('#btn-auto') || $('#btn-auto-touch');
-    return !!(b && b.classList.contains('active'));
+    var b1 = $('#btn-auto'), b2 = $('#btn-auto-touch');
+    return !!((b1 && b1.classList.contains('active')) || (b2 && b2.classList.contains('active')));
   }
   function damBaoAuto() {
-    var b = $('#btn-auto') || $('#btn-auto-touch');
+    if (autoIsOn()) return true;
+    var b = $('#btn-auto-touch') || $('#btn-auto');
     if (!b) return false;
-    if (!autoIsOn()) b.click();
+    tap(b); // bấm đúng 1 lần; game tiêu thụ toggle ở frame sau
     return true;
   }
   function datUuTienQuai() {
@@ -4912,6 +5148,7 @@ window.__TT2D_TONG__ = {
     setCollapsed: setCollapsed,
     status: status,
     _tick: tick,
+    _debug: { tap: tap, damBaoAuto: damBaoAuto, autoIsOn: autoIsOn },
   };
   Tong.register('party', window.__TT2D_PARTY__);
 })();
@@ -5186,7 +5423,14 @@ window.__TT2D_TONG__ = {
     'thanh_truc_lam>duoc_vien': { x: 12, y: 29, dx: 0, dy: 1 },
     'thanh_truc_lam>tan_vien': { x: 7, y: 0, dx: 0, dy: -1 },
     'tan_vien>thanh_truc_lam': { x: 7, y: 29, dx: 0, dy: 1 },
-    'tan_vien>mieu_hoang': { x: 0, y: 12, dx: -1, dy: 0 },
+    'tan_vien>mieu_hoang': { x: 0, y: 12, dx: -1, dy: 0,
+      // Cổng dự phòng (2,15): tọa độ cổng chính (0,12) lấy theo literal
+      // client (MapData.portals) CHƯA xác minh live; kinh nghiệm vận hành
+      // live nói đẩy tây từ (2,15) đã qua được (cổng có slack — nhân vật
+      // đứng gần ô cổng là qua). Nếu đẩy ở (0,12) không qua được thì thử
+      // lại ở (2,15) rồi mới báo lỗi (vụ Farm báo nhầm "không có đường"
+      // 07:29 25/11: thật ra Phi Hành BẬT nên đẩy cổng không qua).
+      fallback: { x: 2, y: 15, dx: -1, dy: 0 } },
     'mieu_hoang>tan_vien': { x: 19, y: 6, dx: 1, dy: 0 },
     'mieu_hoang>phong_dia': { x: 1, y: 6, dx: -1, dy: 0 },
     'phong_dia>mieu_hoang': { x: 39, y: 14, dx: 1, dy: 0 },
@@ -5274,41 +5518,109 @@ window.__TT2D_TONG__ = {
     }
     return buoc;
   }
+  // ---------------- Bấm nút game: tap() thay .click() ----------------
+  // Nút HUD của game (#btn-attack, #btn-fly, #btn-auto-touch, #btn-target,
+  // #btn-run, #btn-meditate-touch, #btn-fishing-stop-touch) CHỈ bind
+  // "pointerdown" (helper k() trong TouchUI, game.js client 24/11) — JS
+  // .click() lên chúng là no-op (lỗi Farm "bật auto không di chuyển được"
+  // 07:15 25/11: datAuto .click() không tắt được Auto nên joystick đứng
+  // yên). tap() phát cả 3 sự kiện pointerdown+pointerup+click nên bấm
+  // được cả nút HUD lẫn nút hộp thoại (.btn-choice, #dialog-action...
+  // bind click). Mỗi nút game chỉ bind 1 loại sự kiện nên không bấm đúp.
+  // #btn-auto KHÔNG có listener nào (chỉ #btn-auto-touch có) — mọi chỗ
+  // bấm Auto phải ưu tiên #btn-auto-touch. Game tiêu thụ cờ toggle ở
+  // frame sau (Input.consumeAutoToggle/consumeFlyToggle) nên KHÔNG kiểm
+  // tra lại trạng thái ngay sau khi bấm (đọc trạng thái cũ rồi bấm lần 2
+  // = toggle ngược) — bấm đúng 1 lần rồi thôi.
+  function tap(el) {
+    if (!el) return;
+    var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    var x = r ? r.left + r.width / 2 : 0, y = r ? r.top + r.height / 2 : 0;
+    function ev(ty) {
+      return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true });
+    }
+    el.dispatchEvent(ev('pointerdown'));
+    el.dispatchEvent(ev('pointerup'));
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+  }
+  function nutAuto() { return $('#btn-auto-touch') || $('#btn-auto'); }
   function flyDangBat() {
     var b = $('#btn-fly');
     return !!(b && b.classList.contains('active'));
   }
   function datFly(bat) {
+    bat = !!bat;
+    if (flyDangBat() === bat) return true;
     var b = $('#btn-fly');
     if (!b) return false;
-    if (flyDangBat() === bat) return true;
-    b.click();
-    return true;
+    tap(b);
+    return true; // đã bấm 1 lần; trạng thái game đổi ở frame sau
   }
   function autoDangBat() {
     var b1 = $('#btn-auto'), b2 = $('#btn-auto-touch');
     return !!((b1 && b1.classList.contains('active')) || (b2 && b2.classList.contains('active')));
   }
-  // Tắt/bật Auto CÓ kiểm tra lại (nút là toggle — bấm mù có thể bấm nhầm
-  // chiều; thử cả 2 nút nếu cần). Joystick KHÔNG di chuyển được khi Auto
-  // BẬT nên mọi hàm di chuyển (diToi/quaCong/diToiMap) đều tắt Auto trước
-  // khi đẩy joystick — sửa lỗi 05:41 25/11 (bật Farm mà nhân vật không đi).
+  // Tắt/bật Auto: bấm đúng 1 lần qua tap() vào #btn-auto-touch, KHÔNG
+  // kiểm tra lại ngay sau khi bấm (xem chú thích tap() ở trên). Joystick
+  // KHÔNG di chuyển được khi Auto BẬT nên mọi hàm di chuyển
+  // (diToi/quaCong/diToiMap) đều tắt Auto trước khi đẩy joystick.
   function datAuto(bat) {
+    bat = !!bat;
     if (autoDangBat() === bat) return true;
-    var b = $('#btn-auto');
-    if (b) { b.click(); if (autoDangBat() === bat) return true; }
-    var b2 = $('#btn-auto-touch');
-    if (b2) { b2.click(); if (autoDangBat() === bat) return true; }
-    return autoDangBat() === bat;
+    var b = nutAuto();
+    if (!b) return false;
+    tap(b);
+    return true; // đã bấm 1 lần; trạng thái game đổi ở frame sau
   }
+  // ---------------- Chẩn đoán qua cổng ----------------
+  // lastGateFail: lần quaCong gần nhất thất bại ở đâu —
+  // { cong, gateX, gateY, stage: 'di-toi'|'day-cong'|'by-hand',
+  //   thu: 'chinh'|'du-phong', fly, auto } (fly/auto = trạng thái lúc lỗi).
+  // gateSteps: từng bước quaCong gần nhất (Farm ghi vào log để chẩn đoán).
+  // lastRouteFail: lần diToiMap gần nhất thất bại ở đâu —
+  // { stage: 'khong-co-duong'|'qua-cong'|'map-khong-doi', from, to,
+  //   cong, gate: { x, y, stage, thu }, fly, auto }.
+  var lastGateFail = null;
+  var gateSteps = [];
+  var lastRouteFail = null;
+  function gateLog(s) { gateSteps.push(s); }
+
   async function quaCong(congKey) {
     var c = CONG[congKey];
     if (!c) return false;
-    if (flyDangBat()) datFly(false); // đang bay không qua được cổng
+    lastGateFail = null;
+    gateSteps = [];
+    // Đang bay thì KHÔNG qua được cổng — hạ cánh TRƯỚC khi đẩy joystick.
+    // (Vụ 07:29 25/11: datFly cũ dùng .click() là no-op nên Phi Hành vẫn
+    // BẬT, nhân vật bay thì đẩy cổng mãi không qua, Farm báo nhầm thành
+    // "không có đường". datFly nay dùng tap() nên hạ cánh thật.)
+    if (flyDangBat()) { datFly(false); gateLog('Hạ cánh trước cổng ' + congKey + ' (Phi Hành đang BẬT).'); }
     await sleep(400);
-    var ok = await diToi(c.x, c.y, 60);
-    if (!ok) return false;
+    // Cổng chính rồi cổng dự phòng (nếu có) — vd tan_vien>mieu_hoang:
+    // (0,12) theo literal client CHƯA xác minh live, (2,15) theo kinh
+    // nghiệm vận hành live.
+    var thu = [{ x: c.x, y: c.y, dx: c.dx, dy: c.dy, ten: 'chinh' }];
+    if (c.fallback) thu.push({ x: c.fallback.x, y: c.fallback.y, dx: c.fallback.dx, dy: c.fallback.dy, ten: 'du_phong' });
+    for (var t = 0; t < thu.length; t++) {
+      var g = thu[t];
+      gateLog('Thử cổng ' + congKey + ' (' + g.ten + '): ô (' + g.x + ',' + g.y + '), đẩy (' + g.dx + ',' + g.dy + ').');
+      var ok = await quaCongTai(congKey, g, c);
+      if (ok) { gateLog('Qua cổng ' + congKey + ' thành công (' + g.ten + ' ' + g.x + ',' + g.y + ').'); return true; }
+    }
+    gateLog('Không qua được cổng ' + congKey + ' sau ' + thu.length + ' vị trí thử.');
+    return false;
+  }
+  // Đẩy 1 cổng tại 1 vị trí: đi tới ô cổng rồi đẩy (hoặc bấm tương tác
+  // nếu byHand). Trả true nếu sang map mới, false + ghi lastGateFail.
+  async function quaCongTai(congKey, g, c) {
+    var ok = await diToi(g.x, g.y, 60);
+    if (!ok) {
+      lastGateFail = { cong: congKey, gateX: g.x, gateY: g.y, stage: 'di-toi', thu: g.ten, fly: flyDangBat(), auto: autoDangBat() };
+      gateLog('Không tới được ô cổng (' + g.x + ',' + g.y + ') — nhân vật kẹt ở đâu đó.');
+      return false;
+    }
     var mapCu = docViTri().map;
+    gateLog('Đã tới ô cổng (' + g.x + ',' + g.y + '), map hiện tại: ' + (mapCu || '?') + '.');
     // Cổng byHand (vd Long Uyên (22,4) -> Hang Động): không đi xuyên được,
     // phải BẤM TƯƠNG TÁC tại ô cổng (phím E/Enter hoặc nút Tương Tác).
     if (c.byHand) {
@@ -5318,32 +5630,48 @@ window.__TT2D_TONG__ = {
         var p0 = docViTri();
         if (p0.map && p0.map !== mapCu) return true;
         var b = document.querySelector('#btn-attack');
-        if (b) { b.click(); await sleep(600); }
+        if (b) { tap(b); await sleep(600); }
         var p1 = docViTri();
         if (p1.map && p1.map !== mapCu) return true;
       }
+      lastGateFail = { cong: congKey, gateX: g.x, gateY: g.y, stage: 'by-hand', thu: g.ten, fly: flyDangBat(), auto: autoDangBat() };
+      gateLog('Bấm tương tác ' + CFG_NAV.portalTries + ' lần ở (' + g.x + ',' + g.y + ') vẫn không qua cổng.');
       return false;
     }
     for (var i = 0; i < CFG_NAV.portalTries; i++) {
       if (autoDangBat()) datAuto(false); // đẩy cổng cũng cần Auto TẮT
-      await joyHold(c.dx * 40, c.dy * 40, CFG_NAV.portalHoldMs);
+      await joyHold(g.dx * 40, g.dy * 40, CFG_NAV.portalHoldMs);
       var p = docViTri();
       if (p.map && p.map !== mapCu) return true;
     }
+    lastGateFail = { cong: congKey, gateX: g.x, gateY: g.y, stage: 'day-cong', thu: g.ten, fly: flyDangBat(), auto: autoDangBat() };
+    gateLog('Đẩy cổng ' + CFG_NAV.portalTries + ' lần ở (' + g.x + ',' + g.y + ') vẫn không qua (Phi Hành ' + (flyDangBat() ? 'BẬT' : 'TẮT') + ', Auto ' + (autoDangBat() ? 'BẬT' : 'TẮT') + ').');
     return false;
   }
   async function diToiMap(toiMap) {
+    lastRouteFail = null;
     if (autoDangBat()) datAuto(false); // xem diToi — Auto BẬT thì joystick đứng yên
     var p = docViTri();
     if (p.map === toiMap) return true;
     var duong = duongDi(p.map, toiMap);
-    if (!duong) return false;
+    if (!duong) {
+      lastRouteFail = { stage: 'khong-co-duong', from: p.map, to: toiMap };
+      return false;
+    }
     for (var i = 0; i < duong.length; i++) {
       var ok = await quaCong(duong[i].cong);
-      if (!ok) return false;
+      if (!ok) {
+        var gf = lastGateFail;
+        lastRouteFail = { stage: 'qua-cong', cong: duong[i].cong, from: p.map, to: toiMap,
+          gate: gf ? { x: gf.gateX, y: gf.gateY, stage: gf.stage, thu: gf.thu } : null,
+          fly: gf ? gf.fly : flyDangBat(), auto: gf ? gf.auto : autoDangBat() };
+        return false;
+      }
       await sleep(800);
     }
-    return docViTri().map === toiMap;
+    if (docViTri().map === toiMap) return true;
+    lastRouteFail = { stage: 'map-khong-doi', from: p.map, to: toiMap };
+    return false;
   }
 
   var navApi = {
@@ -5358,6 +5686,12 @@ window.__TT2D_TONG__ = {
     duongDi: duongDi,
     autoDangBat: autoDangBat,
     datAuto: datAuto,
+    flyDangBat: flyDangBat,
+    datFly: datFly,
+    tap: tap,
+    lastGateFail: function () { return lastGateFail; },
+    lastGateSteps: function () { return gateSteps.slice(); },
+    lastRouteFail: function () { return lastRouteFail; },
     CONG: CONG,
     status: function () {
       var p = docViTri();
@@ -5439,12 +5773,14 @@ window.__TT2D_TONG__ = {
     thien_dao_khuyet: { ten: 'Thiên Đạo Khuyết',   sign: null,                   safe: null },
     u_uynh_vuc:     { ten: 'Ma Động',              sign: null,                   safe: null },
     hac_phong_linh: { ten: 'Hắc Phong Lĩnh',       sign: null,                   safe: null },
-    hac_thi:        { ten: 'Hắc Thị',              sign: null,                   safe: null },
+    // Hắc Thị ĐÃ BỎ khỏi danh sách đích farm (v1.3.3, Thanh hỏi 07:17
+    // 25/11 "cho nhân vật qua hắc thị làm gì vậy"): chợ đen, không có
+    // quái để farm, vào cần Quỷ Diện. Cổng Hắc Thị vẫn giữ trong nav.js.
   };
   var MAP_ORDER = ['phong_dia', 'duoc_vien', 'dong_mach_ngam', 'hang_dong',
     'long_uyen', 'bai_da_hang_gio', 'thanh_truc_lam', 'mieu_hoang', 'van_can',
     'mo_linh_thach', 'thach_phong_thung_lung', 'bat_quai_thach_phan',
-    'thien_dao_khuyet', 'u_uynh_vuc', 'hac_phong_linh', 'hac_thi'];
+    'thien_dao_khuyet', 'u_uynh_vuc', 'hac_phong_linh'];
 
   var on = false;
   var phase = 'idle';        // idle | going | zone | farming | meditate | stuck | zone_full | het_phien
@@ -5575,6 +5911,26 @@ window.__TT2D_TONG__ = {
   }
 
   // ---------------- Nút game: Auto / Chạy / Phi Hành / ưu tiên ----------------
+  // Bấm nút game bằng tap() (pointerdown+pointerup+click): nút HUD của
+  // game (#btn-attack, #btn-fly, #btn-auto-touch, #btn-target, #btn-run,
+  // #btn-meditate-touch) CHỈ bind "pointerdown" (helper k() trong TouchUI,
+  // game.js client 24/11) — .click() lên chúng là no-op. Đây chính là lỗi
+  // "bật auto farm ở tool không di chuyển được" Thanh báo 07:15 25/11:
+  // datAuto cũ .click() không tắt được Auto nên joystick đứng yên.
+  // #btn-auto KHÔNG có listener (chỉ #btn-auto-touch có) — ưu tiên
+  // #btn-auto-touch. Game tiêu thụ cờ toggle ở frame sau nên KHÔNG kiểm
+  // tra lại trạng thái ngay sau khi bấm — bấm đúng 1 lần rồi thôi.
+  function tap(el) {
+    if (!el) return;
+    var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    var x = r ? r.left + r.width / 2 : 0, y = r ? r.top + r.height / 2 : 0;
+    function ev(ty) {
+      return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true });
+    }
+    el.dispatchEvent(ev('pointerdown'));
+    el.dispatchEvent(ev('pointerup'));
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+  }
   function btnOn(sel) {
     var b = document.querySelector(sel);
     return !!(b && b.classList.contains('active'));
@@ -5585,24 +5941,32 @@ window.__TT2D_TONG__ = {
   function bamNut(sel) {
     var b = document.querySelector(sel);
     if (!b) return false;
-    b.click();
+    tap(b);
     return true;
   }
   function datAuto(v) {
-    if (autoIsOn() === !!v) return true;
-    // Bấm rồi KIỂM TRA LẠI (nút là toggle — bấm mù có thể bấm nhầm chiều;
-    // thử cả 2 nút #btn-auto / #btn-auto-touch nếu cần).
-    if (bamNut('#btn-auto') && autoIsOn() === !!v) return true;
-    if (bamNut('#btn-auto-touch') && autoIsOn() === !!v) return true;
-    return autoIsOn() === !!v;
+    v = !!v;
+    if (autoIsOn() === v) return true;
+    var b = document.querySelector('#btn-auto-touch') || document.querySelector('#btn-auto');
+    if (!b) return false;
+    tap(b);
+    return true; // đã bấm 1 lần; trạng thái game đổi ở frame sau
   }
   function datFly(v) {
-    if (flyIsOn() === !!v) return true;
-    return bamNut('#btn-fly');
+    v = !!v;
+    if (flyIsOn() === v) return true;
+    var b = document.querySelector('#btn-fly');
+    if (!b) return false;
+    tap(b);
+    return true;
   }
   function datRun(v) {
-    if (runIsOn() === !!v) return true;
-    return bamNut('#btn-run');
+    v = !!v;
+    if (runIsOn() === v) return true;
+    var b = document.querySelector('#btn-run');
+    if (!b) return false;
+    tap(b);
+    return true;
   }
   function datUuTienQuai() {
     var b = document.querySelector('[data-uu-tien="quai"]');
@@ -5697,7 +6061,7 @@ window.__TT2D_TONG__ = {
   // ---------------- Thiền hồi Giáp ----------------
   function bamThien() {
     var b = document.querySelector('#btn-meditate-touch');
-    if (b) { b.click(); return true; }
+    if (b) { tap(b); return true; }
     try {
       var I = window.__ns_ && window.__ns_.Input;
       if (I && typeof I.pressMeditate === 'function') { I.pressMeditate(); return true; }
@@ -5763,7 +6127,28 @@ window.__TT2D_TONG__ = {
         try { okMap = await n.diToiMap(target.map); } catch (e) { okMap = false; }
         if (!on) return; // đã bấm DỪNG giữa chừng
         if (!okMap || docViTri().map !== target.map) {
-          setPhase('stuck', 'Không tìm được đường tới ' + MAPS[target.map].ten + ' (map chưa có trong bảng đường?).');
+          // Ghi từng bước quaCong vào log để lần sau chẩn đoán được ngay
+          // (vụ 07:29 25/11: Farm báo nhầm "không có đường" trong khi thật
+          // ra Phi Hành BẬT nên đẩy cổng không qua).
+          var steps = [];
+          try { steps = (n.lastGateSteps ? n.lastGateSteps() : []) || []; } catch (e) { steps = []; }
+          for (var gi = 0; gi < steps.length; gi++) log('[cổng] ' + steps[gi]);
+          var rf = null;
+          try { rf = (n.lastRouteFail ? n.lastRouteFail() : null) || null; } catch (e) { rf = null; }
+          if (rf && rf.stage === 'khong-co-duong') {
+            // (a) Thật sự không có đường trong bảng.
+            setPhase('stuck', 'Không có đường tới ' + MAPS[target.map].ten + ' trong bảng đường (từ ' + (vt.map || '?') + ' — map này chưa có cổng đi).');
+          } else if (rf && rf.stage === 'qua-cong' && rf.gate && rf.gate.stage === 'di-toi') {
+            // (b) Không đi tới được ô cổng (nhân vật kẹt ở đâu đó).
+            setPhase('stuck', 'Không tới được ô cổng ' + rf.cong + ' (' + rf.gate.x + ',' + rf.gate.y + ') trên đường tới ' + MAPS[target.map].ten + ' — nhân vật kẹt, kiểm tra vị trí rồi thử lại.');
+          } else if (rf && rf.stage === 'qua-cong') {
+            // (c) Tới được ô cổng nhưng đẩy cổng không qua.
+            setPhase('stuck', 'Tới được ô cổng ' + rf.cong + ' (' + (rf.gate ? rf.gate.x + ',' + rf.gate.y : '?') + ') nhưng đẩy cổng không qua' + (rf.gate && rf.gate.stage === 'by-hand' ? ' (bấm tương tác không mở cổng)' : '') + ' (Phi Hành ' + (rf.fly ? 'BẬT' : 'TẮT') + ', Auto ' + (rf.auto ? 'BẬT' : 'TẮT') + ') — kiểm tra tọa độ cổng / hạ cánh rồi thử lại.');
+          } else if (rf && rf.stage === 'map-khong-doi') {
+            setPhase('stuck', 'Đi hết các cổng nhưng vẫn chưa sang ' + MAPS[target.map].ten + ' — kiểm tra lại bảng cổng.');
+          } else {
+            setPhase('stuck', 'Không tới được ' + MAPS[target.map].ten + ' (diToiMap thất bại, chưa rõ nguyên nhân — xem log cổng ở trên).');
+          }
           return;
         }
         log('Đã tới ' + MAPS[target.map].ten + '.');
@@ -6070,6 +6455,11 @@ window.__TT2D_TONG__ = {
     _runToTarget: runToTarget,
     _thienHoiGiap: thienHoiGiap,
     _maps: MAPS,
+    _debug: {
+      tap: tap, datAuto: datAuto, datRun: datRun, datFly: datFly,
+      autoIsOn: autoIsOn, runIsOn: runIsOn, flyIsOn: flyIsOn,
+      bamNut: bamNut, bamThien: bamThien,
+    },
   };
   Tong.register('farm', window.__TT2D_FARM__);
 })();
