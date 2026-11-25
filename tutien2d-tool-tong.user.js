@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm)
 // @namespace    https://tutienpixel.online/
-// @version      1.3.6
+// @version      1.3.7
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 7 tab — Câu cá Hồ Tây (v3.2: tỷ lệ cắn + Côn Bằng + thời tiết + TỰ ĐI tới điểm câu), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường tới map + khu đã chọn. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
@@ -12,6 +12,32 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
+// TOOL TỔNG v1.3.7 — 1 bảng chung, 7 tab. v1.3.7 (25/11): SỬA LỖI FARM
+// "không tự đi qua map được" (Thanh báo 13:29 25/11 — tab Farm chọn mục
+// tiêu mà nhân vật không qua map). Nguyên nhân gốc: cổng game mở ngay khi
+// nhân vật BƯỚC LÊN ĐÚNG Ô cổng (checkPortal, game.js) nên map có thể đã
+// đổi NGAY TRONG lúc diToi/nudge, nhưng quaCongTai ghi mapCu SAU nudge —
+// so sánh "map đổi" với map MỚI nên không bao giờ thấy đổi, báo nhầm
+// "đẩy cổng không qua" dù nhân vật đã sang map bên kia (rồi fallback có
+// thể qua thêm 1 map nữa, Farm kết thúc ở map sai). Sửa: ghi map TRƯỚC khi
+// di chuyển, kiểm tra đổi map sau diToi + sau MỖI nhịp nudge, trả true ngay
+// khi map đổi; diToi dừng ngay khi đổi map giữa chừng. Cổng đối chiếu lại
+// client 24/11 + live 25/11: Miếu Hoang->Phong Địa (1,6) SAI (phỏng đoán cũ)
+// -> (0,7) chính + (0,6) dự phòng (runtime portals.push + live đẩy tây từ
+// (2,7)); Bãi Đá->làng (0,27) là ô portal nhưng không phải điểm đứng ->
+// (2,28) chính + (0,27) dự phòng (live đẩy tây từ (2,28) về (37,15));
+// Phong Địa->Miếu Hoang thêm dự phòng (39,15); XÓA MTC->làng (18,22) chưa
+// xác minh live (BFS cứ chọn làm đường chính) — đường MTC->làng đi 2 chặng
+// qua Bãi Đá (15,22) rồi (2,28). Hạ cánh: flyDangBat đọc trạng thái thật
+// SceneWorld.player.flying TRƯỚC (live 12:54 25/11: class nút Phi Hành luôn
+// báo false trong khi đang bay — quaCong tưởng đã hạ cánh nên đẩy joystick
+// khi đang bay, nhân vật không đi); diToi + diToiMap tự hạ cánh đầu hàm
+// (trước đây chỉ quaCong hạ cánh, diToi gọi trực tiếp thì không); farm.js
+// flyIsOn() dùng nav.flyDangBat(), sửa comment sai "bay + joystick vẫn chạy
+// được". docViTri ưu tiên #hud-pos, fallback body regex (log tool có thể
+// nhiễm tọa độ). Test mới mục (20): qua cổng mở khi bước lên ô + hạ cánh
+// theo trạng thái thật + docViTri #hud-pos + Farm Miếu Hoang->Phong Địa;
+// mục (8) dd_mtc thành 2 chặng qua Bãi Đá. Vận Tiêu phụ vẫn v1.0.3.
 // TOOL TỔNG v1.3.6 — 1 bảng chung, 7 tab. v1.3.6 (25/11): Vận Tiêu phụ lên
 // v1.0.3 — BỎ CHẶN PHÍ 1.000 (Thanh chốt 13:18 25/11 "Cứ để nhận tuyến 1k"):
 // chuỗi tự chạy NHẬN CẢ chuyến 4–6 với phí 1.000 LT/chuyến (thưởng ~1.800
@@ -5536,8 +5562,18 @@ window.__TT2D_TONG__ = {
   // chữ từ chính panel tool (vd panel Câu cá có "Hồ Tây", panel Tổ đội có
   // "Miếu Ông Trường Con"); nếu #hud-map trống mới soi body.
   function docViTri() {
+    // Tọa độ: ƯU TIÊN #hud-pos (phần tử HUD của game, luôn là vị trí thật
+    // của nhân vật) — regex trên body.innerText có thể vớ phải tọa độ
+    // trong chính panel tool (log cổng ghi "(2,13)"...) hoặc khung
+    // chat/nhiệm vụ, làm diToi đi sai hướng rồi báo kẹt.
     var t = document.body ? (document.body.innerText || '') : '';
-    var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    var m = null;
+    var hp = document.querySelector('#hud-pos');
+    if (hp) {
+      var hpt = hp.innerText || hp.textContent || '';
+      m = hpt.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    }
+    if (!m) m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
     var map = null;
     var hm = document.querySelector('#hud-map');
     var hmt = hm ? (hm.innerText || hm.textContent || '').trim() : '';
@@ -5674,11 +5710,21 @@ window.__TT2D_TONG__ = {
   // Ưu tiên BFS trên lưới thật; không có lưới thì step_toward + đi vòng.
   async function diToi(tx, ty, maxBuoc) {
     maxBuoc = maxBuoc || 60;
+    // Joystick KHÔNG lái được khi đang bay (xác minh live 12:52 25/11) —
+    // hạ cánh TRƯỚC khi đẩy joystick, nếu không 60 nhịp vẫn đứng yên.
+    // (Trước đây chỉ quaCong hạ cánh; diToi gọi trực tiếp — tới biển KHU,
+    // điểm thiền, điểm câu — thì không, nên kẹt ngay cả khi đã ở đúng map.)
+    if (flyDangBat()) { datFly(false); await sleep(500); }
+    var mapBatDau = docViTri().map;
     var vong = 0; // số lần đi vòng (đổi chiều mỗi lần)
     var last = null, ket = 0;
     for (var i = 0; i < maxBuoc; i++) {
       var p = docViTri();
       if (p.x === null) { await sleep(2000); continue; }
+      // Đổi map giữa chừng (vô tình bước lên ô cổng / Auto lạc qua cổng):
+      // đích nằm ở map cũ nên dừng ngay — bên gọi (quaCongTai) tự nhận
+      // ra đã qua cổng qua map đổi, không phí 60 nhịp đi lạc ở map mới.
+      if (p.map && mapBatDau && p.map !== mapBatDau) return false;
       if (Math.abs(p.x - tx) <= 1 && Math.abs(p.y - ty) <= 1) return true;
       // Joystick không chạy khi Auto BẬT (vd nhân vật đang farm sẵn) — tắt
       // ngay từ nhịp đầu, và tắt lại nếu Auto tự bật lại giữa đường (vào combat).
@@ -5724,6 +5770,13 @@ window.__TT2D_TONG__ = {
   // Tọa độ cổng = ô portal trong client (MapData.*.portals[].tx/ty, gồm cổng
   // runtime g() nối lại + portals.push). Tọa độ Tam Giới Thành là TƯƠNG ĐỐI
   // theo tầng (bat_quai y0=21, u_uynh y0=81) — HUD game cũng hiện tương đối.
+  // CỔNG ĐÃ ĐỐI CHIẾU CLIENT 24/11 + LIVE 25/11 (v1.3.7): cổng nào CHƯA
+  // xác minh live thì ghi rõ trong comment, KHÔNG làm đường chính (xem
+  // 'dong_mach_ngam>tan_vien' đã xóa — đường MTC->làng đi qua Bãi Đá).
+  // Cổng game mở ngay khi nhân vật BƯỚC LÊN ĐÚNG Ô cổng (checkPortal trên
+  // vị trí người chơi) — KHÔNG phải khi đẩy vào; 'diToi' dừng cách đích
+  // ≤1 ô nên quaCong nudge thêm tới đúng ô rồi đẩy; 'fallback' là ô cổng
+  // thứ hai cùng hướng (cổng đôi) khi đẩy ô chính không qua.
   var CONG = {
     // --- Trục chính: Thảo Dược Cốc — Rừng Trúc — làng — Miếu Hoang — Phong Địa ---
     'duoc_vien>thanh_truc_lam': { x: 12, y: 0, dx: 0, dy: -1 },
@@ -5739,13 +5792,29 @@ window.__TT2D_TONG__ = {
       // không qua được thì thử lại ở (2,13) rồi mới báo lỗi.
       fallback: { x: 2, y: 13, dx: -1, dy: 0 } },
     'mieu_hoang>tan_vien': { x: 19, y: 6, dx: 1, dy: 0 },
-    'mieu_hoang>phong_dia': { x: 1, y: 6, dx: -1, dy: 0 },
-    'phong_dia>mieu_hoang': { x: 39, y: 14, dx: 1, dy: 0 },
+    // ĐÍNH CHÍNH v1.3.7 (client 24/11 + live 25/11): (1,6) là phỏng đoán
+    // cũ CHƯA xác minh — cổng thật là cặp runtime portals.push (0,6) và
+    // (0,7) ở mép tây Miếu Hoang, spawn Phong Địa (38,14)/(38,15); live
+    // đẩy tây từ (2,7) ~4s là sang Phong Địa (38,15). Đi tới (0,7) theo
+    // hàng 7 (hàng 6 bị Án Thờ (7,6) chắn đường BFS); dự phòng (0,6).
+    'mieu_hoang>phong_dia': { x: 0, y: 7, dx: -1, dy: 0,
+      fallback: { x: 0, y: 6, dx: -1, dy: 0 } },
+    // Cổng chính (39,14) đã qua thật 00:29 25/11 sang Miếu Hoang (1,7);
+    // dự phòng (39,15) — cổng đôi cùng hướng, bắt buộc qua điểm trung
+    // gian (34,14) vì hàng 11–13 cột 39 là vách đá.
+    'phong_dia>mieu_hoang': { x: 39, y: 14, dx: 1, dy: 0,
+      fallback: { x: 39, y: 15, dx: 1, dy: 0 } },
     'duoc_vien>van_can': { x: 0, y: 20, dx: -1, dy: 0 },
     'van_can>duoc_vien': { x: 55, y: 13, dx: 1, dy: 0 },
     // --- Làng — Bãi Đá — Mỏ Linh Thạch — Thạch Phong — Bát Quái — Thiên Đạo / Ma Động ---
     'tan_vien>bai_da_hang_gio': { x: 39, y: 14, dx: 1, dy: 0 },
-    'bai_da_hang_gio>tan_vien': { x: 0, y: 27, dx: -1, dy: 0 },
+    // ĐÍNH CHÍNH v1.3.7 (live 25/11): (0,27) là ô portal tĩnh nhưng KHÔNG
+    // phải điểm đứng — live đứng (2,28) đẩy tây ~4s là về Chân Núi
+    // (37,15), qua cầu thang chéo (1,20)->(4,20)->(4,22)->(5,23)->(7,25);
+    // (1,27) có thể bị cầu thang chắn nên diToi(0,27) hay kẹt. Đi tới
+    // (2,28) rồi đẩy tây; dự phòng (0,27) khi đã đứng sẵn mép tây.
+    'bai_da_hang_gio>tan_vien': { x: 2, y: 28, dx: -1, dy: 0,
+      fallback: { x: 0, y: 27, dx: -1, dy: 0 } },
     'bai_da_hang_gio>mo_linh_thach': { x: 21, y: 10, dx: 0, dy: -1 },
     'mo_linh_thach>bai_da_hang_gio': { x: 1, y: 13, dx: -1, dy: 0 },
     'mo_linh_thach>thach_phong_thung_lung': { x: 38, y: 16, dx: 1, dy: 0 },
@@ -5778,9 +5847,11 @@ window.__TT2D_TONG__ = {
     // Tọa độ cũ (15,25) là SAI (lệch 3 ô); duongDi MTC -> Bãi Đá nay 1 cổng
     // trực tiếp, không cần vòng qua làng.
     'dong_mach_ngam>bai_da_hang_gio': { x: 15, y: 22, dx: 0, dy: 1 },
-    // Đường ra MTC dự phòng: (18,22) nam -> làng (22,6) — có trong client
-    // portals nhưng CHƯA xác minh live; chỉ dùng khi cần về làng thật.
-    'dong_mach_ngam>tan_vien': { x: 18, y: 22, dx: 0, dy: 1 },
+    // Đường MTC -> làng ĐÃ XÓA v1.3.7: cổng (18,22) nam -> làng (22,6)
+    // có trong client portals nhưng CHƯA xác minh live — BFS đường ngắn
+    // nhất cứ chọn nó làm đường CHÍNH nên nó không còn là "dự phòng" nữa.
+    // Đường ra làng đã xác minh: (15,22) nam -> Bãi Đá (10,5), rồi
+    // (2,28) tây -> làng (37,15) — duongDi tự tìm 2 chặng này.
     // --- Huyết Xích hầm: chỉ RA được (vào bằng đăng ký NPC), không đi VÀO
     // bằng đường bộ — duongDi chặn cạnh vào hầm từ ngoài (xem DUNGEON).
     'rung_mang_xa>tan_vien': { x: 18, y: 29, dx: 0, dy: 1 },
@@ -5851,7 +5922,20 @@ window.__TT2D_TONG__ = {
     el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
   }
   function nutAuto() { return $('#btn-auto-touch') || $('#btn-auto'); }
+  // Đang bay hay không: đọc TRẠNG THÁI THẬT của game
+  // (SceneWorld.player.flying) TRƯỚC, nút #btn-fly chỉ là dự phòng.
+  // Phát hiện live 12:54 25/11: class "active" của nút Phi Hành KHÔNG
+  // phản ánh đúng (luôn báo false) trong khi nhân vật đang bay trên kiếm
+  // — đọc nút thì quaCong tưởng đã hạ cánh nên không hạ cánh thật, đẩy
+  // joystick khi đang bay thì nhân vật không đi (joystick không lái được
+  // khi bay, xác minh live 12:52 25/11) nên cổng không qua được. Client
+  // cũng chỉ dùng player.flying để toggle class nút (hàm O() trong HUD),
+  // nên đọc thẳng player.flying là đúng nhất.
   function flyDangBat() {
+    try {
+      var p = window.__ns_ && window.__ns_.SceneWorld && window.__ns_.SceneWorld.player;
+      if (p && typeof p.flying === 'boolean') return p.flying;
+    } catch (e) { /* fallback nút */ }
     var b = $('#btn-fly');
     return !!(b && b.classList.contains('active'));
   }
@@ -5920,7 +6004,20 @@ window.__TT2D_TONG__ = {
   // Đẩy 1 cổng tại 1 vị trí: đi tới ô cổng rồi đẩy (hoặc bấm tương tác
   // nếu byHand). Trả true nếu sang map mới, false + ghi lastGateFail.
   async function quaCongTai(congKey, g, c) {
+    // Ghi map TRƯỚC khi di chuyển — cổng của game mở ngay khi nhân vật
+    // BƯỚC LÊN ô cổng (checkPortal trên vị trí người chơi, game.js), nên
+    // map có thể đã đổi NGAY TRONG lúc diToi/nudge (đẩy joystick vượt
+    // 1 ô sang ô cổng). Bản cũ ghi mapCu SAU nudge nên so sánh "map đổi"
+    // với map MỚI — không bao giờ thấy đổi, báo nhầm "đẩy cổng không qua"
+    // trong khi nhân vật đã sang map bên kia (vụ Thanh báo 13:29 25/11:
+    // chọn farm mà không tự đi qua map được).
+    var mapBatDau = docViTri().map;
+    function daQuaCong() {
+      var pm = docViTri().map;
+      return !!(pm && mapBatDau && pm !== mapBatDau);
+    }
     var ok = await diToi(g.x, g.y, 60);
+    if (daQuaCong()) { gateLog('Đã qua cổng ' + congKey + ' ngay lúc đi tới ô cổng (map đổi ' + mapBatDau + ' -> ' + docViTri().map + ').'); return true; }
     if (!ok) {
       lastGateFail = { cong: congKey, gateX: g.x, gateY: g.y, stage: 'di-toi', thu: g.ten, fly: flyDangBat(), auto: autoDangBat() };
       gateLog('Không tới được ô cổng (' + g.x + ',' + g.y + ') — nhân vật kẹt ở đâu đó.');
@@ -5936,6 +6033,8 @@ window.__TT2D_TONG__ = {
       if (pn.x === g.x && pn.y === g.y) break;
       if (pn.x === null) break;
       await joyHuong(g.x - pn.x, g.y - pn.y, CFG_NAV.joyHoldMs);
+      // Nudge cũng có thể bước lên ô cổng -> map đổi -> qua cổng rồi.
+      if (daQuaCong()) { gateLog('Đã qua cổng ' + congKey + ' lúc nudge tới ô cổng (map đổi ' + mapBatDau + ' -> ' + docViTri().map + ').'); return true; }
     }
     var mapCu = docViTri().map;
     gateLog('Đã tới ô cổng (' + g.x + ',' + g.y + '), map hiện tại: ' + (mapCu || '?') + '.');
@@ -5969,6 +6068,7 @@ window.__TT2D_TONG__ = {
   async function diToiMap(toiMap) {
     lastRouteFail = null;
     if (autoDangBat()) datAuto(false); // xem diToi — Auto BẬT thì joystick đứng yên
+    if (flyDangBat()) { datFly(false); await sleep(500); } // đang bay thì joystick không lái được (xem diToi)
     var p = docViTri();
     if (p.map === toiMap) return true;
     var duong = duongDi(p.map, toiMap);
@@ -6254,7 +6354,17 @@ window.__TT2D_TONG__ = {
     return !!(b && b.classList.contains('active'));
   }
   function autoIsOn() { return btnOn('#btn-auto') || btnOn('#btn-auto-touch'); }
-  function flyIsOn() { return btnOn('#btn-fly'); }
+  // Phi Hành đang bật hay không: đọc trạng thái thật của game qua nav
+  // (SceneWorld.player.flying) trước — class nút #btn-fly đã được xác
+  // minh live 12:54 25/11 là không đáng tin (luôn báo false trong khi
+  // nhân vật đang bay), đọc nút thì batBoFarm bấm Phi Hành 2 lần thành tắt.
+  function flyIsOn() {
+    var n = nav();
+    if (n && typeof n.flyDangBat === 'function') {
+      try { return n.flyDangBat(); } catch (e) { /* fallback nút */ }
+    }
+    return btnOn('#btn-fly');
+  }
   function runIsOn() { return btnOn('#btn-run'); }
   function bamNut(sel) {
     var b = document.querySelector(sel);
@@ -6436,7 +6546,9 @@ window.__TT2D_TONG__ = {
       // Trước đây runToTarget gọi diToiMap mà không tắt Auto, nên nhân vật
       // đang farm sẵn (Auto BẬT) thì đẩy joystick 60 nhịp vẫn đứng yên rồi
       // tool báo "kẹt". Auto chỉ bật lại SAU khi tới đích (batBoFarm cuối
-      // runToTarget); Phi Hành giữ nguyên (bay + joystick vẫn chạy được).
+      // runToTarget); Phi Hành cũng phải TẮT trước khi lái joystick (live
+      // 12:52 25/11: joystick không lái được khi đang bay) — nav.diToi và
+      // nav.diToiMap tự hạ cánh đầu hàm, runToTarget không cần bấm thêm.
       tatAuto();
       setPhase('going', 'Đang đi tới ' + MAPS[target.map].ten + ' Khu ' + target.khu + '...');
       var vt = docViTri();
