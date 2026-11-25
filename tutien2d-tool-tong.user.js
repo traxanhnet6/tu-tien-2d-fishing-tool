@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm)
 // @namespace    https://tutienpixel.online/
-// @version      1.3.3
+// @version      1.3.4
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 7 tab — Câu cá Hồ Tây (v3.2: tỷ lệ cắn + Côn Bằng + thời tiết + TỰ ĐI tới điểm câu), Boss theo giờ, Dược Đại Phu (tự hủy việc dở), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường tới map + khu đã chọn. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
@@ -12,7 +12,7 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
-// TOOL TỔNG v1.3.3 — 1 bảng chung, 7 tab. v1.3.3 (25/11): SỬA LỖI "bật
+// TOOL TỔNG v1.3.4 — 1 bảng chung, 7 tab. v1.3.4 (25/11): ĐÍNH CHÍNH cổng làng→Miếu Hoang — cổng dự phòng (2,15) SAI (các hàng 14–16 bị cây chắn ở x=1), đổi thành (2,13) đã xác minh live 08:35 25/11 (chặng net13 đẩy tây từ (2,13) ~4s qua được). v1.3.3 (25/11): SỬA LỖI "bật
 // auto farm ở tool không di chuyển được" (Thanh báo 07:15) — cùng lỗi
 // .click() như tab Dược ở v1.3.2, nhưng ở tab Farm + tab Boss + helper
 // Huyết Xích/Vận Tiêu + Tổ đội + nav chung: mọi chỗ bấm nút HUD
@@ -5424,13 +5424,13 @@ window.__TT2D_TONG__ = {
     'thanh_truc_lam>tan_vien': { x: 7, y: 0, dx: 0, dy: -1 },
     'tan_vien>thanh_truc_lam': { x: 7, y: 29, dx: 0, dy: 1 },
     'tan_vien>mieu_hoang': { x: 0, y: 12, dx: -1, dy: 0,
-      // Cổng dự phòng (2,15): tọa độ cổng chính (0,12) lấy theo literal
-      // client (MapData.portals) CHƯA xác minh live; kinh nghiệm vận hành
-      // live nói đẩy tây từ (2,15) đã qua được (cổng có slack — nhân vật
-      // đứng gần ô cổng là qua). Nếu đẩy ở (0,12) không qua được thì thử
-      // lại ở (2,15) rồi mới báo lỗi (vụ Farm báo nhầm "không có đường"
-      // 07:29 25/11: thật ra Phi Hành BẬT nên đẩy cổng không qua).
-      fallback: { x: 2, y: 15, dx: -1, dy: 0 } },
+      // Cổng dự phòng (2,13) — ĐÍNH CHÍNH 08:35 25/11 (chặng net13 live):
+      // (2,15) SAI — các hàng 14–16 bị cây chắn ở x=1 nên đẩy tây từ
+      // (2,15) không qua được; cổng thật ở HÀNG 13, đẩy tây từ (2,13)
+      // ~4s là sang Miếu Hoang (18,7). Cổng chính (0,12) theo literal
+      // client (MapData.portals) CHƯA xác minh live. Nếu đẩy ở (0,12)
+      // không qua được thì thử lại ở (2,13) rồi mới báo lỗi.
+      fallback: { x: 2, y: 13, dx: -1, dy: 0 } },
     'mieu_hoang>tan_vien': { x: 19, y: 6, dx: 1, dy: 0 },
     'mieu_hoang>phong_dia': { x: 1, y: 6, dx: -1, dy: 0 },
     'phong_dia>mieu_hoang': { x: 39, y: 14, dx: 1, dy: 0 },
@@ -5597,8 +5597,8 @@ window.__TT2D_TONG__ = {
     if (flyDangBat()) { datFly(false); gateLog('Hạ cánh trước cổng ' + congKey + ' (Phi Hành đang BẬT).'); }
     await sleep(400);
     // Cổng chính rồi cổng dự phòng (nếu có) — vd tan_vien>mieu_hoang:
-    // (0,12) theo literal client CHƯA xác minh live, (2,15) theo kinh
-    // nghiệm vận hành live.
+    // (0,12) theo literal client CHƯA xác minh live, (2,13) xác minh
+    // live 08:35 25/11 (chặng net13 đẩy tây từ (2,13) ~4s qua được).
     var thu = [{ x: c.x, y: c.y, dx: c.dx, dy: c.dy, ten: 'chinh' }];
     if (c.fallback) thu.push({ x: c.fallback.x, y: c.fallback.y, dx: c.fallback.dx, dy: c.fallback.dy, ten: 'du_phong' });
     for (var t = 0; t < thu.length; t++) {
@@ -5618,6 +5618,17 @@ window.__TT2D_TONG__ = {
       lastGateFail = { cong: congKey, gateX: g.x, gateY: g.y, stage: 'di-toi', thu: g.ten, fly: flyDangBat(), auto: autoDangBat() };
       gateLog('Không tới được ô cổng (' + g.x + ',' + g.y + ') — nhân vật kẹt ở đâu đó.');
       return false;
+    }
+    // diToi dừng khi còn cách đích ≤1 ô — với cổng, lệch 1 ô là đẩy sai
+    // hàng (vd dừng ở (1,12) rồi đẩy tây dọc hàng 12 trong khi cổng thật
+    // ở hàng 13, như vụ fallback (2,13) sau khi đính chính 25/11). Nudge
+    // thêm tối đa 4 nhịp tới đúng ô cổng rồi mới đẩy; ô không đứng được
+    // thì nudge không tới nơi nhưng vẫn đẩy như cũ, không kẹt.
+    for (var n = 0; n < 4; n++) {
+      var pn = docViTri();
+      if (pn.x === g.x && pn.y === g.y) break;
+      if (pn.x === null) break;
+      await joyHuong(g.x - pn.x, g.y - pn.y, CFG_NAV.joyHoldMs);
     }
     var mapCu = docViTri().map;
     gateLog('Đã tới ô cổng (' + g.x + ',' + g.y + '), map hiện tại: ' + (mapCu || '?') + '.');
