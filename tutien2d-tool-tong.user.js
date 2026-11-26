@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool Tổng (Câu cá | Boss | Dược | Huyết Xích | Vận Tiêu | Tổ đội | Farm | Đại Hội | Vạn Hoang | Tam Lộ | Chính Ma | Canh | Tàng Kinh | Sổ LT | Tông Chiến | Linh Thụ | Săn Boss | Xổng Chuồng | HX Tổ Đội | Nhiệm vụ | Hồi Sinh | Báo Cáo)
 // @namespace    https://tutienpixel.online/
-// @version      1.5.2
+// @version      1.5.3
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutien2d-tool-tong.user.js
-// @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 22 tab — Câu cá Hồ Tây (v3.2), Boss theo giờ, Dược Đại Phu (15 lượt/ngày), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường, Đại Hội tự ghi danh + đổi Nhân vật ở phòng chờ, Vạn Hoang tự vào bo, Tam Lộ tự bấm "Chơi luôn!", Chính Ma tự trú ẩn 10:55, Canh Phi Hành/trôi khu/Giáp, Tàng Kinh free + Điểm Danh, Sổ Linh Thạch + bảng tổng 4 acc, Tông Môn Chiến tự vào phòng chờ 21:00, Tranh Linh Thụ 20:16 T3/T7, Săn Boss theo lịch cả ngày, Yêu Thú Xổng Chuồng tự đi đánh bầy, Huyết Xích tổ đội cho thanhvan2, Nhiệm vụ chính GĐ0–38 (chỉ hiển thị), Hồi Sinh thông minh, Báo cáo cuối ngày + nhận thưởng Thư, Sáng map Tam Lộ + Vạn Hoang. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
+// @description  Tool Tổng Tu Tiên 2D: 1 bảng chung chia 22 tab — Câu cá Hồ Tây (v3.4), Boss theo giờ, Dược Đại Phu (15 lượt/ngày), Huyết Xích phụ, Vận Tiêu phụ, Tổ đội + farm rùa MTC Khu 12, Farm tự tìm đường, Đại Hội tự ghi danh + đổi Nhân vật ở phòng chờ, Vạn Hoang tự vào bo, Tam Lộ tự bấm "Chơi luôn!", Chính Ma tự trú ẩn 10:55, Canh Phi Hành/trôi khu/Giáp, Tàng Kinh free + Điểm Danh, Sổ Linh Thạch + bảng tổng 4 acc, Tông Môn Chiến tự vào phòng chờ 21:00, Tranh Linh Thụ 20:16 T3/T7, Săn Boss theo lịch cả ngày, Yêu Thú Xổng Chuồng tự đi đánh bầy, Huyết Xích tổ đội cho thanhvan2, Nhiệm vụ chính GĐ0–38 (chỉ hiển thị), Hồi Sinh thông minh, Báo cáo cuối ngày + nhận thưởng Thư, Sáng map Tam Lộ + Vạn Hoang. Khung gọn nhẹ, thu nhỏ được 2 cấp (tab đang dùng + toàn bộ bảng). Module Điều hướng chung (joystick + BFS) cho mọi tab + hook script Python. Chỉ bấm nút của game, không gọi mạng, không sửa bộ nhớ.
 // @author       Muse (làm cho Thanh)
 // @match        https://tutienpixel.online/*
 // @match        https://tutien2d.com/*
@@ -12,6 +12,16 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
+// TOOL TỔNG v1.5.3 — 1 bảng chung, 22 tab. v1.5.3 (27/11, lệnh Thanh 03:37
+// "Trỏ build sang v3.4.0"): tab Câu cá trỏ sang file standalone mới
+// tutien2d-cau-ca-auto.user.js (v3.4.0) thay cho tutien2d-ho-tay-auto-v3.1.user.js
+// (v3.2.0). Module câu cá giữ nguyên trong build (tab 'fish', handle
+// __TT2D_FISH__, tab mặc định) — chỉ đổi file nguồn. v3.4.0 có NAV tích hợp
+// (joystick + BFS waypoint, vá setPointerCapture) nên TỰ ĐI chạy được một
+// mình, không cần nav chung; patch setPointerCapture idempotent nên không
+// đụng nav chung. LƯU Ý: v3.4.0 ĐÃ BỎ tính năng tự tránh điểm có người đứng
+// (không có cách DOM nào đọc vị trí người khác) — tính năng này trong Tool
+// Tổng cũng mất theo. Các tab khác không đổi. CHƯA TEST LIVE.
 // TOOL TỔNG v1.5.2 — 1 bảng chung, 22 tab. v1.5.2 (25/11, lệnh Thanh 22:45):
 //  SỬA GỐC vụ tool không di chuyển được nhân vật: joyHold lái trực tiếp
 //  qua Input.setJoystick thay vì dispatch PointerEvent giả lên #joystick
@@ -249,7 +259,7 @@
 // Ma Động, Hắc Phong Lĩnh, Hắc Thị + đường ra hầm Huyết Xích; duongDi
 // thành BFS trên đồ thị cổng; tab Farm thêm 7 map đích; sửa cổng
 // làng->Miếu Hoang (0,12). Gộp từ 5 tool lẻ (giữ nguyên logic):
-//  - Câu cá Hồ Tây v3.2.0 | Boss v1.2.1 | Dược v1.1.1 | Huyết Xích phụ v1.1.1
+//  - Câu cá Hồ Tây v3.4.0 | Boss v1.2.1 | Dược v1.1.1 | Huyết Xích phụ v1.1.1
 //    | Vận Tiêu phụ v1.0.3 — xem README.md trong thư mục tu-tien-2d-tool-tong.
 //  - Tổ đội + farm rùa: mời/chấp nhận trong 180px, tối đa 6 người, farm Thạch
 //    Quy Miếu Ông Trường Con Khu 12 (mới, viết cho Tool Tổng).
@@ -503,14 +513,14 @@ tongBuildShell();
 // Debug handle chung: __TT2D_TONG__.status() / .showTab(id) /
 // .setCollapsed(v) / .setTabCollapsed(v) / .tab(id) / .nav (module Điều hướng).
 window.__TT2D_TONG__ = {
-  version: '1.5.2',
+  version: '1.5.3',
   showTab: tongShowTab,
   setCollapsed: tongSetCollapsed,
   setTabCollapsed: tongSetTabCollapsed,
   activeTab: function () { return activeTab; },
   tab: function (id) { return apis[id] || null; },
   status: function () {
-    var out = { version: '1.5.2', activeTab: activeTab, tabs: {} };
+    var out = { version: '1.5.3', activeTab: activeTab, tabs: {} };
     Object.keys(apis).forEach(function (id) {
       try { out.tabs[id] = apis[id].status ? apis[id].status() : null; } catch (e) { out.tabs[id] = null; }
     });
@@ -520,10 +530,1646 @@ window.__TT2D_TONG__ = {
 };
 
 
-  // ================= MODULE: fish (Câu cá Hồ Tây v3.2.0: tỷ lệ cắn theo vùng/mồi/thời tiết, mục tiêu auto, tự vào Côn Bằng 12:30 + 19:30; TỰ ĐI tới điểm câu đã chọn (nav chung, 14 điểm cầu, điểm có người đứng yên thì tự lui sang điểm trống khác).) =================
+  // ================= MODULE: fish (Câu cá Hồ Tây v3.4.0 standalone: tỷ lệ cắn theo vùng/mồi/thời tiết, mục tiêu auto, tự vào Côn Bằng 12:30 + 19:30; TỰ ĐI tới điểm câu đã chọn (NAV TÍCH HỢP trong module, chạy một mình không cần nav chung, 14 điểm cầu). LƯU Ý: không còn tự tránh điểm có người đứng (tool không đọc được vị trí người khác) — thấy đông thì tự chọn điểm khác.) =================
 
   (function () {
 
+
+    // ================= NAV TÍCH HỢP (v3.4) =================
+    // Port động cơ lái Đi Farm v1.2.1 + BFS lưới chặn duoc_vien/van_can.
+    // Xem ghi chú ở đầu đoạn NAV bên trong.
+    var NAV = (function () {
+  // ============ NAV TÍCH HỢP (port từ Đi Farm v1.2.1, 26/11) ============
+  // Lái bằng phím/joystick/dpad/chạm neo camera (tự dò), vá setPointerCapture,
+  // đọc vị trí/map/HP/khu CHỈ từ DOM (#hud-pos, #hud-map...), qua cổng bằng
+  // tọa độ hardcode từ MapData, khu đọc từ ô active trên Bảng Khu.
+  // KHÔNG đọc window.__ns_ (biến local trong IIFE của game — mù live).
+  // Toàn bộ đoạn này nằm trong IIFE riêng (var NAV) nên không đụng tên với
+  // code câu cá bên ngoài (CFG/state/log/tap... của NAV đều là cục bộ).
+  // ---------------- Vá setPointerCapture (CHẠY ĐẦU TIÊN) ----------------
+  // Game gọi a.setPointerCapture(pointerId) KHÔNG try/catch trong handler
+  // joystick. PointerEvent giả (pointerId tự đặt) làm Chrome throw
+  // NotFoundError -> handler dừng giữa chừng, không bao giờ kéo được.
+  // Vá: giữ nguyên hàm gốc, bọc try/catch nuốt lỗi (hành vi thật không đổi).
+  var joyPatchApplied = false;
+  function patchPointerCapture() {
+    try {
+      var proto = Element.prototype;
+      // Cờ gắn trên CHÍNH hàm đang cài (không gắn lên prototype): nếu ai đó
+      // thay hàm khác vào (vd. test gỡ vá để chứng minh vá là cần thiết) thì
+      // cờ biến mất cùng hàm cũ và lần gọi sau vá lại được. Gắn cờ lên
+      // prototype sẽ kẹt: hàm đã bị thay mà cờ vẫn báo "đã vá".
+      if (proto.setPointerCapture && proto.setPointerCapture.__TT2D_CAUCA_PATCHED__) { joyPatchApplied = true; return true; }
+      var origCap = proto.setPointerCapture;
+      var origRel = proto.releasePointerCapture;
+      if (typeof origCap === 'function') {
+        proto.setPointerCapture = function (pid) {
+          try { return origCap.call(this, pid); } catch (e) { return; }
+        };
+        proto.setPointerCapture.__TT2D_CAUCA_PATCHED__ = true;
+      }
+      if (typeof origRel === 'function') {
+        proto.releasePointerCapture = function (pid) {
+          try { return origRel.call(this, pid); } catch (e) { return; }
+        };
+        proto.releasePointerCapture.__TT2D_CAUCA_PATCHED__ = true;
+      }
+      joyPatchApplied = true;
+      return true;
+    } catch (e) { return false; }
+  }
+  patchPointerCapture();
+
+  // ---------------- Cấu hình ----------------
+  var CFG = {
+    tile: 32,               // CONFIG.TILE
+    hitboxW: 16,            // CONFIG.PLAYER.HITBOX_W (chỉ để ghi chú, không dùng)
+    hitboxH: 12,            // CONFIG.PLAYER.HITBOX_H (chỉ để ghi chú, không dùng)
+    tickMs: 250,            // nhịp kiểm tra vòng lái
+    joyMoveMs: 100,         // nhịp gửi pointermove khi đang kéo joystick
+    stuckMs: 6000,          // game St = 6s không đổi ô -> kẹt
+    detourMs: 2500,         // lái vuông góc mỗi lần đi vòng (2-3s)
+    repathMax: 4,           // kẹt quá 4 lần đi vòng -> dừng
+    portalWaitMs: 8000,     // game Ft = 8s chờ đổi map ở cổng
+    nudgeWaitMs: 3000,      // chờ đổi map sau mỗi lần đẩy cổng bằng joystick
+    zoneWaitMs: 3000,       // chờ khu đổi sau khi bấm [data-khu]
+    boardWaitMs: 4000,      // chờ bảng khu hiện sau khi bấm Tương Tác
+    boardDataMs: 2500,      // chờ dữ liệu khu từ server (class day/dang) sau khi mở bảng
+    legTimeoutMs: 180000,   // tối đa 180s cho 1 chặng đi (tới cổng / biển / đích)
+    fightWaitMs: 5000,      // bật Auto đánh trả tối đa 5s khi nghi quái chặn
+    hpStopRatio: 0.35,      // HP < 35% -> tự dừng (theo mô tả của Thanh)
+    arrivePx: 32,           // tới đích khi cách tâm đích < 1 ô (32px)
+    portalPx: 16,           // tới cổng khi cách tâm ô cổng < nửa ô (16px)
+    joyMag: 0.75,           // độ kéo joystick (0..1) khi lái
+    joyPointerId: 987654321, // pointerId giả DUY NHẤT cho cả chuỗi down/move/up
+    detectMs: 1200,         // mỗi cách lái dò giữ hướng 1,2s (xem detectSteerMethod)
+    dpadAltMs: 400,         // luân phiên 2 trục dpad mỗi 400ms khi không có nút chéo
+    flySpeedMin: 5,         // ô/s — bay dưới ngưỡng này là chưa ăn (kiểm chứng bằng tốc độ; chạy thường 3,51 < 5 < bay+chạy chậm nhất 5,96 — game.js CONFIG)
+    flyWindowMs: 2000,     // cửa sổ TÍCH LŨY đo tốc độ bay (ms giữ phím cộng dồn qua nhiều đợt cùng hướng)
+    pxPerTile: 32,          // px/ô cho chạm neo camera (mặc định = CONFIG.TILE)
+    tapStableMs: 800,       // đứng yên bao lâu thì coi là ổn định (chờ sau chạm)
+    detourMinMs: 3000,      // đợt đi vòng tối thiểu cho phím/dpad/chạm (chậm hơn joystick)
+  };
+
+  // ---------------- Đồ thị cổng (trích từ MapData client 24/11) ----------------
+  // Mỗi cổng: {tx, ty, to} (+ byHand:true nếu cần bấm Tương tác để vào).
+  // Spawn ở map đích không cần ghi — tool đọc vị trí từ #hud-pos sau khi qua.
+  var PORTALS = {
+    tan_vien: [
+      { tx: 7, ty: 29, to: 'thanh_truc_lam' }, { tx: 8, ty: 29, to: 'thanh_truc_lam' },
+      { tx: 0, ty: 12, to: 'mieu_hoang' }, { tx: 0, ty: 13, to: 'mieu_hoang' },
+      { tx: 39, ty: 14, to: 'bai_da_hang_gio' }, { tx: 39, ty: 15, to: 'bai_da_hang_gio' },
+      // (22,4)->dong_mach_ngam ĐÃ BỊ BUILDER XÓA (filter trong code MTC) — không có ở đây.
+    ],
+    thanh_truc_lam: [
+      { tx: 7, ty: 0, to: 'tan_vien' }, { tx: 8, ty: 0, to: 'tan_vien' },
+      { tx: 12, ty: 29, to: 'duoc_vien' }, { tx: 13, ty: 29, to: 'duoc_vien' },
+      { tx: 39, ty: 13, to: 'long_uyen' }, { tx: 39, ty: 14, to: 'long_uyen' },
+    ],
+    duoc_vien: [
+      { tx: 12, ty: 0, to: 'thanh_truc_lam' }, { tx: 13, ty: 0, to: 'thanh_truc_lam' },
+      { tx: 11, ty: 6, to: 'vuon_ca_nhan' }, { tx: 11, ty: 7, to: 'vuon_ca_nhan' },
+      { tx: 0, ty: 20, to: 'van_can' }, { tx: 0, ty: 21, to: 'van_can' },
+    ],
+    vuon_ca_nhan: [
+      { tx: 8, ty: 12, to: 'duoc_vien' }, { tx: 9, ty: 12, to: 'duoc_vien' },
+    ],
+    van_can: [
+      { tx: 55, ty: 13, to: 'duoc_vien' }, { tx: 55, ty: 14, to: 'duoc_vien' },
+    ],
+    mieu_hoang: [
+      { tx: 19, ty: 6, to: 'tan_vien' }, { tx: 19, ty: 7, to: 'tan_vien' },
+      { tx: 0, ty: 6, to: 'phong_dia' }, { tx: 0, ty: 7, to: 'phong_dia' },
+    ],
+    phong_dia: [
+      { tx: 39, ty: 14, to: 'mieu_hoang' }, { tx: 39, ty: 15, to: 'mieu_hoang' },
+    ],
+    bai_da_hang_gio: [
+      { tx: 0, ty: 27, to: 'tan_vien' }, { tx: 0, ty: 28, to: 'tan_vien' },
+      { tx: 19, ty: 10, to: 'mo_linh_thach' }, { tx: 20, ty: 10, to: 'mo_linh_thach' },
+      { tx: 21, ty: 10, to: 'mo_linh_thach' }, { tx: 22, ty: 10, to: 'mo_linh_thach' },
+      { tx: 23, ty: 10, to: 'mo_linh_thach' }, { tx: 24, ty: 10, to: 'mo_linh_thach' },
+      { tx: 9, ty: 0, to: 'dong_mach_ngam' }, { tx: 10, ty: 0, to: 'dong_mach_ngam' },
+      { tx: 11, ty: 0, to: 'dong_mach_ngam' },
+    ],
+    mo_linh_thach: [
+      { tx: 1, ty: 13, to: 'bai_da_hang_gio' }, { tx: 1, ty: 14, to: 'bai_da_hang_gio' },
+      { tx: 38, ty: 16, to: 'thach_phong_thung_lung' }, { tx: 38, ty: 17, to: 'thach_phong_thung_lung' },
+    ],
+    thach_phong_thung_lung: [
+      { tx: 1, ty: 27, to: 'mo_linh_thach' },
+      { tx: 38, ty: 2, to: 'bat_quai_thach_phan' },
+    ],
+    bat_quai_thach_phan: [
+      { tx: 0, ty: 29, to: 'thach_phong_thung_lung' },
+      { tx: 0, ty: 30, to: 'thach_phong_thung_lung' },
+    ],
+    dong_mach_ngam: [
+      { tx: 14, ty: 25, to: 'bai_da_hang_gio' }, { tx: 15, ty: 25, to: 'bai_da_hang_gio' },
+      { tx: 16, ty: 25, to: 'bai_da_hang_gio' },
+      // (18,22)->tan_vien có thật trong MapData dong_mach_ngam
+      // (targetSpawn (22,6), label "Ra Chân Núi") — thêm từ code gửi v1.2.0.
+      { tx: 18, ty: 22, to: 'tan_vien' },
+    ],
+    long_uyen: [
+      { tx: 0, ty: 14, to: 'thanh_truc_lam' }, { tx: 0, ty: 15, to: 'thanh_truc_lam' },
+      { tx: 22, ty: 4, to: 'hang_dong_co', byHand: true },
+    ],
+    hang_dong_co: [
+      { tx: 14, ty: 19, to: 'long_uyen' }, { tx: 15, ty: 19, to: 'long_uyen' },
+    ],
+    rung_mang_xa: [
+      { tx: 18, ty: 0, to: 'mach_dat_dong' }, { tx: 19, ty: 0, to: 'mach_dat_dong' },
+      // (18,29),(19,29)->tan_vien ĐÃ BỊ XÓA (filter client 24/11) — không có ở đây.
+    ],
+    mach_dat_dong: [
+      { tx: 20, ty: 29, to: 'rung_mang_xa' }, { tx: 21, ty: 29, to: 'rung_mang_xa' },
+      { tx: 39, ty: 14, to: 'dam_lay_boss' }, { tx: 39, ty: 15, to: 'dam_lay_boss' },
+    ],
+    dam_lay_boss: [
+      { tx: 0, ty: 14, to: 'mach_dat_dong' }, { tx: 0, ty: 15, to: 'mach_dat_dong' },
+    ],
+  };
+  // BFS qua đồ thị cổng — cùng ngữ nghĩa với MapData.routeNextHop của game:
+  // trả cổng bước đầu {tx, ty, to, byHand} hoặc null (cùng map / không có đường).
+  function nextHop(fromId, toId) {
+    if (!fromId || !toId || fromId === toId) return null;
+    var seen = {}, q = [];
+    seen[fromId] = true;
+    var first = PORTALS[fromId] || [];
+    for (var i = 0; i < first.length; i++) {
+      var h = first[i];
+      if (!h.to || seen[h.to]) continue;
+      if (h.to === toId) return h;
+      seen[h.to] = true;
+      q.push({ mapId: h.to, first: h });
+    }
+    while (q.length) {
+      var cur = q.shift();
+      var list = PORTALS[cur.mapId] || [];
+      for (var j = 0; j < list.length; j++) {
+        var h2 = list[j];
+        if (!h2.to || seen[h2.to]) continue;
+        if (h2.to === toId) return cur.first;
+        seen[h2.to] = true;
+        q.push({ mapId: h2.to, first: cur.first });
+      }
+    }
+    return null;
+  }
+
+  // ---------------- Map + biển KHU + preset ----------------
+  // sign: tọa độ biển KHU của map (đứng sát để bấm "Tương tác với Bảng Khu").
+  // safe: điểm an toàn mặc định của map (= spawn của map trong client 24/11;
+  //   dùng khi đổi Map mà chưa chọn preset — KHÔNG BAO GIỜ để Map và X/Y
+  //   thuộc 2 map khác nhau, xem bug v1.0.0 ở dưới).
+  // w/h: kích thước map (ô) theo MapData client 24/11 — dùng để chặn biên
+  //   khi nhập tọa độ (v1.2.0, lấy từ code gửi sau khi đối chiếu).
+  var MAPS = {
+    phong_dia:      { ten: 'Phong Địa',            sign: [[34, 15], [30, 19], [30, 20]], safe: [37, 14], w: 40, h: 30 },
+    duoc_vien:      { ten: 'Thảo Dược Cốc',        sign: [[14, 5]], safe: [12, 2], w: 40, h: 30 },
+    dong_mach_ngam: { ten: 'Miếu Ông Trường Con',  sign: [[11, 22]], safe: [15, 22], w: 36, h: 24 },
+    hang_dong_co:   { ten: 'Hang Động',            sign: [[14, 16]], safe: [14, 16], w: 30, h: 20 },
+    bai_da_hang_gio:{ ten: 'Bãi Đá',               sign: null, safe: [3, 28], w: 40, h: 30 },
+    mo_linh_thach:  { ten: 'Mỏ Linh Thạch',        sign: null, safe: [3, 27], w: 40, h: 30 },
+    thach_phong_thung_lung: { ten: 'Thung Lũng (Thạch Phong)', sign: null, safe: [3, 27], w: 40, h: 30 },
+    mieu_hoang:     { ten: 'Miếu Hoang',           sign: null, safe: [18, 6], w: 20, h: 14 },
+    tan_vien:       { ten: 'Chân Núi Tản Viên',    sign: null, safe: [8, 26], w: 40, h: 30 },
+    thanh_truc_lam: { ten: 'Rừng Trúc',            sign: null, safe: [7, 2], w: 40, h: 30 },
+    van_can:        { ten: 'Hồ Tây',               sign: null, safe: [33, 31], w: 56, h: 36 },
+    long_uyen:      { ten: 'Long Uyên Cốc',        sign: null, safe: [2, 14], w: 40, h: 30 },
+    vuon_ca_nhan:   { ten: 'Vườn Cá Nhân',         sign: null, safe: [8, 10], w: 18, h: 13 },
+  };
+  // Tên HUD -> map id (đọc #hud-map).
+  var HUD_MAP = [
+    [/Hồ Tây/, 'van_can'], [/Thảo Dược Cốc/, 'duoc_vien'],
+    [/Rừng Trúc/, 'thanh_truc_lam'], [/Chân Núi Tản Viên/, 'tan_vien'],
+    [/Miếu Ông Trường Con/, 'dong_mach_ngam'], [/Bãi Đá/, 'bai_da_hang_gio'],
+    [/Miếu Hoang/, 'mieu_hoang'], [/Phong Địa/, 'phong_dia'],
+    [/Hang Động/, 'hang_dong_co'], [/Mỏ Linh Thạch/, 'mo_linh_thach'],
+    [/Thung Lũng/, 'thach_phong_thung_lung'],
+    [/Bát Quái/, 'bat_quai_thach_phan'],
+    [/Long Uyên/, 'long_uyen'],
+    [/Rừng Mãng Xà/, 'rung_mang_xa'], [/Lòng Đất/, 'mach_dat_dong'],
+    [/Đầm Lầy/, 'dam_lay_boss'], [/Vườn Cá/, 'vuon_ca_nhan'],
+    [/Thiên Đạo|Chính Đảo/, 'thien_dao_khuyet'],
+    [/Tam Lộ/, 'tam_lo'], [/Đại Hội/, 'dai_hoi_cho'],
+    [/Vạn Hoang|Chiến Trường/, 'chien_truong'], [/Huyết Xích/, 'huyet_xich'],
+  ];
+  // Map không có đường bộ đi ra (phó bản / sự kiện) — báo rõ thay vì đi lạc.
+  var KHONG_DUONG = { tam_lo: 1, dai_hoi_cho: 1, dai_hoi_dau: 1, chien_bang_dai: 1, dai_hoi_doi: 1, san_dau_vip: 1, chien_truong: 1, huyet_xich: 1, yen_lang: 1, lam_lang: 1 };
+
+  var PRESETS = [
+    { id: 'pd11',   ten: 'Phong Địa Khu 11 (30,27)',      map: 'phong_dia',       khu: 11, x: 30, y: 27 },
+    { id: 'pd20',   ten: 'Phong Địa Khu 20 (18,22)',      map: 'phong_dia',       khu: 20, x: 18, y: 22 },
+    { id: 'pd3',    ten: 'Phong Địa Khu 3 — CHƯA XÁC MINH tọa độ', map: 'phong_dia', khu: 3, x: 30, y: 27 },
+    { id: 'dc16',   ten: 'Thảo Dược Cốc Khu 16 — CHƯA XÁC MINH bãi', map: 'duoc_vien', khu: 16, x: 18, y: 16 },
+    { id: 'bd',     ten: 'Bãi Đá tầng trên — CHƯA XÁC MINH bãi', map: 'bai_da_hang_gio', khu: 0, x: 10, y: 5 },
+    { id: 'mo',     ten: 'Mỏ Linh Thạch (3,13) — CHƯA XÁC MINH bãi', map: 'mo_linh_thach', khu: 0, x: 3, y: 13 },
+    { id: 'mtc',    ten: 'Miếu Ông Trường Con (15,22)',   map: 'dong_mach_ngam',  khu: 12, x: 15, y: 22 },
+    // Preset mới v1.2.0 (điểm farm lấy từ code gửi, đối chiếu ô đi được
+    // trong MapData client 24/11 — bãi farm thì CHƯA XÁC MINH, xem header):
+    // - Rừng Trúc: code gửi (20,15) là ô 'L' nước sen BỊ CHẶN -> dùng
+    //   (14,15)='.' (vùng 5x5 quanh nó toàn ô đi được, cùng hàng y=15).
+    // - Thảo Dược Cốc (20,15)='~' sỏi đi được; Hang Động (15,10)='.' đi
+    //   được; Miếu Hoang (10,7)='s' nền đá đi được; Hồ Tây (33,31)=spawn.
+    { id: 'rtfarm', ten: 'Rừng Trúc farm (14,15) — CHƯA XÁC MINH bãi', map: 'thanh_truc_lam', khu: 0, x: 14, y: 15 },
+    { id: 'dcfarm', ten: 'Thảo Dược Cốc farm (20,15) — CHƯA XÁC MINH bãi', map: 'duoc_vien', khu: 0, x: 20, y: 15 },
+    { id: 'hdfarm', ten: 'Hang Động farm (15,10) — CHƯA XÁC MINH bãi', map: 'hang_dong_co', khu: 0, x: 15, y: 10 },
+    { id: 'mhfarm', ten: 'Miếu Hoang farm (10,7) — CHƯA XÁC MINH bãi', map: 'mieu_hoang', khu: 0, x: 10, y: 7 },
+    { id: 'htfarm', ten: 'Hồ Tây farm (33,31) — CHƯA XÁC MINH bãi', map: 'van_can', khu: 0, x: 33, y: 31 },
+  ];
+
+  // ---------------- Trạng thái ----------------
+
+
+
+
+  var runToken = 0;
+
+  var steerCalls = 0, detourCount = 0, joyStopCalls = 0, autoOnCount = 0;
+  var lastHop = null;
+  var khuHienTai = null; // khu đọc được từ Bảng Khu (null = chưa rõ)
+  var soKhuHienTai = 40; // số khu của map hiện tại (đọc từ bảng, mặc định 40)
+  var hpAvailable = false; // đã thấy #value-hp lần nào chưa
+  // --- Lái đa cách (v1.2.0) ---
+  var steerMethod = null; // 'keys'|'joystick'|'dpad'|'tap' — dò 1 lần mỗi phiên chạy
+  var flyingBelief = false; // tin là đang bay (class #btn-fly đã biết sai live — kiểm chứng bằng tốc độ)
+  var flySpeedChecked = false, flyRetryDone = false, flySpeedMeasured = null, flySpeedFirst = null; // lần đo đầu (chẩn đoán bay chậm), không ghi đè
+  var flyMeas = null; // cửa sổ tích lũy đo tốc độ bay: {x, y, ms, sx, sy} — vị trí đầu cửa sổ, tổng ms giữ phím, dấu hướng
+  var camAnchor = null; // {x,y} ô tại tâm canvas (chạm neo camera)
+  var heldKeys = {}; // code -> true (phím tool đang giữ)
+  var dpadHeld = null; // nút dpad đang giữ
+  var guardMap = null; // map lúc bắt đầu đợt lái — đổi map giữa đợt thì dừng đợt ngay
+  var legDeadline = 0; // hạn giờ chặng đi hiện tại (ms epoch) — đợt lái cũng phải tôn trọng
+
+  // ---------------- Helper DOM ----------------
+  function $(s) { return document.querySelector(s); }
+  function $all(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function txt(el) { return el ? (el.innerText || el.textContent || '') : ''; }
+  // Kẹp ô vào trong biên map (dùng w/h MapData khi có) — tránh nhập tọa độ
+  // ngoài map rồi tool đi lạc.
+  function clampCell(mapId, x, y) {
+    var m = MAPS[mapId];
+    if (!m || typeof m.w !== 'number' || typeof m.h !== 'number') return { x: x, y: y };
+    return {
+      x: Math.max(0, Math.min(m.w - 1, x)),
+      y: Math.max(0, Math.min(m.h - 1, y)),
+    };
+  }
+  function dirName(dx, dy) {
+    var ns = dy > 0 ? 'nam' : dy < 0 ? 'bắc' : '';
+    var ew = dx > 0 ? 'đông' : dx < 0 ? 'tây' : '';
+    return ew && ns ? ew + '-' + ns : (ew || ns || 'đứng yên');
+  }
+  function fmtSec(ms) { return (ms / 1000).toFixed(1).replace('.', ',') + 's'; }
+  function navLog(s) {
+    // Ghi vao nhat ky cua tool cau (log() ngoai — function declaration
+    // hoisted trong IIFE tool cau nen goi duoc tu day). NAV khong co panel
+    // rieng. Boc try/catch: log() ngoai dung logEl, neu panel chua build
+    // thi chi can bo qua chu khong duoc lam hong vong di.
+    try { if (typeof log === 'function') log('[NAV] ' + s); } catch (e) { /* bo qua */ }
+  }
+
+  // ---------------- Đọc trạng thái game (CHỈ từ DOM) ----------------
+  // Vị trí PIXEL hiện tại — nguồn chính: #hud-pos "( x , y )".
+  function docViTriPx() {
+    var hp = $('#hud-pos');
+    var t = hp ? (hp.innerText || hp.textContent || '') : '';
+    var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    if (m) return { x: parseInt(m[1], 10) * CFG.tile + CFG.tile / 2, y: parseInt(m[2], 10) * CFG.tile + CFG.tile / 2 };
+    return null;
+  }
+  function docCell() {
+    var v = docViTriPx();
+    if (!v) return null;
+    return { x: Math.floor(v.x / CFG.tile), y: Math.floor(v.y / CFG.tile) };
+  }
+  function docMapId() {
+    var hm = $('#hud-map');
+    var s = hm ? (hm.innerText || hm.textContent || '').trim() : '';
+    if (s) {
+      for (var i = 0; i < HUD_MAP.length; i++) {
+        if (HUD_MAP[i][0].test(s)) return HUD_MAP[i][1];
+      }
+    }
+    // KHONG fallback quet text toan body (khac Di Farm): panel tool cau
+    // cung chua ten map ("Ho Tay", "Thao Duoc Coc") nen quet body se nhan
+    // map sai khi #hud-map dang trong. Khong doc duoc -> null (goi tu choi
+    // di chu khong doan).
+    return null;
+  }
+  function tenMap(id) { return (MAPS[id] && MAPS[id].ten) || id || '?'; }
+  // Khu hiện tại: CHỈ biết sau khi đã mở Bảng Khu đọc được (xem docKhuTuBang).
+  // null = chưa rõ (KHÔNG đoán). Đừng hiển thị "?" như là đã biết.
+  function docKhu() { return khuHienTai; }
+  function docSoKhu() { return soKhuHienTai; }
+  // HP: #value-hp text = "hp / max" (vd "319 / 319"). null nếu không thấy.
+  function docHP() {
+    var el = $('#value-hp');
+    if (!el) return null;
+    var t = (el.innerText || el.textContent || '').trim();
+    var m = t.match(/(\d+)\s*\/\s*(\d+)/);
+    if (!m) return null;
+    hpAvailable = true;
+    return { hp: parseInt(m[1], 10), max: parseInt(m[2], 10) };
+  }
+  // Gục: bảng #downed hiện (DownedUI). #downed-badge nằm TRONG #downed —
+  // khi #downed ẩn (class hidden) thì badge cũng ẩn theo, nên KHÔNG được
+  // đọc riêng badge: badge không có class hidden của riêng nó và text luôn
+  // chứa "Trọng Thương" → đọc riêng sẽ báo gục NHẦM 100% thời gian.
+  // (Lỗi này test smoke bắt được: mọi chặng đều dừng ngay với state 'guc'.)
+  function docGuc() {
+    var d = $('#downed');
+    if (d) return !d.classList.contains('hidden');
+    var b = $('#downed-badge');
+    if (b && !b.classList.contains('hidden') && /Trọng Thương/.test(txt(b))) return true;
+    return false;
+  }
+
+  // ---------------- Bấm nút game: tap() thay .click() ----------------
+  // (Nút HUD chỉ bind "pointerdown", .click() là no-op.)
+  function tap(el) {
+    if (!el) return;
+    var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    var x = r ? r.left + r.width / 2 : 0, y = r ? r.top + r.height / 2 : 0;
+    function ev(ty) {
+      return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true });
+    }
+    el.dispatchEvent(ev('pointerdown'));
+    el.dispatchEvent(ev('pointerup'));
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+  }
+  function btnOn(sel) { var b = $(sel); return !!(b && b.classList.contains('active')); }
+  function autoDangBat() { return btnOn('#btn-auto') || btnOn('#btn-auto-touch'); }
+  // Phi Hành: chỉ còn class nút để đọc (đã xác minh live là class này SAI —
+  // xem log/panel; kiểm tra lại bằng tốc độ farm, bấm lại tay nếu cần).
+  function flyDangBat() { return btnOn('#btn-fly'); }
+  function runDangBat() { return btnOn('#btn-run'); }
+  function datAuto(bat) {
+    bat = !!bat;
+    if (autoDangBat() === bat) return true;
+    var b = $('#btn-auto-touch') || $('#btn-auto');
+    if (!b) return false;
+    if (bat) autoOnCount++;
+    tap(b);
+    return true; // game tiêu thụ cờ toggle ở frame sau — bấm đúng 1 lần
+  }
+  function datFly(bat) {
+    bat = !!bat;
+    if (flyDangBat() !== bat) {
+      var b = $('#btn-fly');
+      if (!b) return false;
+      tap(b);
+    }
+    // flyingBelief là "tin là đang bay" — class nút đã biết sai live nên
+    // đây chỉ là gợi ý; kiểm chứng thật bằng tốc độ ở đợt lái đầu.
+    flyingBelief = bat;
+    return true; // game tiêu thụ cờ toggle ở frame sau — bấm đúng 1 lần
+  }
+  // Bấm Phi Hành bằng phím KeyF (keydown+keyup tổng hợp lên body).
+  // Game: keydown KeyF -> _flyToggle (bỏ qua e.repeat). Dùng cho lần bấm
+  // lại duy nhất khi kiểm chứng tốc độ thấy bay chưa ăn.
+  function pressFlyKey() {
+    var tgt = document.body || document.documentElement;
+    tgt.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true, cancelable: true }));
+    tgt.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyF', key: 'f', bubbles: true, cancelable: true }));
+    return true;
+  }
+  function datRun(bat) {
+    bat = !!bat;
+    if (runDangBat() === bat) return true;
+    var b = $('#btn-run');
+    if (!b) return false;
+    tap(b);
+    return true;
+  }
+  function datUuTienQuai() {
+    var b = document.querySelector('[data-uu-tien="quai"]');
+    if (!b) return false;
+    if (!b.classList.contains('on')) b.click();
+    return true;
+  }
+  function stopFishing() {
+    var b = $('#btn-fishing-stop-touch');
+    if (b && b.offsetParent !== null) { tap(b); return true; }
+    return false;
+  }
+
+  // ---------------- Lái bằng joystick thật (PointerEvent) ----------------
+  // Một phiên kéo: pointerdown 1 lần ở tâm #joystick, pointermove lặp lại
+  // theo hướng cần đi, pointerup khi xong. Dùng CÙNG MỘT pointerId cho cả
+  // chuỗi (như ngón tay thật). Nhờ đã vá setPointerCapture nên handler
+  // joystick của game không throw nữa.
+  var joy = { active: false, geom: null, lastDx: 0, lastDy: 0 };
+  // Hình học joystick như code game: radius = min(w,h)/2 - thumb/2 - 4;
+  // deadzone = min(8, 0.18*radius). Trả null nếu không đo được.
+  function joyGeom() {
+    var el = $('#joystick');
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (!r || !r.width || !r.height) return null;
+    var th = $('#joystick-thumb');
+    var tr = th ? th.getBoundingClientRect() : null;
+    var tsize = (tr && tr.width > 0) ? Math.min(tr.width, tr.height) : 58;
+    var radius = Math.min(r.width, r.height) / 2 - tsize / 2 - 4;
+    if (!(radius > 0)) return null;
+    return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, radius: radius };
+  }
+  // Trên desktop game ẩn #touch-ui (chỉ hiện khi bật chế độ Chạm) -> rect = 0.
+  // Thử gỡ class "hidden" của #touch-ui / #joystick rồi đo lại.
+  function hienJoystick() {
+    var root = $('#touch-ui');
+    if (root) root.classList.remove('hidden');
+    var el = $('#joystick');
+    if (el) el.classList.remove('hidden');
+    var g = joyGeom();
+    if (g) navLog('Joystick đang ẩn — đã tự hiện lại để lái.');
+    return g;
+  }
+  function joyDown() {
+    if (joy.active) return true;
+    var g = joyGeom() || hienJoystick();
+    if (!g) return false;
+    var el = $('#joystick');
+    if (!el) return false;
+    el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: g.cx, clientY: g.cy, pointerId: CFG.joyPointerId, isPrimary: true }));
+    joy.active = true;
+    joy.geom = g;
+    joy.lastDx = 0; joy.lastDy = 0;
+    return true;
+  }
+  function joyMoveTo(dx, dy) {
+    if (!joy.active && !joyDown()) return false;
+    var g = joy.geom || joyGeom();
+    if (!g) return false;
+    var x = g.cx + dx * CFG.joyMag * g.radius;
+    var y = g.cy + dy * CFG.joyMag * g.radius;
+    var el = $('#joystick');
+    if (!el) return false;
+    el.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: CFG.joyPointerId, isPrimary: true }));
+    joy.lastDx = dx; joy.lastDy = dy;
+    return true;
+  }
+  function joyUp() {
+    if (!joy.active) return;
+    joyStopCalls++;
+    var el = $('#joystick');
+    var g = joy.geom;
+    if (el && g) {
+      var x = g.cx + joy.lastDx * CFG.joyMag * g.radius;
+      var y = g.cy + joy.lastDy * CFG.joyMag * g.radius;
+      el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: CFG.joyPointerId, isPrimary: true }));
+    }
+    joy.active = false;
+    joy.geom = null;
+    joy.lastDx = 0; joy.lastDy = 0;
+  }
+  // Đẩy joystick về 1 hướng trong ms mili-giây (dùng nudge qua cổng).
+  async function joyHold(dx, dy, ms) {
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var t0 = Date.now();
+    if (!joyDown()) return false;
+    while (Date.now() - t0 < ms) {
+      if (!joyMoveTo(dx / len, dy / len)) break;
+      await sleep(CFG.joyMoveMs);
+    }
+    joyUp();
+    await sleep(250);
+    return true;
+  }
+
+  // ---------------- Lái đa cách, tự dò (v1.2.0 — lấy từ code gửi) ----------------
+  // Thứ tự dò 1 lần mỗi phiên chạy: phím -> joystick (engine v1.1.0 ở trên)
+  // -> dpad -> chạm neo camera. Mỗi cách giữ hướng về đích detectMs, vị trí
+  // đổi >=1 ô là đạt. Mọi đợt lái (burst) đều: poll vị trí mỗi tickMs,
+  // nhả đầu vào ở MỌI lối thoát, dừng khi đổi map giữa đợt (guardMap).
+  // Trả {reason, pos, ms} với reason: arrived|step|axis|moved|stuck|
+  // timeout|stopped|mapchanged|nojoy|nodpad.
+
+  // ---------- Phím hướng (lái bằng giữ phím — không phụ thuộc camera) ----------
+  // Game Input đọc e.code: KeyW/ArrowUp=up, KeyS/ArrowDown=down,
+  // KeyA/ArrowLeft=left, KeyD/ArrowRight=right, theo dõi phím đang giữ qua
+  // keydown/keyup, không kiểm isTrusted -> giữ phím tổng hợp dùng được.
+  // Sự kiện gửi lên body (bubbles) để tới được listener dù game gắn ở
+  // body/document/window.
+  var DIR_KEYS = [
+    { code: 'KeyW', key: 'w', name: 'W' },
+    { code: 'KeyS', key: 's', name: 'S' },
+    { code: 'KeyA', key: 'a', name: 'A' },
+    { code: 'KeyD', key: 'd', name: 'D' },
+    { code: 'ArrowUp', key: 'ArrowUp', name: '↑' },
+    { code: 'ArrowDown', key: 'ArrowDown', name: '↓' },
+    { code: 'ArrowLeft', key: 'ArrowLeft', name: '←' },
+    { code: 'ArrowRight', key: 'ArrowRight', name: '→' },
+  ];
+  var DIR_BY_CODE = {};
+  DIR_KEYS.forEach(function (d) { DIR_BY_CODE[d.code] = d; });
+  function keyTarget() { return document.body || document.documentElement; }
+  function keyDown(code) {
+    var d = DIR_BY_CODE[code];
+    if (!d || heldKeys[code]) return;
+    heldKeys[code] = true;
+    keyTarget().dispatchEvent(new KeyboardEvent('keydown', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+  }
+  function keyUp(code) {
+    var d = DIR_BY_CODE[code];
+    if (!d || !heldKeys[code]) return;
+    delete heldKeys[code];
+    keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+  }
+  function releaseAllKeys() {
+    // Nhả toàn bộ 8 phím hướng (kể cả khi heldKeys lệch) — keyup thừa vô hại với game.
+    DIR_KEYS.forEach(function (d) {
+      keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+    });
+    heldKeys = {};
+  }
+  function codesFor(dx, dy) {
+    var codes = [];
+    if (dx > 0) codes.push('KeyD'); else if (dx < 0) codes.push('KeyA');
+    if (dy > 0) codes.push('KeyS'); else if (dy < 0) codes.push('KeyW');
+    return codes;
+  }
+  // Giữ phím theo 1 đợt: poll vị trí mỗi tickMs, nhả khi shouldStop(p) trả
+  // lý do / kẹt (không đổi ô >= stuckMs) / hết giờ đợt / đổi map / dừng.
+  // Mọi lối thoát đều nhả toàn bộ phím.
+  function holdKeysBurst(runId, codes, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      var lastPos = docCell();
+      var lastMoveAt = t0;
+      codes.forEach(keyDown);
+      (function tick() {
+        var now = Date.now();
+        var p = docCell();
+        if (runId !== runToken) { releaseAllKeys(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (guardMap && docMapId() && docMapId() !== guardMap) { releaseAllKeys(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { releaseAllKeys(); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (legDeadline && now > legDeadline) { releaseAllKeys(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        if (p && now - lastMoveAt >= CFG.stuckMs) { releaseAllKeys(); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { releaseAllKeys(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, CFG.tickMs);
+      })();
+    });
+  }
+
+  // ---------- Joystick theo đợt (bọc engine v1.1.0) ----------
+  // Kéo joystick theo 1 đợt: giữ kéo, poll vị trí mỗi tickMs; hết đợt thì
+  // kéo về tâm (dừng di chuyển, chưa nhả) — đổi hướng đợt sau chỉ cần
+  // pointermove lại, không cần nhả. Nhả hẳn (pointerup) ở
+  // releaseAllInputs / finally của steerToCell / stop().
+  function holdJoyBurst(runId, vx, vy, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      if (!joy.active && !joyDown()) return resolve({ reason: 'nojoy', pos: docCell(), ms: 0 });
+      var lastPos = docCell();
+      var lastMoveAt = t0;
+      var len = Math.hypot(vx, vy) || 1;
+      joyMoveTo(vx / len, vy / len);
+      (function tick() {
+        var now = Date.now();
+        var p = docCell();
+        if (runId !== runToken) { joyUp(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (guardMap && docMapId() && docMapId() !== guardMap) { joyUp(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { joyMoveTo(0, 0); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (legDeadline && now > legDeadline) { joyMoveTo(0, 0); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        if (p && now - lastMoveAt >= CFG.stuckMs) { joyMoveTo(0, 0); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { joyMoveTo(0, 0); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, CFG.tickMs);
+      })();
+    });
+  }
+
+  // ---------- Nút dpad (giữ nút hướng .dpad-btn mang data-dx/data-dy) ----------
+  // Game: handler pointerdown gọi setPointerCapture KHÔNG try/catch (như
+  // joystick) rồi set trạng thái giữ -> nhờ vá v1.1.0 mới lái được bằng
+  // PointerEvent giả. Nút nằm trong #touch-ui nên có thể đang ẩn.
+  var DPAD_PID = 13;
+  function dpadPointer(el, type) {
+    var r = el.getBoundingClientRect();
+    el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: DPAD_PID, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: 'touch', isPrimary: true }));
+  }
+  function dpadPress(el) {
+    if (!el || dpadHeld === el) return;
+    dpadRelease();
+    dpadPointer(el, 'pointerdown');
+    dpadHeld = el;
+  }
+  function dpadRelease() {
+    if (!dpadHeld) return;
+    var el = dpadHeld;
+    dpadHeld = null;
+    try { dpadPointer(el, 'pointerup'); } catch (e) { /* bỏ qua */ }
+  }
+  function findDpadBtns(sx, sy) {
+    var btns = document.querySelectorAll('.dpad-btn');
+    if (!btns.length) {
+      // Có thể #touch-ui đang ẩn (desktop) — thử hiện lại rồi tìm lần nữa.
+      hienJoystick();
+      btns = document.querySelectorAll('.dpad-btn');
+    }
+    var exact = null, xOnly = null, yOnly = null;
+    for (var i = 0; i < btns.length; i++) {
+      var bx = parseInt(btns[i].getAttribute('data-dx') || '0', 10);
+      var by = parseInt(btns[i].getAttribute('data-dy') || '0', 10);
+      if (bx === sx && by === sy) exact = btns[i];
+      else if (sx !== 0 && bx === sx && by === 0) xOnly = btns[i];
+      else if (sy !== 0 && by === sy && bx === 0) yOnly = btns[i];
+    }
+    return { exact: exact, xOnly: xOnly, yOnly: yOnly };
+  }
+  // Giữ nút dpad theo 1 đợt: có nút chéo khớp thì giữ nút đó; không có thì
+  // luân phiên 2 trục mỗi dpadAltMs. Mọi lối thoát đều nhả nút.
+  function holdDpadBurst(runId, sx, sy, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      var btns = findDpadBtns(sx, sy);
+      if (!btns.exact && !btns.xOnly && !btns.yOnly) return resolve({ reason: 'nodpad', pos: docCell(), ms: 0 });
+      var lastPos = docCell();
+      var lastMoveAt = t0;
+      var altFlipAt = 0, altX = true;
+      function pressCurrent() {
+        if (btns.exact) { dpadPress(btns.exact); return; }
+        if (btns.xOnly && btns.yOnly) { dpadPress(altX ? btns.xOnly : btns.yOnly); return; }
+        dpadPress(btns.xOnly || btns.yOnly);
+      }
+      pressCurrent();
+      (function tick() {
+        var now = Date.now();
+        var p = docCell();
+        if (runId !== runToken) { dpadRelease(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (guardMap && docMapId() && docMapId() !== guardMap) { dpadRelease(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+        if (!btns.exact && btns.xOnly && btns.yOnly && now - altFlipAt >= CFG.dpadAltMs) { altFlipAt = now; altX = !altX; pressCurrent(); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { dpadRelease(); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (legDeadline && now > legDeadline) { dpadRelease(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        if (p && now - lastMoveAt >= CFG.stuckMs) { dpadRelease(); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { dpadRelease(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, CFG.tickMs);
+      })();
+    });
+  }
+
+  // ---------- Chạm neo camera (dự phòng cuối) ----------
+  // Chạm đúng tâm canvas -> ô hiện tại = ô tại tâm -> chạm về đích theo vị
+  // trí nhân vật thật. Sau mỗi chạm, suy ô tâm mới từ điểm chạm đã dùng
+  // (ô tâm = ô nhân vật - điểm chạm/px/ô) để giữ hiệu chỉnh gần mép map.
+  // Chạm làm xa đích >2 ô -> bỏ neo, neo lại đợt sau (xem steerToCell).
+  // Game: handler `window pointerup`, tap <500ms và <14px -> Input.tap =
+  // Renderer.screenToBuffer(clientX,clientY); không kiểm isTrusted, không
+  // setPointerCapture. px/ô mặc định 32 (= CONFIG.TILE).
+  function gameCanvas() {
+    var cs = Array.prototype.slice.call(document.querySelectorAll('canvas'));
+    var best = null, ba = 0;
+    cs.forEach(function (c) {
+      var r = c.getBoundingClientRect(), a = r.width * r.height;
+      if (a > ba) { ba = a; best = c; }
+    });
+    return best;
+  }
+  // Vùng HUD phủ trên canvas cần tránh khi chạm lái (joystick, cụm nút, bảng tool).
+  function hudAvoidZones() {
+    var zones = [];
+    var c = gameCanvas();
+    if (!c) return zones;
+    var r = c.getBoundingClientRect();
+    zones.push({ x0: r.x, y0: r.y + r.height * 0.58, x1: r.x + r.width * 0.36, y1: r.y + r.height }); // joystick dưới trái
+    zones.push({ x0: r.x + r.width * 0.62, y0: r.y + r.height * 0.52, x1: r.x + r.width, y1: r.y + r.height }); // cụm nút dưới phải
+    ['#tt2d-fish-panel', '#btn-auto-touch', '#btn-auto', '#btn-attack', '#btn-fly'].forEach(function (sel) {
+      var el = $(sel);
+      if (!el) return;
+      var b = el.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0) zones.push({ x0: b.x - 6, y0: b.y - 6, x1: b.x + b.width + 6, y1: b.y + b.height + 6 });
+    });
+    return zones;
+  }
+  function safeTapPoint(cx, cy, r) {
+    // Kẹp trong canvas, chừa lề 12% mỗi phía.
+    var mx = r.width * 0.12, my = r.height * 0.12;
+    cx = Math.max(r.x + mx, Math.min(r.x + r.width - mx, cx));
+    cy = Math.max(r.y + my, Math.min(r.y + r.height - my, cy));
+    // Rơi vào vùng HUD thì dịch điểm chạm lên trên vùng đó (giữ hướng ngang).
+    var zones = hudAvoidZones();
+    for (var i = 0; i < zones.length; i++) {
+      var z = zones[i];
+      if (cx >= z.x0 && cx <= z.x1 && cy >= z.y0 && cy <= z.y1) {
+        cy = Math.max(r.y + my, Math.min(r.y + r.height - my, z.y0 - 10));
+      }
+    }
+    return { x: cx, y: cy };
+  }
+  function tapCanvas(dx, dy) {
+    var c = gameCanvas();
+    if (!c) return false;
+    var r = c.getBoundingClientRect();
+    var ccx = r.x + r.width / 2, ccy = r.y + r.height / 2;
+    var pt = safeTapPoint(ccx + dx, ccy + dy, r);
+    var opts = { bubbles: true, cancelable: true, pointerId: 3, clientX: pt.x, clientY: pt.y, pointerType: 'touch', isPrimary: true };
+    c.dispatchEvent(new PointerEvent('pointerdown', opts));
+    setTimeout(function () { window.dispatchEvent(new PointerEvent('pointerup', opts)); }, 120);
+    return { dx: Math.round(pt.x - ccx), dy: Math.round(pt.y - ccy) };
+  }
+  // Chờ vị trí đứng yên (không đổi ô trong tapStableMs liên tiếp), poll 300ms.
+  function waitStablePos(runId, timeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now(), prev = null, stillSince = null;
+      (function tick() {
+        if (runId !== runToken) return resolve(null);
+        var p = docCell();
+        if (p) {
+          if (prev && p.x === prev.x && p.y === prev.y) {
+            if (stillSince === null) stillSince = Date.now();
+            if (Date.now() - stillSince >= CFG.tapStableMs) return resolve(p);
+          } else stillSince = null;
+          prev = p;
+        }
+        if (Date.now() - t0 >= timeoutMs) return resolve(prev);
+        if (legDeadline && Date.now() > legDeadline) return resolve(prev);
+        setTimeout(tick, 300);
+      })();
+    });
+  }
+  function anchorCamera(runId) {
+    return (async function () {
+      tapCanvas(0, 0);
+      var p = await waitStablePos(runId, 12000);
+      if (p) { camAnchor = { x: p.x, y: p.y }; navLog('Neo camera: ô tại tâm = (' + p.x + ',' + p.y + ')'); }
+      return p;
+    })();
+  }
+  function holdTapBurst(runId, tx, ty, shouldStop, burstTimeoutMs) {
+    return (async function () {
+      var t0 = Date.now();
+      if (!camAnchor) {
+        var ap = await anchorCamera(runId);
+        if (!ap) return { reason: 'stuck', pos: docCell(), ms: 0 };
+        if (runId !== runToken) return { reason: 'stopped', pos: ap, ms: Date.now() - t0 };
+      }
+      tapCanvas((tx - camAnchor.x) * CFG.pxPerTile, (ty - camAnchor.y) * CFG.pxPerTile);
+      var p = await waitStablePos(runId, Math.max(3000, burstTimeoutMs));
+      if (guardMap && docMapId() && docMapId() !== guardMap) return { reason: 'mapchanged', pos: p, ms: Date.now() - t0 };
+      // Neo mới = ô nhân vật sau đợt chạm: camera game bám theo nhân vật nên
+      // sau khi nhân vật dừng, ô tại tâm canvas = ô nhân vật. (Code gửi dùng
+      // neo = vị trí - điểm chạm/px — công thức đó giả định camera ĐỨNG YÊN
+      // trong đợt chạm; với camera bám thì nó lệch cả quãng vừa đi, đã sửa
+      // ở v1.2.0. Cảnh báo thoái lui + neo lại vẫn là lưới an toàn.)
+      if (p) camAnchor = { x: p.x, y: p.y };
+      var sr = p ? shouldStop(p) : null;
+      return { reason: sr || (p ? 'timeout' : 'stuck'), pos: p, ms: Date.now() - t0 };
+    })();
+  }
+
+  // Nhả toàn bộ đầu vào lái: 8 phím hướng + joystick (pointerup) + nút dpad.
+  function releaseAllInputs() {
+    releaseAllKeys();
+    joyUp();
+    dpadRelease();
+  }
+
+  // ---------- Tự dò cách lái (lần di chuyển đầu tiên mỗi phiên chạy) ----------
+  // Thứ tự: phím -> joystick -> nút dpad -> chạm neo camera. Mỗi cách giữ
+  // hướng về đích detectMs, vị trí đổi >=1 ô là đạt. Dò 1 lần/phiên, log rõ
+  // cách nào thắng (xem log panel).
+  function detectSteerMethod(runId, tx, ty) {
+    return (async function () {
+      var p0 = docCell();
+      if (!p0) { navLog('Dò cách lái: không đọc được vị trí — mặc định phím'); navLog('Cách lái: phím'); return 'keys'; }
+      var dx = tx - p0.x, dy = ty - p0.y;
+      var movedFrom = function (q) { return (q.x !== p0.x || q.y !== p0.y) ? 'moved' : null; };
+      navLog('Dò cách lái… (từ (' + p0.x + ',' + p0.y + ') về (' + tx + ',' + ty + '))');
+
+      // a. Phím hướng
+      navLog('Dò cách lái: thử phím…');
+      var rk = await holdKeysBurst(runId, codesFor(dx, dy), movedFrom, CFG.detectMs);
+      if (runId !== runToken) return 'keys';
+      if (rk.reason === 'moved') { navLog('Cách lái: phím'); return 'keys'; }
+      navLog('Phím không làm nhân vật di chuyển — thử joystick');
+
+      // b. Joystick
+      navLog('Dò cách lái: thử joystick…');
+      var rj = await holdJoyBurst(runId, dx, dy, movedFrom, CFG.detectMs);
+      joyUp(); // nhả hẳn sau đợt dò (holdJoyBurst chỉ kéo về tâm)
+      if (runId !== runToken) return 'keys';
+      if (rj.reason === 'moved') { navLog('Cách lái: joystick'); return 'joystick'; }
+      navLog('Joystick không làm nhân vật di chuyển — thử nút dpad');
+
+      // c. Nút dpad
+      var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+      var sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+      var btns = findDpadBtns(sx, sy);
+      if (btns.exact || btns.xOnly || btns.yOnly) {
+        navLog('Dò cách lái: thử nút dpad…');
+        var rd = await holdDpadBurst(runId, sx, sy, movedFrom, CFG.detectMs);
+        if (runId !== runToken) return 'keys';
+        if (rd.reason === 'moved') { navLog('Cách lái: dpad'); return 'dpad'; }
+        navLog('Nút dpad không làm nhân vật di chuyển — dùng chạm neo camera');
+      } else {
+        navLog('Không thấy nút dpad — dùng chạm neo camera');
+      }
+
+      // d. Chạm neo camera
+      navLog('Cách lái: chạm (neo camera)');
+      return 'tap';
+    })();
+  }
+
+  // ---------------- Kiểm tra an toàn mỗi nhịp ----------------
+  function kiemTraAnToan() {
+    if (docGuc()) return { ok: false, reason: 'guc', msg: 'Nhân vật đã gục — tool KHÔNG tự hồi sinh. Bấm DỪNG rồi xử lý tay.' };
+    var h = docHP();
+    if (h && h.max && h.max > 0 && h.hp / h.max < CFG.hpStopRatio) {
+      return { ok: false, reason: 'hp-thap',
+        msg: 'Khí Huyết dưới 35% (' + h.hp + '/' + h.max + ') — đã tự dừng để an toàn.' };
+    }
+    return { ok: true };
+  }
+
+  // ---------------- Lái tới 1 ô bằng cách lái đã dò ----------------
+  // Vòng lặp theo đợt (burst) như goToTile của code gửi, giữ hợp đồng trả
+  // của v1.1.0: {ok:true} khi tới nơi (cách đích <= arrivePx), hoặc
+  // {ok:false, reason, msg} với reason: ket|hp-thap|guc|dung|het-gio|
+  // doi-map|loi. Kẹt: đợt không di chuyển / không tiến gần đích -> đánh trả
+  // (Auto 1 lần) rồi lái vuông góc; quá repathMax lần đi vòng -> dừng.
+  // Đợt lái: tốc độ chỉ dùng ước lượng hạn giờ (đi bộ ~2,1 ô/s, bay ~4 ô/s).
+  // Kiểm chứng Phi Hành bằng tốc độ ở đợt lái đầu đủ dài (xem trong vòng lặp).
+  async function steerToCell(tx, ty, opts) {
+    opts = opts || {};
+    var arrivePx = (typeof opts.arrivePx === 'number') ? opts.arrivePx : CFG.arrivePx;
+    var label = opts.label || ('ô (' + tx + ',' + ty + ')');
+    var tok = runToken;
+    var mapStart = docMapId();
+    var t0 = Date.now();
+    legDeadline = t0 + CFG.legTimeoutMs;
+    // Dung sai theo ô: cổng (arrivePx 16px) cần đúng ô; bãi farm (32px) cho
+    // phép lệch 1 ô (tương đương dist <= 32px của v1.1.0).
+    var tol = (arrivePx >= CFG.tile) ? 1 : 0;
+    var cheb = function (p) { return Math.max(Math.abs(tx - p.x), Math.abs(ty - p.y)); };
+    var detours = 0, detourSign = 1, fightTried = false, diagOk = true;
+    var bestCheb = Infinity, noProgress = 0;
+    var burstFrom = null; // vị trí + khoảng cách trước đợt gần nhất (cảnh báo thoái lui)
+    guardMap = mapStart;
+    flyMeas = null; // cửa sổ đo tốc độ bay mới cho mỗi chặng lái
+    steerCalls++;
+    try {
+      while (true) {
+        if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        var at = kiemTraAnToan();
+        if (!at.ok) return { ok: false, reason: at.reason, msg: at.msg };
+        // Đổi map giữa chừng (bước lên ô cổng / Auto lạc qua cổng): dừng chặng
+        // này ngay — vòng đi chính tự đánh giá lại từ map mới.
+        var mapNow = docMapId();
+        if (mapNow && mapStart && mapNow !== mapStart) {
+          return { ok: false, reason: 'doi-map', msg: 'Đã sang map ' + tenMap(mapNow) + '.' };
+        }
+        if (Date.now() - t0 > CFG.legTimeoutMs) {
+          return { ok: false, reason: 'het-gio', msg: 'Quá ' + Math.round(CFG.legTimeoutMs / 1000) + 's chưa tới ' + label + ' — đã dừng.' };
+        }
+        var p = docCell();
+        if (!p) { await sleep(CFG.tickMs); continue; }
+        if (cheb(p) <= tol) return { ok: true };
+        // Cảnh báo thoái lui: đợt trước làm nhân vật xa đích hơn >2 ô.
+        if (burstFrom && cheb(p) > burstFrom.cheb + 2) {
+          navLog('Cảnh báo: đợt lái làm xa đích (' + burstFrom.x + ',' + burstFrom.y + ')→(' + p.x + ',' + p.y + ')');
+          if (steerMethod === 'tap') { camAnchor = null; navLog('Bỏ neo camera — sẽ neo lại'); }
+        }
+        burstFrom = null;
+        // Lần di chuyển đầu tiên của phiên: tự dò cách lái (phím -> joystick
+        // -> dpad -> chạm neo camera).
+        if (!steerMethod) {
+          steerMethod = await detectSteerMethod(tok, tx, ty);
+          if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+          continue;
+        }
+
+        var dx = tx - p.x, dy = ty - p.y; // ô; +y là nam (KeyS)
+        var startCheb = cheb(p);
+        var startPos = { x: p.x, y: p.y };
+        var codes = codesFor(dx, dy);
+        if (!diagOk && codes.length > 1) codes = [Math.abs(dx) >= Math.abs(dy) ? codes[0] : codes[1]];
+
+        var speed = flyingBelief ? 3.51 : 2.1; // ô/s, chỉ để đặt hạn giờ đợt — lấy tốc độ CHẠY làm mốc bảo thủ (bay hỏng thì cũng chỉ còn 3,51; bay ăn thì 6,66 nhanh hơn, hạn giờ vẫn thừa)
+        var stepMode = startCheb <= 1; // gần đích: đợt ngắn 1 bước cho chính xác
+        var burstCap = stepMode ? 2500 : Math.max(2500, Math.min(15000, startCheb / speed * 1000 * 1.6 + 1200));
+        var shouldStop = function (q) {
+          if (cheb(q) <= tol) return 'arrived';
+          if (stepMode) return (q.x !== startPos.x || q.y !== startPos.y) ? 'step' : null;
+          var qdx = tx - q.x, qdy = ty - q.y;
+          // Nhả khi một trục đã tới 0 hoặc vượt đích (đổi dấu) — đợt sau tính lại hướng.
+          if (dx !== 0 && (qdx === 0 || (qdx > 0) !== (dx > 0))) return 'axis';
+          if (dy !== 0 && (qdy === 0 || (qdy > 0) !== (dy > 0))) return 'axis';
+          return null;
+        };
+
+        burstFrom = { x: p.x, y: p.y, cheb: startCheb };
+        var res, burstDesc;
+        if (steerMethod === 'joystick') {
+          res = await holdJoyBurst(tok, dx, dy, shouldStop, burstCap);
+          burstDesc = 'kéo joystick hướng ' + dirName(dx, dy) + ' ~' + fmtSec(res.ms);
+        } else if (steerMethod === 'dpad') {
+          var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0, sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+          res = await holdDpadBurst(tok, sx, sy, shouldStop, burstCap);
+          burstDesc = 'giữ nút dpad (' + sx + ',' + sy + ') ~' + fmtSec(res.ms);
+        } else if (steerMethod === 'tap') {
+          res = await holdTapBurst(tok, tx, ty, shouldStop, burstCap);
+          burstDesc = 'chạm neo camera ~' + fmtSec(res.ms);
+        } else {
+          res = await holdKeysBurst(tok, codes, shouldStop, burstCap);
+          burstDesc = 'giữ phím [' + codes.map(function (c) { return DIR_BY_CODE[c].name; }).join('+') + '] ~' + fmtSec(res.ms);
+        }
+        navLog('→(' + tx + ',' + ty + ') từ (' + p.x + ',' + p.y + ') ' + burstDesc);
+        if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        // Đổi map trong đợt lái (bước lên ô cổng): dừng chặng này ngay.
+        var mapAfter = docMapId();
+        if (mapAfter && mapStart && mapAfter !== mapStart) {
+          return { ok: false, reason: 'doi-map', msg: 'Đã sang map ' + tenMap(mapAfter) + '.' };
+        }
+        var p2 = res.pos || docCell();
+        if (!p2) { await sleep(CFG.tickMs); continue; }
+
+        // Kiểm chứng Phi Hành bằng TỐC ĐỘ — ĐO TÍCH LŨY qua nhiều đợt (v1.2.1):
+        // Đo một đợt đơn lẻ KHÔNG đo được live — đã xác minh bằng probe 26/11
+        // (tuyến phong_dia (20,20)->(30,27)): đợt nào tới đích/biển Khu thì
+        // `cheb(p2) <= tol` return trước khối đo; các đợt còn lại chỉ 0,5–1,3s,
+        // dưới cửa 800ms. Nên cộng dồn qua các đợt cùng hướng cho tới khi đủ
+        // 2000ms giữ phím rồi mới phán: quãng đường RÒNG từ đầu cửa sổ tới vị
+        // trí hiện tại (chỉ sai số lượng tử hoá ~1,4 ô ở 2 đầu mút, KHÔNG cộng
+        // dồn theo số đợt) chia cho tổng ms giữ phím. Reset cửa sổ khi Chạy
+        // TẮT, khi đổi hướng ngược dấu một trục (đi vòng/detour), khi đợt kẹt/
+        // không di chuyển, đợt bước 1 ô, hoặc sau đợt đánh trả/đi vòng.
+        // CHỈ đo khi Chạy đang BẬT: bay không chạy chỉ 4,04 ô/s (núi chậm nhất
+        // Hắc Thổ Linh Mã 1,7: 3,61) < 5 — đo lúc Chạy tắt sẽ bấm nhầm KeyF
+        // TẮT Phi Hành. Chạy BẬT được bảo đảm ở start() (datRun trước datFly)
+        // và sau mỗi lần qua cổng; cổng đo là lưới an toàn khi Chạy bị tắt
+        // giữa chặng (VD: game tắt, nút bấm lỗi). Ngưỡng 5 chỉ tách được
+        // bay+chạy (5,96–6,66) khỏi chạy thường (3,51).
+        // Ngưỡng 5,0 ô/s từ game.js client 24/11 (CONFIG: SPEED 68, RUN 1,65,
+        // FLY 1,9, TILE 32; bay+chạy 6,66 — chậm nhất Hắc Thổ Linh Mã 1,7:
+        // 5,96 (Phi Diệp 1,75 → 6,14); chỉ chạy 3,51; đi bộ 3,16): cửa sổ 2000ms thì chạy thường đo tối
+        // đa 3,51+1,41/2≈4,2 < 5, bay+chạy chậm nhất đo tối thiểu
+        // 5,96−0,71≈5,25 > 5 — tách rõ. Đo bằng EUCLID — CỐ Ý: game chuẩn
+        // hoá vector chéo phím (×1/√2) nên tốc độ Euclid KHÔNG đổi theo
+        // hướng; Chebyshev đo chéo thấp hơn √2 lần (bay chéo 6,66 → ~4,7 < 5
+        // → bấm nhầm KeyF TẮT bay). Chẩn đoán cũ "chéo bộ Euclid ~3,5" là
+        // tốc độ CHẠY (3,51), không phải lỗi đo chéo.
+        // Chỉ đo đợt tiến triển (không đo đợt kẹt); bấm lại KeyF tối đa 1 lần.
+        if (flyingBelief && !flySpeedChecked) {
+          var movedB = (p2.x !== startPos.x || p2.y !== startPos.y);
+          var sdx = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
+          var sdy = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
+          var flipped = flyMeas && ((sdx !== 0 && flyMeas.sx !== 0 && sdx !== flyMeas.sx) ||
+            (sdy !== 0 && flyMeas.sy !== 0 && sdy !== flyMeas.sy));
+          if (!runDangBat() || flipped || res.reason === 'stuck' || !movedB || res.reason === 'step') {
+            flyMeas = null; // Chạy TẮT thì không đo (bay không chạy chỉ 4,04 < 5); đợt này không tính vào cửa sổ; đợt sau mở cửa sổ mới
+          } else {
+            if (!flyMeas) flyMeas = { x: startPos.x, y: startPos.y, ms: 0, sx: sdx, sy: sdy };
+            flyMeas.ms += res.ms;
+            if (flyMeas.ms >= CFG.flyWindowMs) {
+              var distW = Math.hypot(p2.x - flyMeas.x, p2.y - flyMeas.y);
+              if (distW >= 2) {
+                var spdW = distW / (flyMeas.ms / 1000);
+                flySpeedMeasured = spdW;
+                if (flySpeedFirst === null) flySpeedFirst = spdW;
+                if (spdW < CFG.flySpeedMin && !flyRetryDone) {
+                  flyRetryDone = true;
+                  navLog('Phi Hành: tốc độ chỉ ~' + spdW.toFixed(1) + ' ô/s (<' + CFG.flySpeedMin + ') — bay chưa ăn, bấm lại 1 lần (KeyF).');
+                  pressFlyKey();
+                  await sleep(1200);
+                  if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+                } else {
+                  flySpeedChecked = true;
+                  navLog('Phi Hành: BẬT (tốc độ ~' + spdW.toFixed(1) + ' ô/s).');
+                  if (spdW < CFG.flySpeedMin) navLog('Tốc độ vẫn thấp sau khi bấm lại — giữ nguyên, không bấm nữa.');
+                }
+              }
+              flyMeas = null; // đo xong (dù đủ quãng đường hay chưa) thì đóng cửa sổ
+            }
+          }
+        }
+        if (cheb(p2) <= tol) return { ok: true };
+
+        var moved = (p2.x !== startPos.x || p2.y !== startPos.y);
+        if (steerMethod === 'keys' && codes.length > 1 && !moved && res.reason !== 'arrived') {
+          diagOk = false;
+          navLog('Giữ 2 phím chéo không di chuyển — chuyển sang giữ từng trục.');
+        }
+        if (cheb(p2) < bestCheb) { bestCheb = cheb(p2); noProgress = 0; } else noProgress++;
+
+        var isStuck = res.reason === 'stuck' || (!moved && res.reason !== 'arrived') || noProgress >= 3;
+        if (isStuck) {
+          if (!fightTried) {
+            // Nghi quái chặn đường: bật Auto đánh trả rồi đi tiếp. Chỉ thử
+            // 1 lần mỗi chặng đi (theo cơ chế "Tự Đi" của Thanh). Trong lúc
+            // đánh vẫn ĐẨY về hướng đích theo cách lái đang dùng (không thì
+            // nhân vật đứng yên và Auto không với tới quái chặn). Joystick
+            // thì đồng bộ lại phiên kéo TRƯỚC khi đánh trả: game có thể đã
+            // hủy trạng thái kéo (VD: qua cổng rồi bị đẩy về ngay) — ngắt
+            // rồi kéo lại cho chắc, không thì mọi pointermove sau đó đều
+            // bị game bỏ qua.
+            fightTried = true;
+            navLog('Có thể quái chặn đường — bật Auto đánh trả rồi đi tiếp.');
+            if (steerMethod === 'joystick') { joyUp(); joyDown(); }
+            datAuto(true);
+            var fdx = tx - p2.x, fdy = ty - p2.y;
+            var fStop = function (q) { return (q.x !== p2.x || q.y !== p2.y) ? 'moved' : null; };
+            var fRes;
+            if (steerMethod === 'joystick') fRes = await holdJoyBurst(tok, fdx, fdy, fStop, CFG.fightWaitMs);
+            else if (steerMethod === 'dpad') fRes = await holdDpadBurst(tok, fdx > 0 ? 1 : fdx < 0 ? -1 : 0, fdy > 0 ? 1 : fdy < 0 ? -1 : 0, fStop, CFG.fightWaitMs);
+            else if (steerMethod === 'tap') fRes = await holdTapBurst(tok, tx, ty, fStop, CFG.fightWaitMs);
+            else fRes = await holdKeysBurst(tok, codesFor(fdx, fdy), fStop, CFG.fightWaitMs);
+            datAuto(false);
+            if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+            if (fRes && fRes.reason === 'moved') navLog('Đánh trả xong, đi tiếp.');
+            else navLog('Đánh trả không nhúc nhích — thử đi vòng.');
+            bestCheb = Infinity; noProgress = 0; flyMeas = null; // đợt đánh trả không tính vào cửa sổ đo bay
+            continue;
+          }
+          detours++;
+          if (detours > CFG.repathMax) {
+            return { ok: false, reason: 'ket', msg: 'Kẹt đường tới ' + label + ' — đã thử đi vòng ' + CFG.repathMax + ' lần.' };
+          }
+          detourCount++;
+          navLog('Kẹt — đi vòng (lần ' + detours + '/' + CFG.repathMax + ').');
+          // Lái vuông góc với hướng đích rồi thử lại. Phím/dpad/chạm chậm
+          // hơn joystick nên đợt đi vòng dài hơn (tối thiểu detourMinMs)
+          // để đi đủ xa mà qua được vật cản.
+          var pdx = -dy, pdy = dx;
+          var pl = Math.hypot(pdx, pdy) || 1;
+          var px = pdx / pl * detourSign, py = pdy / pl * detourSign;
+          detourSign = -detourSign; // lần sau đi vòng hướng ngược lại
+          var detourTimeout = (steerMethod === 'joystick') ? CFG.detourMs : Math.max(CFG.detourMs, CFG.detourMinMs);
+          if (steerMethod === 'joystick') await holdJoyBurst(tok, px, py, function () { return null; }, detourTimeout);
+          else if (steerMethod === 'dpad') await holdDpadBurst(tok, px > 0 ? 1 : px < 0 ? -1 : 0, py > 0 ? 1 : py < 0 ? -1 : 0, function () { return null; }, detourTimeout);
+          else if (steerMethod === 'tap') await holdTapBurst(tok, p2.x + Math.round(px * 2), p2.y + Math.round(py * 2), function () { return null; }, Math.max(6000, detourTimeout));
+          else await holdKeysBurst(tok, codesFor(px, py), function () { return null; }, detourTimeout);
+          if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+          noProgress = 0; flyMeas = null; // đợt đi vòng vuông góc không tính vào cửa sổ đo bay
+          continue;
+        }
+      }
+    } finally {
+      guardMap = null;
+      legDeadline = 0;
+      releaseAllInputs();
+    }
+  }
+
+  // ---------------- Chờ đổi map ----------------
+  async function choDoiMap(mapCu, waitMs) {
+    var tok = runToken;
+    var t0 = Date.now();
+    while (Date.now() - t0 < waitMs) {
+      if (tok !== runToken) return false;
+      if (docMapId() && docMapId() !== mapCu) return true;
+      await sleep(CFG.tickMs);
+    }
+    return docMapId() && docMapId() !== mapCu;
+  }
+
+  // ---------------- Đổi khu qua biển KHU (đọc từ Bảng Khu) ----------------
+  function bangKhuMo() {
+    var p = $('#khu-panel');
+    return !!(p && !p.classList.contains('hidden') && p.querySelector('[data-khu]'));
+  }
+  // Đọc khu hiện tại từ bảng đang mở: ô có class "dang"; khu đầy: class "day".
+  // Trả {khu, soKhu, day:{}} hoặc null nếu bảng chưa mở / chưa đọc được.
+  function docKhuTuBang() {
+    var btns = $all('#khu-panel .khu-grid [data-khu]');
+    if (!btns.length) btns = $all('.khu-grid [data-khu]');
+    if (!btns.length) return null;
+    var khu = null, day = {};
+    btns.forEach(function (b) {
+      var k = parseInt(b.getAttribute('data-khu'), 10);
+      if (isNaN(k)) return;
+      if (b.classList.contains('dang')) khu = k;
+      if (b.classList.contains('day')) day[k] = true;
+    });
+    if (khu === null) {
+      var note = $('#khu-panel .khu-note') || $('.khu-note');
+      var m = note && txt(note).match(/Đang ở khu\s*(\d+)/);
+      if (m) khu = parseInt(m[1], 10);
+    }
+    return { khu: khu, soKhu: btns.length, day: day };
+  }
+  function nutBangKhuHien() {
+    var b = $('#btn-attack');
+    if (!b) return false;
+    var label = (b.getAttribute('aria-label') || '') + ' ' + txt(b);
+    return /bảng khu/i.test(label);
+  }
+  function dongBangKhu() {
+    var x = $('#khu-panel .khu-x');
+    if (x) { x.click(); return; }
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
+  }
+  async function moBangKhu() {
+    if (bangKhuMo()) return true;
+    var t0 = Date.now();
+    while (Date.now() - t0 < CFG.boardWaitMs) {
+      if (bangKhuMo()) return true;
+      if (nutBangKhuHien()) tap($('#btn-attack'));
+      await sleep(250);
+      if (bangKhuMo()) return true;
+    }
+    // Dự phòng: phím Space (game mở bảng khi đứng sát biển).
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true }));
+    for (var j = 0; j < CFG.boardWaitMs / 500; j++) {
+      await sleep(500);
+      if (bangKhuMo()) return true;
+    }
+    return false;
+  }
+  // Chờ dữ liệu khu từ server (class day/dang trên các ô) sau khi mở bảng.
+  async function choDuLieuBang() {
+    var t0 = Date.now();
+    while (Date.now() - t0 < CFG.boardDataMs) {
+      var info = docKhuTuBang();
+      if (info && info.khu !== null) {
+        var hasCls = $all('#khu-panel .khu-grid [data-khu].day, #khu-panel .khu-grid [data-khu].dong, #khu-panel .khu-grid [data-khu].vang').length > 0;
+        if (hasCls) return info;
+      }
+      await sleep(250);
+    }
+    return docKhuTuBang();
+  }
+  // Trả {ok:true} | {ok:false, reason, msg} | {ok:true, skipped:true}
+  async function doiKhu(mapId, khu, tok, deadlineAll) {
+    // tok + deadlineAll nhan tu diChuyen (doiKhu chi goi tu do).
+    // Khu đã biết và đã đúng -> không cần làm gì (không mở bảng).
+    if (khuHienTai !== null && khuHienTai === khu) return { ok: true };
+    var info0 = null;
+    var info = MAPS[mapId];
+    if (!info || !info.sign) {
+      navLog('Map ' + tenMap(mapId) + ' chưa biết biển KHU — farm tại khu hiện tại.');
+      return { ok: true, skipped: true };
+    }
+    if (khu < 1) {
+      return { ok: false, reason: 'ket', msg: 'Khu đích không hợp lệ (' + khu + ').' };
+    }
+    var toiBien = null;
+    for (var s = 0; s < info.sign.length; s++) {
+      var sg = info.sign[s];
+      var r = await diTrongMap(mapId, sg[0], sg[1], tok, deadlineAll, 'biển KHU', CFG.arrivePx);
+      if (r.ok) { toiBien = sg; break; }
+      if (r.reason === 'dung' || r.reason === 'hp-thap' || r.reason === 'guc' || r.reason === 'doi-map' || r.reason === 'loi') return r;
+      toiBien = null; // thử biển khác
+    }
+    if (!toiBien) {
+      return { ok: false, reason: 'ket', msg: 'Không tới được biển KHU ở ' + tenMap(mapId) + '.' };
+    }
+    if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+    var mo = await moBangKhu();
+    if (!mo) {
+      return { ok: false, reason: 'ket', msg: 'Không mở được Bảng Khu (nút không hiện "Tương tác với Bảng Khu" — đứng chưa sát biển?).' };
+    }
+    info0 = await choDuLieuBang();
+    if (!info0) {
+      dongBangKhu();
+      return { ok: false, reason: 'ket', msg: 'Mở được Bảng Khu nhưng không đọc được khu hiện tại.' };
+    }
+    if (info0.khu !== null) { khuHienTai = info0.khu; soKhuHienTai = info0.soKhu; }
+    if (khuHienTai === khu) { dongBangKhu(); return { ok: true }; }
+    if (khu > info0.soKhu) {
+      dongBangKhu();
+      return { ok: false, reason: 'ket', msg: 'Khu ' + khu + ' không có (map này chỉ có ' + info0.soKhu + ' khu).' };
+    }
+    // CHỈ bấm nút [data-khu] — KHÔNG BAO GIỜ bấm Ghi danh tranh khu (20.000 LT).
+    // Khu đầy thì nút có class "day" -> báo đầy NGAY, không bấm.
+    if (info0.day[khu]) {
+      dongBangKhu();
+      return { ok: false, reason: 'khu-day', msg: 'Khu ' + khu + ' đầy — đã dừng, chưa đổi khu.' };
+    }
+    var btn = document.querySelector('#khu-panel [data-khu="' + khu + '"]') ||
+              document.querySelector('[data-khu="' + khu + '"]');
+    if (!btn) {
+      dongBangKhu();
+      return { ok: false, reason: 'ket', msg: 'Bảng khu không có ô Khu ' + khu + '.' };
+    }
+    btn.click();
+    // Bấm xong bảng tự đóng. Chờ server xử lý rồi MỞ LẠI bảng để xác nhận
+    // (server từ chối nếu khu đầy vào phút chót).
+    await sleep(CFG.zoneWaitMs);
+    if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+    var mo2 = await moBangKhu();
+    if (!mo2) {
+      return { ok: false, reason: 'ket', msg: 'Đã bấm Khu ' + khu + ' nhưng không mở lại được Bảng Khu để xác nhận — kiểm tra tay khu hiện tại.' };
+    }
+    var info2 = await choDuLieuBang();
+    dongBangKhu();
+    if (info2 && info2.khu !== null) {
+      khuHienTai = info2.khu; soKhuHienTai = info2.soKhu;
+      if (khuHienTai === khu) return { ok: true };
+      return { ok: false, reason: 'khu-day', msg: 'Khu ' + khu + ' đầy (bấm không vào được) — đã dừng, chưa đổi khu.' };
+    }
+    return { ok: false, reason: 'ket', msg: 'Đã bấm Khu ' + khu + ' nhưng không đọc được khu sau khi đổi — kiểm tra tay.' };
+  }
+
+
+  // ---------------- Lưới chặn chính xác (trích từ client 24/11) ----------------
+  // '1' = chặn, '0' = đi được. duoc_vien 30 hàng x 40 cột, van_can 36 x 56.
+  // Tính từ legend + decorations + props có block (xem README v3.4).
+  // Map khác: readWalkable() trả null -> lái thẳng kiểu Đi Farm (tham lam +
+  // đi vòng khi kẹt). Lưới nhúng có thể lệch live nếu builder đổi map —
+  // lái không qua được thì diTrongMap fallback lái thẳng rồi mới chịu thua.
+  var BLOCKED = {
+    duoc_vien: [
+      '1111111111110011111111111111111111111111',
+      '1111111111110011111111111111111111111111',
+      '1110110100010011011001111010000001111111',
+      '1111111111110010010000000001100001101111',
+      '1111111000010000100000000000000101101111',
+      '1111111000010000000100000000000001100111',
+      '1111000000000000100000000010000001101111',
+      '1111000000000000000010000000000001101111',
+      '1111000000010011000000001000100001101111',
+      '1111000000010000000100000000000001101111',
+      '1111001110010000000000000000000000000111',
+      '1111001111010000000000000000000001110111',
+      '1111000110010000010000100000010001100111',
+      '1111111111110000000000000000100011001111',
+      '1111000000000000000001000000000110000111',
+      '1111001000000000000000000000001100000111',
+      '1110001000000000000011111100011000001111',
+      '1111000100000000111111111111111001001111',
+      '1110100010000000111111111111110000000111',
+      '1111000000100001111111111111111001001111',
+      '0000110000000001111111111111111001100111',
+      '0000000000001001111111111111111000000111',
+      '1110000110000001111111111111111000001111',
+      '1110000000000000111111111111110000000111',
+      '1110000001000010001111111111000000011111',
+      '1111010000000110000011111100001000100111',
+      '1111110100101000001000001100111101111111',
+      '1111111111111111111111111111111111111111',
+      '1111111111111111111111111111111111111111',
+      '1111111111111111111111111111111111111111'
+    ],
+    van_can: [
+      '11111111111111111111111111111111111111111111111111111111',
+      '11111111111111111111111111111111111111111111111111111111',
+      '11111111111100011111000011110000111100001111111100111111',
+      '11111111100000000010010010000000111100000000100100001111',
+      '11000011100000010000000000000000111100000001000000001111',
+      '11000011101001101000000000001000111000000000000000011111',
+      '11100000000000000010010000000001111110000000000000101111',
+      '11000000001000000111000000000011111111101000000000010111',
+      '11000000111000000010111111111111111111111110000000001111',
+      '11010001111100000111111111111111111111111111000010111111',
+      '11000000111000001111111111111111111111111111100000011111',
+      '11000000000000011111111111111111111111111111100001001111',
+      '11100000100000111111111111111111111111111111100000000011',
+      '11000100000001111111111111111111111111111111001000000000',
+      '11000000000000000001111111111111111111000000000010000000',
+      '11000000000000000001111111111111111111000000100000011011',
+      '11000000000000000111111111111111111111111100000000001111',
+      '11000010011111111111111111111111111111111000100010000111',
+      '11000111111111111111111111111111111111111101110001111111',
+      '11000011111111111111111111111111111111111100100100100111',
+      '11000001111111111111111111111111111111111100000000010111',
+      '11100001111111111111111111111111111111111110000100000111',
+      '11100000111111111111111111111111111111111110000000000111',
+      '11100001111111111111111111111111111111111110000000000111',
+      '11110000111111111111111111111111111111111000000001000111',
+      '11110000011111110000011111111111111111110000000000010111',
+      '11110000000000000000111111110000001111100001000000100111',
+      '11110000000010000000111111100001000000000000001010000111',
+      '11110000000000000000011111100011100000000000000000000111',
+      '11110010000000001000011110000000000001000000000110000111',
+      '11110000000100000001100000100000000110010000000000100111',
+      '11111001000000000000000100100000000000001001101001000111',
+      '11111000001000000000000000001000000000000000011000101111',
+      '11111100001011110000101111110001111110100010111100001111',
+      '11111111111111111111111111111111111111111111111111111111',
+      '11111111111111111111111111111111111111111111111111111111'
+    ],
+  };
+  function gridWalkable(grid, x, y) {
+    if (!grid || y < 0 || y >= grid.length) return false;
+    var row = grid[y];
+    if (x < 0 || x >= row.length) return false;
+    return row.charAt(x) === '0';
+  }
+  // Lưới đi được của map (mặc định map hiện tại) — cùng chữ ký nav Tool Tổng
+  // (bamDatDiToi gọi readWalkable() không tham số). null = không có lưới.
+  function readWalkable(mapId) {
+    var m = mapId || docMapId();
+    return (m && BLOCKED[m]) || null;
+  }
+  // BFS 4 hướng trên lưới '0'/'1' — cùng chữ ký nav Tool Tổng:
+  // bfsPath(grid, sx, sy, tx, ty) -> [[x,y],...] (không gồm ô xuất phát,
+  // gồm ô đích) hoặc null khi không có đường.
+  function bfsPath(grid, sx, sy, tx, ty) {
+    if (!grid || !gridWalkable(grid, sx, sy) || !gridWalkable(grid, tx, ty)) return null;
+    if (sx === tx && sy === ty) return [];
+    var key = function (x, y) { return x + ',' + y; };
+    var prev = {}, q = [[sx, sy]];
+    prev[key(sx, sy)] = null;
+    while (q.length) {
+      var cur = q.shift();
+      if (cur[0] === tx && cur[1] === ty) {
+        var path = [], n = key(tx, ty);
+        while (prev[n]) { var pp = n.split(','); path.unshift([parseInt(pp[0], 10), parseInt(pp[1], 10)]); n = prev[n]; }
+        return path;
+      }
+      var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      for (var i = 0; i < 4; i++) {
+        var nx = cur[0] + dirs[i][0], ny = cur[1] + dirs[i][1];
+        if (!gridWalkable(grid, nx, ny)) continue;
+        var k = key(nx, ny);
+        if (k in prev) continue;
+        prev[k] = key(cur[0], cur[1]);
+        q.push([nx, ny]);
+      }
+    }
+    return null;
+  }
+  // Đường thẳng giữa 2 ô có đi được hết không (lấy mẫu DDA mỗi 1/4 ô).
+  function lineClear(grid, x0, y0, x1, y1) {
+    var dx = x1 - x0, dy = y1 - y0;
+    var steps = Math.ceil(Math.hypot(dx, dy) * 4) || 1;
+    for (var i = 0; i <= steps; i++) {
+      var x = Math.floor(x0 + dx * i / steps), y = Math.floor(y0 + dy * i / steps);
+      if (!gridWalkable(grid, x, y)) return false;
+    }
+    return true;
+  }
+  // Rút gọn đường BFS: từ mỗi điểm, nhảy xa nhất tới điểm còn nhìn thẳng được.
+  function stringPull(grid, pts) {
+    var out = [pts[0]], i = 0;
+    while (i < pts.length - 1) {
+      var j = pts.length - 1;
+      while (j > i + 1 && !lineClear(grid, pts[i][0], pts[i][1], pts[j][0], pts[j][1])) j--;
+      out.push(pts[j]);
+      i = j;
+    }
+    return out;
+  }
+  // Vị trí hiện tại {map, x, y} hoặc null (cùng chữ ký nav Tool Tổng:
+  // docViTri() dùng trong docMapHienTai/docViTriHienTai của tool câu).
+  function docViTri() {
+    var c = docCell();
+    if (!c) return null;
+    return { map: docMapId(), x: c.x, y: c.y };
+  }
+  // BFS qua đồ thị cổng: danh sách map đi qua (không gồm map xuất phát,
+  // gồm map đích) hoặc null khi không có đường bộ. kiemTraDiHo chỉ cần
+  // khác null là biết có đường.
+  function duongDi(fromId, toId) {
+    if (!fromId || !toId) return null;
+    if (fromId === toId) return [];
+    var prev = {}, q = [fromId];
+    prev[fromId] = null;
+    while (q.length) {
+      var cur = q.shift();
+      var ports = PORTALS[cur] || [];
+      for (var i = 0; i < ports.length; i++) {
+        var nx = ports[i].to;
+        if (nx in prev) continue;
+        prev[nx] = cur;
+        if (nx === toId) {
+          var path = [nx], n = cur;
+          while (n && n !== fromId) { path.unshift(n); n = prev[n]; }
+          return path;
+        }
+        q.push(nx);
+      }
+    }
+    return null;
+  }
+  function lyDoKhongDuong(fromId, toId) {
+    if (duongDi(fromId, toId) !== null) return null;
+    return {
+      tieuDe: 'Không có đường bộ từ ' + tenMap(fromId) + ' tới ' + tenMap(toId),
+      huongDan: 'Đi tay về map gần nhất có cổng rồi bật TỰ ĐI lại.',
+    };
+  }
+  // Dừng chặng đi đang chạy (nhả hết phím/joystick/dpad).
+  function navStop() {
+    runToken++;
+    releaseAllInputs();
+  }
+  function navStatus() {
+    var c = docCell();
+    return {
+      map: docMapId(), cell: c, khu: khuHienTai,
+      steerMethod: steerMethod, flying: flyingBelief,
+      flySpeed: flySpeedMeasured, flySpeedFirst: flySpeedFirst,
+      flyRetried: flyRetryDone, steerCalls: steerCalls, detours: detourCount,
+    };
+  }
+  // Đi trong cùng 1 map tới ĐÚNG ô (x, y). Có lưới chặn nhúng thì BFS +
+  // rút gọn đường thẳng rồi lái theo từng chặng; không có lưới thì lái
+  // thẳng kiểu Đi Farm (tham lam + đi vòng khi kẹt). deadlineAll (ms epoch)
+  // là hạn giờ chung của cả chặng diChuyen — mỗi lần gọi steerToCell đều
+  // đặt lại CFG.legTimeoutMs bằng thời gian còn lại (tối thiểu 2s) để chặng
+  // không chạy quá ngân sách mà tool câu đã giao (diToi(x, y, 60) = 60s).
+  // ten: nhãn điểm đến (điểm câu/cổng/biển KHU) — dùng trong log.
+  // arrivePxFinal: dung sai chặng cuối (mặc định 16 = đúng ô).
+  async function diTrongMap(mapId, x, y, tok, deadlineAll, ten, arrivePxFinal) {
+    ten = ten || 'điểm câu';
+    arrivePxFinal = (typeof arrivePxFinal === 'number') ? arrivePxFinal : CFG.portalPx;
+    function datHan() { CFG.legTimeoutMs = Math.max(2000, deadlineAll - Date.now()); }
+    var grid = readWalkable(mapId);
+    var cur = docCell();
+    if (grid && cur) {
+      var path = bfsPath(grid, cur.x, cur.y, x, y);
+      if (path && path.length === 0) return { ok: true }; // đã đứng đúng ô
+      if (path && path.length) {
+        var pts = stringPull(grid, [[cur.x, cur.y]].concat(path));
+        // Chặng cuối phải tới đúng dung sai yêu cầu; chặng giữa cho lệch 1 ô.
+        for (var i = 1; i < pts.length; i++) {
+          if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+          var last = (i === pts.length - 1);
+          datHan();
+          var r = await steerToCell(pts[i][0], pts[i][1], {
+            arrivePx: last ? arrivePxFinal : CFG.arrivePx,
+            label: (last ? ten + ' ' : 'chặng ') + '(' + pts[i][0] + ',' + pts[i][1] + ')',
+          });
+          if (!r.ok && r.reason === 'dung') return r;
+          if (!r.ok && r.reason === 'doi-map') return r;
+          if (!r.ok) {
+            // BFS nói có đường mà lái không qua được (lưới lệch live / quái
+            // chặn) — thử lái thẳng tới đích 1 lần rồi mới chịu thua.
+            navLog('Chặng BFS kẹt (' + r.msg + ') — thử lái thẳng tới ' + ten + '.');
+            datHan();
+            return await steerToCell(x, y, { arrivePx: arrivePxFinal, label: ten + ' (' + x + ',' + y + ')' });
+          }
+        }
+        return { ok: true };
+      }
+      navLog('BFS không có đường tới (' + x + ',' + y + ') trên lưới nhúng — lái thẳng thử.');
+    }
+    datHan();
+    return await steerToCell(x, y, { arrivePx: arrivePxFinal, label: ten + ' (' + x + ',' + y + ')' });
+  }
+  // Vòng đi chính — port từ start() của Đi Farm v1.2.1 (bỏ phần bật farm khi
+  // tới nơi: tới điểm câu thì DỪNG, giao diện câu tự lo phần còn lại).
+  // mapId: map đích; khu: 0 = giữ nguyên; x/y: null = chỉ cần tới map.
+  // budgetSec: hạn giờ chung cho cả chặng (mặc định 120s).
+  // Trả {ok:true} | {ok:false, reason, msg} (reason: dung|ket|hp-thap|guc|
+  // khong-duong|chua-qua-cong|het-gio|loi — cùng hợp đồng với steerToCell).
+  async function diChuyen(mapId, khu, x, y, budgetSec) {
+    runToken++;
+    var tok = runToken;
+    var savedTimeout = CFG.legTimeoutMs;
+    var deadlineAll = Date.now() + (budgetSec || 120) * 1000;
+    function datHan() { CFG.legTimeoutMs = Math.max(2000, deadlineAll - Date.now()); }
+    try {
+      // Phiên chạy mới: dò lại cách lái + kiểm chứng bay lại từ đầu.
+      steerMethod = null; camAnchor = null;
+      flySpeedChecked = false; flyRetryDone = false; flySpeedMeasured = null; flySpeedFirst = null; flyMeas = null;
+      // Chuẩn bị: tắt Auto (joystick không chạy khi Auto BẬT), dừng câu;
+      // BẬT Chạy + Phi Hành để đi nhanh — giữ bật qua các cổng (lệnh Thanh).
+      if (autoDangBat()) datAuto(false);
+      await sleep(400);
+      if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+      datRun(true);
+      await sleep(400);
+      if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+      datFly(true);
+      await sleep(400);
+      if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+      stopFishing();
+      await sleep(200);
+      if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+
+      var hops = 0;
+      while (true) {
+        if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        if (Date.now() > deadlineAll) return { ok: false, reason: 'het-gio', msg: 'Quá ' + (budgetSec || 120) + 's chưa tới — đã dừng.' };
+        var cur = docMapId();
+        if (!cur) return { ok: false, reason: 'loi', msg: 'Không đọc được map hiện tại — đã dừng.' };
+        if (KHONG_DUONG[cur] && cur !== mapId) {
+          return { ok: false, reason: 'khong-duong', msg: 'Đang ở ' + tenMap(cur) + ' (phó bản/sự kiện) — không có đường bộ tới ' + tenMap(mapId) + '. Rời map này rồi bật TỰ ĐI lại.' };
+        }
+        if (cur !== mapId) {
+          if (++hops > 50) return { ok: false, reason: 'loi', msg: 'Đi qua quá nhiều cổng mà chưa tới — đã dừng.' };
+          var hop = nextHop(cur, mapId);
+          if (!hop) {
+            return { ok: false, reason: 'khong-duong', msg: 'Không có đường bộ từ ' + tenMap(cur) + ' tới ' + tenMap(mapId) + ' — 2 map chưa nối cổng. Đi tay về map gần nhất rồi bật TỰ ĐI lại.' };
+          }
+          lastHop = { from: cur, to: mapId, tx: hop.tx, ty: hop.ty, toMap: hop.to, byHand: !!hop.byHand };
+          navLog('Qua cổng (' + hop.tx + ',' + hop.ty + ') sang ' + tenMap(hop.to) + '…');
+          // Tới cổng bằng BFS (lưới nhúng) khi có — lái thẳng kẹt sau nhà ở
+          // duoc_vien (test v3.4 bắt được: kẹt (6,12) khi tới cổng (0,20)).
+          var r = await diTrongMap(cur, hop.tx, hop.ty, tok, deadlineAll, 'cổng', CFG.portalPx);
+          // 'doi-map' = cổng đã mở trong lúc đi (map đổi rồi) — coi như qua xong.
+          if (!r.ok && r.reason === 'dung') return r;
+          if (!r.ok && r.reason !== 'doi-map') return r;
+          if (r.ok && hop.byHand) {
+            // Cổng byHand (Long Uyên -> Hang Động): đứng trên ô cổng rồi bấm
+            // Tương tác ("Vào") mới qua. Chưa xác minh live.
+            var okB = false;
+            for (var b = 0; b < 2 && !okB; b++) {
+              if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+              tap($('#btn-attack'));
+              okB = await choDoiMap(cur, CFG.portalWaitMs);
+            }
+            if (!okB) return { ok: false, reason: 'chua-qua-cong', msg: 'Chưa qua được cổng (' + hop.tx + ',' + hop.ty + ') sang ' + tenMap(hop.to) + ' — cổng này cần bấm "Vào"/Tương tác tay khi đứng trên ô cổng.' };
+          } else if (r.ok) {
+            // Tới ô cổng: cổng game mở khi BƯỚC LÊN ô — chờ đổi map (Ft=8s).
+            var ok = await choDoiMap(cur, CFG.portalWaitMs);
+            if (!ok && flyingBelief) {
+              // Qua cổng không được khi đang bay: hạ cánh, đi bộ lên ô cổng.
+              navLog('Chưa qua được cổng (' + hop.tx + ',' + hop.ty + ') khi bay — hạ cánh đi bộ lên ô cổng.');
+              datFly(false);
+              var r2 = await diTrongMap(cur, hop.tx, hop.ty, tok, deadlineAll, 'cổng', CFG.portalPx);
+              if (!r2.ok && r2.reason === 'dung') return r2;
+              if (r2.ok) ok = await choDoiMap(cur, CFG.portalWaitMs);
+              else if (r2.reason === 'doi-map') ok = true;
+            }
+            if (!ok) {
+              // Nudge bằng joystick về phía cổng rồi chờ thêm.
+              var nudged = false;
+              for (var n = 0; n < 3 && !ok; n++) {
+                if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+                var v = docViTriPx();
+                if (v) {
+                  var dx = hop.tx * CFG.tile + CFG.tile / 2 - v.x;
+                  var dy = hop.ty * CFG.tile + CFG.tile / 2 - v.y;
+                  await joyHold(dx, dy, 700);
+                  nudged = true;
+                }
+                ok = await choDoiMap(cur, CFG.nudgeWaitMs);
+              }
+              if (!ok) return { ok: false, reason: 'chua-qua-cong', msg: 'Chưa qua được cổng (' + hop.tx + ',' + hop.ty + ') sang ' + tenMap(hop.to) + ' — đã thử đẩy 3 lần. Đứng lại kiểm tra tay rồi bật TỰ ĐI lại.' };
+              if (nudged) navLog('Đẩy cổng bằng joystick đã qua.');
+            }
+          }
+          // Sang map mới thì khu chưa rõ nữa — đọc lại từ bảng khi cần đổi khu.
+          khuHienTai = null;
+          navLog('Đã sang ' + tenMap(docMapId()) + '.');
+          // Qua cổng/hạ cánh có thể tắt bay — bật lại Chạy + Phi Hành để đi
+          // tiếp cho nhanh (giữ bật qua các cổng). Bật lại bay thì đo lại
+          // tốc độ ở đợt lái sau (không bấm lại lần 2 mù).
+          if (!runDangBat()) datRun(true);
+          if (!flyingBelief) {
+            datFly(true);
+            flySpeedChecked = false;
+          }
+          continue;
+        }
+        // Đã ở map đích.
+        if (khu) {
+          var rk = await doiKhu(mapId, khu, tok, deadlineAll);
+          if (!rk.ok && rk.reason === 'dung') return rk;
+          if (!rk.ok && rk.reason === 'doi-map') continue; // lạc sang map khác — đánh giá lại từ đầu
+          if (!rk.ok) return rk;
+          if (!rk.skipped) navLog('Đang ở Khu ' + (khuHienTai === null ? khu : khuHienTai) + ' — đi tới điểm câu.');
+        }
+        if (x === null || y === null) return { ok: true }; // chỉ cần tới map
+        var rw = await diTrongMap(mapId, x, y, tok, deadlineAll, 'điểm câu', CFG.portalPx);
+        if (!rw.ok && rw.reason === 'doi-map') continue; // lạc sang map khác — đánh giá lại từ đầu
+        return rw;
+      }
+    } finally {
+      CFG.legTimeoutMs = savedTimeout;
+    }
+  }
+  // Tới map (chỉ cần sang map, không đi tiếp trong map). Trả Promise<boolean>.
+  async function diToiMap(mapId, budgetSec) {
+    var r = await diChuyen(mapId, 0, null, null, budgetSec || 120);
+    if (!r.ok) navLog('diToiMap(' + mapId + ') thất bại: ' + r.msg);
+    return r.ok;
+  }
+  // Đi tới ô (x, y) trong map HIỆN TẠI. maxSec = ngân sách giây cho cả chặng
+  // (mặc định 60 — cùng chữ ký nav Tool Tổng: diToi(x, y, maxBuoc)).
+  // Trả Promise<boolean>.
+  async function diToi(x, y, maxSec) {
+    var cur = docMapId();
+    if (!cur) { navLog('diToi: không đọc được map hiện tại.'); return false; }
+    var r = await diChuyen(cur, 0, x, y, maxSec || 60);
+    if (!r.ok) navLog('diToi(' + x + ',' + y + ') thất bại: ' + r.msg);
+    return r.ok;
+  }
+
+  return {
+    version: '3.4.0-nav',
+    cfg: CFG,
+    diToi: diToi, diToiMap: diToiMap, duongDi: duongDi,
+    lyDoKhongDuong: lyDoKhongDuong, docViTri: docViTri,
+    readWalkable: readWalkable, bfsPath: bfsPath,
+    datAuto: datAuto, autoDangBat: autoDangBat,
+    datFly: datFly, datRun: datRun,
+    flyDangBat: flyDangBat, runDangBat: runDangBat,
+    docCell: docCell, docMapId: docMapId, docHP: docHP, docGuc: docGuc,
+    docKhu: docKhu, stop: navStop, status: navStatus,
+    _patchCapture: patchPointerCapture,
+  };
+
+    })();
 
     // ---------------- Cấu hình ----------------
     var CFG = {
@@ -543,7 +2189,8 @@ window.__TT2D_TONG__ = {
       conTruocMs: 60000,        // v3.1: trước giờ Côn Bằng N ms thì không quăng mới, chờ gắn dây
       conChoToiDaMs: 90000,     // v3.1: chờ nút Côn tối đa N ms sau khi vào khung giờ rồi quay lại câu thường
       tiLeToiThieuMauTT: 3,     // v3.1: cần tối thiểu N lần quăng/(thời tiết+vùng) mới tin tỷ lệ theo thời tiết
-      chiemDungYenMs: 5000,     // v3.2: người khác đứng yên N ms đúng ô điểm câu thì tính là chiếm chỗ
+      chiemDungYenMs: 5000,     // v3.2: người khác đứng yên N ms đúng ô điểm câu thì tính là chiếm chỗ (v3.4: không còn nguồn đo — luôn 0, giữ để khỏi đổi chữ ký)
+      ketCaptionMs: 90000,      // v3.4: kẹt ngầm DC khi túi đóng — >N ms không xong lượt câu nào (đếm ngược caption) thì coi là kẹt
     };
 
     // ---------------- Mục tiêu: mồi + vùng ----------------
@@ -591,7 +2238,7 @@ window.__TT2D_TONG__ = {
     // --- v3.1: thời tiết ---
     var ratesTT = {};            // key id thời tiết -> { vung: {nong,giua,sau}, moi: {key: {...}} }
     var castTT = null;           // thời tiết của lượt quăng đang chạy (để ghi tỷ lệ đúng)
-    // --- v3.2: TỰ ĐI tới điểm câu (chỉ trong Tool Tổng — cần module nav) ---
+    // --- v3.2: TỰ ĐI tới điểm câu (v3.4: nav tích hợp sẵn, không cần Tool Tổng) ---
     // 14 điểm cầu đã xác minh từ client 24/11 (map van_can, TILE=32,
     // SAT_NUOC_PX=52): ô '=' đi được + kề nước theo đúng hàm ganNuoc của
     // game (tâm nhân vật cách mép ô nước ≤52px). (49,14) KHÔNG phải điểm
@@ -617,7 +2264,7 @@ window.__TT2D_TONG__ = {
     var lastNoRouteLogAt = 0;    // chống spam log "không có đường bộ"
     var lastUiLogAt = 0;         // chống spam log "chưa thấy giao diện câu"
     var moUiLan = 0;             // số lần đã thử mở giao diện câu sau khi tới nơi
-    var remoteSeen = {};         // id người chơi khác -> {tx, ty, since} (theo dõi đứng yên)
+    var remoteSeen = {};         // id người chơi khác -> {tx, ty, since} (v3.4: luôn rỗng — không có nguồn live; giữ cấu trúc để cắm lại sau)
     var lastRemoteScanAt = 0;    // lần cuối quét vị trí người chơi khác (tối đa 1 lần/giây)
     // --- v3.3: Câu ở Dược Cốc — Hồ Bích Thủy (tính năng 13) ---
     // Cơ chế khác hẳn Hồ Tây: không quăng/giật/kéo — bật "Tự động câu" của
@@ -641,6 +2288,9 @@ window.__TT2D_TONG__ = {
     var caSongTruoc = null;      // số Cá Sông lần kiểm tra trước (kẹt ngầm)
     var caSongTruoc2 = null;     // số Cá Sông lần kiểm tra trước nữa
     var lastKetLogAt = 0;        // chống spam log kẹt ngầm
+    var capGiayTruoc = null;     // v3.4: giây đếm ngược caption lần theo dõi trước
+    var capLanCuoiHoanThanh = 0; // v3.4: lần cuối 1 lượt câu hoàn thành (đếm ngược caption nhảy lên)
+    var lastCaptionCheckAt = 0;  // v3.4: lần cuối theo dõi caption (tối đa 2 lần/giây)
 
     function rand(a, b) { return a + Math.random() * (b - a); }
     function randInt(a, b) { return Math.round(rand(a, b)); }
@@ -1140,13 +2790,15 @@ window.__TT2D_TONG__ = {
       setTargetLine();
     }
 
-    // ---------------- v3.2: TỰ ĐI tới điểm câu (chỉ trong Tool Tổng) ----------------
+    // ---------------- v3.2: TỰ ĐI tới điểm câu (nav tích hợp sẵn từ v3.4) ----------------
     // Theo đúng mẫu tab Boss v1.2.0 (nút TỰ ĐI, movePhase, kẹt 3 lần thì tắt).
     // nav.diToiMap/diToi tự tắt Auto trước khi đẩy joystick (joystick không
     // chạy khi Auto BẬT) nên tab này không cần tắt Auto tay. Tới điểm câu
     // rồi thì giao diện câu tự hiện (VanCanUI.update) và tick câu bình thường.
     function nav() {
-      return window.__TT2D_NAV__ || (window.__TT2D_TONG__ && window.__TT2D_TONG__.nav) || null;
+      // v3.4: NAV tích hợp sẵn trong tool (port từ Đi Farm v1.2.1) — LUÔN có,
+      // không cần Tool Tổng nữa. Giữ hàm nav() để các chỗ gọi cũ không đổi.
+      return NAV;
     }
     // Map hiện tại (id client): ưu tiên nav.docViTri(), fallback đọc #hud-map.
     function docMapHienTai() {
@@ -1167,8 +2819,7 @@ window.__TT2D_TONG__ = {
       if (/Phong Địa/.test(s)) return 'phong_dia';
       return null;
     }
-    // Vị trí hiện tại (ô x, y): ưu tiên nav.docViTri(), fallback đọc (x,y)
-    // trong body text (cùng cách nav đọc).
+    // Vị trí hiện tại (ô x, y): ưu tiên nav.docViTri(), fallback đọc #hud-pos.
     function docViTriHienTai() {
       try {
         var n = nav();
@@ -1177,22 +2828,31 @@ window.__TT2D_TONG__ = {
           if (p && p.x !== null && p.y !== null) return { x: p.x, y: p.y };
         }
       } catch (e) { /* bỏ qua */ }
-      var t = document.body ? (document.body.innerText || '') : '';
+      // Fallback CHỈ đọc #hud-pos "(x, y)" — KHÔNG quét body text nữa:
+      // panel tool cũng chứa "(38,14)" trong ô chọn điểm, quét body sẽ
+      // đọc nhầm vị trí đã chọn thành vị trí thật.
+      var hp = document.querySelector('#hud-pos');
+      var t = hp ? (hp.innerText || hp.textContent || '') : '';
       var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
       if (m) return { x: parseInt(m[1], 10), y: parseInt(m[2], 10) };
       return null;
     }
-    // Quét vị trí người chơi khác: Gateway.remotes {id: {x, y}} — x/y là
-    // PIXEL (TILE=32), khác với mock test của tab Tổ đội (x/y là ô). Chỉ ghi
-    // nhận lần đầu thấy ở 1 ô (since) — đứng yên thì since giữ nguyên.
+    // Quét vị trí người chơi khác — v3.4: KHÔNG CÒN NGUỒN NÀO đọc được live.
+    // Đã xác minh từ game.js client 24/11 (26/11): người chơi khác CHỈ vẽ
+    // trên canvas (SceneWorld.remotes, biến local trong IIFE — không có trên
+    // window, không có phần tử DOM nào); #btn-attack chỉ hiện "Tương Tác"/
+    // "Công Thường", không xác định được người ở ô cụ thể. Hơn nữa người
+    // khác KHÔNG chặn di chuyển (2 người đứng chung 1 ô được) nên "tới điểm
+    // mà không đứng được" cũng KHÔNG phải tín hiệu. -> remoteSeen luôn rỗng:
+    // diemBiChiem() luôn false, chonDiemTrong() luôn trả điểm đã chọn.
+    // Người dùng tự chọn điểm khác trong ô chọn khi thấy đông. KHÔNG bịa
+    // tín hiệu. Giữ nguyên hàm + cấu trúc remoteSeen để sau này có nguồn
+    // live thì cắm lại đúng chỗ này.
     function quetNguoiDung(now) {
       if (now - lastRemoteScanAt < 1000) return; // quét tối đa 1 lần/giây
       lastRemoteScanAt = now;
+      // v3.4: không có nguồn live — rems luôn null (xem comment trên).
       var rems = null;
-      try {
-        var gw = window.__ns_ && window.__ns_.Gateway;
-        rems = gw && gw.remotes;
-      } catch (e) { rems = null; }
       var thay = {};
       if (rems) {
         Object.keys(rems).forEach(function (id) {
@@ -1304,15 +2964,7 @@ window.__TT2D_TONG__ = {
       if (now - lastMoveCheckAt < 500) return sanSangCau;
       lastMoveCheckAt = now;
       if (moveFails >= MAX_MOVE_FAILS) return false; // đã tắt tự đi sau 3 lần lỗi
-      var n = nav();
-      if (!n || typeof n.diToiMap !== 'function' || typeof n.diToi !== 'function') {
-        if (now - lastNoRouteLogAt > 60000) {
-          lastNoRouteLogAt = now;
-          log('TỰ ĐI cần module nav (chỉ có trong Tool Tổng) — tool lẻ không tự đi được.');
-        }
-        sanSangCau = false;
-        return false;
-      }
+      var n = nav(); // v3.4: NAV tích hợp sẵn, luôn có diToiMap/diToi.
       var curMap = docMapHienTai();
       if (curMap === 'van_can') {
         var cur = docViTriHienTai();
@@ -1461,12 +3113,8 @@ window.__TT2D_TONG__ = {
       spotIdx = idx;
       if (spotSel) spotSel.value = String(idx);
     }
-    // Bật/tắt TỰ ĐI. Tool lẻ (không có nav) thì từ chối.
+    // Bật/tắt TỰ ĐI. v3.4: nav tích hợp sẵn nên không còn từ chối khi bật.
     function setTuDi(v) {
-      if (v && !nav()) {
-        log('TỰ ĐI cần module nav — chỉ có trong Tool Tổng (tool lẻ chạy một mình không tự đi được).');
-        return;
-      }
       tuDi = !!v;
       if (!tuDi) { movePhase = 'idle'; sanSangCau = false; setMoveStatus(''); }
       else {
@@ -1480,11 +3128,10 @@ window.__TT2D_TONG__ = {
     }
     function capNhatNutTuDi() {
       if (!tudiBtn) return;
-      var coNav = !!nav();
       tudiBtn.textContent = tuDi ? 'TỰ ĐI: BẬT' : 'TỰ ĐI: TẮT';
       tudiBtn.style.background = tuDi ? '#6b4d16' : '#2a2113';
-      tudiBtn.style.opacity = coNav ? '1' : '0.55';
-      tudiBtn.title = coNav ? 'Tự di chuyển tới điểm câu đã chọn (chỉ trong Tool Tổng)' : 'TỰ ĐI cần module nav — chỉ có trong Tool Tổng';
+      tudiBtn.style.opacity = '1'; // v3.4: nav tích hợp sẵn, luôn dùng được
+      tudiBtn.title = 'Tự di chuyển tới điểm câu đã chọn (nav tích hợp sẵn)';
     }
 
     // ---------------- v3.3: Câu ở Dược Cốc — Hồ Bích Thủy ----------------
@@ -1508,27 +3155,53 @@ window.__TT2D_TONG__ = {
         return Math.round(100 * (+m[1]) / (+m[2]));
       } catch (e) { return null; }
     }
-    // Số cá trong túi: Inventory.count('ca_song'|'linh_ngu') — client
-    // Fishing COMMON_FISH:"ca_song", SPIRIT_FISH:"linh_ngu".
+    // Số cá trong túi — v3.4: đọc từ TÚI ĐỒ đang mở (ô .bag-slot[data-item],
+    // aria-label "<tên>, số lượng <qty>", span .bag-qty "x<qty>" khi qty>1).
+    // Chỉ đọc được khi túi đang mở; túi đóng -> null (không biết, KHÔNG
+    // đoán). Trước đây đọc window.__ns__.Inventory.count — mù live (biến
+    // local trong IIFE của game). Client Fishing: COMMON_FISH "ca_song",
+    // SPIRIT_FISH "linh_ngu". Túi mở mà không có ô cá nào = 0 con.
     function docCa() {
       try {
-        var inv = window.__ns_ && window.__ns_.Inventory;
-        if (inv && typeof inv.count === 'function') {
-          return { caSong: inv.count('ca_song'), linhNgu: inv.count('linh_ngu') };
+        var slots = document.querySelectorAll('.bag-slot');
+        if (!slots.length) return null; // túi chưa mở
+        var out = { caSong: 0, linhNgu: 0 };
+        for (var i = 0; i < slots.length; i++) {
+          var it = slots[i].getAttribute('data-item');
+          if (it !== 'ca_song' && it !== 'linh_ngu') continue;
+          var q = docSoLuongSlot(slots[i]);
+          if (it === 'ca_song') out.caSong = q; else out.linhNgu = q;
         }
+        return out;
+      } catch (e) { return null; }
+    }
+    // Số lượng trong 1 ô túi: span .bag-qty "x<qty>" khi qty>1;
+    // không có span thì thử aria-label "số lượng <qty>"; không có = 1.
+    function docSoLuongSlot(slot) {
+      try {
+        var q = slot.querySelector('.bag-qty');
+        if (q) {
+          var m = (q.innerText || q.textContent || '').match(/(\d+)/);
+          if (m) return parseInt(m[1], 10);
+        }
+        var lab = slot.getAttribute('aria-label') || '';
+        var m2 = lab.match(/số lượng\s*(\d+)/);
+        if (m2) return parseInt(m2[1], 10);
       } catch (e) { /* bỏ qua */ }
-      return null;
+      return 1;
     }
     // Game có đang "Tự động câu" không? Tín hiệu tin cậy nhất là nút Dừng
     // câu (#btn-fishing-stop-touch) đang hiện — game chỉ hiện nút này khi
-    // đang câu. Caption HUD "Tự động câu... còn Xs" là tín hiệu phụ — KHÔNG
+    // đang câu. Caption #ritual-caption "Tự động câu... còn Xs" là tín hiệu
+    // phụ (v3.4: #hud-caption là code chết — 0 hit trong game.js; caption thật
+    // là #ritual-caption). KHÔNG
     // quét cả body.innerText (panel tool cũng chứa chữ "Tự động câu" trong
     // phần hướng dẫn, quét cả body sẽ luôn trả true).
     function dangTuDongCau() {
       try {
         var b = document.querySelector('#btn-fishing-stop-touch') || document.querySelector('#btn-fishing-stop');
         if (b && b.offsetParent !== null && !b.classList.contains('hidden')) return true;
-        var cap = document.querySelector('#hud-caption');
+        var cap = document.querySelector('#ritual-caption');
         if (cap && /Tự động câu/.test(cap.textContent || '')) return true;
         // KHÔNG quét text toàn body nữa (v3.3.0 cũ): nút lựa chọn "Tự động
         // câu" trong hộp thoại Hồ Bích Thủy cũng match → báo đang câu trong
@@ -1657,16 +3330,21 @@ window.__TT2D_TONG__ = {
       }
       return false;
     }
-    // Khu hiện tại: KhuUI.khu (client) hoặc .khu-note "Đang ở khu N".
+    // Khu hiện tại: .khu-note "Đang ở khu N" hoặc ô [data-khu].dang trên
+    // Bảng Khu đang mở. v3.4: bỏ nhánh KhuUI.khu — window.__ns_ mù live.
+    // (null = chưa rõ — KHÔNG cache khu qua lần đăng nhập, xem Đi Farm.)
     function docKhuHien() {
-      try {
-        var k = window.__ns_ && window.__ns_.KhuUI && window.__ns_.KhuUI.khu;
-        if (typeof k === 'number' && k >= 1) return k;
-      } catch (e) { /* bỏ qua */ }
       try {
         var note = document.querySelector('.khu-note');
         var m = note ? txt(note).match(/Đang ở khu\s*(\d+)/) : null;
         if (m) return parseInt(m[1], 10);
+      } catch (e) { /* bỏ qua */ }
+      try {
+        var act = document.querySelector('#khu-panel [data-khu].dang, .khu-grid [data-khu].dang');
+        if (act) {
+          var ka = parseInt(act.getAttribute('data-khu'), 10);
+          if (ka >= 1) return ka;
+        }
       } catch (e) { /* bỏ qua */ }
       return null;
     }
@@ -1757,15 +3435,7 @@ window.__TT2D_TONG__ = {
       if (now - lastMoveCheckAt < 500) return sanSangCau;
       lastMoveCheckAt = now;
       if (moveFails >= MAX_MOVE_FAILS) return false;
-      var n = nav();
-      if (!n || typeof n.diToiMap !== 'function' || typeof n.diToi !== 'function') {
-        if (now - lastNoRouteLogAt > 60000) {
-          lastNoRouteLogAt = now;
-          log('TỰ ĐI cần module nav (chỉ có trong Tool Tổng) — tool lẻ không tự đi được.');
-        }
-        sanSangCau = false;
-        return false;
-      }
+      var n = nav(); // v3.4: NAV tích hợp sẵn, luôn có diToiMap/diToi.
       var curMap = docMapHienTai();
       if (curMap !== 'duoc_vien') {
         var duong = null;
@@ -1863,6 +3533,23 @@ window.__TT2D_TONG__ = {
         lastMoveCheckAt = 0; // kiểm tra lại ngay nhịp sau
       }
     }
+    // Theo dõi đếm ngược caption "Tự động câu... còn Xs" (#ritual-caption):
+    // mỗi lần đếm ngược NHẢY LÊN (~6s) = 1 lượt câu vừa hoàn thành. Dùng để
+    // phát hiện kẹt ngầm khi túi đóng (không đọc được số cá). Gọi mỗi tick
+    // ở tickDuocCoc, tự throttle 500ms (đếm ngược mỗi lượt ~6s nên 500ms
+    // vẫn bắt được cú nhảy lên).
+    function theoDoiCaptionCau(now) {
+      if (now - lastCaptionCheckAt < 500) return;
+      lastCaptionCheckAt = now;
+      if (!dangTuDongCau()) { capGiayTruoc = null; return; }
+      var cap = document.querySelector('#ritual-caption');
+      if (!cap) return;
+      var m = (cap.textContent || '').match(/còn\s*(\d+)\s*s/i);
+      if (!m) return;
+      var giay = parseInt(m[1], 10);
+      if (capGiayTruoc !== null && giay > capGiayTruoc) capLanCuoiHoanThanh = now;
+      capGiayTruoc = giay;
+    }
     // Giám sát Giáp trong lúc câu DC (mỗi 60s): Auto KHÔNG tự vệ khi đang
     // câu — Độc Đằng có thể giết trong ~2 phút. Giáp <50% (hoặc HP <50%)
     // thì dừng câu + bật Auto đánh trả / thiền hồi.
@@ -1889,7 +3576,21 @@ window.__TT2D_TONG__ = {
       if (now - lastCaCheckAt < 60000) return false;
       lastCaCheckAt = now;
       var ca = docCa();
-      if (!ca || typeof ca.caSong !== 'number') return false;
+      if (!ca || typeof ca.caSong !== 'number') {
+        // Túi đóng (không đọc được số cá): đếm lượt câu hoàn thành qua đếm
+        // ngược caption #ritual-caption (theoDoiCaptionCau cập nhật mỗi
+        // 500ms ở tickDuocCoc). >ketCaptionMs không xong lượt nào = kẹt.
+        if (capLanCuoiHoanThanh && now - capLanCuoiHoanThanh > CFG.ketCaptionMs) {
+          if (now - lastKetLogAt > 300000) {
+            lastKetLogAt = now;
+            log('Kẹt ngầm? Không xong lượt câu nào qua caption ' + Math.round(CFG.ketCaptionMs / 1000) + 's — dừng câu rồi bật lại "Tự động câu".');
+          }
+          dungCauDc();
+          capLanCuoiHoanThanh = now; // khỏi báo lại ngay sau khi bật lại
+          return true;
+        }
+        return false;
+      }
       var ket = (caSongTruoc !== null && caSongTruoc2 !== null &&
         ca.caSong === caSongTruoc && ca.caSong === caSongTruoc2);
       caSongTruoc2 = caSongTruoc;
@@ -1952,14 +3653,14 @@ window.__TT2D_TONG__ = {
       ].join(';');
       panel.innerHTML =
         '<div id="tt2d-fish-head" style="display:flex;justify-content:space-between;align-items:center">' +
-          '<b>🎣 Tool câu cá v3.3.1</b>' +
+          '<b>🎣 Tool câu cá v3.4.0</b>' +
           '<span>' +
             '<button id="tt2d-fish-min" title="Thu nhỏ bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 4px">—</button>' +
             '<button id="tt2d-fish-hide" title="Ẩn bảng (tool vẫn chạy nếu đang BẬT)" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 2px">×</button>' +
           '</span>' +
         '</div>' +
         '<div id="tt2d-fish-mini" style="display:none;align-items:center;justify-content:space-between;gap:6px">' +
-          '<b>🎣 Câu cá v3.3.1</b>' +
+          '<b>🎣 Câu cá v3.4.0</b>' +
           '<span id="tt2d-fish-mini-status" style="color:#bfe3ff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>' +
           '<button id="tt2d-fish-expand" title="Mở rộng bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:16px;padding:0 2px">＋</button>' +
         '</div>' +
@@ -1976,7 +3677,7 @@ window.__TT2D_TONG__ = {
           '<button id="tt2d-fish-toggle" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT</button>' +
         '</div>' +
         '<div style="margin:4px 0;display:flex;gap:6px;align-items:center">' +
-          '<button id="tt2d-fish-tudi" title="Tự di chuyển tới điểm câu đã chọn (chỉ trong Tool Tổng)" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">TỰ ĐI: TẮT</button>' +
+          '<button id="tt2d-fish-tudi" title="Tự di chuyển tới điểm câu đã chọn (nav tích hợp sẵn)" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#2a2113;color:#ffe9b0;cursor:pointer">TỰ ĐI: TẮT</button>' +
         '</div>' +
         '<div style="margin:4px 0">Địa điểm: ' +
           '<select id="tt2d-fish-diadiem" title="Hồ Tây: câu cầu (quăng/giật/kéo). Dược Cốc: tự tới Đài câu cá Hồ Bích Thủy, chuyển khu đông người, bật Tự động câu của game" style="background:#2a2113;color:#ffe9b0;border:1px solid #8a6a2f;border-radius:5px;padding:3px">' +
@@ -2015,7 +3716,7 @@ window.__TT2D_TONG__ = {
         '<div id="tt2d-fish-luong" style="margin:4px 0;color:#ffd27a">Luồng: chưa có (chưa thấy cá cắn)</div>' +
         '<div id="tt2d-fish-rates" style="color:#c9f2c9"></div>' +
         '<div id="tt2d-fish-log" style="margin-top:6px;max-height:96px;overflow:auto;color:#d8c9a3;font-size:11px"></div>' +
-        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Chỉ bấm nút của game. Dừng khi rời hồ. TỰ ĐI: tự tới điểm câu đã chọn (chỉ trong Tool Tổng); điểm có người đứng yên thì tự lui sang điểm trống khác. Dược Cốc: tự tới Đài câu cá, chuyển khu đông người trước khi câu, bật "Tự động câu" của game; canh Giáp mỗi 60s, kẹt chỉ tính khi Cá Sông đứng yên 2 lần kiểm tra. Tool không thấy được luồng cá thật và không đổi được tỷ lệ cắn của server — chỉ chọn vùng/mồi theo tỷ lệ đã quan sát.</div>' +
+        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Chỉ bấm nút của game. Dừng khi rời hồ. TỰ ĐI: tự tới điểm câu đã chọn (nav tích hợp sẵn, v3.4); tool KHÔNG thấy được người khác ở điểm câu — thấy đông thì tự chọn điểm khác trong ô chọn. Dược Cốc: tự tới Đài câu cá, chuyển khu đông người trước khi câu, bật "Tự động câu" của game; canh Giáp mỗi 60s, kẹt chỉ tính khi Cá Sông đứng yên 2 lần kiểm tra. Tool không thấy được luồng cá thật và không đổi được tỷ lệ cắn của server — chỉ chọn vùng/mồi theo tỷ lệ đã quan sát.</div>' +
         '</div>';
       Tong.tabBody('fish').appendChild(panel);
 
@@ -2285,6 +3986,7 @@ window.__TT2D_TONG__ = {
         }
       }
       // Đang ở bến: canh Giáp (60s) rồi giữ "Tự động câu" bật (5s).
+      theoDoiCaptionCau(now); // theo dõi đếm ngược caption (phát hiện kẹt khi túi đóng)
       kiemTraGiapKhiCau(now);
       if (kiemTraKetCa(now)) {
         setStatus('Kẹt ngầm? Cá Sông đứng yên — đã dừng câu, đang bật lại "Tự động câu"…');
@@ -2538,7 +4240,7 @@ window.__TT2D_TONG__ = {
     setInterval(tick, CFG.pollMs);
     setStatus('Chưa bật — bấm BẬT rồi bật TỰ ĐI để tự tới điểm câu, hoặc đứng ở cầu câu rồi bấm BẬT.');
     setTargetLine();
-    log('Tool đã nạp (v3.2). Mặc định TẮT.');
+    log('Tool đã nạp (v3.4.0 — bản riêng, nav tích hợp). Mặc định TẮT.');
     // Điều khiển từ Console khi cần debug: __TT2D_FISH__.start() / .stop() /
     // .setTarget('linh'|'yeu'|'giao'|'tudo'|'auto') / .status() /
     // .setTuDi(true|false) / .setSpot(0..13) / .spot() / .spots() /
@@ -2597,6 +4299,8 @@ window.__TT2D_TONG__ = {
       diaDiem: function () { return diaDiem; },
       spotsDc: function () { return SPOTS_DC.map(function (s) { return { x: s.x, y: s.y, ten: s.ten }; }); },
       moveStatus: function () { return { movePhase: movePhase, moveFails: moveFails, lastMoveStatus: lastMoveStatus }; },
+      nav: function () { return NAV.status(); },
+      _nav: NAV,
       _tick: tick,
       _cfg: CFG,
       _debug: {
@@ -2606,7 +4310,9 @@ window.__TT2D_TONG__ = {
         kiemTraDiHoDc: kiemTraDiHoDc, chonKhuDongNhat: chonKhuDongNhat,
         bamDatDiToi: bamDatDiToi, batTuDongCau: batTuDongCau,
         dangTuDongCau: dangTuDongCau, dungCauDc: dungCauDc,
-        docGiapPct: docGiapPct, docCa: docCa,
+        docGiapPct: docGiapPct, docCa: docCa, docKhuHien: docKhuHien,
+        docViTriHienTai: docViTriHienTai, docMapHienTai: docMapHienTai,
+        theoDoiCaptionCau: theoDoiCaptionCau,
         kiemTraGiapKhiCau: kiemTraGiapKhiCau, kiemTraKetCa: kiemTraKetCa,
       },
     };
@@ -3715,1313 +5421,2548 @@ window.__TT2D_TONG__ = {
   (function () {
 
 
-    // ---------------- Cấu hình ----------------
-    var CFG = {
-      pollMs: 250,              // kiểm tra trạng thái mỗi 250ms
-      taskTimeoutMs: 10 * 60 * 1000, // việc quá 10 phút chưa xong → huỷ, đổi việc
-      maxKetLienTiep: 2,        // kẹt 2 lần liên tiếp → DỪNG tool
-      maxTuDiKhoiDongLai: 3,    // "Tự Đi" dừng giữa chừng thì bật lại tối đa 3 lần
-      joyHoldMs: 350,           // giữ joystick mỗi nhịp
-      joyLongMs: 900,           // nhịp dài khi kẹt
-      joyWaitMs: 250,           // nghỉ giữa các nhịp
-      portalHoldMs: 700,        // giữ joystick để bước qua cổng
-      portalTries: 6,           // số nhịp giữ tối đa để qua cổng
-      ganDaiPhu: 6,             // trong 6 ô quanh Đại Phu thì tính là "gần"
-      hpTuVe: 0.80,             // LK: HP dưới 80% thì bật Auto tự vệ
-      hpAnToan: 0.95,           // LK: HP trên 95% thì tắt Auto tự vệ
-      hpNguyHiem: 0.35,         // HP dưới 35% thì chờ hồi, không bật lại "Tự Đi"
-      choDoiMs: 3000,           // chờ hộp thoại mở sau khi bấm tương tác
-      nghiGiuaBuocMs: 600,      // nghỉ giữa các lần bấm nút
-    };
+  if (window.__TT2D_DUOC__) return; // chống nạp trùng 2 bảng
 
-    // ---------------- Bảng việc ----------------
-    // Thứ tự ưu tiên: DC cao nhất trước; hoà DC thì việc gần hơn trước.
-    var TASKS = {
-      cau_ca:        { id: 'cau_ca', ten: 'Câu Cá Làm Dược Liệu', tenNgan: 'Câu Cá', dc: 4, need: 3, kind: 'fishing',
-                       map: 'duoc_vien', x: 18, y: 16, choLam: 'Hồ Bích Thuỷ' },
-      duoc_moc:      { id: 'duoc_moc', ten: 'Thu Gom Dược Mộc', tenNgan: 'Thu Gom', dc: 3, need: 5, kind: 'chop',
-                       map: 'duoc_vien', x: 34, y: 25, choLam: 'Cổ Thụ Linh Mộc' },
-      ho_tong_chau:  { id: 'ho_tong_chau', ten: 'Đưa Người Về Làng', tenNgan: 'Đưa Người', dc: 2, need: 0, kind: 'escort',
-                       map: 'tan_vien', x: 9, y: 10, choLam: 'Thầy Ông Nội (làng)' },
-      truc_gia:      { id: 'truc_gia', ten: 'Trúc Tâm Dẫn Dược', tenNgan: 'Trúc Tâm', dc: 1, need: 4, kind: 'chop',
-                       map: 'thanh_truc_lam', spots: [[18, 5], [27, 12], [10, 20], [31, 8]], choLam: 'Rừng Trúc' },
-      linh_chi:      { id: 'linh_chi', ten: 'Linh Chi Dưới Chân Núi', tenNgan: 'Linh Chi', dc: 1, need: 3, kind: 'harvest',
-                       map: 'tan_vien',
-                       spots: [[19, 2], [20, 2], [18, 3], [21, 3], [23, 3], [25, 3], [28, 3], [32, 1], [31, 2], [33, 2], [30, 3], [33, 3], [6, 3], [7, 3]],
-                       choLam: 'Bắc làng Tản Viên' },
-    };
-    var THU_TU_UU_TIEN = ['cau_ca', 'duoc_moc', 'ho_tong_chau', 'truc_gia', 'linh_chi'];
-    var VIEC_CAM = { dai_hoi: 'Thắng Trận Đại Hội', van_tieu: 'Vận Tiêu Một Chuyến', chien_bang: 'Thắng Trận Tán Tu Chiến Bảng' };
-    var TONG_LUOT_NGAY = 15; // 5 việc thường × 3 lượt
-    var DAI_PHU = { map: 'duoc_vien', x: 14, y: 8 };
-    var MAP_TEN = { duoc_vien: 'Thảo Dược Cốc', thanh_truc_lam: 'Rừng Trúc', tan_vien: 'Chân Núi Tản Viên' };
-    // Cổng: từ map A tới map B — đi tới ô cổng rồi giữ joystick hướng ra ngoài.
-    var CONG = {
-      'duoc_vien>thanh_truc_lam': { x: 12, y: 0, dx: 0, dy: -1 },
-      'thanh_truc_lam>tan_vien': { x: 7, y: 0, dx: 0, dy: -1 },
-      'tan_vien>thanh_truc_lam': { x: 7, y: 29, dx: 0, dy: 1 },
-      'thanh_truc_lam>duoc_vien': { x: 12, y: 29, dx: 0, dy: 1 },
-    };
-    function duongDi(tuMap, toiMap) {
-      if (tuMap === toiMap) return [];
-      if (tuMap === 'duoc_vien' && toiMap === 'tan_vien')
-        return [{ map: 'thanh_truc_lam', cong: 'duoc_vien>thanh_truc_lam' }, { map: 'tan_vien', cong: 'thanh_truc_lam>tan_vien' }];
-      if (tuMap === 'tan_vien' && toiMap === 'duoc_vien')
-        return [{ map: 'thanh_truc_lam', cong: 'tan_vien>thanh_truc_lam' }, { map: 'duoc_vien', cong: 'thanh_truc_lam>duoc_vien' }];
-      if (tuMap === 'duoc_vien' && toiMap === 'thanh_truc_lam')
-        return [{ map: 'thanh_truc_lam', cong: 'duoc_vien>thanh_truc_lam' }];
-      if (tuMap === 'thanh_truc_lam' && toiMap === 'duoc_vien')
-        return [{ map: 'duoc_vien', cong: 'thanh_truc_lam>duoc_vien' }];
-      if (tuMap === 'thanh_truc_lam' && toiMap === 'tan_vien')
-        return [{ map: 'tan_vien', cong: 'thanh_truc_lam>tan_vien' }];
-      if (tuMap === 'tan_vien' && toiMap === 'thanh_truc_lam')
-        return [{ map: 'thanh_truc_lam', cong: 'tan_vien>thanh_truc_lam' }];
-      return null; // không biết đường
-    }
-
-    // ---------------- Trạng thái ----------------
-    var on = false;
-    var phase = 'idle'; // idle | cho_dai_phu | mo_menu | tu_di | nhan_viec | xac_nhan | di_lam | lam_viec | ve_nop | nop | ket_thuc
-    var realm = null;   // 'truc_co' | 'luyen_khi' (nhận biết từ menu Đại Phu)
-    var viecHienTai = null; // id việc đang làm (LK) hoặc việc bộ máy đang làm (TC, đọc từ tracker)
-    var luotDaLam = 0;      // số lượt đã nộp xong (đếm theo lần nộp tool thấy)
-    var luotConLai = {};    // id việc -> số lượt còn lại hôm nay (đọc từ bảng game)
-    var dcHienTai = null;   // điểm Dược Công hiện tại (đọc từ hộp thoại)
-    var dcLucBatDau = null;
-    var taskBatDauAt = 0;   // thời điểm bắt đầu việc hiện tại
-    var demKet = 0;         // số lần kẹt liên tiếp
-    var demTuDiLai = 0;     // số lần bật lại "Tự Đi"
-    var daNhanViec = false; // phiên này tool đã nhận được ít nhất 1 việc (để phân biệt việc dở có sẵn với việc của tool)
-    var viecNhanTay = false; // đang tiếp tục việc NHẬN BẰNG TAY (không phải việc tool tự nhận): kẹt đường thì DỪNG báo rõ, KHÔNG tự huỷ
-    var tuVeDangBat = false;// LK: Auto tự vệ đang bật?
-    var choDoiTu = 0;       // mốc thời gian chờ (mở hộp thoại...)
-    var logLines = [];
-    var collapsed = false;  // bảng đang thu nhỏ?
-
-    function log(msg) {
-      var t = new Date();
-      var hh = ('0' + t.getHours()).slice(-2), mm = ('0' + t.getMinutes()).slice(-2), ss = ('0' + t.getSeconds()).slice(-2);
-      var line = hh + ':' + mm + ':' + ss + ' — ' + msg;
-      logLines.push(line);
-      if (logLines.length > 40) logLines.shift();
-      renderLog();
-    }
-    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-    function $(s) { return document.querySelector(s); }
-    function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
-    function txt(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }
-
-    // ---------------- Đọc trạng thái game (chỉ đọc DOM) ----------------
-    function dialogMo() {
-      var d = $('#dialog');
-      return !!(d && d.offsetParent !== null && !d.classList.contains('hidden'));
-    }
-    // Đọc hộp thoại đang mở: tiêu đề, nội dung, các lựa chọn, nút hành động.
-    function docDialog() {
-      if (!dialogMo()) return null;
-      var choices = $$('#dialog-choices .btn-choice').map(function (b) {
-        var spans = b.querySelectorAll('span');
-        var label = spans.length ? txt(spans[0]) : txt(b);
-        var note = '';
-        b.querySelectorAll('.c-note').forEach(function (s) { note += (note ? ' ' : '') + txt(s); });
-        return { label: label, note: note, disabled: !!b.disabled, el: b };
-      });
-      var act = $('#dialog-action');
-      return {
-        title: txt($('#dialog-title')),
-        text: txt($('#dialog-text')),
-        choices: choices,
-        action: (act && act.offsetParent !== null) ? { label: txt(act), el: act } : null,
-      };
-    }
-    function timLuaChon(dlg, re) {
-      if (!dlg) return null;
-      for (var i = 0; i < dlg.choices.length; i++) {
-        if (re.test(dlg.choices[i].label)) return dlg.choices[i];
+  // ---------------- Vá setPointerCapture (CHẠY ĐẦU TIÊN) ----------------
+  // Game gọi a.setPointerCapture(pointerId) KHÔNG try/catch trong handler
+  // joystick + nút dpad. PointerEvent giả (pointerId tự đặt) làm Chrome throw
+  // NotFoundError -> handler dừng giữa chừng, không bao giờ kéo/nhấn được.
+  // Vá: giữ nguyên hàm gốc, bọc try/catch nuốt lỗi (hành vi thật không đổi).
+  var joyPatchApplied = false;
+  function patchPointerCapture() {
+    try {
+      var proto = Element.prototype;
+      if (proto.setPointerCapture && proto.setPointerCapture.__TT2D_DUOC_PATCHED__) { joyPatchApplied = true; return true; }
+      var origCap = proto.setPointerCapture;
+      var origRel = proto.releasePointerCapture;
+      if (typeof origCap === 'function') {
+        proto.setPointerCapture = function (pid) {
+          try { return origCap.call(this, pid); } catch (e) { return; }
+        };
+        proto.setPointerCapture.__TT2D_DUOC_PATCHED__ = true;
       }
-      return null;
-    }
-    function bamLuaChon(re) {
-      var dlg = docDialog();
-      var c = timLuaChon(dlg, re);
-      if (!c) return false;
-      if (c.disabled) return 'disabled';
-      tap(c.el);
+      if (typeof origRel === 'function') {
+        proto.releasePointerCapture = function (pid) {
+          try { return origRel.call(this, pid); } catch (e) { return; }
+        };
+        proto.releasePointerCapture.__TT2D_DUOC_PATCHED__ = true;
+      }
+      joyPatchApplied = true;
       return true;
+    } catch (e) { return false; }
+  }
+  patchPointerCapture();
+
+  // ---------------- Cấu hình ----------------
+  var CFG = {
+    tile: 32,               // CONFIG.TILE
+    pollMs: 250,            // kiểm tra trạng thái mỗi 250ms
+    taskTimeoutMs: 10 * 60 * 1000, // việc quá 10 phút chưa xong → huỷ, đổi việc
+    maxKetLienTiep: 2,      // kẹt 2 lần liên tiếp → DỪNG tool
+    maxTuDiKhoiDongLai: 3,  // "Tự Đi" dừng giữa chừng thì bật lại tối đa 3 lần
+    tuDiTimeoutMs: 40 * 60 * 1000, // chờ bộ máy "Tự Đi" làm hết lượt (tối đa 40 phút)
+    joyHoldMs: 350,         // giữ joystick mỗi nhịp (chỉ dùng cho nudge cổng)
+    joyLongMs: 900,         // nhịp dài khi kẹt (chỉ dùng cho nudge cổng)
+    joyWaitMs: 250,         // nghỉ giữa các nhịp
+    portalHoldMs: 700,      // giữ joystick để bước qua cổng (nudge)
+    portalTries: 6,         // số nhịp giữ tối đa để qua cổng (dự phòng)
+    ganDaiPhu: 6,           // trong 6 ô quanh Đại Phu thì tính là "gần"
+    hpTuVe: 0.80,           // LK: HP dưới 80% thì bật Auto tự vệ
+    hpAnToan: 0.95,         // LK: HP trên 95% thì tắt Auto tự vệ
+    hpNguyHiem: 0.35,       // HP dưới 35% thì chờ hồi, không bật lại "Tự Đi"
+    hpNhanViec: 0.50,       // HP dưới 50% thì KHÔNG nhận việc mới (code gửi)
+    choDoiMs: 3000,         // chờ hộp thoại mở sau khi bấm tương tác
+    nghiGiuaBuocMs: 600,    // nghỉ giữa các lần bấm nút
+    // --- Lái đa cách (v1.2.0, lấy từ Đi Farm v1.2.0) ---
+    tickMs: 250,            // nhịp kiểm tra vòng lái
+    joyMoveMs: 100,         // nhịp gửi pointermove khi đang kéo joystick
+    stuckMs: 6000,          // game St = 6s không đổi ô -> kẹt
+    detourMs: 2500,         // lái vuông góc mỗi lần đi vòng (2-3s)
+    detourMinMs: 3000,      // đợt đi vòng tối thiểu cho phím/dpad/chạm
+    repathMax: 4,           // kẹt quá 4 lần đi vòng -> dừng
+    legTimeoutMs: 180000,   // tối đa 180s cho 1 chặng đi
+    portalWaitMs: 8000,     // game Ft = 8s chờ đổi map ở cổng
+    nudgeWaitMs: 3000,      // chờ đổi map sau mỗi lần đẩy cổng bằng joystick
+    fightWaitMs: 5000,      // bật Auto đánh trả tối đa 5s khi nghi quái chặn
+    joyMag: 0.75,           // độ kéo joystick (0..1) khi lái
+    joyPointerId: 987654321, // pointerId giả DUY NHẤT cho cả chuỗi down/move/up
+    detectMs: 1200,         // mỗi cách lái dò giữ hướng 1,2s
+    dpadAltMs: 400,         // luân phiên 2 trục dpad mỗi 400ms khi không có nút chéo
+    flySpeedMin: 5,         // ô/s — bay+chạy dưới ngưỡng này là chưa ăn (xem ghi chú v1.2.1 ở khối đo tốc độ)
+    flyWindowMs: 2000,     // cửa sổ TÍCH LŨY đo tốc độ bay (ms giữ phím cộng dồn qua nhiều đợt cùng hướng, chỉ đo khi Chạy đang BẬT)
+    pxPerTile: 32,          // px/ô cho chạm neo camera (mặc định = CONFIG.TILE)
+    tapStableMs: 800,       // đứng yên bao lâu thì coi là ổn định (chờ sau chạm)
+    choTuongTacMs: 150000,  // chờ nhãn "Tương Tác" sau khi bấm bước nhiệm vụ
+    khongTienDoMs: 45000,   // tiến độ không đổi 45s ở bước tương tác -> kẹt
+    afterActionMs: 800,     // nghỉ sau mỗi lần bấm nút hộp thoại
+    tapWaitMs: 2500,        // chờ thoại mở sau mỗi vòng chạm NPC
+    npcWaitMs: 30000,       // chờ mở thoại Đại Phu tối đa 30s
+    quietMs: 5000,          // chặt không tăng tiến độ 5s -> quét nhặt cành rơi
+    hpHoiXong: 0.60,        // hồi tới 60% thì nhận việc lại
+    choHoiMs: 300000,       // chờ hồi máu tối đa 5 phút
+  };
+
+  // ---------------- Bảng việc ----------------
+  // Thứ tự ưu tiên: DC cao nhất trước; hoà DC thì việc gần hơn trước.
+  var TASKS = {
+    cau_ca:        { id: 'cau_ca', ten: 'Câu Cá Làm Dược Liệu', tenNgan: 'Câu Cá', dc: 4, need: 3, kind: 'fishing',
+                     map: 'duoc_vien', x: 18, y: 16, choLam: 'Hồ Bích Thuỷ' },
+    duoc_moc:      { id: 'duoc_moc', ten: 'Thu Gom Dược Mộc', tenNgan: 'Thu Gom', dc: 3, need: 5, kind: 'chop',
+                     map: 'duoc_vien', x: 34, y: 25, choLam: 'Cổ Thụ Linh Mộc' },
+    ho_tong_chau:  { id: 'ho_tong_chau', ten: 'Đưa Người Về Làng', tenNgan: 'Đưa Người', dc: 2, need: 0, kind: 'escort',
+                     map: 'tan_vien', x: 9, y: 10, choLam: 'Thầy Ông Nội (làng)' },
+    truc_gia:      { id: 'truc_gia', ten: 'Trúc Tâm Dẫn Dược', tenNgan: 'Trúc Tâm', dc: 1, need: 4, kind: 'chop',
+                     map: 'thanh_truc_lam', spots: [[18, 5], [27, 12], [10, 20], [31, 8]], choLam: 'Rừng Trúc' },
+    linh_chi:      { id: 'linh_chi', ten: 'Linh Chi Dưới Chân Núi', tenNgan: 'Linh Chi', dc: 1, need: 3, kind: 'harvest',
+                     map: 'tan_vien',
+                     spots: [[19, 2], [20, 2], [18, 3], [21, 3], [23, 3], [25, 3], [28, 3], [32, 1], [31, 2], [33, 2], [30, 3], [33, 3], [6, 3], [7, 3]],
+                     choLam: 'Bắc làng Tản Viên' },
+  };
+  var THU_TU_UU_TIEN = ['cau_ca', 'duoc_moc', 'ho_tong_chau', 'truc_gia', 'linh_chi'];
+  var VIEC_CAM = { dai_hoi: 'Thắng Trận Đại Hội', van_tieu: 'Vận Tiêu Một Chuyến', chien_bang: 'Thắng Trận Tán Tu Chiến Bảng' };
+  var TONG_LUOT_NGAY = 15; // 5 việc thường × 3 lượt
+  // Đại Phu: ô NPC (14,8) theo MapData game.js; ô đứng (14,9) — xem header.
+  var DAI_PHU = { map: 'duoc_vien', x: 14, y: 8 };
+  var DAI_PHU_DUNG = { x: 14, y: 9 };
+  var MAP_TEN = { duoc_vien: 'Thảo Dược Cốc', thanh_truc_lam: 'Rừng Trúc', tan_vien: 'Chân Núi Tản Viên', van_can: 'Hồ Tây', vuon_ca_nhan: 'Vườn Cá Nhân' };
+  // ---------------- Đồ thị cổng (trích từ MapData client 24/11 — như Đi Farm v1.2.0) ----------------
+  // Mỗi cổng: {tx, ty, to} (+ byHand:true nếu cần bấm Tương tác để vào).
+  var PORTALS = {
+    tan_vien: [
+      { tx: 7, ty: 29, to: 'thanh_truc_lam' }, { tx: 8, ty: 29, to: 'thanh_truc_lam' },
+      { tx: 0, ty: 12, to: 'mieu_hoang' }, { tx: 0, ty: 13, to: 'mieu_hoang' },
+      { tx: 39, ty: 14, to: 'bai_da_hang_gio' }, { tx: 39, ty: 15, to: 'bai_da_hang_gio' },
+      // (22,4)->dong_mach_ngam ĐÃ BỊ BUILDER XÓA (filter trong code MTC) — không có ở đây.
+    ],
+    thanh_truc_lam: [
+      { tx: 7, ty: 0, to: 'tan_vien' }, { tx: 8, ty: 0, to: 'tan_vien' },
+      { tx: 12, ty: 29, to: 'duoc_vien' }, { tx: 13, ty: 29, to: 'duoc_vien' },
+      { tx: 39, ty: 13, to: 'long_uyen' }, { tx: 39, ty: 14, to: 'long_uyen' },
+    ],
+    duoc_vien: [
+      { tx: 12, ty: 0, to: 'thanh_truc_lam' }, { tx: 13, ty: 0, to: 'thanh_truc_lam' },
+      { tx: 11, ty: 6, to: 'vuon_ca_nhan' }, { tx: 11, ty: 7, to: 'vuon_ca_nhan' },
+      { tx: 0, ty: 20, to: 'van_can' }, { tx: 0, ty: 21, to: 'van_can' },
+    ],
+    vuon_ca_nhan: [
+      { tx: 8, ty: 12, to: 'duoc_vien' }, { tx: 9, ty: 12, to: 'duoc_vien' },
+    ],
+    van_can: [
+      { tx: 55, ty: 13, to: 'duoc_vien' }, { tx: 55, ty: 14, to: 'duoc_vien' },
+    ],
+    mieu_hoang: [
+      { tx: 19, ty: 6, to: 'tan_vien' }, { tx: 19, ty: 7, to: 'tan_vien' },
+      { tx: 0, ty: 6, to: 'phong_dia' }, { tx: 0, ty: 7, to: 'phong_dia' },
+    ],
+    phong_dia: [
+      { tx: 39, ty: 14, to: 'mieu_hoang' }, { tx: 39, ty: 15, to: 'mieu_hoang' },
+    ],
+    bai_da_hang_gio: [
+      { tx: 0, ty: 27, to: 'tan_vien' }, { tx: 0, ty: 28, to: 'tan_vien' },
+      { tx: 19, ty: 10, to: 'mo_linh_thach' }, { tx: 20, ty: 10, to: 'mo_linh_thach' },
+      { tx: 21, ty: 10, to: 'mo_linh_thach' }, { tx: 22, ty: 10, to: 'mo_linh_thach' },
+      { tx: 23, ty: 10, to: 'mo_linh_thach' }, { tx: 24, ty: 10, to: 'mo_linh_thach' },
+      { tx: 9, ty: 0, to: 'dong_mach_ngam' }, { tx: 10, ty: 0, to: 'dong_mach_ngam' },
+      { tx: 11, ty: 0, to: 'dong_mach_ngam' },
+    ],
+    mo_linh_thach: [
+      { tx: 1, ty: 13, to: 'bai_da_hang_gio' }, { tx: 1, ty: 14, to: 'bai_da_hang_gio' },
+      { tx: 38, ty: 16, to: 'thach_phong_thung_lung' }, { tx: 38, ty: 17, to: 'thach_phong_thung_lung' },
+    ],
+    thach_phong_thung_lung: [
+      { tx: 1, ty: 27, to: 'mo_linh_thach' },
+      { tx: 38, ty: 2, to: 'bat_quai_thach_phan' },
+    ],
+    bat_quai_thach_phan: [
+      { tx: 0, ty: 29, to: 'thach_phong_thung_lung' },
+      { tx: 0, ty: 30, to: 'thach_phong_thung_lung' },
+    ],
+    dong_mach_ngam: [
+      { tx: 14, ty: 25, to: 'bai_da_hang_gio' }, { tx: 15, ty: 25, to: 'bai_da_hang_gio' },
+      { tx: 16, ty: 25, to: 'bai_da_hang_gio' },
+      { tx: 18, ty: 22, to: 'tan_vien' },
+    ],
+    long_uyen: [
+      { tx: 0, ty: 14, to: 'thanh_truc_lam' }, { tx: 0, ty: 15, to: 'thanh_truc_lam' },
+      { tx: 22, ty: 4, to: 'hang_dong_co', byHand: true },
+    ],
+    hang_dong_co: [
+      { tx: 14, ty: 19, to: 'long_uyen' }, { tx: 15, ty: 19, to: 'long_uyen' },
+    ],
+  };
+  // BFS qua đồ thị cổng — cùng ngữ nghĩa với MapData.routeNextHop của game:
+  // trả cổng bước đầu {tx, ty, to, byHand} hoặc null (cùng map / không có đường).
+  function nextHop(fromId, toId) {
+    if (!fromId || !toId || fromId === toId) return null;
+    var seen = {}, q = [];
+    seen[fromId] = true;
+    var first = PORTALS[fromId] || [];
+    for (var i = 0; i < first.length; i++) {
+      var h = first[i];
+      if (!h.to || seen[h.to]) continue;
+      if (h.to === toId) return h;
+      seen[h.to] = true;
+      q.push({ mapId: h.to, first: h });
     }
-    function bamNutHanhDong(re) {
-      var dlg = docDialog();
-      if (!dlg || !dlg.action) return false;
-      if (re && !re.test(dlg.action.label)) return false;
-      tap(dlg.action.el);
-      return true;
-    }
-    function dongDialog() {
-      var c = $('#dialog-close');
-      if (c && dialogMo()) tap(c);
-    }
-    // Điểm Dược Công hiện tại ("Dược Công: X điểm" trong hộp thoại).
-    function docDC(dlg) {
-      var t = dlg ? dlg.text : '';
-      var m = t.match(/Dược Công:\s*(\d+)\s*điểm/);
-      return m ? parseInt(m[1], 10) : null;
-    }
-    // Lượt còn lại từng việc — đọc từ ghi chú "còn r/c lượt" / "Hết c/c lượt".
-    function docLuotTuDanhSach(dlg) {
-      var out = {};
-      if (!dlg) return out;
-      dlg.choices.forEach(function (c) {
-        var id = null;
-        Object.keys(TASKS).forEach(function (k) {
-          if (c.label.indexOf(TASKS[k].tenNgan) >= 0 || c.label === TASKS[k].ten || c.label.indexOf(TASKS[k].ten) >= 0) id = k;
-        });
-        if (!id) return;
-        var m = c.note.match(/còn\s*(\d+)\s*\/\s*(\d+)\s*lượt/);
-        if (m) { out[id] = parseInt(m[1], 10); return; }
-        var m2 = c.note.match(/Hết\s*(\d+)\s*\/\s*(\d+)\s*lượt/);
-        if (m2) { out[id] = 0; return; }
-        if (/Cần đạt/.test(c.note)) out[id] = null; // bị khoá cảnh giới
-      });
-      return out;
-    }
-    // Vị trí nhân vật + tên map — đọc từ chữ trong trang.
-    function docViTri() {
-      var t = document.body ? (document.body.innerText || '') : '';
-      var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
-      var map = null;
-      var hm = document.querySelector('#hud-map');
-      var hmt = hm ? (hm.innerText || hm.textContent || '').trim() : '';
-      function nhanMap(s) {
-        if (/Hồ Tây/.test(s)) return 'van_can';
-        if (/Thảo Dược Cốc/.test(s)) return 'duoc_vien';
-        if (/Rừng Trúc/.test(s)) return 'thanh_truc_lam';
-        if (/Chân Núi Tản Viên/.test(s)) return 'tan_vien';
-        if (/Vườn Cá Nhân/.test(s)) return 'vuon_ca_nhan';
-        return null;
+    while (q.length) {
+      var cur = q.shift();
+      var list = PORTALS[cur.mapId] || [];
+      for (var j = 0; j < list.length; j++) {
+        var h2 = list[j];
+        if (!h2.to || seen[h2.to]) continue;
+        if (h2.to === toId) return cur.first;
+        seen[h2.to] = true;
+        q.push({ mapId: h2.to, first: cur.first });
       }
-      if (hmt) map = nhanMap(hmt);
-      if (!map) map = nhanMap(t);
-      return { x: m ? parseInt(m[1], 10) : null, y: m ? parseInt(m[2], 10) : null, map: map };
     }
-    // HP người chơi — đọc từ thanh HP (.pl-bar.hp .pl-n "cur / max").
-    function docHP() {
-      var el = document.querySelector('.pl-bar.hp .pl-n');
-      if (!el) return null;
-      var m = txt(el).match(/(\d+)\s*\/\s*(\d+)/);
-      if (!m) return null;
-      var cur = parseInt(m[1], 10), max = parseInt(m[2], 10);
-      if (!max) return null;
-      return { cur: cur, max: max, tiLe: cur / max };
-    }
-    // Chữ thông báo của game (#ritual-caption).
-    function docCaption() { return txt($('#ritual-caption')); }
-    // Tiến độ việc đang làm — đọc từ #quest-objectives.
-    function docTracker() {
-      var el = $('#quest-objectives');
-      if (!el) return '';
-      return txt(el);
-    }
-    // Việc đang làm (đoán từ tracker + hộp thoại): trả về id việc hoặc null.
-    function doanViecDangLam() {
-      var t = docTracker() + ' ' + (docDialog() ? docDialog().text : '');
-      if (/Câu\s/.test(t) && /cá/i.test(t)) return 'cau_ca';
-      if (/Thu Gom|Cành Khô|cành khô/i.test(t)) return 'duoc_moc';
-      if (/Dẫn Cháu|Đưa Người|Thầy Ông Nội/i.test(t)) return 'ho_tong_chau';
-      if (/Linh Chi/i.test(t)) return 'linh_chi';
-      if (/Trúc Tâm|Trúc Già/i.test(t)) return 'truc_gia';
-      return null;
-    }
-    // Tên việc đang giữ (đoán từ tracker) — dùng để log khi dừng vì việc lạ.
-    function tenViecDangGiu() {
-      var id = doanViecDangLam();
-      if (id && TASKS[id]) return TASKS[id].ten;
-      var tr = docTracker();
-      if (tr) return tr;
-      return 'việc chưa rõ tên';
-    }
-    // Việc dược ĐANG GIỮ — nhận diện từ tracker (#quest-objectives) + hộp
-    // thoại đang mở. Trả về {id, kind, ten} hoặc null nếu không giữ việc
-    // dược nào nhận diện được. Khớp Đại Hội / Tán Tu / Vận Tiêu TRƯỚC
-    // (tên riêng), rồi mới tới 5 việc thường. Dùng cho: nút "TỰ ĐI LÀM
-    // VIỆC ĐÃ NHẬN" + quyết định tiếp tục / huỷ / dừng khi bật tool.
-    // (Tên việc lấy từ client 24/11 — game.js: dai_hoi "Thắng Trận Đại Hội"
-    // kind "tournament"; chien_bang "Thắng Trận Tán Tu Chiến Bảng" kind
-    // "chien_bang"; van_tieu "Vận Tiêu Một Chuyến" kind "convoy".)
-    var VIEC_DAC_BIET = {
-      dai_hoi: { id: 'dai_hoi', kind: 'tournament', ten: 'Thắng Trận Đại Hội', re: /Thắng Trận Đại Hội|Đại Hội Tu Tiên/ },
-      chien_bang: { id: 'chien_bang', kind: 'chien_bang', ten: 'Thắng Trận Tán Tu Chiến Bảng', re: /Tán Tu/ },
-      van_tieu: { id: 'van_tieu', kind: 'convoy', ten: 'Vận Tiêu Một Chuyến', re: /Vận Tiêu/ },
+    return null;
+  }
+  // w/h map (ô) theo MapData client 24/11 + điểm an toàn (= spawn).
+  var MAPS = {
+    phong_dia:      { ten: 'Phong Địa',            safe: [37, 14], w: 40, h: 30 },
+    duoc_vien:      { ten: 'Thảo Dược Cốc',        safe: [12, 2],  w: 40, h: 30 },
+    dong_mach_ngam: { ten: 'Miếu Ông Trường Con',  safe: [15, 22], w: 36, h: 24 },
+    hang_dong_co:   { ten: 'Hang Động',            safe: [14, 16], w: 30, h: 20 },
+    bai_da_hang_gio:{ ten: 'Bãi Đá',               safe: [3, 28],  w: 40, h: 30 },
+    mo_linh_thach:  { ten: 'Mỏ Linh Thạch',        safe: [3, 27],  w: 40, h: 30 },
+    thach_phong_thung_lung: { ten: 'Thung Lũng (Thạch Phong)', safe: [3, 27], w: 40, h: 30 },
+    mieu_hoang:     { ten: 'Miếu Hoang',           safe: [18, 6],  w: 20, h: 14 },
+    tan_vien:       { ten: 'Chân Núi Tản Viên',    safe: [8, 26],  w: 40, h: 30 },
+    thanh_truc_lam: { ten: 'Rừng Trúc',            safe: [7, 2],   w: 40, h: 30 },
+    van_can:        { ten: 'Hồ Tây',               safe: [33, 31], w: 56, h: 36 },
+    long_uyen:      { ten: 'Long Uyên Cốc',        safe: [2, 14],  w: 40, h: 30 },
+    vuon_ca_nhan:   { ten: 'Vườn Cá Nhân',         safe: [8, 10],  w: 18, h: 13 },
+  };
+  function tenMap(id) { return (MAPS[id] && MAPS[id].ten) || MAP_TEN[id] || id || '?'; }
+  // Tên HUD -> map id (đọc #hud-map).
+  var HUD_MAP = [
+    [/Hồ Tây/, 'van_can'], [/Thảo Dược Cốc/, 'duoc_vien'],
+    [/Rừng Trúc/, 'thanh_truc_lam'], [/Chân Núi Tản Viên/, 'tan_vien'],
+    [/Miếu Ông Trường Con/, 'dong_mach_ngam'], [/Bãi Đá/, 'bai_da_hang_gio'],
+    [/Miếu Hoang/, 'mieu_hoang'], [/Phong Địa/, 'phong_dia'],
+    [/Hang Động/, 'hang_dong_co'], [/Mỏ Linh Thạch/, 'mo_linh_thach'],
+    [/Thung Lũng/, 'thach_phong_thung_lung'],
+    [/Bát Quái/, 'bat_quai_thach_phan'],
+    [/Long Uyên/, 'long_uyen'],
+    [/Vườn Cá/, 'vuon_ca_nhan'],
+  ];
+  // Map không có đường bộ đi ra (phó bản / sự kiện) — báo rõ thay vì đi lạc.
+  var KHONG_DUONG = { tam_lo: 1, dai_hoi_cho: 1, dai_hoi_dau: 1, chien_bang_dai: 1, dai_hoi_doi: 1, san_dau_vip: 1, chien_truong: 1, huyet_xich: 1, yen_lang: 1, lam_lang: 1 };
+
+  // ---------------- Trạng thái ----------------
+  var on = false;
+  var phase = 'idle'; // idle | di_dai_phu | cho_dai_phu | mo_menu | tu_di | nhan_viec | xac_nhan | di_lam | lam_viec | ve_nop | nop | cho_hoi | kiem_tra_xong | ket_thuc
+  var realm = null;   // 'truc_co' | 'luyen_khi' (nhận biết từ menu Đại Phu)
+  var viecHienTai = null; // id việc đang làm (LK) hoặc việc bộ máy đang làm (TC, đọc từ tracker)
+  var luotDaLam = 0;      // số lượt đã nộp xong (đếm theo lần nộp tool thấy)
+  var luotConLai = {};    // id việc -> số lượt còn lại hôm nay (đọc từ bảng game)
+  var dcHienTai = null;   // điểm Dược Công hiện tại (đọc từ hộp thoại)
+  var dcLucBatDau = null;
+  var dcLocalLucBatDau = null; // DC đọc từ localStorage lúc BẬT (đối chiếu)
+  var taskBatDauAt = 0;   // thời điểm bắt đầu việc hiện tại
+  var demKet = 0;         // số lần kẹt liên tiếp
+  var demTuDiLai = 0;     // số lần bật lại "Tự Đi"
+  var daNhanViec = false; // phiên này tool đã nhận được ít nhất 1 việc (để phân biệt việc dở có sẵn với việc của tool)
+  var viecNhanTay = false; // đang tiếp tục việc NHẬN BẰNG TAY (không phải việc tool tự nhận): kẹt đường thì DỪNG báo rõ, KHÔNG tự huỷ
+  var tuVeDangBat = false;// LK: Auto tự vệ đang bật?
+  var logLines = [];
+  var G = { dc: null }; // DC hiển thị trên panel (đọc từ localStorage khi nộp xong)
+  var collapsed = false;  // bảng đang thu nhỏ?
+  // --- Lái đa cách (v1.2.0) ---
+  var steerMethod = null; // 'keys'|'joystick'|'dpad'|'tap' — dò 1 lần mỗi phiên chạy
+  var flyingBelief = false; // tin là đang bay (class #btn-fly đã biết sai live — kiểm chứng bằng tốc độ)
+  var flySpeedChecked = false, flyRetryDone = false, flySpeedMeasured = null, flySpeedFirst = null;
+  var flyMeas = null; // cửa sổ tích lũy đo tốc độ bay: {x, y, ms, sx, sy} — vị trí đầu cửa sổ, tổng ms giữ phím, dấu hướng
+  var camAnchor = null; // {x,y} ô tại tâm canvas (chạm neo camera)
+  var heldKeys = {}; // code -> true (phím tool đang giữ)
+  var dpadHeld = null; // nút dpad đang giữ
+  var guardMap = null; // map lúc bắt đầu đợt lái — đổi map giữa đợt thì dừng đợt ngay
+  var legDeadline = 0; // hạn giờ chặng đi hiện tại (ms epoch) — đợt lái cũng phải tôn trọng
+  var steerToken = 0;  // tăng mỗi lần DỪNG — đợt lái đang chạy thấy token đổi thì nhả đầu vào và dừng
+
+  function log(msg) {
+    var t = new Date();
+    var hh = ('0' + t.getHours()).slice(-2), mm = ('0' + t.getMinutes()).slice(-2), ss = ('0' + t.getSeconds()).slice(-2);
+    var line = hh + ':' + mm + ':' + ss + ' — ' + msg;
+    logLines.push(line);
+    if (logLines.length > 40) logLines.shift();
+    renderLog();
+  }
+  // Vẽ logLines vào ô log của panel (gọi từ log()).
+  function renderLog() {
+    var el = document.getElementById('tt2d-duoc-log');
+    if (!el) return;
+    el.innerHTML = logLines.map(function (l) {
+      var div = document.createElement('div');
+      div.textContent = l;
+      return div.outerHTML;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function $(s) { return document.querySelector(s); }
+  function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function txt(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }
+  function dirName(dx, dy) {
+    var ns = dy > 0 ? 'nam' : dy < 0 ? 'bắc' : '';
+    var ew = dx > 0 ? 'đông' : dx < 0 ? 'tây' : '';
+    return (ns && ew) ? ns + '-' + ew : (ns || ew || 'đứng yên');
+  }
+  function fmtSec(ms) { return (ms / 1000).toFixed(1).replace('.', ',') + 's'; }
+
+  // ---------------- Đọc trạng thái game (chỉ đọc DOM) ----------------
+  function dialogMo() {
+    var d = $('#dialog');
+    return !!(d && d.offsetParent !== null && !d.classList.contains('hidden'));
+  }
+  // Đọc hộp thoại đang mở: tiêu đề, nội dung, các lựa chọn, nút hành động.
+  function docDialog() {
+    if (!dialogMo()) return null;
+    var choices = $$('#dialog-choices .btn-choice').map(function (b) {
+      var spans = b.querySelectorAll('span');
+      var label = spans.length ? txt(spans[0]) : txt(b);
+      var note = '';
+      b.querySelectorAll('.c-note').forEach(function (s) { note += (note ? ' ' : '') + txt(s); });
+      return { label: label, note: note, disabled: !!b.disabled, el: b };
+    });
+    var act = $('#dialog-action');
+    return {
+      title: txt($('#dialog-title')),
+      text: txt($('#dialog-text')),
+      choices: choices,
+      action: (act && act.offsetParent !== null) ? { label: txt(act), el: act } : null,
     };
-    // Tên việc cấm nhận — chặn cuối ở bộ chọn việc (phòng nhận nhầm từ
-    // danh sách hộp thoại). Chỉ 5 việc thường được nhận.
-    function laViecCam(tenViec) {
-      return /Đại Hội|Tán Tu|Vận Tiêu/.test(tenViec || '');
+  }
+  function timLuaChon(dlg, re) {
+    if (!dlg) return null;
+    for (var i = 0; i < dlg.choices.length; i++) {
+      if (re.test(dlg.choices[i].label)) return dlg.choices[i];
     }
-    function docViecDangGiu() {
-      var dlg = docDialog();
-      var t = docTracker() + ' ' + (dlg ? ((dlg.text || '') + ' ' + (dlg.title || '')) : '');
-      var k;
-      for (k in VIEC_DAC_BIET) {
-        if (VIEC_DAC_BIET[k].re.test(t)) return VIEC_DAC_BIET[k];
-      }
-      var id = doanViecDangLam();
-      if (id && TASKS[id]) return { id: id, kind: TASKS[id].kind, ten: TASKS[id].ten };
-      return null;
-    }
-    // Việc đang giữ đã đủ điều kiện nộp chưa (tiến độ a/b đầy; cần max > 0
-    // vì việc Đưa Người không có số a/b trong tracker).
-    function viecDaXong() {
-      var td = docTienDo();
-      return !!(td && td.max > 0 && td.cur >= td.max);
-    }
-    // Tiến độ "a/b" trong tracker (vd "2/3").
-    function docTienDo() {
-      var t = docTracker();
-      var m = t.match(/(\d+)\s*\/\s*(\d+)/);
-      return m ? { cur: parseInt(m[1], 10), max: parseInt(m[2], 10) } : null;
-    }
-    function ganDaiPhu() {
-      var p = docViTri();
-      if (p.map !== 'duoc_vien' || p.x === null) return false;
-      return Math.abs(p.x - DAI_PHU.x) + Math.abs(p.y - DAI_PHU.y) <= CFG.ganDaiPhu;
-    }
-
-    // ---------------- Bấm nút game bằng sự kiện pointer ----------------
-    // game.js (client 24/11): nút HUD (#btn-attack, #btn-fly,
-    // #btn-auto-touch, #btn-target, #btn-fishing-stop-touch,
-    // #btn-meditate-touch, #btn-run) CHỈ bind "pointerdown" (helper k()
-    // trong TouchUI: addEventListener "pointerdown" duy nhất, KHÔNG có
-    // listener "click") — .click() lên các nút này là no-op, đã làm tool
-    // Dược liệt hoàn toàn (không mở được hộp thoại Đại Phu, không bật/tắt
-    // được Auto/Phi Hành — Thanh báo lỗi 25/11). Nút hộp thoại
-    // (.btn-choice, #dialog-action, #dialog-close) thì bind "click".
-    // tap() phát pointerdown + pointerup + click nên bấm được cả hai
-    // loại; mỗi nút chỉ bind 1 loại nên không bấm đúp.
-    // LƯU Ý: pressAutoToggle/pressFlyToggle chỉ đặt cờ _autoToggle/
-    // _flyToggle, game tiêu thụ cờ ở frame sau nên class "active" đổi
-    // CHẬM hơn lệnh bấm ~1 frame — KHÔNG kiểm tra lại trạng thái ngay
-    // sau khi bấm (đọc class cũ sẽ tưởng chưa đổi rồi bấm lần nữa =
-    // toggle 2 lần về trạng thái cũ). Bấm đúng 1 lần rồi thôi.
-    function tap(el) {
-      if (!el) return false;
-      var r = el.getBoundingClientRect();
-      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      function ev(ty) {
-        return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: cx, clientY: cy, pointerId: 12345, isPrimary: true });
-      }
-      el.dispatchEvent(ev('pointerdown'));
-      el.dispatchEvent(ev('pointerup'));
-      el.click();
-      return true;
-    }
-
-    // ---------------- Nút Auto / Phi Hành / Chạy ----------------
-    function nutAuto() { return $('#btn-auto-touch') || $('#btn-auto'); }
-    function autoDangBat() {
-      var b = nutAuto();
-      return !!(b && b.classList.contains('active'));
-    }
-    function datAuto(bat) {
-      var b = nutAuto();
-      if (!b) return false;
-      if (autoDangBat() === bat) return true;
-      // Chỉ bấm 1 lần bằng tap() (nút nghe pointerdown, không nghe click);
-      // trạng thái đổi ở frame sau nên không kiểm tra lại ngay tại đây.
-      return tap(b);
-    }
-    function flyDangBat() {
-      var b = $('#btn-fly');
-      return !!(b && b.classList.contains('active'));
-    }
-    function datFly(bat) {
-      var b = $('#btn-fly');
-      if (!b) return false;
-      if (flyDangBat() === bat) return true;
-      return tap(b);
-    }
-    function runDangBat() {
-      var b = $('#btn-run');
-      return !!(b && b.classList.contains('active'));
-    }
-    function datRun(bat) {
-      var b = $('#btn-run');
-      if (!b) return false;
-      if (runDangBat() === bat) return true;
-      // Nút Chạy nghe pointerdown — dispatch đúng loại sự kiện của nó.
-      var r = b.getBoundingClientRect();
-      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      ['pointerdown', 'pointerup'].forEach(function (ty) {
-        b.dispatchEvent(new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: cx, clientY: cy, pointerId: 1 }));
+    return null;
+  }
+  // Hộp thoại đang mở có phải MENU chính của Đại Phu không — phân biệt với
+  // danh sách việc / hộp xác nhận / Quầy Đổi Hạt (cùng tiêu đề "Đại Phu"
+  // nhưng không có các lựa chọn của menu). moHopThoaiDaiPhu chỉ tin thoại
+  // là menu chính; thoại khác thì đóng rồi mở lại. (Bắt được ở test (c)
+  // 26/11: moHopThoaiDaiPhu tin cả thoại câu cá đang mở, nopViec tưởng
+  // đã ở menu Đại Phu nên không bao giờ đi về nộp.)
+  function laMenuDaiPhu(dlg) {
+    if (!dlg) return false;
+    if (!/Đại Phu|Dược Công/.test((dlg.title || '') + ' ' + (dlg.text || ''))) return false;
+    if (timLuaChon(dlg, /Nhận Việc Dược Công|Tự Đi Làm Việc Dược Công|Huỷ Nhiệm Vụ|Hủy Nhiệm Vụ|Mở Quầy Đổi Hạt/)) return true;
+    if (dlg.action && /Giao Ba Cá|Giao Nguyên Liệu/.test(dlg.action.label)) return true;
+    return false;
+  }
+  function bamLuaChon(re) {
+    var dlg = docDialog();
+    var c = timLuaChon(dlg, re);
+    if (!c) return false;
+    if (c.disabled) return 'disabled';
+    tap(c.el);
+    return true;
+  }
+  function bamNutHanhDong(re) {
+    var dlg = docDialog();
+    if (!dlg || !dlg.action) return false;
+    if (re && !re.test(dlg.action.label)) return false;
+    tap(dlg.action.el);
+    return true;
+  }
+  function dongDialog() {
+    var c = $('#dialog-close');
+    if (c && dialogMo()) tap(c);
+  }
+  // Điểm Dược Công hiện tại ("Dược Công: X điểm" trong hộp thoại).
+  function docDC(dlg) {
+    var t = dlg ? dlg.text : '';
+    var m = t.match(/Dược Công:\s*(\d+)\s*điểm/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+  // Điểm Dược Công từ localStorage (CONFIG.PROGRESS_KEY "pntt_progress_v1",
+  // trường duocCong) — dùng để đối chiếu sau mỗi lần nộp.
+  function docDCLocal() {
+    try {
+      var raw = localStorage.getItem('pntt_progress_v1');
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      return (o && typeof o.duocCong === 'number') ? o.duocCong : null;
+    } catch (e) { return null; }
+  }
+  // Lượt còn lại từng việc — đọc từ ghi chú "còn r/c lượt" / "Hết c/c lượt".
+  function docLuotTuDanhSach(dlg) {
+    var out = {};
+    if (!dlg) return out;
+    dlg.choices.forEach(function (c) {
+      var id = null;
+      Object.keys(TASKS).forEach(function (k) {
+        if (c.label.indexOf(TASKS[k].tenNgan) >= 0 || c.label === TASKS[k].ten || c.label.indexOf(TASKS[k].ten) >= 0) id = k;
       });
-      return true;
+      if (!id) return;
+      var m = c.note.match(/còn\s*(\d+)\s*\/\s*(\d+)\s*lượt/);
+      if (m) { out[id] = parseInt(m[1], 10); return; }
+      var m2 = c.note.match(/Hết\s*(\d+)\s*\/\s*(\d+)\s*lượt/);
+      if (m2) { out[id] = 0; return; }
+      if (/Cần đạt/.test(c.note)) out[id] = null; // bị khoá cảnh giới
+    });
+    return out;
+  }
+  // Vị trí nhân vật (ô) + map id — đọc từ #hud-pos / #hud-map, dự phòng
+  // chữ trong trang.
+  function docMapId() {
+    var hm = $('#hud-map');
+    var s = hm ? (hm.innerText || hm.textContent || '').trim() : '';
+    for (var i = 0; i < HUD_MAP.length; i++) {
+      if (HUD_MAP[i][0].test(s)) return HUD_MAP[i][1];
     }
-    // Nút Tương Tác (#btn-attack đổi nhãn khi đứng gần NPC/vật).
-    function nutTuongTac() {
-      var b = $('#btn-attack');
-      if (!b || b.offsetParent === null) return null;
-      var aria = b.getAttribute('aria-label') || '';
-      var label = txt(b.querySelector('.skill-name')) || txt(b);
-      return { el: b, aria: aria, label: label, laTuongTac: /Tương tác/i.test(aria) || /Tương Tác/i.test(label) };
+    var t = document.body ? (document.body.innerText || '') : '';
+    if (/Hồ Tây/.test(t)) return 'van_can';
+    if (/Thảo Dược Cốc/.test(t)) return 'duoc_vien';
+    if (/Rừng Trúc/.test(t)) return 'thanh_truc_lam';
+    if (/Chân Núi Tản Viên/.test(t)) return 'tan_vien';
+    if (/Vườn Cá Nhân/.test(t)) return 'vuon_ca_nhan';
+    return null;
+  }
+  function docViTri() {
+    var hp = $('#hud-pos');
+    var t = hp ? (hp.innerText || hp.textContent || '') : '';
+    var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    if (!m) {
+      var bt = document.body ? (document.body.innerText || '') : '';
+      m = bt.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
     }
+    return { x: m ? parseInt(m[1], 10) : null, y: m ? parseInt(m[2], 10) : null, map: docMapId() };
+  }
+  function docCell() {
+    var p = docViTri();
+    return (p.x === null) ? null : { x: p.x, y: p.y };
+  }
+  // HP người chơi — #value-hp ("hp / max") chính, .pl-bar.hp .pl-n rồi
+  // #hud-left dự phòng. (#row-hp mà code gửi dùng KHÔNG tồn tại trong game.js.)
+  function docHP() {
+    var el = $('#value-hp');
+    var t = el ? (el.innerText || el.textContent || '').trim() : '';
+    var m = t.match(/(\d+)\s*\/\s*(\d+)/);
+    if (!m) {
+      var el2 = document.querySelector('.pl-bar.hp .pl-n');
+      if (el2) m = txt(el2).match(/(\d+)\s*\/\s*(\d+)/);
+    }
+    if (!m) {
+      var el3 = $('#hud-left');
+      if (el3) m = (el3.innerText || el3.textContent || '').match(/(\d+)\s*\/\s*(\d+)/);
+    }
+    if (!m) return null;
+    var cur = parseInt(m[1], 10), max = parseInt(m[2], 10);
+    if (!max) return null;
+    return { cur: cur, max: max, tiLe: cur / max };
+  }
+  // Nhân vật đã gục? Chỉ đọc #downed (badge #downed-badge nằm TRONG #downed
+  // nên đọc riêng badge sẽ báo gục nhầm 100% — bài học Đi Farm v1.1.0).
+  function docGuc() {
+    var d = $('#downed');
+    if (!d) return false;
+    return d.offsetParent !== null && !d.classList.contains('hidden');
+  }
+  // Chữ thông báo của game (#ritual-caption).
+  function docCaption() { return txt($('#ritual-caption')); }
+  // Tiến độ việc đang làm — đọc từ #quest-objectives.
+  function docTracker() {
+    var el = $('#quest-objectives');
+    if (!el) return '';
+    return txt(el);
+  }
+  // Việc đang làm (đoán từ tracker + hộp thoại): trả về id việc hoặc null.
+  function doanViecDangLam() {
+    var t = docTracker() + ' ' + (docDialog() ? docDialog().text : '');
+    if (/Câu\s/.test(t) && /cá/i.test(t)) return 'cau_ca';
+    if (/Thu Gom|Cành Khô|cành khô/i.test(t)) return 'duoc_moc';
+    if (/Dẫn Cháu|Đưa Người|Thầy Ông Nội/i.test(t)) return 'ho_tong_chau';
+    if (/Linh Chi/i.test(t)) return 'linh_chi';
+    if (/Trúc Tâm|Trúc Già/i.test(t)) return 'truc_gia';
+    return null;
+  }
+  // Tên việc đang giữ (đoán từ tracker) — dùng để log khi dừng vì việc lạ.
+  function tenViecDangGiu() {
+    var id = doanViecDangLam();
+    if (id && TASKS[id]) return TASKS[id].ten;
+    var tr = docTracker();
+    if (tr) return tr;
+    return 'việc chưa rõ tên';
+  }
+  // Việc dược ĐANG GIỮ — nhận diện từ tracker (#quest-objectives) + hộp
+  // thoại đang mở. Trả về {id, kind, ten} hoặc null nếu không giữ việc
+  // dược nào nhận diện được. Khớp Đại Hội / Tán Tu / Vận Tiêu TRƯỚC
+  // (tên riêng), rồi mới tới 5 việc thường. Dùng cho: nút "TỰ ĐI LÀM
+  // VIỆC ĐÃ NHẬN" + quyết định tiếp tục / huỷ / dừng khi bật tool.
+  // (Tên việc lấy từ client 24/11 — game.js: dai_hoi "Thắng Trận Đại Hội"
+  // kind "tournament"; chien_bang "Thắng Trận Tán Tu Chiến Bảng" kind
+  // "chien_bang"; van_tieu "Vận Tiêu Một Chuyến" kind "convoy".)
+  var VIEC_DAC_BIET = {
+    dai_hoi: { id: 'dai_hoi', kind: 'tournament', ten: 'Thắng Trận Đại Hội', re: /Thắng Trận Đại Hội|Đại Hội Tu Tiên/ },
+    chien_bang: { id: 'chien_bang', kind: 'chien_bang', ten: 'Thắng Trận Tán Tu Chiến Bảng', re: /Tán Tu/ },
+    van_tieu: { id: 'van_tieu', kind: 'convoy', ten: 'Vận Tiêu Một Chuyến', re: /Vận Tiêu/ },
+  };
+  // Tên việc cấm nhận — chặn cuối ở bộ chọn việc (phòng nhận nhầm từ
+  // danh sách hộp thoại). Chỉ 5 việc thường được nhận.
+  function laViecCam(tenViec) {
+    return /Đại Hội|Tán Tu|Vận Tiêu/.test(tenViec || '');
+  }
+  function docViecDangGiu() {
+    var dlg = docDialog();
+    var t = docTracker() + ' ' + (dlg ? ((dlg.text || '') + ' ' + (dlg.title || '')) : '');
+    var k;
+    for (k in VIEC_DAC_BIET) {
+      if (VIEC_DAC_BIET[k].re.test(t)) return VIEC_DAC_BIET[k];
+    }
+    var id = doanViecDangLam();
+    if (id && TASKS[id]) return { id: id, kind: TASKS[id].kind, ten: TASKS[id].ten };
+    return null;
+  }
+  // Việc đang giữ đã đủ điều kiện nộp chưa (tiến độ a/b đầy; cần max > 0
+  // vì việc Đưa Người không có số a/b trong tracker).
+  function viecDaXong() {
+    var td = docTienDo();
+    return !!(td && td.max > 0 && td.cur >= td.max);
+  }
+  // Tiến độ "a/b" trong tracker (vd "2/3").
+  function docTienDo() {
+    var t = docTracker();
+    var m = t.match(/(\d+)\s*\/\s*(\d+)/);
+    return m ? { cur: parseInt(m[1], 10), max: parseInt(m[2], 10) } : null;
+  }
+  function ganDaiPhu() {
+    var p = docViTri();
+    if (p.map !== 'duoc_vien' || p.x === null) return false;
+    return Math.abs(p.x - DAI_PHU.x) + Math.abs(p.y - DAI_PHU.y) <= CFG.ganDaiPhu;
+  }
 
-    // ---------------- Lái nhân vật bằng joystick ----------------
-    // Dispatch pointerdown/move/up lên #joystick (client không kiểm tra
-    // isTrusted — đã xác minh 0 lần xuất hiện trong game.js).
-    function joyHold(dx, dy, ms) {
-      var joy = $('#joystick');
-      if (!joy) return false;
-      var r = joy.getBoundingClientRect();
-      if (!r.width || !r.height) return false;
-      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      var pid = 12345;
-      function ev(ty, x, y) {
-        return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: pid, isPrimary: true });
-      }
-      joy.dispatchEvent(ev('pointerdown', cx, cy));
-      var steps = 4;
-      for (var i = 1; i <= steps; i++) {
-        joy.dispatchEvent(ev('pointermove', cx + dx * i / steps, cy + dy * i / steps));
-      }
-      return new Promise(function (resolve) {
-        setTimeout(function () {
-          joy.dispatchEvent(ev('pointerup', cx + dx, cy + dy));
-          setTimeout(resolve, CFG.joyWaitMs);
-        }, ms);
-      });
+  // ---------------- Bấm nút game bằng sự kiện pointer ----------------
+  // game.js (client 24/11): nút HUD (#btn-attack, #btn-fly,
+  // #btn-auto-touch, #btn-target, #btn-fishing-stop-touch,
+  // #btn-meditate-touch, #btn-run) CHỈ bind "pointerdown" (helper k()
+  // trong TouchUI: addEventListener "pointerdown" duy nhất, KHÔNG có
+  // listener "click") — .click() lên các nút này là no-op, đã làm tool
+  // Dược liệt hoàn toàn (không mở được hộp thoại Đại Phu, không bật/tắt
+  // được Auto/Phi Hành — Thanh báo lỗi 25/11). Nút hộp thoại
+  // (.btn-choice, #dialog-action, #dialog-close) thì bind "click".
+  // tap() phát pointerdown + pointerup + click nên bấm được cả hai
+  // loại; mỗi nút chỉ bind 1 loại nên không bấm đúp.
+  // LƯU Ý: pressAutoToggle/pressFlyToggle chỉ đặt cờ _autoToggle/
+  // _flyToggle, game tiêu thụ cờ ở frame sau nên class "active" đổi
+  // CHẬM hơn lệnh bấm ~1 frame — KHÔNG kiểm tra lại trạng thái ngay
+  // sau khi bấm (đọc class cũ sẽ tưởng chưa đổi rồi bấm lần nữa =
+  // toggle 2 lần về trạng thái cũ). Bấm đúng 1 lần rồi thôi.
+  function tap(el) {
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    function ev(ty) {
+      return new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: cx, clientY: cy, pointerId: 12345, isPrimary: true });
     }
-    function joyHuong(dx, dy, ms) {
-      // Chỉ lái 1 trục mỗi nhịp (ưu tiên trục lệch nhiều hơn) để khỏi lạc.
-      if (Math.abs(dx) >= Math.abs(dy)) return joyHold(dx > 0 ? 40 : -40, 0, ms);
-      return joyHold(0, dy > 0 ? 40 : -40, ms);
+    el.dispatchEvent(ev('pointerdown'));
+    el.dispatchEvent(ev('pointerup'));
+    el.click();
+    return true;
+  }
+  // pressDom = tap (tên dùng trong code gửi).
+  function pressDom(el) { return tap(el); }
+
+  // ---------------- Nút Auto / Phi Hành / Chạy ----------------
+  function nutAuto() { return $('#btn-auto-touch') || $('#btn-auto'); }
+  function autoDangBat() {
+    // Game có 2 nút Auto (#btn-auto / #btn-auto-touch) cùng 1 trạng thái —
+    // kiểm tra cả hai (như Đi Farm v1.2.0) để không đọc nhầm khi 1 nút
+    // chưa kịp cập nhật class.
+    var b1 = $('#btn-auto'), b2 = $('#btn-auto-touch');
+    return !!((b1 && b1.classList.contains('active')) || (b2 && b2.classList.contains('active')));
+  }
+  function datAuto(bat) {
+    var b = nutAuto();
+    if (!b) return false;
+    if (autoDangBat() === bat) return true;
+    // Chỉ bấm 1 lần bằng tap() (nút nghe pointerdown, không nghe click);
+    // trạng thái đổi ở frame sau nên không kiểm tra lại ngay tại đây.
+    return tap(b);
+  }
+  function flyDangBat() {
+    var b = $('#btn-fly');
+    return !!(b && b.classList.contains('active'));
+  }
+  function datFly(bat) {
+    bat = !!bat;
+    var b = $('#btn-fly');
+    if (!b) return false;
+    if (flyDangBat() !== bat) tap(b);
+    // flyingBelief là "tin là đang bay" — class nút đã biết sai live nên
+    // đây chỉ là gợi ý; kiểm chứng thật bằng tốc độ ở đợt lái đầu.
+    flyingBelief = bat;
+    return true; // game tiêu thụ cờ toggle ở frame sau — bấm đúng 1 lần
+  }
+  // Bấm Phi Hành bằng phím KeyF (keydown+keyup tổng hợp lên body).
+  // Game: keydown KeyF -> _flyToggle (bỏ qua e.repeat). Dùng cho lần bấm
+  // lại duy nhất khi kiểm chứng tốc độ thấy bay chưa ăn.
+  function pressFlyKey() {
+    var tgt = document.body || document.documentElement;
+    tgt.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true, cancelable: true }));
+    tgt.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyF', key: 'f', bubbles: true, cancelable: true }));
+    return true;
+  }
+  function runDangBat() {
+    var b = $('#btn-run');
+    return !!(b && b.classList.contains('active'));
+  }
+  function datRun(bat) {
+    var b = $('#btn-run');
+    if (!b) return false;
+    if (runDangBat() === bat) return true;
+    // Nút Chạy nghe pointerdown — dispatch đúng loại sự kiện của nó.
+    var r = b.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    ['pointerdown', 'pointerup'].forEach(function (ty) {
+      b.dispatchEvent(new PointerEvent(ty, { bubbles: true, cancelable: true, clientX: cx, clientY: cy, pointerId: 1 }));
+    });
+    return true;
+  }
+  // Nút Tương Tác (#btn-attack đổi nhãn khi đứng gần NPC/vật).
+  function nutTuongTac() {
+    var b = $('#btn-attack');
+    if (!b || b.offsetParent === null) return null;
+    var aria = b.getAttribute('aria-label') || '';
+    var label = txt(b.querySelector('.skill-name')) || txt(b);
+    return { el: b, aria: aria, label: label, laTuongTac: /Tương tác/i.test(aria) || /Tương Tác/i.test(label) };
+  }
+  // Nhãn nút #btn-attack (.skill-name) — vd "Tương Tác" / "Công Thường".
+  function interactLabel() {
+    var b = $('#btn-attack');
+    if (!b) return '';
+    var sn = b.querySelector('.skill-name');
+    return ((sn ? sn.textContent : b.textContent) || '').trim();
+  }
+
+  // ---------------- Lái nhân vật: joystick thật (PointerEvent) ----------------
+  // Một phiên kéo: pointerdown 1 lần ở tâm #joystick, pointermove lặp lại
+  // theo hướng cần đi, pointerup khi xong. Dùng CÙNG MỘT pointerId cho cả
+  // chuỗi (như ngón tay thật). Nhờ đã vá setPointerCapture nên handler
+  // joystick của game không throw nữa.
+  var joy = { active: false, geom: null, lastDx: 0, lastDy: 0 };
+  // Hình học joystick như code game: radius = min(w,h)/2 - thumb/2 - 4;
+  // deadzone = min(8, 0.18*radius). Trả null nếu không đo được.
+  function joyGeom() {
+    var el = $('#joystick');
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (!r || !r.width || !r.height) return null;
+    var th = $('#joystick-thumb');
+    var tr = th ? th.getBoundingClientRect() : null;
+    var tsize = (tr && tr.width > 0) ? Math.min(tr.width, tr.height) : 58;
+    var radius = Math.min(r.width, r.height) / 2 - tsize / 2 - 4;
+    if (!(radius > 0)) return null;
+    return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, radius: radius };
+  }
+  // Trên desktop game ẩn #touch-ui (chỉ hiện khi bật chế độ Chạm) -> rect = 0.
+  // Thử gỡ class "hidden" của #touch-ui / #joystick rồi đo lại.
+  function hienJoystick() {
+    var root = $('#touch-ui');
+    if (root) root.classList.remove('hidden');
+    var el = $('#joystick');
+    if (el) el.classList.remove('hidden');
+    var g = joyGeom();
+    if (g) log('Joystick đang ẩn — đã tự hiện lại để lái.');
+    return g;
+  }
+  function joyDown() {
+    if (joy.active) return true;
+    var g = joyGeom() || hienJoystick();
+    if (!g) return false;
+    var el = $('#joystick');
+    if (!el) return false;
+    el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: g.cx, clientY: g.cy, pointerId: CFG.joyPointerId, isPrimary: true }));
+    joy.active = true;
+    joy.geom = g;
+    joy.lastDx = 0; joy.lastDy = 0;
+    return true;
+  }
+  function joyMoveTo(dx, dy) {
+    if (!joy.active && !joyDown()) return false;
+    var g = joy.geom || joyGeom();
+    if (!g) return false;
+    var x = g.cx + dx * CFG.joyMag * g.radius;
+    var y = g.cy + dy * CFG.joyMag * g.radius;
+    var el = $('#joystick');
+    if (!el) return false;
+    el.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: CFG.joyPointerId, isPrimary: true }));
+    joy.lastDx = dx; joy.lastDy = dy;
+    return true;
+  }
+  function joyUp() {
+    if (!joy.active) return;
+    var el = $('#joystick');
+    var g = joy.geom;
+    if (el && g) {
+      var x = g.cx + joy.lastDx * CFG.joyMag * g.radius;
+      var y = g.cy + joy.lastDy * CFG.joyMag * g.radius;
+      el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: CFG.joyPointerId, isPrimary: true }));
     }
-    // Đi tới ô (tx,ty) trong map hiện tại. Trả về true nếu tới nơi (sai số <=1).
-    // Joystick KHÔNG chạy khi Auto BẬT — tắt Auto ngay từ nhịp đầu, tắt lại
-    // nếu Auto tự bật giữa đường (vào combat); tới nơi (hoặc kẹt) thì bật
-    // lại Auto nếu là Trúc Cơ. Luyện Khí giữ Auto TẮT sau khi đi (chỉ bật
-    // lại khi tự vệ do kiemTraTuVe lo).
-    async function diToi(tx, ty, maxBuoc) {
-      maxBuoc = maxBuoc || 60;
-      var autoCu = autoDangBat();
-      if (autoCu) datAuto(false);
-      var last = null, ket = 0, kq = false;
-      for (var i = 0; i < maxBuoc; i++) {
-        var p = docViTri();
-        if (p.x === null) { await sleep(2000); continue; }
-        if (Math.abs(p.x - tx) <= 1 && Math.abs(p.y - ty) <= 1) { kq = true; break; }
-        if (autoDangBat()) datAuto(false);
-        if (last && last.x === p.x && last.y === p.y) {
-          ket++;
-          if (ket >= 3) {
-            log('Kẹt ở (' + p.x + ',' + p.y + ') — thử nhịp dài.');
-            var dx = tx - p.x, dy = ty - p.y;
-            await joyHuong(dx, dy, CFG.joyLongMs);
-            ket = 0;
+    joy.active = false;
+    joy.geom = null;
+    joy.lastDx = 0; joy.lastDy = 0;
+  }
+  // Đẩy joystick về 1 hướng trong ms mili-giây (dùng nudge qua cổng).
+  async function joyHold(dx, dy, ms) {
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var t0 = Date.now();
+    if (!joyDown()) return false;
+    while (Date.now() - t0 < ms) {
+      if (!joyMoveTo(dx / len, dy / len)) break;
+      await sleep(CFG.joyMoveMs);
+    }
+    joyUp();
+    await sleep(250);
+    return true;
+  }
+
+  // ---------------- Lái đa cách, tự dò (v1.2.0 — lấy từ code gửi + Đi Farm v1.2.0) ----------------
+  // Thứ tự dò 1 lần mỗi phiên chạy: phím -> joystick (engine ở trên)
+  // -> dpad -> chạm neo camera. Mỗi cách giữ hướng về đích detectMs, vị trí
+  // đổi >=1 ô là đạt. Mọi đợt lái (burst) đều: poll vị trí mỗi tickMs,
+  // nhả đầu vào ở MỌI lối thoát, dừng khi đổi map giữa đợt (guardMap).
+  // Trả {reason, pos, ms} với reason: arrived|step|axis|moved|stuck|
+  // timeout|stopped|mapchanged|nojoy|nodpad.
+
+  // ---------- Phím hướng (lái bằng giữ phím — không phụ thuộc camera) ----------
+  // Game Input đọc e.code: KeyW/ArrowUp=up, KeyS/ArrowDown=down,
+  // KeyA/ArrowLeft=left, KeyD/ArrowRight=right, theo dõi phím đang giữ qua
+  // keydown/keyup, không kiểm isTrusted -> giữ phím tổng hợp dùng được.
+  // Sự kiện gửi lên body (bubbles) để tới được listener dù game gắn ở
+  // body/document/window.
+  var DIR_KEYS = [
+    { code: 'KeyW', key: 'w', name: 'W' },
+    { code: 'KeyS', key: 's', name: 'S' },
+    { code: 'KeyA', key: 'a', name: 'A' },
+    { code: 'KeyD', key: 'd', name: 'D' },
+    { code: 'ArrowUp', key: 'ArrowUp', name: '↑' },
+    { code: 'ArrowDown', key: 'ArrowDown', name: '↓' },
+    { code: 'ArrowLeft', key: 'ArrowLeft', name: '←' },
+    { code: 'ArrowRight', key: 'ArrowRight', name: '→' },
+  ];
+  var DIR_BY_CODE = {};
+  DIR_KEYS.forEach(function (d) { DIR_BY_CODE[d.code] = d; });
+  function keyTarget() { return document.body || document.documentElement; }
+  function keyDown(code) {
+    var d = DIR_BY_CODE[code];
+    if (!d || heldKeys[code]) return;
+    heldKeys[code] = true;
+    keyTarget().dispatchEvent(new KeyboardEvent('keydown', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+  }
+  function keyUp(code) {
+    var d = DIR_BY_CODE[code];
+    if (!d || !heldKeys[code]) return;
+    delete heldKeys[code];
+    keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+  }
+  function releaseAllKeys() {
+    // Nhả toàn bộ 8 phím hướng (kể cả khi heldKeys lệch) — keyup thừa vô hại với game.
+    DIR_KEYS.forEach(function (d) {
+      keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+    });
+    heldKeys = {};
+  }
+  function codesFor(dx, dy) {
+    var codes = [];
+    if (dx > 0) codes.push('KeyD'); else if (dx < 0) codes.push('KeyA');
+    if (dy > 0) codes.push('KeyS'); else if (dy < 0) codes.push('KeyW');
+    return codes;
+  }
+  // Giữ phím theo 1 đợt: poll vị trí mỗi tickMs, nhả khi shouldStop(p) trả
+  // lý do / kẹt (không đổi ô >= stuckMs) / hết giờ đợt / đổi map / dừng.
+  // Mọi lối thoát đều nhả toàn bộ phím.
+  function holdKeysBurst(runId, codes, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      var lastPos = docCell();
+      var lastMoveAt = t0;
+      codes.forEach(keyDown);
+      (function tick() {
+        var now = Date.now();
+        var p = docCell();
+        if (runId !== steerToken) { releaseAllKeys(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (guardMap && docMapId() && docMapId() !== guardMap) { releaseAllKeys(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { releaseAllKeys(); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (legDeadline && now > legDeadline) { releaseAllKeys(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        if (p && now - lastMoveAt >= CFG.stuckMs) { releaseAllKeys(); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { releaseAllKeys(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, CFG.tickMs);
+      })();
+    });
+  }
+
+  // ---------- Joystick theo đợt (bọc engine ở trên) ----------
+  // Kéo joystick theo 1 đợt: giữ kéo, poll vị trí mỗi tickMs; hết đợt thì
+  // kéo về tâm (dừng di chuyển, chưa nhả) — đổi hướng đợt sau chỉ cần
+  // pointermove lại, không cần nhả. Nhả hẳn (pointerup) ở
+  // releaseAllInputs / finally của steerToCell / stop().
+  function holdJoyBurst(runId, vx, vy, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      if (!joy.active && !joyDown()) return resolve({ reason: 'nojoy', pos: docCell(), ms: 0 });
+      var lastPos = docCell();
+      var lastMoveAt = t0;
+      var len = Math.hypot(vx, vy) || 1;
+      joyMoveTo(vx / len, vy / len);
+      (function tick() {
+        var now = Date.now();
+        var p = docCell();
+        if (runId !== steerToken) { joyUp(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (guardMap && docMapId() && docMapId() !== guardMap) { joyUp(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { joyMoveTo(0, 0); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (legDeadline && now > legDeadline) { joyMoveTo(0, 0); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        if (p && now - lastMoveAt >= CFG.stuckMs) { joyMoveTo(0, 0); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { joyMoveTo(0, 0); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, CFG.tickMs);
+      })();
+    });
+  }
+
+  // ---------- Nút dpad (giữ nút hướng .dpad-btn mang data-dx/data-dy) ----------
+  // Game: handler pointerdown gọi setPointerCapture KHÔNG try/catch (như
+  // joystick) rồi set trạng thái giữ -> nhờ vá mới lái được bằng
+  // PointerEvent giả. Nút nằm trong #touch-ui nên có thể đang ẩn.
+  var DPAD_PID = 13;
+  function dpadPointer(el, type) {
+    var r = el.getBoundingClientRect();
+    el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: DPAD_PID, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: 'touch', isPrimary: true }));
+  }
+  function dpadPress(el) {
+    if (!el || dpadHeld === el) return;
+    dpadRelease();
+    dpadPointer(el, 'pointerdown');
+    dpadHeld = el;
+  }
+  function dpadRelease() {
+    if (!dpadHeld) return;
+    var el = dpadHeld;
+    dpadHeld = null;
+    try { dpadPointer(el, 'pointerup'); } catch (e) { /* bỏ qua */ }
+  }
+  function findDpadBtns(sx, sy) {
+    var btns = document.querySelectorAll('.dpad-btn');
+    if (!btns.length) {
+      // Có thể #touch-ui đang ẩn (desktop) — thử hiện lại rồi tìm lần nữa.
+      hienJoystick();
+      btns = document.querySelectorAll('.dpad-btn');
+    }
+    var exact = null, xOnly = null, yOnly = null;
+    for (var i = 0; i < btns.length; i++) {
+      var bx = parseInt(btns[i].getAttribute('data-dx') || '0', 10);
+      var by = parseInt(btns[i].getAttribute('data-dy') || '0', 10);
+      if (bx === sx && by === sy) exact = btns[i];
+      else if (sx !== 0 && bx === sx && by === 0) xOnly = btns[i];
+      else if (sy !== 0 && by === sy && bx === 0) yOnly = btns[i];
+    }
+    return { exact: exact, xOnly: xOnly, yOnly: yOnly };
+  }
+  // Giữ nút dpad theo 1 đợt: có nút chéo khớp thì giữ nút đó; không có thì
+  // luân phiên 2 trục mỗi dpadAltMs. Mọi lối thoát đều nhả nút.
+  function holdDpadBurst(runId, sx, sy, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      var btns = findDpadBtns(sx, sy);
+      if (!btns.exact && !btns.xOnly && !btns.yOnly) return resolve({ reason: 'nodpad', pos: docCell(), ms: 0 });
+      var lastPos = docCell();
+      var lastMoveAt = t0;
+      var altFlipAt = 0, altX = true;
+      function pressCurrent() {
+        if (btns.exact) { dpadPress(btns.exact); return; }
+        if (btns.xOnly && btns.yOnly) { dpadPress(altX ? btns.xOnly : btns.yOnly); return; }
+        dpadPress(btns.xOnly || btns.yOnly);
+      }
+      pressCurrent();
+      (function tick() {
+        var now = Date.now();
+        var p = docCell();
+        if (runId !== steerToken) { dpadRelease(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (guardMap && docMapId() && docMapId() !== guardMap) { dpadRelease(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+        if (!btns.exact && btns.xOnly && btns.yOnly && now - altFlipAt >= CFG.dpadAltMs) { altFlipAt = now; altX = !altX; pressCurrent(); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { dpadRelease(); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (legDeadline && now > legDeadline) { dpadRelease(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        if (p && now - lastMoveAt >= CFG.stuckMs) { dpadRelease(); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { dpadRelease(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, CFG.tickMs);
+      })();
+    });
+  }
+
+  // ---------- Chạm neo camera (dự phòng cuối) ----------
+  // Chạm đúng tâm canvas -> ô hiện tại = ô tại tâm -> chạm về đích theo vị
+  // trí nhân vật thật. Sau mỗi chạm, neo mới = ô nhân vật (camera game bám
+  // theo nhân vật nên sau khi nhân vật dừng, ô tại tâm canvas = ô nhân vật).
+  // Game: handler `window pointerup`, tap <500ms và <14px -> Input.tap =
+  // Renderer.screenToBuffer(clientX,clientY); không kiểm isTrusted, không
+  // setPointerCapture. px/ô mặc định 32 (= CONFIG.TILE).
+  function gameCanvas() {
+    var cs = Array.prototype.slice.call(document.querySelectorAll('canvas'));
+    var best = null, ba = 0;
+    cs.forEach(function (c) {
+      var r = c.getBoundingClientRect(), a = r.width * r.height;
+      if (a > ba) { ba = a; best = c; }
+    });
+    return best;
+  }
+  // Vùng HUD phủ trên canvas cần tránh khi chạm lái (joystick, cụm nút, bảng tool).
+  function hudAvoidZones() {
+    var zones = [];
+    var c = gameCanvas();
+    if (!c) return zones;
+    var r = c.getBoundingClientRect();
+    zones.push({ x0: r.x, y0: r.y + r.height * 0.58, x1: r.x + r.width * 0.36, y1: r.y + r.height }); // joystick dưới trái
+    zones.push({ x0: r.x + r.width * 0.62, y0: r.y + r.height * 0.52, x1: r.x + r.width, y1: r.y + r.height }); // cụm nút dưới phải
+    ['#tt2d-duoc-panel', '#btn-auto-touch', '#btn-auto', '#btn-attack', '#btn-fly'].forEach(function (sel) {
+      var el = $(sel);
+      if (!el) return;
+      var b = el.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0) zones.push({ x0: b.x - 6, y0: b.y - 6, x1: b.x + b.width + 6, y1: b.y + b.height + 6 });
+    });
+    return zones;
+  }
+  function safeTapPoint(cx, cy, r) {
+    // Kẹp trong canvas, chừa lề 12% mỗi phía.
+    var mx = r.width * 0.12, my = r.height * 0.12;
+    cx = Math.max(r.x + mx, Math.min(r.x + r.width - mx, cx));
+    cy = Math.max(r.y + my, Math.min(r.y + r.height - my, cy));
+    // Rơi vào vùng HUD thì dịch điểm chạm lên trên vùng đó (giữ hướng ngang).
+    var zones = hudAvoidZones();
+    for (var i = 0; i < zones.length; i++) {
+      var z = zones[i];
+      if (cx >= z.x0 && cx <= z.x1 && cy >= z.y0 && cy <= z.y1) {
+        cy = Math.max(r.y + my, Math.min(r.y + r.height - my, z.y0 - 10));
+      }
+    }
+    return { x: cx, y: cy };
+  }
+  function tapCanvas(dx, dy) {
+    var c = gameCanvas();
+    if (!c) return false;
+    var r = c.getBoundingClientRect();
+    var ccx = r.x + r.width / 2, ccy = r.y + r.height / 2;
+    var pt = safeTapPoint(ccx + dx, ccy + dy, r);
+    var opts = { bubbles: true, cancelable: true, pointerId: 3, clientX: pt.x, clientY: pt.y, pointerType: 'touch', isPrimary: true };
+    c.dispatchEvent(new PointerEvent('pointerdown', opts));
+    setTimeout(function () { window.dispatchEvent(new PointerEvent('pointerup', opts)); }, 120);
+    return { dx: Math.round(pt.x - ccx), dy: Math.round(pt.y - ccy) };
+  }
+  // Chờ vị trí đứng yên (không đổi ô trong tapStableMs liên tiếp), poll 300ms.
+  function waitStablePos(runId, timeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now(), prev = null, stillSince = null;
+      (function tick() {
+        if (runId !== steerToken) return resolve(null);
+        var p = docCell();
+        if (p) {
+          if (prev && p.x === prev.x && p.y === prev.y) {
+            if (stillSince === null) stillSince = Date.now();
+            if (Date.now() - stillSince >= CFG.tapStableMs) return resolve(p);
+          } else stillSince = null;
+          prev = p;
+        }
+        if (Date.now() - t0 >= timeoutMs) return resolve(prev);
+        if (legDeadline && Date.now() > legDeadline) return resolve(prev);
+        setTimeout(tick, 300);
+      })();
+    });
+  }
+  function anchorCamera(runId) {
+    return (async function () {
+      tapCanvas(0, 0);
+      var p = await waitStablePos(runId, 12000);
+      if (p) { camAnchor = { x: p.x, y: p.y }; log('Neo camera: ô tại tâm = (' + p.x + ',' + p.y + ')'); }
+      return p;
+    })();
+  }
+  function holdTapBurst(runId, tx, ty, shouldStop, burstTimeoutMs) {
+    return (async function () {
+      var t0 = Date.now();
+      if (!camAnchor) {
+        var ap = await anchorCamera(runId);
+        if (!ap) return { reason: 'stuck', pos: docCell(), ms: 0 };
+        if (runId !== steerToken) return { reason: 'stopped', pos: ap, ms: Date.now() - t0 };
+      }
+      tapCanvas((tx - camAnchor.x) * CFG.pxPerTile, (ty - camAnchor.y) * CFG.pxPerTile);
+      var p = await waitStablePos(runId, Math.max(3000, burstTimeoutMs));
+      if (guardMap && docMapId() && docMapId() !== guardMap) return { reason: 'mapchanged', pos: p, ms: Date.now() - t0 };
+      // Neo mới = ô nhân vật sau đợt chạm (camera bám theo nhân vật).
+      if (p) camAnchor = { x: p.x, y: p.y };
+      var sr = p ? shouldStop(p) : null;
+      return { reason: sr || (p ? 'timeout' : 'stuck'), pos: p, ms: Date.now() - t0 };
+    })();
+  }
+
+  // Nhả toàn bộ đầu vào lái: 8 phím hướng + joystick (pointerup) + nút dpad.
+  function releaseAllInputs() {
+    releaseAllKeys();
+    joyUp();
+    dpadRelease();
+  }
+
+  // ---------- Tự dò cách lái (lần di chuyển đầu tiên mỗi phiên chạy) ----------
+  // Thứ tự: phím -> joystick -> nút dpad -> chạm neo camera. Mỗi cách giữ
+  // hướng về đích detectMs, vị trí đổi >=1 ô là đạt. Dò 1 lần/phiên, log rõ
+  // cách nào thắng (xem log panel).
+  function detectSteerMethod(runId, tx, ty) {
+    return (async function () {
+      var p0 = docCell();
+      if (!p0) { log('Dò cách lái: không đọc được vị trí — mặc định phím'); log('Cách lái: phím'); return 'keys'; }
+      var dx = tx - p0.x, dy = ty - p0.y;
+      var movedFrom = function (q) { return (q.x !== p0.x || q.y !== p0.y) ? 'moved' : null; };
+      log('Dò cách lái… (từ (' + p0.x + ',' + p0.y + ') về (' + tx + ',' + ty + '))');
+
+      // a. Phím hướng
+      log('Dò cách lái: thử phím…');
+      var rk = await holdKeysBurst(runId, codesFor(dx, dy), movedFrom, CFG.detectMs);
+      if (runId !== steerToken) return 'keys';
+      if (rk.reason === 'moved') { log('Cách lái: phím'); return 'keys'; }
+      log('Phím không làm nhân vật di chuyển — thử joystick');
+
+      // b. Joystick
+      log('Dò cách lái: thử joystick…');
+      var rj = await holdJoyBurst(runId, dx, dy, movedFrom, CFG.detectMs);
+      joyUp(); // nhả hẳn sau đợt dò (holdJoyBurst chỉ kéo về tâm)
+      if (runId !== steerToken) return 'keys';
+      if (rj.reason === 'moved') { log('Cách lái: joystick'); return 'joystick'; }
+      log('Joystick không làm nhân vật di chuyển — thử nút dpad');
+
+      // c. Nút dpad
+      var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+      var sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+      var btns = findDpadBtns(sx, sy);
+      if (btns.exact || btns.xOnly || btns.yOnly) {
+        log('Dò cách lái: thử nút dpad…');
+        var rd = await holdDpadBurst(runId, sx, sy, movedFrom, CFG.detectMs);
+        if (runId !== steerToken) return 'keys';
+        if (rd.reason === 'moved') { log('Cách lái: dpad'); return 'dpad'; }
+        log('Nút dpad không làm nhân vật di chuyển — dùng chạm neo camera');
+      } else {
+        log('Không thấy nút dpad — dùng chạm neo camera');
+      }
+
+      // d. Chạm neo camera
+      log('Cách lái: chạm (neo camera)');
+      return 'tap';
+    })();
+  }
+
+  // ---------------- Kiểm tra an toàn mỗi nhịp ----------------
+  function kiemTraAnToan() {
+    if (docGuc()) return { ok: false, reason: 'guc', msg: 'Nhân vật đã gục — tool KHÔNG tự hồi sinh. Bấm DỪNG rồi xử lý tay.' };
+    var h = docHP();
+    if (h && h.max && h.max > 0 && h.hp / h.max < CFG.hpNguyHiem) {
+      return { ok: false, reason: 'hp-thap',
+        msg: 'Khí Huyết dưới 35% (' + h.hp + '/' + h.max + ') — đã tự dừng để an toàn.' };
+    }
+    return { ok: true };
+  }
+
+  // ---------------- Lái tới 1 ô bằng cách lái đã dò ----------------
+  // Vòng lặp theo đợt (burst), trả {ok:true} khi tới nơi (cách đích <=
+  // arrivePx), hoặc {ok:false, reason, msg} với reason: ket|hp-thap|guc|
+  // dung|het-gio|doi-map|loi. Kẹt: đợt không di chuyển / không tiến gần đích
+  // -> đánh trả (Auto 1 lần) rồi lái vuông góc; quá repathMax lần đi vòng
+  // -> dừng. Kiểm chứng Phi Hành bằng TỐC ĐỘ ở đợt lái đầu đủ dài.
+  async function steerToCell(tx, ty, opts) {
+    opts = opts || {};
+    var arrivePx = (typeof opts.arrivePx === 'number') ? opts.arrivePx : CFG.tile;
+    var label = opts.label || ('ô (' + tx + ',' + ty + ')');
+    var tok = steerToken;
+    var mapStart = docMapId();
+    var t0 = Date.now();
+    legDeadline = t0 + CFG.legTimeoutMs;
+    // Dung sai theo ô: cổng (arrivePx 16px) cần đúng ô; bãi (32px) cho phép
+    // lệch 1 ô (tương đương dist <= 32px của v1.1.2).
+    var tol = (arrivePx >= CFG.tile) ? 1 : 0;
+    var cheb = function (p) { return Math.max(Math.abs(tx - p.x), Math.abs(ty - p.y)); };
+    var detours = 0, detourSign = 1, fightTried = false, diagOk = true;
+    var bestCheb = Infinity, noProgress = 0;
+    var burstFrom = null; // vị trí + khoảng cách trước đợt gần nhất (cảnh báo thoái lui)
+    guardMap = mapStart;
+    flyMeas = null; // cửa sổ đo tốc độ bay mới cho mỗi chặng lái
+    try {
+      while (true) {
+        if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        var at = kiemTraAnToan();
+        if (!at.ok) return { ok: false, reason: at.reason, msg: at.msg };
+        // Đổi map giữa chừng (bước lên ô cổng / Auto lạc qua cổng): dừng chặng
+        // này ngay — vòng đi chính tự đánh giá lại từ map mới.
+        var mapNow = docMapId();
+        if (mapNow && mapStart && mapNow !== mapStart) {
+          return { ok: false, reason: 'doi-map', msg: 'Đã sang map ' + tenMap(mapNow) + '.' };
+        }
+        if (Date.now() - t0 > CFG.legTimeoutMs) {
+          return { ok: false, reason: 'het-gio', msg: 'Quá ' + Math.round(CFG.legTimeoutMs / 1000) + 's chưa tới ' + label + ' — đã dừng.' };
+        }
+        var p = docCell();
+        if (!p) { await sleep(CFG.tickMs); continue; }
+        if (cheb(p) <= tol) return { ok: true };
+        // Cảnh báo thoái lui: đợt trước làm nhân vật xa đích hơn >2 ô.
+        if (burstFrom && cheb(p) > burstFrom.cheb + 2) {
+          log('Cảnh báo: đợt lái làm xa đích (' + burstFrom.x + ',' + burstFrom.y + ')→(' + p.x + ',' + p.y + ')');
+          if (steerMethod === 'tap') { camAnchor = null; log('Bỏ neo camera — sẽ neo lại'); }
+        }
+        burstFrom = null;
+        // Lần di chuyển đầu tiên của phiên: tự dò cách lái (phím -> joystick
+        // -> dpad -> chạm neo camera).
+        if (!steerMethod) {
+          steerMethod = await detectSteerMethod(tok, tx, ty);
+          if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+          continue;
+        }
+
+        var dx = tx - p.x, dy = ty - p.y; // ô; +y là nam (KeyS)
+        var startCheb = cheb(p);
+        var startPos = { x: p.x, y: p.y };
+        var codes = codesFor(dx, dy);
+        if (!diagOk && codes.length > 1) codes = [Math.abs(dx) >= Math.abs(dy) ? codes[0] : codes[1]];
+
+        var speed = 3.51; // ô/s khi Chạy BẬT — tốc độ CHẠY thật, dùng làm tốc độ nền để đặt hạn giờ đợt (bay+chạy ~6,66 nhanh hơn nên hạn này luôn đủ rộng; đừng dùng tốc độ bay vì bay lỗi thì nhân vật chỉ chạy 3,51)
+        var stepMode = startCheb <= 1; // gần đích: đợt ngắn 1 bước cho chính xác
+        var burstCap = stepMode ? 2500 : Math.max(2500, Math.min(15000, startCheb / speed * 1000 * 1.6 + 1200));
+        var shouldStop = function (q) {
+          if (cheb(q) <= tol) return 'arrived';
+          if (stepMode) return (q.x !== startPos.x || q.y !== startPos.y) ? 'step' : null;
+          var qdx = tx - q.x, qdy = ty - q.y;
+          // Nhả khi một trục đã tới 0 hoặc vượt đích (đổi dấu) — đợt sau tính lại hướng.
+          if (dx !== 0 && (qdx === 0 || (qdx > 0) !== (dx > 0))) return 'axis';
+          if (dy !== 0 && (qdy === 0 || (qdy > 0) !== (dy > 0))) return 'axis';
+          return null;
+        };
+
+        burstFrom = { x: p.x, y: p.y, cheb: startCheb };
+        var res, burstDesc;
+        if (steerMethod === 'joystick') {
+          res = await holdJoyBurst(tok, dx, dy, shouldStop, burstCap);
+          burstDesc = 'kéo joystick hướng ' + dirName(dx, dy) + ' ~' + fmtSec(res.ms);
+        } else if (steerMethod === 'dpad') {
+          var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0, sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+          res = await holdDpadBurst(tok, sx, sy, shouldStop, burstCap);
+          burstDesc = 'giữ nút dpad (' + sx + ',' + sy + ') ~' + fmtSec(res.ms);
+        } else if (steerMethod === 'tap') {
+          res = await holdTapBurst(tok, tx, ty, shouldStop, burstCap);
+          burstDesc = 'chạm neo camera ~' + fmtSec(res.ms);
+        } else {
+          res = await holdKeysBurst(tok, codes, shouldStop, burstCap);
+          burstDesc = 'giữ phím [' + codes.map(function (c) { return DIR_BY_CODE[c].name; }).join('+') + '] ~' + fmtSec(res.ms);
+        }
+        log('→(' + tx + ',' + ty + ') từ (' + p.x + ',' + p.y + ') ' + burstDesc);
+        if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        // Đổi map trong đợt lái (bước lên ô cổng): dừng chặng này ngay.
+        var mapAfter = docMapId();
+        if (mapAfter && mapStart && mapAfter !== mapStart) {
+          return { ok: false, reason: 'doi-map', msg: 'Đã sang map ' + tenMap(mapAfter) + '.' };
+        }
+        var p2 = res.pos || docCell();
+        if (!p2) { await sleep(CFG.tickMs); continue; }
+
+        // Kiểm chứng Phi Hành bằng TỐC ĐỘ — ĐO TÍCH LŨY qua nhiều đợt (v1.2.1):
+        // Đo một đợt đơn lẻ KHÔNG đo được live — đợt nào tới đích/biển Khu
+        // thì `cheb(p2) <= tol` return trước khối đo; các đợt còn lại thường
+        // ngắn hơn cửa đo. Nên cộng dồn qua các đợt cùng hướng cho tới khi
+        // đủ 2000ms giữ phím rồi mới phán: quãng đường RÒNG từ đầu cửa sổ
+        // tới vị trí hiện tại (chỉ sai số lượng tử hoá ~1,4 ô ở 2 đầu mút,
+        // KHÔNG cộng dồn theo số đợt) chia cho tổng ms giữ phím. Reset cửa
+        // sổ khi đổi hướng ngược dấu một trục (đi vòng/detour), khi đợt kẹt/
+        // không di chuyển, đợt bước 1 ô, khi Chạy TẮT, hoặc sau đợt đánh trả/
+        // đi vòng. Chỉ đo khi Chạy đang BẬT (bay không chạy chỉ 3,61–4,23,
+        // sát tốc độ đi bộ 3,16, không phân biệt được bằng toạ độ ô).
+        // Ngưỡng 5,0 ô/s từ game.js client 24/11 (CONFIG: SPEED 68, RUN 1,65,
+        // FLY 1,9, TILE 32; bay+chạy 6,66 — chậm nhất Phi Diệp 1,75: 5,96;
+        // chỉ chạy 3,51; đi bộ 3,16): cửa sổ 2000ms thì chạy thường đo tối
+        // đa 3,51+1,41/2≈4,2 < 5, bay+chạy chậm nhất đo tối thiểu
+        // 5,96−0,71≈5,25 > 5 — tách rõ. Đo bằng EUCLID — CỐ Ý: game chuẩn
+        // hoá vector chéo phím (×1/√2) nên tốc độ Euclid KHÔNG đổi theo
+        // hướng; Chebyshev đo chéo thấp hơn √2 lần (bay chéo 6,66 → ~4,7 < 5
+        // → bấm nhầm KeyF TẮT bay). Chẩn đoán cũ "chéo bộ Euclid ~3,5" là
+        // tốc độ CHẠY (3,51), không phải lỗi đo chéo (mock Dược đi chéo +1 ô
+        // cả 2 trục, không chuẩn hoá — artifact của mock, xem test k13).
+        // Chỉ đo đợt tiến triển (không đo đợt kẹt); bấm lại KeyF tối đa 1 lần.
+        if (flyingBelief && !flySpeedChecked) {
+          var movedB = (p2.x !== startPos.x || p2.y !== startPos.y);
+          var sdx = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
+          var sdy = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
+          var flipped = flyMeas && ((sdx !== 0 && flyMeas.sx !== 0 && sdx !== flyMeas.sx) ||
+            (sdy !== 0 && flyMeas.sy !== 0 && sdy !== flyMeas.sy));
+          if (!runDangBat() || flipped || res.reason === 'stuck' || !movedB || res.reason === 'step') {
+            flyMeas = null; // đợt này không tính vào cửa sổ; đợt sau mở cửa sổ mới
+          } else {
+            if (!flyMeas) flyMeas = { x: startPos.x, y: startPos.y, ms: 0, sx: sdx, sy: sdy };
+            flyMeas.ms += res.ms;
+            if (flyMeas.ms >= CFG.flyWindowMs) {
+              var distW = Math.hypot(p2.x - flyMeas.x, p2.y - flyMeas.y);
+              if (distW >= 2) {
+                var spdW = distW / (flyMeas.ms / 1000);
+                flySpeedMeasured = spdW;
+                if (flySpeedFirst === null) flySpeedFirst = spdW;
+                if (spdW < CFG.flySpeedMin && !flyRetryDone) {
+                  flyRetryDone = true;
+                  log('Phi Hành: tốc độ chỉ ~' + spdW.toFixed(1) + ' ô/s (<' + CFG.flySpeedMin + ') — bay chưa ăn, bấm lại 1 lần (KeyF).');
+                  pressFlyKey();
+                  await sleep(1200);
+                  if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+                } else {
+                  flySpeedChecked = true;
+                  log('Phi Hành: BẬT (tốc độ ~' + spdW.toFixed(1) + ' ô/s).');
+                  if (spdW < CFG.flySpeedMin) log('Tốc độ vẫn thấp sau khi bấm lại — giữ nguyên, không bấm nữa.');
+                }
+              }
+              flyMeas = null; // đo xong (dù đủ quãng đường hay chưa) thì đóng cửa sổ
+            }
+          }
+        }
+        if (cheb(p2) <= tol) return { ok: true };
+
+        var moved = (p2.x !== startPos.x || p2.y !== startPos.y);
+        if (steerMethod === 'keys' && codes.length > 1 && !moved && res.reason !== 'arrived') {
+          diagOk = false;
+          log('Giữ 2 phím chéo không di chuyển — chuyển sang giữ từng trục.');
+        }
+        if (cheb(p2) < bestCheb) { bestCheb = cheb(p2); noProgress = 0; } else noProgress++;
+
+        var isStuck = res.reason === 'stuck' || (!moved && res.reason !== 'arrived') || noProgress >= 3;
+        if (isStuck) {
+          if (!fightTried) {
+            // Nghi quái chặn đường: bật Auto đánh trả rồi đi tiếp. Chỉ thử
+            // 1 lần mỗi chặng đi. Trong lúc đánh vẫn ĐẨY về hướng đích theo
+            // cách lái đang dùng (không thì nhân vật đứng yên và Auto không
+            // với tới quái chặn). Joystick thì đồng bộ lại phiên kéo TRƯỚC
+            // khi đánh trả: game có thể đã hủy trạng thái kéo (VD: qua cổng
+            // rồi bị đẩy về ngay) — ngắt rồi kéo lại cho chắc.
+            fightTried = true;
+            log('Có thể quái chặn đường — bật Auto đánh trả rồi đi tiếp.');
+            if (steerMethod === 'joystick') { joyUp(); joyDown(); }
+            datAuto(true);
+            var fdx = tx - p2.x, fdy = ty - p2.y;
+            var fStop = function (q) { return (q.x !== p2.x || q.y !== p2.y) ? 'moved' : null; };
+            var fRes;
+            if (steerMethod === 'joystick') fRes = await holdJoyBurst(tok, fdx, fdy, fStop, CFG.fightWaitMs);
+            else if (steerMethod === 'dpad') fRes = await holdDpadBurst(tok, fdx > 0 ? 1 : fdx < 0 ? -1 : 0, fdy > 0 ? 1 : fdy < 0 ? -1 : 0, fStop, CFG.fightWaitMs);
+            else if (steerMethod === 'tap') fRes = await holdTapBurst(tok, tx, ty, fStop, CFG.fightWaitMs);
+            else fRes = await holdKeysBurst(tok, codesFor(fdx, fdy), fStop, CFG.fightWaitMs);
+            datAuto(false);
+            if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+            if (fRes && fRes.reason === 'moved') log('Đánh trả xong, đi tiếp.');
+            else log('Đánh trả không nhúc nhích — thử đi vòng.');
+            bestCheb = Infinity; noProgress = 0; flyMeas = null; // đợt đánh trả không tính vào cửa sổ đo bay
             continue;
           }
-        } else ket = 0;
-        last = { x: p.x, y: p.y };
-        await joyHuong(tx - p.x, ty - p.y, CFG.joyHoldMs);
-        if (i % 10 === 9) {
-          var q = docViTri();
-          if (q.map && q.map !== docViTri().map) break;
+          detours++;
+          if (detours > CFG.repathMax) {
+            return { ok: false, reason: 'ket', msg: 'Kẹt đường tới ' + label + ' — đã thử đi vòng ' + CFG.repathMax + ' lần.' };
+          }
+          log('Kẹt — đi vòng (lần ' + detours + '/' + CFG.repathMax + ').');
+          // Lái vuông góc với hướng đích rồi thử lại. Phím/dpad/chạm chậm
+          // hơn joystick nên đợt đi vòng dài hơn (tối thiểu detourMinMs)
+          // để đi đủ xa mà qua được vật cản.
+          var pdx = -dy, pdy = dx;
+          var pl = Math.hypot(pdx, pdy) || 1;
+          var px = pdx / pl * detourSign, py = pdy / pl * detourSign;
+          detourSign = -detourSign; // lần sau đi vòng hướng ngược lại
+          var detourTimeout = (steerMethod === 'joystick') ? CFG.detourMs : Math.max(CFG.detourMs, CFG.detourMinMs);
+          if (steerMethod === 'joystick') await holdJoyBurst(tok, px, py, function () { return null; }, detourTimeout);
+          else if (steerMethod === 'dpad') await holdDpadBurst(tok, px > 0 ? 1 : px < 0 ? -1 : 0, py > 0 ? 1 : py < 0 ? -1 : 0, function () { return null; }, detourTimeout);
+          else if (steerMethod === 'tap') await holdTapBurst(tok, p2.x + Math.round(px * 2), p2.y + Math.round(py * 2), function () { return null; }, Math.max(6000, detourTimeout));
+          else await holdKeysBurst(tok, codesFor(px, py), function () { return null; }, detourTimeout);
+          if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+          noProgress = 0; flyMeas = null; // đợt đi vòng vuông góc không tính vào cửa sổ đo bay
+          continue;
         }
       }
-      if (autoCu && realm !== 'luyen_khi') datAuto(true);
-      return kq;
+    } finally {
+      guardMap = null;
+      legDeadline = 0;
+      releaseAllInputs();
     }
-    // Bước qua cổng: tới ô cổng rồi giữ joystick hướng ra ngoài tới khi đổi map.
-    async function quaCong(congKey) {
-      var c = CONG[congKey];
-      if (!c) return false;
-      // Hạ cánh trước cổng (đang bay không qua được cổng).
-      if (flyDangBat()) datFly(false);
+  }
+
+  // ---------------- Chờ đổi map ----------------
+  async function choDoiMap(mapCu, waitMs) {
+    var tok = steerToken;
+    var t0 = Date.now();
+    while (Date.now() - t0 < waitMs) {
+      if (tok !== steerToken) return false;
+      if (docMapId() && docMapId() !== mapCu) return true;
+      await sleep(CFG.tickMs);
+    }
+    return docMapId() && docMapId() !== mapCu;
+  }
+
+  // ---------------- Đi tới map đích (qua các cổng) ----------------
+  // Phi Hành + Chạy BẬT trong lúc di chuyển (lệnh Thanh 07:05), giữ bật qua
+  // các cổng; qua cổng không được khi bay thì hạ cánh đi bộ qua rồi bay lại.
+  // Trả true nếu tới đúng map.
+  async function travelTo(toiMap) {
+    var tok = steerToken;
+    var hops = 0;
+    while (true) {
+      if (!on || tok !== steerToken) return false;
+      var cur = docMapId();
+      if (!cur) { log('Không đọc được map hiện tại — đã dừng.'); return false; }
+      if (cur === toiMap) return true;
+      if (KHONG_DUONG[cur]) {
+        log('Đang ở ' + tenMap(cur) + ' (phó bản/sự kiện) — không có đường bộ tới ' + tenMap(toiMap) + '. Rời map này rồi bấm BẬT lại.');
+        return false;
+      }
+      if (++hops > 50) { log('Đi qua quá nhiều cổng mà chưa tới — đã dừng.'); return false; }
+      var hop = nextHop(cur, toiMap);
+      if (!hop) {
+        log('Không có đường bộ từ ' + tenMap(cur) + ' tới ' + tenMap(toiMap) + ' — 2 map chưa nối cổng. Đi tay về map gần nhất rồi bấm BẬT lại.');
+        return false;
+      }
+      log('Qua cổng (' + hop.tx + ',' + hop.ty + ') sang ' + tenMap(hop.to) + '…');
+      // Bật Chạy + Phi Hành để đi nhanh — giữ bật qua các cổng.
+      datRun(true);
+      if (!flyingBelief) datFly(true);
+      var r = await steerToCell(hop.tx, hop.ty, { arrivePx: 16, label: 'cổng (' + hop.tx + ',' + hop.ty + ')' });
+      // 'doi-map' = cổng đã mở trong lúc đi (map đổi rồi) — coi như qua cổng
+      // xong. 'dung' = người dùng bấm DỪNG — trả về lặng.
+      if (!r.ok && r.reason === 'dung') return false;
+      if (!r.ok && r.reason !== 'doi-map') { log(r.msg || 'Không tới được cổng.'); return false; }
+      if (r.ok && hop.byHand) {
+        // Cổng byHand (Long Uyên -> Hang Động): đứng trên ô cổng rồi bấm
+        // Tương tác ("Vào") mới qua. Chưa xác minh live — không qua thì báo rõ.
+        var okB = false;
+        for (var b = 0; b < 2 && !okB; b++) {
+          if (tok !== steerToken) return false;
+          tap($('#btn-attack'));
+          okB = await choDoiMap(cur, CFG.portalWaitMs);
+        }
+        if (!okB) {
+          log('Chưa qua được cổng (' + hop.tx + ',' + hop.ty + ') sang ' + tenMap(hop.to) + ' — cổng này cần bấm "Vào"/Tương tác tay khi đứng trên ô cổng.');
+          return false;
+        }
+      } else if (r.ok) {
+        // Tới ô cổng: cổng game mở khi BƯỚC LÊN ô — chờ đổi map (Ft=8s).
+        var ok = await choDoiMap(cur, CFG.portalWaitMs);
+        if (!ok && flyingBelief) {
+          // Qua cổng không được khi đang bay: hạ cánh, đi bộ lên ô cổng,
+          // thử lại (mẫu tryCrossPortal của code gửi).
+          log('Chưa qua được cổng (' + hop.tx + ',' + hop.ty + ') khi bay — hạ cánh đi bộ lên ô cổng.');
+          datFly(false);
+          var r2 = await steerToCell(hop.tx, hop.ty, { arrivePx: 16, label: 'cổng (' + hop.tx + ',' + hop.ty + ')' });
+          if (!r2.ok && r2.reason === 'dung') return false;
+          if (r2.ok) ok = await choDoiMap(cur, CFG.portalWaitMs);
+          else if (r2.reason === 'doi-map') ok = true; // đã qua trong lúc đi bộ lên cổng
+        }
+        if (!ok) {
+          // Nudge bằng joystick về phía cổng rồi chờ thêm.
+          var nudged = false;
+          for (var n = 0; n < 3 && !ok; n++) {
+            if (tok !== steerToken) return false;
+            var v = docCell();
+            if (v) {
+              var dx = hop.tx * CFG.tile + CFG.tile / 2 - (v.x * CFG.tile + CFG.tile / 2);
+              var dy = hop.ty * CFG.tile + CFG.tile / 2 - (v.y * CFG.tile + CFG.tile / 2);
+              await joyHold(dx, dy, 700);
+              nudged = true;
+            }
+            ok = await choDoiMap(cur, CFG.nudgeWaitMs);
+          }
+          if (!ok) {
+            log('Chưa qua được cổng (' + hop.tx + ',' + hop.ty + ') sang ' + tenMap(hop.to) + ' — đã thử đẩy 3 lần. Đứng lại kiểm tra tay rồi bấm BẬT lại.');
+            return false;
+          }
+          if (nudged) log('Đẩy cổng bằng joystick đã qua.');
+        }
+      }
+      log('Đã sang ' + tenMap(docMapId()) + '.');
+      // Qua cổng/hạ cánh có thể tắt bay — bật lại Chạy + Phi Hành để đi
+      // tiếp cho nhanh (giữ bật qua các cổng, lệnh Thanh 07:05). Bật lại
+      // bay thì đo lại tốc độ ở đợt lái sau (không bấm lại lần 2 mù).
+      if (!runDangBat()) datRun(true);
+      if (!flyingBelief) {
+        datFly(true);
+        flySpeedChecked = false; // đo lại tốc độ sau khi bật lại
+      }
       await sleep(400);
-      var ok = await diToi(c.x, c.y, 60);
-      if (!ok) { log('Không tới được cổng (' + c.x + ',' + c.y + ').'); return false; }
-      var mapCu = docViTri().map;
-      for (var i = 0; i < CFG.portalTries; i++) {
-        if (autoDangBat()) datAuto(false); // đẩy cổng cũng cần Auto TẮT
-        await joyHold(c.dx * 40, c.dy * 40, CFG.portalHoldMs);
-        var p = docViTri();
-        if (p.map && p.map !== mapCu) return true;
-      }
-      log('Không qua được cổng — có thể bị chặn.');
-      return false;
     }
-    // Đi theo đường tới map đích (qua các cổng). Trả về true nếu tới đúng map.
-    async function diToiMap(toiMap) {
-      var p = docViTri();
-      if (p.map === toiMap) return true;
-      var duong = duongDi(p.map, toiMap);
-      if (!duong) { log('Không biết đường từ ' + (p.map || '?') + ' tới ' + toiMap + '.'); return false; }
-      for (var i = 0; i < duong.length; i++) {
-        var ok = await quaCong(duong[i].cong);
-        if (!ok) return false;
-        await sleep(800);
-      }
-      return docViTri().map === toiMap;
-    }
+  }
 
-    // ---------------- Chọn việc tốt nhất (LK) ----------------
-    function chonViecTotNhat() {
-      var best = null;
-      THU_TU_UU_TIEN.forEach(function (id) {
-        var r = luotConLai[id];
-        if (r === undefined || r === null || r <= 0) return;
-        if (!best || TASKS[id].dc > TASKS[best].dc) best = id;
-      });
-      return best;
-    }
-    function tongLuotConLai() {
-      var s = 0, biet = false;
-      THU_TU_UU_TIEN.forEach(function (id) {
-        if (typeof luotConLai[id] === 'number') { s += luotConLai[id]; biet = true; }
-      });
-      return biet ? s : null;
-    }
-    function capNhatLuotDaLam() {
-      var con = tongLuotConLai();
-      if (con !== null) luotDaLam = Math.max(luotDaLam, TONG_LUOT_NGAY - con);
-    }
+  // ---------------- Đi tới ô / map (bọc ngoài cho luồng dược + debug) ----------------
+  // Joystick/phím KHÔNG chạy khi Auto BẬT — tắt Auto ngay từ đầu, tới nơi
+  // (hoặc kẹt) thì bật lại Auto nếu là Trúc Cơ. Luyện Khí giữ Auto TẮT
+  // sau khi đi (chỉ bật lại khi tự vệ do kiemTraTuVe lo).
+  async function diToi(tx, ty) {
+    var autoCu = autoDangBat();
+    if (autoCu) datAuto(false);
+    var r = await steerToCell(tx, ty, { arrivePx: CFG.tile, label: 'ô (' + tx + ',' + ty + ')' });
+    if (autoCu && realm !== 'luyen_khi') datAuto(true);
+    return r.ok;
+  }
+  async function diToiMap(toiMap) {
+    var autoCu = autoDangBat();
+    if (autoCu) datAuto(false);
+    var ok = await travelTo(toiMap);
+    if (autoCu && realm !== 'luyen_khi' && ok) datAuto(true);
+    return ok;
+  }
 
-    // ---------------- Tự vệ (LK) ----------------
-    function kiemTraTuVe() {
-      if (realm !== 'luyen_khi') return;
-      var hp = docHP();
-      if (!hp) return;
-      if (!tuVeDangBat && hp.tiLe < CFG.hpTuVe) {
-        if (datAuto(true)) { tuVeDangBat = true; log('Bị quái đánh (HP ' + Math.round(hp.tiLe * 100) + '%) — bật Auto tự vệ.'); }
-      } else if (tuVeDangBat && hp.tiLe >= CFG.hpAnToan) {
-        if (datAuto(false)) { tuVeDangBat = false; log('HP đã hồi (' + Math.round(hp.tiLe * 100) + '%) — tắt Auto, làm việc tiếp.'); }
-      } else if (tuVeDangBat && hp.tiLe < CFG.hpTuVe && !autoDangBat()) {
-        // Auto tự vệ bị diToi tắt lúc di chuyển — bật lại (không log để khỏi spam).
-        datAuto(true);
+  // ================= VÒNG DƯỢC CÔNG (chế độ "Tự Đi" + làm tay dự phòng) =================
+
+  // ---------------- Chạm NPC xoắn ốc mở thoại (từ code gửi) ----------------
+  // Bắn 8 điểm chạm quanh vị trí NPC theo 2 vòng: vòng trong 3×3 bỏ tâm
+  // (32px) rồi vòng 4 hướng chính ở 48/32/24px — phủ zoom 0.75–1.5.
+  // Game: handler `window pointerup`, tap <500ms và <14px (dựa trên
+  // Renderer.screenToBuffer), không kiểm isTrusted, không setPointerCapture
+  // -> tap tổng hợp dùng được. Đợi tối đa 2.5s mỗi vòng cho thoại mở.
+  async function waitDialogAfterTap() {
+    var t0 = Date.now();
+    while (Date.now() - t0 < CFG.tapWaitMs) {
+      if (dialogMo()) return true;
+      await sleep(200);
+    }
+    return false;
+  }
+  async function tapNpc(tx, ty, mapId) {
+    if (mapId) {
+      var r1 = await steerToCell(tx, ty, { arrivePx: CFG.tile, label: 'ô chạm NPC (' + tx + ',' + ty + ')' });
+      if (!r1.ok) return { ok: false, reason: r1.reason || 'ket', msg: r1.msg || ('Không tới được ô NPC (' + tx + ',' + ty + ').') };
+    }
+    var el = gameCanvas();
+    if (!el) return { ok: false, reason: 'ket', msg: 'Không tìm thấy canvas game.' };
+    var r = el.getBoundingClientRect();
+    var centerX = r.left + r.width / 2;
+    var centerY = r.top + r.height / 2;
+    var pos = docCell();
+    if (!pos) return { ok: false, reason: 'ket', msg: 'Không đọc được vị trí nhân vật.' };
+    // Điểm cần chạm trên màn hình = vị trí NPC tương đối so với nhân vật
+    // (camera bám theo nhân vật; nhân vật luôn ở tâm canvas).
+    var npcSx = centerX + (tx - pos.x) * CFG.pxPerTile;
+    var npcSy = centerY + (ty - pos.y) * CFG.pxPerTile;
+    var offsets = [
+      [-CFG.pxPerTile, -CFG.pxPerTile], [0, -CFG.pxPerTile], [CFG.pxPerTile, -CFG.pxPerTile],
+      [-CFG.pxPerTile, 0], [CFG.pxPerTile, 0],
+      [-CFG.pxPerTile, CFG.pxPerTile], [0, CFG.pxPerTile], [CFG.pxPerTile, CFG.pxPerTile],
+      [0, -CFG.pxPerTile * 1.5], [0, CFG.pxPerTile * 1.5], [-CFG.pxPerTile * 1.5, 0], [CFG.pxPerTile * 1.5, 0],
+      [0, -CFG.pxPerTile * 0.75], [0, CFG.pxPerTile * 0.75], [-CFG.pxPerTile * 0.75, 0], [CFG.pxPerTile * 0.75, 0],
+    ];
+    for (var i = 0; i < offsets.length; i++) {
+      if (dialogMo()) return { ok: true, npc: { x: npcSx + offsets[i][0], y: npcSy + offsets[i][1] } };
+      var dx = npcSx + offsets[i][0], dy = npcSy + offsets[i][1];
+      var opts = { bubbles: true, cancelable: true, clientX: dx, clientY: dy, pointerId: 1, pointerType: 'touch', isPrimary: true };
+      el.dispatchEvent(new PointerEvent('pointerdown', opts));
+      setTimeout(function () { window.dispatchEvent(new PointerEvent('pointerup', opts)); }, 100);
+      await sleep(200);
+      // Nếu thoại đã mở trong lúc chạm, trả ngay.
+      if (dialogMo()) return { ok: true, npc: { x: dx, y: dy } };
+      // Hết 1 vòng thì chờ thoại lâu hơn 1 chút trước khi sang vòng sau.
+      if (i === 7 || i === offsets.length - 1) {
+        var opened = await waitDialogAfterTap();
+        if (opened) return { ok: true, npc: { x: dx, y: dy } };
       }
     }
+    return { ok: false, reason: 'ket', msg: 'Đã chạm 16 điểm quanh Đại Phu mà thoại không mở. Bấm tay vào Đại Phu rồi bấm BẬT lại.' };
+  }
 
-    // Hộp thoại này có phải của Đại Phu không? (tránh mở nhầm hộp thoại
-    // của hồ/cây/NPC khác khi bấm nút Tương Tác ở xa Đại Phu.)
-    function laHopThoaiDaiPhu(dlg) {
-      if (!dlg) return false;
-      if (/Đại Phu/.test(dlg.title || '')) return true;
-      return dlg.choices.some(function (c) {
-        return /Mở Quầy Đổi Hạt|Nhận Việc Dược Công|Tự Đi Làm Việc Dược Công|Huỷ Nhiệm Vụ/.test(c.label);
-      });
-    }
-    // ---------------- Mở hộp thoại Đại Phu ----------------
-    // Bấm nút Tương Tác khi đứng gần Đại Phu, chờ hộp thoại mở.
-    // Nếu đang ở xa (vd vừa huỷ việc ở hồ) thì bước dần về Đại Phu.
-    async function moHopThoaiDaiPhu() {
-      var p0 = docViTri();
-      if (p0.map && p0.map !== 'duoc_vien') return null; // ở map khác — không đi bộ tới được
-      // Luôn đóng hộp thoại đang mở (nếu có) rồi mở lại từ đầu — menu Đại Phu
-      // được game dựng lại theo trạng thái hiện tại. Nếu tin hộp thoại cũ thì
-      // có thể đọc menu cũ (vd vừa BẬT lại tool mà hộp thoại còn mở từ phiên
-      // trước, trong khi acc đã nhận việc dở) và bỏ qua việc cần huỷ.
-      if (dialogMo()) { dongDialog(); await sleep(600); }
-      // Bước lại gần Đại Phu bằng joystick — cần Auto TẮT (joystick không
-      // chạy khi Auto BẬT); xong thì bật lại Auto nếu là Trúc Cơ.
-      var autoCu = autoDangBat();
-      if (autoCu) datAuto(false);
-      function khoiPhucAuto() { if (autoCu && realm !== 'luyen_khi') datAuto(true); }
-      for (var lan = 0; lan < 30; lan++) {
-        var nt = nutTuongTac();
-        // Chỉ bấm khi nút Tương Tác đang chỉ vào Đại Phu (aria-label ghi rõ).
-        // Nếu aria trống thì bấm thử rồi kiểm tra hộp thoại mở ra.
-        if (nt && nt.laTuongTac && (!nt.aria || /Đại Phu/.test(nt.aria))) {
-          tap(nt.el);
-          await sleep(CFG.choDoiMs);
-          if (dialogMo()) {
-            var d1 = docDialog();
-            if (laHopThoaiDaiPhu(d1)) { khoiPhucAuto(); return d1; }
-            dongDialog();
-            await sleep(600);
-          }
-        }
-        // Chưa mở được — bước lại gần Đại Phu 1 nhịp.
-        var p = docViTri();
-        if (p.x !== null && p.map === 'duoc_vien') {
-          await joyHuong(DAI_PHU.x - p.x, DAI_PHU.y - p.y, CFG.joyHoldMs);
-        }
-        await sleep(800);
-      }
+  // ---------------- Bấm bước nhiệm vụ để game tự đi ----------------
+  // #quest-objectives li[data-di] — click vào đó, game gọi diToiNhiemVu.
+  // Trả false khi không tìm thấy bước nhiệm vụ nào.
+  function clickQuestStep() {
+    var items = document.querySelectorAll('#quest-objectives li[data-di]');
+    if (!items || items.length === 0) return false;
+    var li = items[items.length - 1];
+    li.click();
+    return true;
+  }
+
+  // ---------------- Mở hộp thoại Đại Phu ----------------
+  // Ưu tiên 1: nút Tương Tác (#btn-attack đổi nhãn "Tương Tác" khi đứng gần
+  // NPC — kiểm tra bằng aria-label / .skill-name). Ưu tiên 2: tapNpc xoắn
+  // ốc chạm vào vị trí Đại Phu. Trả true nếu thoại Đại Phu đã mở, false nếu
+  // cả hai cách đều không mở được.
+  async function moHopThoaiDaiPhu() {
+    var t0 = Date.now();
+    while (Date.now() - t0 < CFG.npcWaitMs) {
       if (dialogMo()) {
-        var d2 = docDialog();
-        if (laHopThoaiDaiPhu(d2)) { khoiPhucAuto(); return d2; }
+        if (laMenuDaiPhu(docDialog())) return true;
+        // Thoại khác đang mở (câu cá / danh sách việc / hộp xác nhận /
+        // Quầy Đổi Hạt...) — đóng rồi mở lại đúng menu Đại Phu.
         dongDialog();
+        await sleep(400);
+        continue;
       }
-      khoiPhucAuto();
-      return null;
-    }
-
-    // ---------------- Chế độ Trúc Cơ: dùng "Tự Đi" của game ----------------
-    async function batTuDi() {
-      // Bật Phi Hành + Chạy + Auto trước khi bắt đầu (quy tắc đứng).
-      datFly(true); datRun(true); datAuto(true);
-      await sleep(500);
-      var dlg = await moHopThoaiDaiPhu();
-      if (!dlg) { log('Không mở được hộp thoại Đại Phu.'); return false; }
-      var tuDi = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
-      if (!tuDi) { log('Không thấy mục "Tự Đi Làm Việc Dược Công" trong menu.'); return false; }
-      if (tuDi.disabled) { log('"Tự Đi" đang bị khoá — ' + (tuDi.note || '') + '.'); return false; }
-      tap(tuDi.el);
-      await sleep(CFG.choDoiMs);
-      var dlg2 = docDialog();
-      if (!dlg2) { log('Không mở được hộp thoại xác nhận "Tự Đi".'); return false; }
-      var ok = bamNutHanhDong(/Bắt Đầu Tự Làm/);
-      if (!ok) { log('Không thấy nút "Bắt Đầu Tự Làm".'); return false; }
-      log('Đã bấm "Bắt Đầu Tự Làm" — game tự làm dược.');
-      daNhanViec = true;
-      phase = 'tu_di';
-      return true;
-    }
-    // Kiểm tra bộ máy "Tự Đi" còn chạy không (theo dõi thụ động, KHÔNG chạm màn hình).
-    function tuDiDaDung() {
-      var cap = docCaption();
-      if (/Xong việc Dược Công hôm nay/.test(cap)) return 'xong';
-      if (/Kẹt đường|Không tìm được đường|Máy chủ chưa nhận|Chờ nguyên liệu quá lâu|Quái chặn đường quá lâu|Hạ phi hành/.test(cap)) return 'loi:' + cap;
-      return null;
-    }
-
-    // ---------------- Chế độ Luyện Khí: nhận việc tay ----------------
-    async function nhanViecTotNhat() {
-      var dlg = await moHopThoaiDaiPhu();
-      if (!dlg) { log('Không mở được hộp thoại Đại Phu.'); return false; }
-      // Nếu đang giữ việc: quyết định theo LOẠI việc (lệnh Thanh 07:23 +
-      // 07:26 25/11) — việc thường thì TIẾP TỤC làm; Đại Hội / Tán Tu thì
-      // TỰ HUỶ rồi nhận việc thường; Vận Tiêu / việc lạ thì DỪNG báo rõ.
-      var dangGiu = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
-      if (dangGiu) {
-        var giuNv = docViecDangGiu();
-        if (giuNv && TASKS[giuNv.id]) {
-          if (!daNhanViec) { viecNhanTay = true; log('Đang giữ việc ' + giuNv.ten + ' — tiếp tục làm (không huỷ).'); }
-          viecHienTai = giuNv.id; daNhanViec = true; taskBatDauAt = Date.now();
-          dongDialog();
-          return 'tiep_tuc';
-        }
-        if (giuNv && (giuNv.id === 'dai_hoi' || giuNv.id === 'chien_bang')) {
-          log('Đang giữ việc ' + giuNv.ten + ' — tự huỷ (không làm Đại Hội/Tán Tu), nhận việc thường tiếp theo.');
-          var okHuy = await huyViec();
-          if (!okHuy) { log('Huỷ việc không được — dừng để anh xem.'); return 'giu_viec'; }
-          return 'da_huy'; // huỷ xong — vòng lặp quay lại mo_menu để nhận việc mới
-        }
-        if (giuNv && giuNv.id === 'van_tieu') {
-          log('Đang giữ việc Vận Tiêu — tool không tự huỷ (đã trả phí 400 LT). Giao xong hoặc huỷ tay rồi bật lại tool.');
-          return 'giu_viec';
-        }
-        log('Đang giữ việc không nhận diện được (' + tenViecDangGiu() + ') — dừng để anh xem.');
-        return 'giu_viec';
-      }
-      var dc = docDC(dlg);
-      if (dc !== null) { dcHienTai = dc; if (dcLucBatDau === null) dcLucBatDau = dc; }
-      var ok = bamLuaChon(/Nhận Việc Dược Công/);
-      if (ok === 'disabled') { log('Hôm nay hết lượt nhận việc.'); return 'het_luot'; }
-      if (!ok) { log('Không thấy mục "Nhận Việc Dược Công".'); return false; }
-      await sleep(CFG.choDoiMs);
-      var ds = docDialog();
-      if (!ds) { log('Không mở được danh sách việc.'); return false; }
-      var luot = docLuotTuDanhSach(ds);
-      Object.keys(luot).forEach(function (k) { if (luot[k] !== null) luotConLai[k] = luot[k]; });
-      capNhatLuotDaLam();
-      var id = chonViecTotNhat();
-      if (!id) { log('Hết lượt các việc thường hôm nay.'); return 'het_luot'; }
-      var chon = null;
-      ds.choices.forEach(function (c) {
-        if (c.label === TASKS[id].ten || c.label.indexOf(TASKS[id].tenNgan) >= 0) chon = c;
-      });
-      if (!chon || chon.disabled) { log('Không chọn được việc ' + TASKS[id].ten + '.'); return false; }
-      // Chặn cuối: không bao giờ nhận việc Đại Hội / Tán Tu / Vận Tiêu dù
-      // danh sách có ghi gì (phòng trường hợp chọn nhầm từ hộp thoại).
-      if (laViecCam(chon.label)) { log('Từ chối nhận việc cấm: ' + chon.label + ' — chỉ làm 5 việc thường.'); return false; }
-      tap(chon.el);
-      await sleep(CFG.choDoiMs);
-      var xn = docDialog();
-      if (!xn) { log('Không mở được hộp thoại xác nhận nhận việc.'); return false; }
-      var ok2 = bamNutHanhDong(/Nhận Việc Này/);
-      if (!ok2) { log('Không thấy nút "Nhận Việc Này".'); return false; }
-      viecHienTai = id;
-      daNhanViec = true;
-      taskBatDauAt = Date.now();
-      log('Đã nhận việc: ' + TASKS[id].ten + ' (' + TASKS[id].dc + ' DC, còn ' + (luotConLai[id] - 1) + '/' + 3 + ' lượt).');
-      return true;
-    }
-
-    // ---------------- Làm việc (LK) ----------------
-    async function lamViecHienTai() {
-      var t = TASKS[viecHienTai];
-      if (!t) return false;
-      // Việc đã đủ điều kiện (vd nhận bằng tay rồi câu đủ 3 cá trước khi
-      // bật tool) thì khỏi đi đâu nữa — về Đại Phu nộp luôn.
-      if (viecDaXong()) { var td0 = docTienDo(); log('Việc đã đủ ' + td0.cur + '/' + td0.max + ' — về Đại Phu nộp.'); return true; }
-      // Đi tới chỗ làm.
-      var toi = await diToiMap(t.map);
-      if (!toi) return 'ket';
-      var p = docViTri();
-      if (t.kind === 'fishing') {
-        var ok = await diToi(t.x, t.y, 60);
-        if (!ok) return 'ket';
-        // Tương tác với mặt nước → chọn "Tự động câu".
-        var nt = nutTuongTac();
-        if (!nt || !nt.laTuongTac) {
-          // Thử bước thêm 1-2 nhịp về phía hồ.
-          await joyHuong(t.x - docViTri().x, t.y - docViTri().y, CFG.joyHoldMs);
-          nt = nutTuongTac();
-        }
-        if (!nt || !nt.laTuongTac) { log('Không thấy nút tương tác với hồ.'); return 'ket'; }
+      var nt = nutTuongTac();
+      if (nt && nt.laTuongTac) {
         tap(nt.el);
-        await sleep(CFG.choDoiMs);
-        var chon = bamLuaChon(/Tự động câu/);
-        if (!chon) { log('Không thấy lựa chọn "Tự động câu".'); return 'ket'; }
-        log('Đã bật tự động câu — chờ đủ 3 cá.');
-        var t0 = Date.now();
-        while (on && Date.now() - t0 < CFG.taskTimeoutMs) {
-          kiemTraTuVe();
-          var td = docTienDo();
-          if (td && td.cur >= td.max) break;
-          var tr = docTracker();
-          if (/3\s*\/\s*3/.test(tr)) break;
-          await sleep(2000);
+        var opened = await waitDialogAfterTap();
+        if (opened && dialogMo()) {
+          var dlg = docDialog();
+          if (dlg && laMenuDaiPhu(dlg)) return true;
+          // Thoại mở nhưng không phải Đại Phu (vật khác) — đóng rồi thử chạm.
+          dongDialog();
+          await sleep(400);
         }
-        var stop = $('#btn-fishing-stop-touch');
-        if (stop) tap(stop);
-        var td2 = docTienDo();
-        if (td2 && td2.cur >= td2.max) { log('Đã câu đủ ' + td2.cur + '/' + td2.max + ' cá.'); return true; }
-        log('Hết giờ chờ câu cá (chưa đủ 3 cá).');
-        return 'ket';
       }
-      if (t.kind === 'chop' && t.id === 'duoc_moc') {
-        var ok2 = await diToi(t.x, t.y, 60);
-        if (!ok2) return 'ket';
-        // Chặt cây rồi đi nhặt cành rơi quanh gốc.
-        var t0b = Date.now();
-        while (on && Date.now() - t0b < CFG.taskTimeoutMs) {
-          kiemTraTuVe();
-          var td3 = docTienDo();
-          if (td3 && td3.cur >= td3.max) { log('Đã gom đủ ' + td3.cur + '/' + td3.max + ' Cành Khô.'); return true; }
-          var nt2 = nutTuongTac();
-          if (nt2 && nt2.laTuongTac) { tap(nt2.el); await sleep(2500); }
-          // Đi vòng quanh gốc cây để nhặt cành rơi.
-          var pp = docViTri();
-          var vong = [[2, 0], [0, 2], [-2, 0], [0, -2], [2, 2], [-2, -2]];
-          for (var i = 0; i < vong.length; i++) {
-            if (!on) return false;
-            await diToi(t.x + vong[i][0], t.y + vong[i][1], 12);
-            var td4 = docTienDo();
-            if (td4 && td4.cur >= td4.max) { log('Đã gom đủ ' + td4.cur + '/' + td4.max + ' Cành Khô.'); return true; }
-          }
-          await diToi(t.x, t.y, 20);
-        }
-        return 'ket';
+      if (!nt || !nt.laTuongTac) {
+        // Nút Tương Tác chưa hiện — chạm NPC xoắn ốc.
+        var r = await tapNpc(DAI_PHU.x, DAI_PHU.y, null);
+        if (r.ok) return true;
+        // Chạm thất bại: thử lại 1 vòng sau khi đợi ngắn (người chơi đã
+        // đứng sát NPC rồi nên không cần lái lại).
+        await sleep(500);
+        if (dialogMo()) return true;
       }
-      if (t.kind === 'chop' && t.id === 'truc_gia') {
-        // Chặt 4 thân Trúc Già ở các điểm cố định.
-        for (var s = 0; s < t.spots.length; s++) {
-          if (!on) return false;
-          var td5 = docTienDo();
-          if (td5 && td5.cur >= td5.max) { log('Đã chặt đủ ' + td5.cur + '/' + td5.max + ' Trúc Tâm.'); return true; }
-          var ok3 = await diToi(t.spots[s][0], t.spots[s][1], 60);
-          if (!ok3) continue;
-          var nt3 = nutTuongTac();
-          if (nt3 && nt3.laTuongTac) { tap(nt3.el); await sleep(2500); }
-        }
-        var td6 = docTienDo();
-        if (td6 && td6.cur >= td6.max) { log('Đã chặt đủ ' + td6.cur + '/' + td6.max + ' Trúc Tâm.'); return true; }
-        return 'ket';
-      }
-      if (t.kind === 'harvest') {
-        // Hái Linh Chi: đi qua từng điểm, chỗ nào có nút Tương Tác thì hái.
-        for (var s2 = 0; s2 < t.spots.length; s2++) {
-          if (!on) return false;
-          var td7 = docTienDo();
-          if (td7 && td7.cur >= td7.max) { log('Đã hái đủ ' + td7.cur + '/' + td7.max + ' Linh Chi.'); return true; }
-          var ok4 = await diToi(t.spots[s2][0], t.spots[s2][1], 40);
-          if (!ok4) continue;
-          var nt4 = nutTuongTac();
-          if (nt4 && nt4.laTuongTac) { tap(nt4.el); await sleep(2000); }
-        }
-        var td8 = docTienDo();
-        if (td8 && td8.cur >= td8.max) { log('Đã hái đủ ' + td8.cur + '/' + td8.max + ' Linh Chi.'); return true; }
-        return 'ket';
-      }
-      if (t.kind === 'escort') {
-        var ok5 = await diToi(t.x, t.y, 60);
-        if (!ok5) return 'ket';
-        var nt5 = nutTuongTac();
-        if (!nt5 || !nt5.laTuongTac) { log('Không thấy Thầy Ông Nội để giao người.'); return 'ket'; }
-        tap(nt5.el);
-        await sleep(CFG.choDoiMs);
-        // Giao xong công tự ghi — kiểm tra tracker không còn việc nữa.
-        await sleep(1500);
-        var tr2 = docTracker();
-        if (!/Dẫn Cháu|Đưa Người/.test(tr2)) { log('Đã giao cháu cho Thầy Ông Nội.'); return 'xong_khong_can_nop'; }
-        return 'ket';
-      }
-      return 'ket';
+      await sleep(600);
     }
+    return false;
+  }
 
-    // ---------------- Nộp việc (LK) ----------------
-    async function nopViec() {
-      var dlg = await moHopThoaiDaiPhu();
-      if (!dlg) { log('Không mở được hộp thoại Đại Phu để nộp.'); return false; }
-      var act = dlg.action;
-      if (act && /Giao Ba Cá|Giao Nguyên Liệu/.test(act.label)) {
-        tap(act.el);
-        await sleep(CFG.choDoiMs);
-        luotDaLam++;
-        if (typeof luotConLai[viecHienTai] === 'number' && luotConLai[viecHienTai] > 0) luotConLai[viecHienTai]--;
-        log('Đã nộp việc ' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ' — xong ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt.');
-        viecNhanTay = false;
-        viecHienTai = null;
-        // Nộp xong game tự mở Quầy Đổi Hạt — đóng lại ngay, KHÔNG đổi gì.
-        await sleep(800);
-        if (dialogMo()) {
-          var d2 = docDialog();
-          if (d2 && /Đổi /.test(d2.text || '') || (d2 && timLuaChon(d2, /Đổi /))) dongDialog();
-          else if (dialogMo()) dongDialog();
-        }
+  // ---------------- Bật chế độ "Tự Đi" (Trúc Cơ — bộ máy autopilot của game) ----------------
+  // Chỉ có tác dụng với acc Trúc Cơ. Bấm lựa chọn "Tự Đi Làm Việc Dược Công"
+  // rồi bấm nút hành động "Bắt Đầu Tự Làm" ở hộp thoại xác nhận — game chạy
+  // bộ máy autoDC (tự nhận việc, tự đi, tự hái/câu/chặt, tự giao hộ tống,
+  // tự về nộp, lặp tới hết lượt). "Chạm màn hình hoặc gạt cần để dừng" nên
+  // tool KHÔNG được chạm gì thêm trong lúc bộ máy chạy — chỉ chờ thụ động.
+  // Trả true nếu bộ máy đã bắt đầu chạy, false nếu nút khoá/không có.
+  async function batTuDi() {
+    var dlg = docDialog();
+    if (!dlg) return false;
+    var c = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
+    if (!c) return false;
+    if (c.disabled) { log('Nút "Tự Đi Làm Việc Dược Công" đang bị khoá (lượt 0 hoặc đang giữ việc?).'); return false; }
+    tap(c.el);
+    // Hộp thoại xác nhận "Bắt Đầu Tự Làm" mở sau khi bấm lựa chọn.
+    var t0 = Date.now();
+    while (Date.now() - t0 < CFG.choDoiMs * 3) {
+      var d2 = docDialog();
+      if (d2 && d2.action && /Bắt Đầu Tự Làm/.test(d2.action.label)) {
+        tap(d2.action.el);
+        await sleep(CFG.afterActionMs);
         return true;
       }
-      // Chưa xong việc? Kiểm tra lại tracker.
+      await sleep(300);
+    }
+    // Không thấy hộp thoại xác nhận — có thể bộ máy đã chạy ngay (game cũ)
+    // hoặc lựa chọn không có tác dụng. Coi là thất bại để vòng gọi thử làm tay.
+    log('Bấm "Tự Đi" nhưng không thấy nút "Bắt Đầu Tự Làm" — bộ máy chưa chạy.');
+    return false;
+  }
+  // Chờ bộ máy "Tự Đi" làm xong ("Xong việc Dược Công hôm nay" ở caption).
+  // Bộ máy dừng giữa chừng (kẹt đường/quái chặn/HP thấp) thì khởi động lại
+  // tối đa CFG.maxTuDiKhoiDongLai lần (mỗi lần mở lại thoại Đại Phu rồi bấm
+  // "Tự Đi" lại). HP <35% thì chờ hồi ≥60% rồi mới khởi động lại.
+  // Trả {ok:true, dcTruoc, dcSau} | {ok:false, reason, msg}.
+  async function chayTuDiTuDong() {
+    var tok = steerToken;
+    var dcTruoc = docDCLocal();
+    var lanKhoiDong = 0;
+    while (true) {
+      if (!on || tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+      var ok = await batTuDi();
+      if (!ok) return { ok: false, reason: 'khong_co_tu_di', msg: 'Không bật được bộ máy "Tự Đi" (nút khoá/không có).' };
+      lanKhoiDong++;
+      demTuDiLai = lanKhoiDong - 1;
+      log('Bộ máy "Tự Đi" đang chạy (lần ' + lanKhoiDong + ') — tool chỉ chờ, không chạm màn hình.');
+      phase = 'tu_di';
+      var t0 = Date.now();
+      var dcLanTruoc = docDCLocal();
+      var dcDungAt = Date.now();
+      var choKetQua = null;
+      while (Date.now() - t0 < CFG.tuDiTimeoutMs) {
+        if (!on || tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        var cap = docCaption();
+        if (/Xong việc Dược Công hôm nay/.test(cap)) { choKetQua = 'xong'; break; }
+        if (/dừng tự làm việc|Quái chặn đường quá lâu|Không thấy Đại Phu|Không thấy bờ nước|Không thấy Cổ Thụ|Chưa đủ cảnh giới/.test(cap)) { choKetQua = 'dung_giua_chung'; break; }
+        // HP <35%: bộ máy tự dừng — chờ hồi rồi khởi động lại.
+        var h = docHP();
+        if (h && h.tiLe < CFG.hpNguyHiem) { choKetQua = 'hp_thap'; break; }
+        var dcHien = docDCLocal();
+        if (dcHien !== null && dcLanTruoc !== null && dcHien !== dcLanTruoc) { dcLanTruoc = dcHien; dcDungAt = Date.now(); }
+        // Không còn việc đang giữ + DC không đổi 60s + caption trống = bộ máy
+        // có thể đã dừng lặng (không báo) — kiểm tra lại bằng thoại Đại Phu.
+        if (Date.now() - dcDungAt > 60000 && !docViecDangGiu()) { choKetQua = 'kiem_tra'; break; }
+        await sleep(2000);
+      }
+      if (choKetQua === 'xong') {
+        var dcSau = docDCLocal();
+        log('Bộ máy "Tự Đi" đã làm xong hết lượt dược hôm nay (DC ' + dcTruoc + ' → ' + dcSau + ').');
+        return { ok: true, dcTruoc: dcTruoc, dcSau: dcSau };
+      }
+      if (choKetQua === 'kiem_tra') {
+        // Mở thoại Đại Phu xem còn lượt không (bộ máy đã dừng thì mở thoại an toàn).
+        var okDlg = await moHopThoaiDaiPhu();
+        if (!on || tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        if (okDlg) {
+          var rNhan = bamLuaChon(/Nhận Việc Dược Công/);
+          if (rNhan === 'disabled') {
+            // Nút nhận việc bị khoá = hết lượt hôm nay -> bộ máy đã xong.
+            dongDialog();
+            var dcSau3 = docDCLocal();
+            log('Bộ máy "Tự Đi" đã làm xong hết lượt dược hôm nay (DC ' + dcTruoc + ' → ' + dcSau3 + ').');
+            return { ok: true, dcTruoc: dcTruoc, dcSau: dcSau3 };
+          }
+          if (rNhan === true || rNhan === false) {
+            var dlgL = docDialog();
+            var luot = docLuotTuDanhSach(dlgL);
+            var con = 0;
+            THU_TU_UU_TIEN.forEach(function (id) { if (luot[id] > 0) con += luot[id]; });
+            dongDialog();
+            if (con === 0) {
+              var dcSau2 = docDCLocal();
+              log('Bộ máy "Tự Đi" đã làm xong hết lượt dược hôm nay (DC ' + dcTruoc + ' → ' + dcSau2 + ').');
+              return { ok: true, dcTruoc: dcTruoc, dcSau: dcSau2 };
+            }
+            log('Bộ máy dừng lặng nhưng còn ' + con + ' lượt thường — khởi động lại.');
+          } else {
+            dongDialog();
+          }
+        }
+        choKetQua = 'dung_giua_chung';
+      }
+      if (choKetQua === 'hp_thap') {
+        log('Khí Huyết dưới 35% — bộ máy tự dừng. Chờ hồi ≥60% rồi khởi động lại.');
+        var bMed = $('#btn-meditate-touch');
+        if (bMed) tap(bMed);
+        var tHoi = Date.now();
+        var hoiDu = false;
+        while (on && tok === steerToken) {
+          await sleep(2000);
+          var h2 = docHP();
+          if (h2 && h2.tiLe >= CFG.hpHoiXong) { hoiDu = true; break; }
+          if (Date.now() - tHoi > CFG.choHoiMs) break;
+        }
+        if (!on || tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        if (!hoiDu) return { ok: false, reason: 'hp_thap', msg: 'Chờ hồi máu quá 5 phút vẫn <60% — đã dừng.' };
+        choKetQua = 'dung_giua_chung';
+      }
+      // Dừng giữa chừng: khởi động lại nếu còn lượt cho phép.
+      if (lanKhoiDong > CFG.maxTuDiKhoiDongLai) {
+        return { ok: false, reason: 'ket', msg: 'Bộ máy "Tự Đi" dừng giữa chừng quá ' + CFG.maxTuDiKhoiDongLai + ' lần khởi động lại — đã dừng.' };
+      }
+      log('Bộ máy "Tự Đi" dừng giữa chừng — khởi động lại (lần ' + (lanKhoiDong + 1) + ').');
+      // Mở lại thoại Đại Phu rồi bấm "Tự Đi" lại (batTuDi tự mở thoại ở đầu vòng).
+      if (!dialogMo()) {
+        var okDlg2 = await moHopThoaiDaiPhu();
+        if (!on || tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        if (!okDlg2) return { ok: false, reason: 'ket', msg: 'Không mở lại được thoại Đại Phu để khởi động lại "Tự Đi" — đã dừng.' };
+      }
+    }
+  }
+
+  // ---------------- Nhận việc tốt nhất (theo DC, bỏ việc hết lượt/khóa) ----------------
+  // Đọc từ hộp thoại Đại Phu: số DC hiện tại + lượt còn lại của từng việc
+  // (ghi chú "còn r/c lượt"). Chọn việc có DC cao nhất còn lượt & còn mở
+  // (cau_ca=4 > duoc_moc=3 > ho_tong_chau=2 > truc_gia=1 = linh_chi=1;
+  // hòa DC thì việc nào ở trước thứ tự v1.1.2 trước).
+  // Trả: {ok:true, id, ten, dc} | {ok:false, reason:'het_luot'|'hp_thap'}.
+  async function nhanViecTotNhat(dlg) {
+    var h = docHP();
+    if (h && h.tiLe < CFG.hpNhanViec) {
+      return { ok: false, reason: 'hp_thap', msg: 'Khí Huyết dưới 50% — không nhận việc, chờ hồi rồi thử lại.' };
+    }
+    // Menu chính của Đại Phu KHÔNG liệt kê từng việc — phải bấm "Nhận Việc
+    // Dược Công" để mở hộp thoại danh sách việc rồi mới đọc lượt từng việc.
+    var rMo = bamLuaChon(/Nhận Việc Dược Công/);
+    if (rMo === 'disabled') return { ok: false, reason: 'het_luot', msg: 'Hết lượt việc dược hôm nay (nút "Nhận Việc Dược Công" bị khoá) — đã dừng.' };
+    if (!rMo) return { ok: false, reason: 'het_luot', msg: 'Không thấy nút "Nhận Việc Dược Công" trong hộp thoại Đại Phu.' };
+    await sleep(CFG.afterActionMs);
+    var dlgList = docDialog();
+    if (!dlgList) return { ok: false, reason: 'het_luot', msg: 'Bấm "Nhận Việc Dược Công" nhưng danh sách việc không mở.' };
+    var luot = docLuotTuDanhSach(dlgList);
+    var bestId = null;
+    for (var i = 0; i < THU_TU_UU_TIEN.length; i++) {
+      var id = THU_TU_UU_TIEN[i];
+      if (!(id in luot)) continue; // không có trong hộp thoại = chưa mở/không có
+      if (luot[id] === null) continue; // bị khóa cảnh giới
+      if (luot[id] <= 0) continue; // hết lượt
+      bestId = id;
+      break;
+    }
+    if (!bestId) return { ok: false, reason: 'het_luot', msg: 'Hết lượt việc thường hôm nay (5 việc thường đều 0 lượt/khoá) — đã dừng.' };
+    var t = TASKS[bestId];
+    // Chọn đúng nút của việc trong DANH SÁCH VIỆC (label chứa tên việc).
+    var c = null;
+    for (var j = 0; j < dlgList.choices.length; j++) {
+      var ch = dlgList.choices[j];
+      if (ch.label.indexOf(t.ten) >= 0 || ch.label.indexOf(t.tenNgan) >= 0) { c = ch; break; }
+    }
+    if (!c) return { ok: false, reason: 'het_luot', msg: 'Không thấy nút nhận việc ' + t.ten + ' trong danh sách việc.' };
+    if (c.disabled) return { ok: false, reason: 'het_luot', msg: 'Nút nhận việc ' + t.ten + ' đang bị khoá.' };
+    tap(c.el);
+    await sleep(CFG.afterActionMs);
+    // Game mở hộp thoại xác nhận với nút hành động "Nhận Việc Này".
+    var dlg3 = docDialog();
+    if (dlg3 && dlg3.action && /Nhận Việc Này/.test(dlg3.action.label)) {
+      tap(dlg3.action.el);
+      await sleep(CFG.afterActionMs);
+    } else if (dlg3 && /xác nhận|Nhận việc/i.test((dlg3.text || '') + ' ' + (dlg3.title || ''))) {
+      bamNutHanhDong(/Đồng ý|Xác nhận|Nhận/i);
+      await sleep(CFG.afterActionMs);
+    }
+    // Kiểm tra tracker đã có việc chưa (nhận thất bại thì tracker vẫn rỗng).
+    if (!docTracker()) {
+      return { ok: false, reason: 'het_luot', msg: 'Bấm nhận ' + t.ten + ' nhưng tracker không có việc — có thể đã hết lượt. Đã dừng.' };
+    }
+    return { ok: true, id: bestId, ten: t.ten, dc: t.dc };
+  }
+
+  // ---------------- Quét vòng nhặt cành rơi ----------------
+  // Cơ chế chặt cây: chặt xong cành RƠI xuống đất (drops, state "fall"),
+  // phải ĐI QUA chỗ cành rơi mới nhặt vào túi — chỉ bấm #btn-attack mà
+  // không đi nhặt thì tiến độ mãi 0/5. Quét 8 điểm xung quanh vị trí
+  // hiện tại (bán kính ~2 ô), mỗi điểm chờ 300ms cho game nhặt.
+  async function quetNhat() {
+    var p = docCell();
+    if (!p) return;
+    // Quét 2 vòng quanh chỗ đứng: vòng trong (±1 ô) rồi vòng ngoài (±2 ô).
+    // Cành rơi theo game.js: x = cây.x - 10..30px, y = cây.y - 64..52px
+    // (lệch tây ~0-1 ô, bắc ~2 ô) — quét cả 2 vòng mới chắc chắn nhặt hết.
+    var pts = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1],
+               [2, 0], [2, 2], [0, 2], [-2, 2], [-2, 0], [-2, -2], [0, -2], [2, -2]];
+    for (var i = 0; i < pts.length; i++) {
+      var r = await steerToCell(p.x + pts[i][0], p.y + pts[i][1], { arrivePx: CFG.tile, label: 'điểm nhặt (' + (p.x + pts[i][0]) + ',' + (p.y + pts[i][1]) + ')' });
+      if (!r.ok && (r.reason === 'dung' || r.reason === 'guc' || r.reason === 'hp-thap')) return;
       var td = docTienDo();
-      if (td && td.cur < td.max) { log('Việc chưa đủ (' + td.cur + '/' + td.max + ') — quay lại làm tiếp.'); return 'chua_xong'; }
-      log('Không thấy nút nộp việc.');
-      return false;
+      if (td && td.cur >= td.max) return; // đủ rồi — dừng quét ngay
+      await sleep(300);
     }
+  }
 
-    // ---------------- Huỷ việc (LK) ----------------
-    async function huyViec() {
-      var dlg = await moHopThoaiDaiPhu();
-      if (!dlg) { log('Không mở được hộp thoại Đại Phu để huỷ việc.'); return false; }
-      var ok = bamLuaChon(/Huỷ Nhiệm Vụ/);
-      if (!ok) { log('Không thấy mục "Huỷ Nhiệm Vụ".'); return false; }
-      await sleep(CFG.choDoiMs);
-      // "Xác Nhận Huỷ" là nút LỰA CHỌN trong game thật (không phải nút hành động).
-      var ok2 = bamLuaChon(/Xác Nhận Huỷ/);
-      if (!ok2) ok2 = bamNutHanhDong(/Xác Nhận Huỷ/);
-      if (!ok2) { log('Không thấy nút "Xác Nhận Huỷ".'); return false; }
-      log('Đã huỷ việc (được hoàn lại lượt).');
-      viecNhanTay = false;
-      viecHienTai = null;
-      return true;
+  // ---------------- Làm việc bằng chế độ "Tự Đi" của game (code gửi) ----------------
+  // Bấm bước nhiệm vụ để game tự đi → chờ nhãn 'Tương Tác' → bấm
+  // #btn-attack tới đủ tiến độ → (chặt: quét vòng nhặt cành rơi nếu tiến độ
+  // không tăng) → về Đại Phu nộp.
+  // Trả: {ok:true, id, ten, dc} | {ok:false, reason, msg} với reason:
+  //   'ket' (45s không tiến độ), 'hp_thap' (<35%), 'guc', 'dung', 'het_gio'.
+  // Phân biệt nhiệm vụ:
+  // - cau_ca: game tự đi tới bến câu, bấm 'Tự động câu' rồi CHỜ RIÊNG
+  //   (không bấm thêm), câu đủ 3 cá là xong.
+  // - ho_tong_chau (Đưa Người): game tự đi tới mục tiêu, công tự ghi khi
+  //   đứng trong vùng mục tiêu (không cần bấm #btn-attack) — vẫn bấm bước
+  //   nhiệm vụ mỗi 5s để game không dừng, đủ tiến độ thì nộp.
+  // - duoc_moc (chặt): bấm #btn-attack để chặt; nếu tiến độ không tăng >5s
+  //   thì quét vòng nhặt cành rơi.
+  // - linh_chi (hái): bấm #btn-attack để hái (pickLinhChi cộng thẳng vào túi).
+  // - truc_gia (chặt Trúc Già): như duoc_moc.
+  // ---------------- Xử lý hộp thoại mở ra trong lúc làm việc ----------------
+  // Tương tác với mục tiêu có thể mở hộp thoại của game:
+  // - mặt nước (câu cá): lựa chọn "Thả câu" / "Tự động câu" -> bấm "Tự động câu".
+  // - Thầy Ông Nội (giao hộ tống): nút hành động "Bẩm Thầy Ông Nội" -> bấm để
+  //   hoàn thành việc ngay tại chỗ (công tự ghi, KHÔNG cần về Đại Phu nộp).
+  // Trả 'cau' (đã bấm Tự động câu) | 'da_nop' (đã giao hộ tống) | null.
+  function xuLyDialogLamViec(viecId, st) {
+    var dlg = docDialog();
+    if (!dlg) return null;
+    if (viecId === 'cau_ca' && !st.fishingStarted) {
+      var c = timLuaChon(dlg, /Tự động câu/);
+      if (c && !c.disabled) { tap(c.el); st.fishingStarted = true; return 'cau'; }
     }
+    if (viecId === 'ho_tong_chau' && dlg.action && /Bẩm Thầy Ông Nội/.test(dlg.action.label)) {
+      tap(dlg.action.el);
+      return 'da_nop';
+    }
+    return null;
+  }
 
-    // ---------------- Vòng lặp chính ----------------
-    var dangChay = false;
-    async function vongLap() {
-      if (dangChay) return;
-      dangChay = true;
-      try {
-        while (on) {
-          if (phase === 'idle' || phase === 'cho_dai_phu') {
-            // Tiếp tục việc đã nhận bằng tay (nút "TỰ ĐI LÀM VIỆC ĐÃ NHẬN"):
-            // không cần qua Đại Phu trước — Luyện Khí đi thẳng tới chỗ làm,
-            // Trúc Cơ thì về Đại Phu rồi bấm "Tự Đi" của game.
-            if (viecNhanTay && viecHienTai && TASKS[viecHienTai]) {
-              if (realm === 'truc_co') { phase = 've_nop_nop_khong'; continue; }
-              phase = viecDaXong() ? 've_nop' : 'di_lam';
-              continue;
-            }
-            if (!ganDaiPhu()) {
-              if (phase !== 'cho_dai_phu') { phase = 'cho_dai_phu'; log('Chưa ở gần Đại Phu (14,8) — đưa nhân vật tới Đại Phu rồi tool sẽ tự chạy.'); }
-              await sleep(2000);
-              continue;
-            }
-            phase = 'mo_menu';
-          }
-          if (phase === 'mo_menu') {
-            var dlg = await moHopThoaiDaiPhu();
-            if (!dlg) { await sleep(2000); continue; }
-            // ƯU TIÊN: xử lý việc ĐANG GIỮ (nhận bằng tay trước khi bật tool,
-            // hoặc việc của tool đang làm dở) TRƯỚC khi nhận biết cảnh giới —
-            // menu khi đang giữ việc có thể hiện "Tự Đi" bị khoá, không được
-            // lầm là acc Luyện Khí. Quyết định theo LOẠI việc (07:23 + 07:26):
-            // việc thường → TIẾP TỤC; Đại Hội / Tán Tu → TỰ HUỶ rồi nhận
-            // việc thường; Vận Tiêu / việc lạ → DỪNG báo rõ (không huỷ).
-            var dangGiuMenu = timLuaChon(dlg, /Huỷ Nhiệm Vụ/);
-            if (dangGiuMenu) {
-              var giuMm = docViecDangGiu();
-              if (giuMm && TASKS[giuMm.id]) {
-                if (!daNhanViec) { viecNhanTay = true; log('Đang giữ việc ' + giuMm.ten + ' — tiếp tục làm (không huỷ).'); }
-                viecHienTai = giuMm.id; daNhanViec = true; taskBatDauAt = Date.now();
-                var tuDiTiep = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
-                if (tuDiTiep && !tuDiTiep.disabled) {
-                  // Trúc Cơ: dùng "Tự Đi" của game để tiếp tục việc đang giữ
-                  // (client: canAutoSeed() cho phép khi đang giữ việc thường).
-                  if (realm !== 'truc_co') { realm = 'truc_co'; log('Nhận biết: acc Trúc Cơ — dùng "Tự Đi Làm Việc Dược Công" của game.'); }
-                  var dcTiep = docDC(dlg);
-                  if (dcTiep !== null) { dcHienTai = dcTiep; if (dcLucBatDau === null) dcLucBatDau = dcTiep; }
-                  var okTiep = await batTuDi();
-                  if (!okTiep) { await sleep(3000); phase = 'mo_menu'; continue; }
-                  demTuDiLai = 0;
-                  continue;
-                }
-                // Luyện Khí (không có "Tự Đi" mở): tool tự làm việc đang giữ.
-                if (realm !== 'luyen_khi') { realm = 'luyen_khi'; log('Nhận biết: acc Luyện Khí — tự làm việc đang giữ.'); }
-                datFly(true); datRun(true); datAuto(false); tuVeDangBat = false;
-                dongDialog();
-                phase = viecDaXong() ? 've_nop' : 'di_lam';
-                continue;
-              }
-              if (giuMm && (giuMm.id === 'dai_hoi' || giuMm.id === 'chien_bang')) {
-                log('Đang giữ việc ' + giuMm.ten + ' — tự huỷ (không làm Đại Hội/Tán Tu), nhận việc thường tiếp theo.');
-                var okHuyMm = await huyViec();
-                if (!okHuyMm) { log('Huỷ việc không được — dừng để anh xem.'); await ketThuc('Không huỷ được việc đang giữ.'); continue; }
-                phase = 'mo_menu';
-                await sleep(1500);
-                continue;
-              }
-              if (giuMm && giuMm.id === 'van_tieu') {
-                await ketThuc('Đang giữ việc Vận Tiêu — tool không tự huỷ (đã trả phí 400 LT). Giao xong hoặc huỷ tay rồi bật lại tool.');
-                continue;
-              }
-              await ketThuc('Đang giữ việc không nhận diện được (' + tenViecDangGiu() + ') — dừng để anh xem.');
-              continue;
-            }
-            // Không giữ việc — nhận biết cảnh giới từ menu: "Tự Đi" mở được = Trúc Cơ.
-            var tuDi = timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/);
-            var nhanViec = timLuaChon(dlg, /Nhận Việc Dược Công/);
-            if (tuDi && !tuDi.disabled) {
-              if (realm !== 'truc_co') { realm = 'truc_co'; log('Nhận biết: acc Trúc Cơ — dùng "Tự Đi Làm Việc Dược Công" của game.'); }
-              var dc = docDC(dlg);
-              if (dc !== null) { dcHienTai = dc; if (dcLucBatDau === null) dcLucBatDau = dc; }
-              var ok = await batTuDi();
-              if (!ok) { await sleep(3000); phase = 'mo_menu'; continue; }
-              demTuDiLai = 0;
-              continue;
-            }
-            if (tuDi && tuDi.disabled) {
-              if (realm !== 'luyen_khi') { realm = 'luyen_khi'; log('Nhận biết: acc Luyện Khí — tự nhận việc tay theo DC cao nhất.'); }
-              // Luyện Khí: bật Phi Hành + Chạy, TẮT Auto.
-              datFly(true); datRun(true); datAuto(false); tuVeDangBat = false;
-              phase = 'nhan_viec';
-              continue;
-            }
-            if (!tuDi && !nhanViec) {
-              // Hộp thoại khác (nhiệm vụ chính...) — bấm nút hành động để qua, rồi thử lại.
-              var act = dlg.action;
-              if (act) { tap(act.el); await sleep(CFG.choDoiMs); }
-              else { dongDialog(); await sleep(1500); }
-              continue;
-            }
-            if (!tuDi && nhanViec) {
-              // Menu có "Nhận Việc" nhưng không có "Tự Đi" — coi như Luyện Khí.
-              if (realm !== 'luyen_khi') { realm = 'luyen_khi'; log('Nhận biết: acc Luyện Khí — tự nhận việc tay theo DC cao nhất.'); }
-              datFly(true); datRun(true); datAuto(false); tuVeDangBat = false;
-              phase = 'nhan_viec';
-              continue;
-            }
-          }
-          if (phase === 'tu_di') {
-            // Theo dõi thụ động — KHÔNG chạm màn hình/joystick.
-            var kq = tuDiDaDung();
-            var tr = docTracker();
-            var conViec = /Câu |Thu Gom|Đưa Người|Linh Chi|Trúc Tâm|Dẫn Cháu/i.test(tr);
-            if (kq === 'xong') {
-              log('Bộ máy báo: "Xong việc Dược Công hôm nay".');
-              phase = 'kiem_tra_xong';
-              continue;
-            }
-            if (kq && kq.indexOf('loi:') === 0) {
-              log('Bộ máy dừng: ' + kq.slice(4));
-              var hp = docHP();
-              if (hp && hp.tiLe < CFG.hpNguyHiem) {
-                log('HP thấp (' + Math.round(hp.tiLe * 100) + '%) — chờ hồi trên 60% rồi thử lại.');
-                phase = 'cho_hoi';
-                continue;
-              }
-              if (demTuDiLai < CFG.maxTuDiKhoiDongLai) {
-                demTuDiLai++;
-                log('Bật lại "Tự Đi" (lần ' + demTuDiLai + '/' + CFG.maxTuDiKhoiDongLai + ').');
-                phase = 'mo_menu';
-                await sleep(2000);
-                continue;
-              }
-              log('Bật lại "Tự Đi" đã quá ' + CFG.maxTuDiKhoiDongLai + ' lần — dừng tool.');
-              await ketThuc('Bộ máy "Tự Đi" dừng nhiều lần.');
-              continue;
-            }
-            if (!conViec) {
-              // Không còn việc đang làm mà cũng không thấy báo xong — có thể
-              // bộ máy đã dừng mà caption đã ẩn. Kiểm tra lại bằng menu.
-              await sleep(8000);
-              if (!on) break;
-              var tr2 = docTracker();
-              if (!/Câu |Thu Gom|Đưa Người|Linh Chi|Trúc Tâm|Dẫn Cháu/i.test(tr2)) {
-                log('Không thấy việc đang làm — kiểm tra lại lượt còn.');
-                phase = 'kiem_tra_xong';
-                continue;
-              }
-            }
-            await sleep(2000);
-            continue;
-          }
-          if (phase === 'cho_hoi') {
-            var hp2 = docHP();
-            if (!hp2 || hp2.tiLe >= 0.6) { phase = 'mo_menu'; continue; }
-            await sleep(3000);
-            continue;
-          }
-          if (phase === 'kiem_tra_xong') {
-            var dlg2 = await moHopThoaiDaiPhu();
-            if (!dlg2) { await sleep(2000); continue; }
-            var ok3 = bamLuaChon(/Nhận Việc Dược Công/);
-            if (ok3 && ok3 !== 'disabled') {
-              await sleep(CFG.choDoiMs);
-              var ds2 = docDialog();
-              if (ds2) {
-                var luot2 = docLuotTuDanhSach(ds2);
-                Object.keys(luot2).forEach(function (k) { if (luot2[k] !== null) luotConLai[k] = luot2[k]; });
-                capNhatLuotDaLam();
-              }
-              dongDialog();
-            } else if (ok3 === 'disabled') {
-              luotDaLam = TONG_LUOT_NGAY;
-            }
-            var con2 = tongLuotConLai();
-            if (con2 === 0 || luotDaLam >= TONG_LUOT_NGAY) {
-              await ketThuc('Xong dược hôm nay.');
-              continue;
-            }
-            if (demTuDiLai < CFG.maxTuDiKhoiDongLai) {
-              demTuDiLai++;
-              log('Còn ' + con2 + ' lượt — bật lại "Tự Đi" (lần ' + demTuDiLai + ').');
-              phase = 'mo_menu';
-              await sleep(2000);
-              continue;
-            }
-            await ketThuc('Còn lượt nhưng "Tự Đi" không chạy tiếp được.');
-            continue;
-          }
-          if (phase === 'nhan_viec') {
-            var r = await nhanViecTotNhat();
-            if (r === true) { phase = 'di_lam'; continue; }
-            if (r === 'tiep_tuc') { phase = viecDaXong() ? 've_nop' : 'di_lam'; continue; }
-            if (r === 'het_luot') { await ketThuc('Xong dược hôm nay.'); continue; }
-            if (r === 'giu_viec') { await ketThuc('Đang giữ việc khác — dừng để anh xem.'); continue; }
-            await sleep(3000);
-            phase = 'mo_menu';
-            continue;
-          }
-          if (phase === 'di_lam' || phase === 'lam_viec') {
-            if (Date.now() - taskBatDauAt > CFG.taskTimeoutMs) {
-              log('Việc ' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ' quá 10 phút chưa xong — huỷ, đổi việc khác.');
-              demKet++;
-              if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt 2 lần liên tiếp — dừng tool.'); continue; }
-              await huyViec();
-              phase = 'mo_menu';
-              await sleep(1500);
-              continue;
-            }
-            phase = 'lam_viec';
-            var kq2 = await lamViecHienTai();
-            if (kq2 === true) { demKet = 0; phase = 've_nop'; continue; }
-            if (kq2 === 'xong_khong_can_nop') {
-              demKet = 0;
-              viecNhanTay = false;
-              luotDaLam++;
-              if (typeof luotConLai[viecHienTai] === 'number' && luotConLai[viecHienTai] > 0) luotConLai[viecHienTai]--;
-              log('Xong việc ' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ' (công tự ghi) — xong ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt.');
-              viecHienTai = null;
-              if (luotDaLam >= TONG_LUOT_NGAY) { await ketThuc('Xong dược hôm nay.'); continue; }
-              phase = 've_nop_nop_khong';
-              continue;
-            }
-            if (kq2 === 'ket' || kq2 === false) {
-              demKet++;
-              // Việc nhận bằng tay đang tiếp tục: kẹt đường / không tới được
-              // chỗ làm thì DỪNG báo rõ (việc vẫn còn giữ, thử lại sau) —
-              // KHÔNG tự huỷ việc của anh.
-              if (viecNhanTay) {
-                await ketThuc('Không tới/làm được việc đang giữ (' + (TASKS[viecHienTai] ? TASKS[viecHienTai].ten : '') + ') — việc vẫn còn, anh thử lại sau khi tới gần chỗ làm.');
-                continue;
-              }
-              log('Làm việc kẹt (lần ' + demKet + '/' + CFG.maxKetLienTiep + ') — huỷ việc, đổi việc khác.');
-              if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt 2 lần liên tiếp — dừng tool.'); continue; }
-              await huyViec();
-              phase = 'mo_menu';
-              await sleep(1500);
-              continue;
-            }
-            await sleep(1000);
-            continue;
-          }
-          if (phase === 've_nop' || phase === 've_nop_nop_khong') {
-            var ve = await diToiMap('duoc_vien');
-            if (!ve) { demKet++; if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt đường về Đại Phu — dừng tool.'); continue; } await sleep(2000); continue; }
-            var toiDaiPhu = await diToi(DAI_PHU.x, DAI_PHU.y, 60);
-            if (!toiDaiPhu) { demKet++; if (demKet >= CFG.maxKetLienTiep) { await ketThuc('Kẹt đường về Đại Phu — dừng tool.'); continue; } await sleep(2000); continue; }
-            demKet = 0;
-            if (phase === 've_nop_nop_khong') { phase = 'mo_menu'; continue; }
-            phase = 'nop';
-            continue;
-          }
-          if (phase === 'nop') {
-            var rn = await nopViec();
-            if (rn === true) {
-              if (luotDaLam >= TONG_LUOT_NGAY) { await ketThuc('Xong dược hôm nay.'); continue; }
-              phase = 'mo_menu';
-              await sleep(1000);
-              continue;
-            }
-            if (rn === 'chua_xong') { phase = 'lam_viec'; taskBatDauAt = Date.now(); continue; }
-            await sleep(2000);
-            phase = 'mo_menu';
-            continue;
-          }
-          await sleep(500);
-        }
-      } catch (e) {
-        log('Lỗi vòng lặp: ' + (e && e.message ? e.message : e));
-        on = false;
-        if (tuVeDangBat) { datAuto(false); tuVeDangBat = false; }
-        renderTrangThai();
-      } finally {
-        dangChay = false;
-        // Nếu tool được BẬT lại trong lúc vòng lặp cũ đang dừng dần thì chạy lại.
-        if (on) vongLap();
-      }
+  async function lamViecTuDi(viecId) {
+    var t = TASKS[viecId];
+    taskBatDauAt = Date.now();
+    var tienDoCu = null, tienDoCuAt = Date.now();
+    var lanBamBuocCuoi = 0;
+    var daQuetNhat = false;
+    var st = { fishingStarted: false };
+    var lastPos = docCell();
+    var daNhanViec = !!docViecDangGiu(); // tracker đã có việc lúc bắt đầu
+    // Đọc tiến độ ban đầu.
+    var td0 = docTienDo();
+    tienDoCu = td0 ? td0.cur : 0;
+    var soLanQuet = 0;
+    // Việc đã đủ tiến độ từ trước (vd nhận rồi làm tay xong mới bật tool)
+    // thì trả ok NGAY, KHÔNG bấm bước nhiệm vụ — bấm sẽ đặt walkTarget về
+    // chỗ làm, nhân vật tự đi về đó sau khi nộp xong dù tool đã dừng
+    // (bắt được ở test (j9) 26/11: nộp xong đứng (18,12) rồi tự đi về hồ).
+    var td0b = docTienDo();
+    if (td0b && td0b.max > 0 && td0b.cur >= td0b.max) {
+      return { ok: true, id: viecId, ten: t.ten, dc: t.dc };
     }
-    async function ketThuc(lyDo) {
-      // Bật lại Phi Hành ngay sau khi xong dược (quy tắc đứng).
-      datFly(true); datRun(true);
-      if (tuVeDangBat) { datAuto(false); tuVeDangBat = false; }
-      var dcSau = dcHienTai;
-      var tang = (dcLucBatDau !== null && dcSau !== null) ? (dcSau - dcLucBatDau) : null;
-      log('KẾT THÚC: ' + lyDo + ' Đã làm ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt' +
-        (tang !== null ? ', DC +' + tang + ' (từ ' + dcLucBatDau + ' lên ' + dcSau + ')' : '') + '.');
-      phase = 'ket_thuc';
-      setOn(false);
-    }
-
-    // ---------------- Nút "TỰ ĐI LÀM VIỆC ĐÃ NHẬN" ----------------
-    // Thanh nhận việc bằng tay ở Đại Phu rồi bấm nút này: tool đọc việc
-    // đang giữ từ bảng nhiệm vụ (#quest-objectives), tự tìm đường tới chỗ
-    // làm, làm xong thì tự về Đại Phu nộp — như luồng tự động làm dược.
-    // - Việc thường: tiếp tục làm (Trúc Cơ: về Đại Phu rồi bấm "Tự Đi" của
-    //   game; Luyện Khí / chưa rõ cảnh giới: lái thẳng tới chỗ làm).
-    // - Đại Hội / Tán Tu: BẬT tool thường — vòng lặp sẽ tự huỷ việc đó rồi
-    //   nhận việc thường tiếp theo (cần đứng gần Đại Phu để huỷ).
-    // - Vận Tiêu: KHÔNG huỷ (đã trả phí 400 LT) — chỉ log báo rõ.
-    // - Không giữ việc gì / việc lạ: chỉ log báo rõ, không bật tool.
-    function tiepTucViecDangGiu() {
-      if (on) { log('Tool đang chạy rồi — không cần bấm "TỰ ĐI LÀM VIỆC ĐÃ NHẬN".'); return; }
-      var giu = docViecDangGiu();
-      if (!giu) {
-        log('Không thấy việc dược đang giữ (bảng nhiệm vụ trống). Nhận việc ở Đại Phu rồi bấm lại — hoặc bấm BẬT để tool tự nhận việc mới.');
-        renderTrangThai();
-        return;
+    // Sau khi nhận việc, thoại Đại Phu còn mở và nút Tương Tác đang chỉ NPC
+    // (đứng cạnh Đại Phu) — đóng thoại rồi bấm bước nhiệm vụ ngay để game
+    // bắt đầu tự đi tới chỗ làm. Nếu không, nhãn "Tương Tác" của NPC làm
+    // tool tưởng đã tới mục tiêu và cứ bấm #btn-attack vào NPC mãi, không
+    // bao giờ đi tới chỗ làm (bắt được ở test (c) 26/11: đứng yên (14,9)
+    // suốt 45s tới khi kẹt).
+    dongDialog();
+    await sleep(300);
+    clickQuestStep();
+    lanBamBuocCuoi = Date.now();
+    while (true) {
+      if (!on) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+      var at = kiemTraAnToan();
+      if (!at.ok) return { ok: false, reason: at.reason, msg: at.msg };
+      if (Date.now() - taskBatDauAt > CFG.taskTimeoutMs) {
+        return { ok: false, reason: 'het_gio', msg: 'Quá ' + Math.round(CFG.taskTimeoutMs / 60000) + ' phút chưa xong việc ' + t.ten + ' — đã dừng (xem log để biết vị trí).' };
       }
-      if (giu.id === 'dai_hoi' || giu.id === 'chien_bang') {
-        log('Đang giữ việc ' + giu.ten + ' — tool sẽ tự huỷ rồi nhận việc thường tiếp theo. Đưa nhân vật tới gần Đại Phu (14,8) nếu chưa tới.');
-        setOn(true);
-        return;
+      // Hộp thoại mở ra trong lúc làm (câu cá / giao hộ tống) — xử lý trước.
+      var xl = xuLyDialogLamViec(viecId, st);
+      if (xl === 'da_nop') {
+        return { ok: true, id: viecId, ten: t.ten, dc: t.dc, daNop: true };
       }
-      if (giu.id === 'van_tieu') {
-        log('Đang giữ việc Vận Tiêu — tool không tự huỷ (đã trả phí 400 LT). Giao xong hoặc huỷ tay rồi bật lại tool.');
-        renderTrangThai();
-        return;
+      var td = docTienDo();
+      if (td && td.max > 0 && td.cur >= td.max) {
+        return { ok: true, id: viecId, ten: t.ten, dc: t.dc };
       }
-      if (TASKS[giu.id]) {
-        viecHienTai = giu.id; daNhanViec = true; viecNhanTay = true; taskBatDauAt = Date.now();
-        if (realm === 'truc_co') {
-          log('Tiếp tục việc ' + giu.ten + ' — về Đại Phu rồi bấm "Tự Đi" của game.');
-        } else if (realm === 'luyen_khi') {
-          log('Tiếp tục việc ' + giu.ten + ' — tự đi tới chỗ làm.');
+      // Hộ tống: tracker KHÔNG có số a/b (game.js: 2 mục done:!1) — việc xong
+      // khi giao cho Thầy Ông Nội xong thì tracker hết việc đang giữ.
+      if (viecId === 'ho_tong_chau' && daNhanViec && !docViecDangGiu()) {
+        return { ok: true, id: viecId, ten: t.ten, dc: t.dc, daNop: true };
+      }
+      // Câu cá đã bắt đầu: KHÔNG bấm bước nhiệm vụ nữa (di chuyển làm dừng câu).
+      var dangCau = (viecId === 'cau_ca' && st.fishingStarted);
+      // Bấm lại bước nhiệm vụ mỗi 5s nếu mất nhãn Tương Tác (game tự đi lại).
+      // Menu Đại Phu còn mở = đang đứng cạnh NPC (chưa đi) — bấm bước nhiệm
+      // vụ kể cả khi nhãn Tương Tác đang hiện (nhãn đó lúc này chỉ NPC).
+      if (!dangCau && Date.now() - lanBamBuocCuoi > 5000) {
+        lanBamBuocCuoi = Date.now();
+        var lab = interactLabel();
+        var dlg5 = docDialog();
+        var oDaiPhu = dlg5 && laMenuDaiPhu(dlg5);
+        if (!/Tương Tác/i.test(lab) || oDaiPhu) clickQuestStep();
+      }
+      // Nhãn 'Tương Tác' hiện — nhưng phải xem aria chỉ vật gì: đứng gần
+      // Đại Phu thì nhãn cũng là "Tương Tác" (NPC); bấm vào là mở nhầm menu
+      // Đại Phu rồi để nó mở suốt lúc làm (ảnh chụp tiến độ cũ, không có nút
+      // nộp — bắt được ở test (f) 26/11: menu "Đã thu: 0/5" mở từ lúc nhận
+      // việc còn mở tới lúc nộp nên không thấy nút "Giao Nguyên Liệu").
+      // Chỉ bấm #btn-attack khi aria KHÔNG chỉ Đại Phu.
+      var lab2 = interactLabel();
+      if (/Tương Tác/i.test(lab2)) {
+        var nt2 = nutTuongTac();
+        var aria2 = nt2 ? (nt2.aria || '') : '';
+        if (/Đại Phu/.test(aria2)) {
+          // Đang đứng cạnh NPC, chưa tới chỗ làm — đóng thoại mở nhầm (nếu có)
+          // rồi bấm bước nhiệm vụ để game đi tiếp.
+          if (dialogMo()) { dongDialog(); await sleep(300); }
+          clickQuestStep();
+          lanBamBuocCuoi = Date.now();
+        } else if (dialogMo()) {
+          // Thoại lạ đang mở (vd menu Đại Phu mở nhầm từ trước) — đóng rồi
+          // bấm lại ở vòng sau, không bấm #btn-attack khi thoại đang mở.
+          dongDialog();
+          await sleep(300);
+        } else if (viecId === 'cau_ca') {
+          // Câu cá: bấm #btn-attack 1 lần để mở hộp thoại mặt nước, hộp thoại
+          // được xử lý ở đầu vòng sau (bấm "Tự động câu"); không bấm thêm.
+          if (!st.fishingStarted) {
+            var b = $('#btn-attack');
+            if (b) { tap(b); }
+            await sleep(CFG.afterActionMs);
+          }
         } else {
-          log('Tiếp tục việc ' + giu.ten + ' — chưa rõ cảnh giới nên làm bằng tay (lái tới chỗ làm).');
+          var b2 = $('#btn-attack');
+          if (b2) tap(b2);
+          await sleep(700);
         }
-        setOn(true);
-        return;
-      }
-      log('Việc đang giữ không nhận diện được (' + tenViecDangGiu() + ') — không tiếp tục được.');
-      renderTrangThai();
-    }
-
-    // ---------------- Bật / dừng ----------------
-    function setOn(v) {
-      if (v === on) return;
-      on = v;
-      if (on) {
-        phase = 'idle';
-        demKet = 0; demTuDiLai = 0;
-        // Reset bộ đếm ngày — lượt còn lại sẽ được đọc lại từ bảng game
-        // ở lần mở menu đầu tiên (capNhatLuotDaLam khôi phục đúng số).
-        luotDaLam = 0; luotConLai = {}; dcLucBatDau = null; dcHienTai = null;
-        tuVeDangBat = false;
-        // Tiếp tục việc nhận bằng tay (nút "TỰ ĐI LÀM VIỆC ĐÃ NHẬN" đặt
-        // viecNhanTay + viecHienTai TRƯỚC khi gọi setOn) thì giữ nguyên
-        // việc đó, không reset như lần BẬT thường.
-        if (!viecNhanTay) { viecHienTai = null; daNhanViec = false; }
-        if (viecNhanTay && viecHienTai) log('Tool BẬT — tiếp tục việc đã nhận: ' + TASKS[viecHienTai].ten + '.');
-        else log('Tool BẬT — đưa nhân vật tới gần Đại Phu (14,8) nếu chưa tới.');
-        vongLap();
       } else {
-        viecNhanTay = false;
-        if (tuVeDangBat) { datAuto(false); tuVeDangBat = false; }
-        log('Tool DỪNG.');
-        if (phase !== 'ket_thuc') phase = 'idle';
+        // Chưa tới mục tiêu: game đang tự đi (đã bấm bước nhiệm vụ).
+        await sleep(600);
       }
-      renderTrangThai();
+      // Cập nhật tiến độ; vị trí đổi cũng tính là đang tiến triển (đang đi
+      // tới mục tiêu — vd hộ tống đi qua 2 map, không có số tiến độ).
+      var td2 = docTienDo();
+      var cur = td2 ? td2.cur : 0;
+      if (cur !== tienDoCu) { tienDoCu = cur; tienDoCuAt = Date.now(); daQuetNhat = false; }
+      var pNow = docCell();
+      if (pNow && lastPos && (pNow.x !== lastPos.x || pNow.y !== lastPos.y)) {
+        tienDoCuAt = Date.now();
+        lastPos = pNow;
+      } else if (pNow) lastPos = pNow;
+      if (viecId === 'duoc_moc' || viecId === 'truc_gia') {
+        if (Date.now() - tienDoCuAt > CFG.quietMs && !daQuetNhat) {
+          daQuetNhat = true;
+          soLanQuet++;
+          log('Chặt ' + (soLanQuet > 1 ? 'lần ' + soLanQuet + ' ' : '') + 'không thấy tiến độ tăng — quét vòng nhặt cành rơi…');
+          await quetNhat();
+          tienDoCuAt = Date.now(); // quét xong cho thêm 1 khoảng chờ
+        }
+      }
+      // Kẹt: 45s không tiến độ và không di chuyển (sau khi đã quét nhặt nếu là việc chặt).
+      if (Date.now() - tienDoCuAt > CFG.khongTienDoMs) {
+        return { ok: false, reason: 'ket', msg: 'Việc ' + t.ten + ' kẹt: ' + Math.round(CFG.khongTienDoMs / 1000) + 's không tiến độ (đang ' + cur + '/' + (td2 ? td2.max : '?') + ').' };
+      }
+      await sleep(400);
     }
+  }
 
-    // ---------------- Bảng điều khiển (gọn nhẹ, thu nhỏ được) ----------------
-    var panel, panelHead, panelBody, miniBar, miniStatusEl, statusEl, turnsEl, taskEl, luotEl, logEl, toggleBtn;
-    function buildPanel() {
-      panel = document.createElement('div');
-      panel.id = 'tt2d-duoc-panel';
-      panel.style.cssText = [
-        'position:fixed', 'top:10px', 'right:10px', 'z-index:999999',
-        'width:248px', 'background:rgba(20,14,8,0.88)', 'color:#ffe9b0',
-        'border:1px solid #8a6a2f', 'border-radius:10px', 'padding:10px 12px',
-        'font:12px/1.5 system-ui, sans-serif', 'box-shadow:0 4px 18px rgba(0,0,0,0.5)',
-      ].join(';');
-      panel.innerHTML =
-        '<div id="tt2d-duoc-head" style="display:flex;justify-content:space-between;align-items:center">' +
-          '<b>🌿 Tool dược Đại Phu</b>' +
-          '<span>' +
-            '<button id="tt2d-duoc-min" title="Thu nhỏ bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 4px">—</button>' +
-            '<button id="tt2d-duoc-hide" title="Ẩn bảng (tool vẫn chạy nếu đang BẬT)" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:14px;padding:0 2px">×</button>' +
-          '</span>' +
+  // ---------------- Làm việc thủ công (fallback — logic v1.1.2) ----------------
+  // Dùng chung deadline taskBatDauAt + taskTimeoutMs với lamViecTuDi.
+  // (Logic cũ của v1.1.2 — giữ nguyên để hồi quy; chỉ đổi tên hàm.)
+  async function lamViecThuCong(viecId) {
+    var t = TASKS[viecId];
+    taskBatDauAt = Date.now();
+    var tienDoCu = null, tienDoCuAt = Date.now();
+    var st = { fishingStarted: false };
+    var lastPos = docCell();
+    var daNhanViec = !!docViecDangGiu();
+    while (true) {
+      if (!on) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+      var at = kiemTraAnToan();
+      if (!at.ok) return { ok: false, reason: at.reason, msg: at.msg };
+      if (Date.now() - taskBatDauAt > CFG.taskTimeoutMs) {
+        return { ok: false, reason: 'het_gio', msg: 'Quá ' + Math.round(CFG.taskTimeoutMs / 60000) + ' phút chưa xong việc ' + t.ten + ' — đã dừng (xem log để biết vị trí).' };
+      }
+      var xl = xuLyDialogLamViec(viecId, st);
+      if (xl === 'da_nop') {
+        return { ok: true, id: viecId, ten: t.ten, dc: t.dc, daNop: true };
+      }
+      var td = docTienDo();
+      if (td && td.max > 0 && td.cur >= td.max) {
+        return { ok: true, id: viecId, ten: t.ten, dc: t.dc };
+      }
+      if (viecId === 'ho_tong_chau' && daNhanViec && !docViecDangGiu()) {
+        return { ok: true, id: viecId, ten: t.ten, dc: t.dc, daNop: true };
+      }
+      // Bấm bước nhiệm vụ để game tự đi (nếu có). Câu cá đã bắt đầu thì không
+      // bấm nữa (di chuyển làm dừng câu).
+      if (!(viecId === 'cau_ca' && st.fishingStarted)) {
+        if (!clickQuestStep()) {
+          await sleep(800);
+        }
+      }
+      var lab = interactLabel();
+      if (/Tương Tác/i.test(lab)) {
+        // Như lamViecTuDi: nhãn "Tương Tác" của NPC Đại Phu thì KHÔNG bấm
+        // #btn-attack (mở nhầm menu, ảnh chụp tiến độ cũ); bấm bước nhiệm vụ
+        // để game đi tiếp. Thoại lạ đang mở thì đóng rồi bấm lại vòng sau.
+        var nt3 = nutTuongTac();
+        var aria3 = nt3 ? (nt3.aria || '') : '';
+        if (/Đại Phu/.test(aria3)) {
+          if (dialogMo()) { dongDialog(); await sleep(300); }
+          clickQuestStep();
+        } else if (dialogMo()) {
+          dongDialog();
+          await sleep(300);
+        } else if (viecId === 'cau_ca') {
+          if (!st.fishingStarted) {
+            var b = $('#btn-attack');
+            if (b) tap(b);
+            await sleep(CFG.afterActionMs);
+          }
+        } else {
+          var b2 = $('#btn-attack');
+          if (b2) tap(b2);
+          await sleep(700);
+        }
+      } else {
+        await sleep(600);
+      }
+      var td2 = docTienDo();
+      var cur = td2 ? td2.cur : 0;
+      if (cur !== tienDoCu) { tienDoCu = cur; tienDoCuAt = Date.now(); }
+      var pNow = docCell();
+      if (pNow && lastPos && (pNow.x !== lastPos.x || pNow.y !== lastPos.y)) {
+        tienDoCuAt = Date.now();
+        lastPos = pNow;
+      } else if (pNow) lastPos = pNow;
+      if (Date.now() - tienDoCuAt > CFG.khongTienDoMs) {
+        return { ok: false, reason: 'ket', msg: 'Việc ' + t.ten + ' kẹt: ' + Math.round(CFG.khongTienDoMs / 1000) + 's không tiến độ (đang ' + cur + '/' + (td2 ? td2.max : '?') + ').' };
+      }
+      await sleep(400);
+    }
+  }
+
+  // ---------------- Nộp việc / Huỷ việc ----------------
+  // Nộp: mở thoại Đại Phu → bấm "Giao Nguyên Liệu" (hoặc "Giao Ba Cá"
+  // với việc câu cá). Trả {ok:true, dcMoi} hoặc {ok:false, reason, msg}.
+  async function nopViec(viecId) {
+    var t = TASKS[viecId];
+    // Dừng câu trước khi đi (đang câu ở hồ thì bấm "Dừng câu" cho chắc —
+    // di chuyển cũng làm dừng câu trong game thật, nhưng bấm nút rõ ràng hơn).
+    if (viecId === 'cau_ca') {
+      var bStop = $('#btn-fishing-stop-touch');
+      if (bStop) { tap(bStop); await sleep(300); }
+    }
+    // Về ô cạnh Đại Phu TRƯỚC khi mở thoại: sau khi làm xong, nhân vật đang
+    // ở hồ/rừng/làng — xa Đại Phu, moHopThoaiDaiPhu không tự đi về được mà
+    // chỉ bấm #btn-attack tại chỗ (mở nhầm thoại nước/cây rồi kẹt 30s —
+    // bắt được ở test (c) 26/11).
+    var p0 = docViTri();
+    if (!p0 || p0.map !== 'duoc_vien') {
+      var okMap = await diToiMap('duoc_vien');
+      if (!okMap) return { ok: false, reason: 'ket', msg: 'Không về được Thảo Dược Cốc để nộp việc ' + t.ten + '.' };
+    }
+    if (!ganDaiPhu()) {
+      var rDi = await diToi(DAI_PHU_DUNG.x, DAI_PHU_DUNG.y);
+      if (!rDi) return { ok: false, reason: 'ket', msg: 'Không tới được ô cạnh Đại Phu để nộp việc ' + t.ten + '.' };
+    }
+    // Menu Đại Phu render 1 lần lúc mở (tiến độ/nút nộp là ảnh chụp lúc mở)
+    // — nếu thoại đang mở sẵn từ trước (vd mở nhầm lúc đi ngang NPC), đóng
+    // rồi mở lại để đọc đúng trạng thái hiện tại (nút nộp chỉ hiện khi đủ
+    // tiến độ lúc MỞ thoại). Bắt được ở test (f) 26/11.
+    if (dialogMo()) { dongDialog(); await sleep(400); }
+    var ok = await moHopThoaiDaiPhu();
+    if (!ok) return { ok: false, reason: 'ket', msg: 'Không mở được thoại Đại Phu để nộp việc ' + t.ten + '.' };
+    var dlg = docDialog();
+    var dcTruoc = docDC(dlg);
+    // "Giao Ba Cá" (câu cá) / "Giao Nguyên Liệu" (việc khác) là NÚT HÀNH ĐỘNG
+    // (#dialog-action, actionLabel + actionFirst trong game.js) — KHÔNG phải
+    // lựa chọn .btn-choice. Chỉ hiện khi đã đủ tiến độ (seedQuestComplete).
+    var re = (viecId === 'cau_ca') ? /Giao Ba Cá/ : /Giao Nguyên Liệu/;
+    var r = bamNutHanhDong(re);
+    if (!r) return { ok: false, reason: 'ket', msg: 'Không thấy nút nộp việc ' + t.ten + ' trong hộp thoại Đại Phu (chưa đủ tiến độ?).' };
+    await sleep(CFG.afterActionMs);
+    // Đọc DC sau nộp (hộp thoại hoặc localStorage).
+    var dlg3 = docDialog();
+    var dcSau = docDC(dlg3);
+    if (dcSau === null) dcSau = docDCLocal();
+    if (dcSau !== null && dcTruoc !== null && dcSau > dcTruoc) {
+      log('Nộp ' + t.ten + ' xong: DC ' + dcTruoc + ' → ' + dcSau + ' (+' + (dcSau - dcTruoc) + ').');
+    }
+    // Nộp xong game tự mở Quầy Đổi Hạt — đóng lại ngay, KHÔNG đổi gì.
+    // (Để mở sẽ làm vòng sau đọc nhầm hộp thoại thành menu Đại Phu.)
+    if (dialogMo()) { dongDialog(); await sleep(300); }
+    return { ok: true, dcMoi: dcSau };
+  }
+  // Huỷ việc đang giữ tại Đại Phu (miễn phí, hoàn lượt). Trả true/false.
+  async function huyViec() {
+    var ok = await moHopThoaiDaiPhu();
+    if (!ok) return false;
+    var r = bamLuaChon(/Huỷ Nhiệm Vụ|Hủy Nhiệm Vụ/);
+    if (!r) return false;
+    await sleep(CFG.afterActionMs);
+    // Hộp thoại xác nhận huỷ: "Xác Nhận Huỷ" là nút LỰA CHỌN (.btn-choice),
+    // không phải nút hành động (xác minh game.js 25/11).
+    var r2 = bamLuaChon(/Xác Nhận Huỷ/);
+    if (r2) {
+      await sleep(CFG.afterActionMs);
+    } else {
+      // Dự phòng: hộp thoại xác nhận dạng nút hành động.
+      var dlg = docDialog();
+      if (dlg && /xác nhận/i.test((dlg.text || '') + ' ' + (dlg.title || ''))) {
+        bamNutHanhDong(/Đồng ý|Xác nhận|Huỷ|Hủy/i);
+        await sleep(CFG.afterActionMs);
+      }
+    }
+    return !docTracker();
+  }
+
+  // ================= VÒNG LẶP CHÍNH =================
+  // Luồng: đi về Đại Phu (tự lái) → mở thoại → (đang giữ việc thường: tiếp
+  // tục làm; đang giữ Đại Hội/Tán Tu: tự huỷ rồi nhận việc thường; đang giữ
+  // Vận Tiêu: DỪNG báo rõ; việc lạ: DỪNG báo rõ) → Trúc Cơ: bật bộ máy
+  // "Tự Đi" của game (autopilot làm hết lượt, tool chỉ chờ) — nếu không bật
+  // được thì làm tay như Luyện Khí → Luyện Khí: nhận việc tốt nhất theo DC
+  // → làm (lamViecTuDi: bấm bước nhiệm vụ → chờ Tương Tác → bấm #btn-attack;
+  // kẹt thì lamViecThuCong) → nộp (hộ tống thì công tự ghi tại chỗ, không nộp)
+  // → lặp tới khi hết lượt / hết giờ / dừng tay.
+  // Cổng HP: <50% không nhận việc (phase cho_hoi: thiền chờ hồi ≥60% rồi
+  // tiếp tục); <35% dừng ngay.
+  async function vongLapChinh() {
+    var tok = steerToken;
+    while (on && tok === steerToken) {
+      // --- Phase: đi về Đại Phu ---
+      if (!ganDaiPhu()) {
+        phase = 'di_dai_phu';
+        log('Đang đi về Đại Phu (Thảo Dược Cốc)…');
+        var okMap = await diToiMap('duoc_vien');
+        if (!on || tok !== steerToken) return;
+        if (!okMap) { setOn(false); log('Không về được Thảo Dược Cốc — đã dừng. Kiểm tra tay rồi bấm BẬT lại.'); return; }
+        var rDi = await diToi(DAI_PHU_DUNG.x, DAI_PHU_DUNG.y);
+        if (!on || tok !== steerToken) return;
+        if (!rDi) { setOn(false); log('Không tới được ô cạnh Đại Phu (' + DAI_PHU_DUNG.x + ',' + DAI_PHU_DUNG.y + ') — đã dừng. Kiểm tra tay rồi bấm BẬT lại.'); return; }
+      }
+      // --- Phase: mở thoại Đại Phu ---
+      phase = 'cho_dai_phu';
+      var okDlg = await moHopThoaiDaiPhu();
+      if (!on || tok !== steerToken) return;
+      if (!okDlg) { setOn(false); log('Không mở được thoại Đại Phu — đã dừng. Bấm tay vào Đại Phu rồi bấm BẬT lại.'); return; }
+      var dlg = docDialog();
+      if (!dlg) { setOn(false); log('Thoại Đại Phu đóng bất ngờ — đã dừng.'); return; }
+      // --- Cổng HP: <50% không nhận việc ---
+      var h = docHP();
+      if (h && h.tiLe < CFG.hpNhanViec) {
+        phase = 'cho_hoi';
+        log('Khí Huyết ' + h.cur + '/' + h.max + ' (' + Math.round(h.tiLe * 100) + '%) < 50% — chờ hồi ≥60% rồi mới nhận việc.');
+        // Thiền chờ hồi: bật thiền (nếu có nút), chờ tới ≥60% hoặc 5 phút.
+        var bMed = $('#btn-meditate-touch');
+        if (bMed) tap(bMed);
+        var tHoi = Date.now();
+        while (on && tok === steerToken) {
+          await sleep(2000);
+          var h2 = docHP();
+          if (h2 && h2.tiLe >= CFG.hpHoiXong) break;
+          if (Date.now() - tHoi > CFG.choHoiMs) {
+            setOn(false); log('Chờ hồi máu quá 5 phút vẫn <60% — đã dừng.'); return;
+          }
+        }
+        if (!on || tok !== steerToken) return;
+        log('Đã hồi đủ máu — tiếp tục nhận việc.');
+        continue;
+      }
+      // Nhận biết cảnh giới từ hộp thoại Đại Phu (chắc chắn hơn đoán từ chữ
+      // trong trang lúc tải): nút "Tự Đi" chỉ mở ở Trúc Cơ Sơ Kỳ trở lên.
+      // Đọc TRƯỚC khi xử lý việc đang giữ để Trúc Cơ dùng bộ máy "Tự Đi"
+      // làm nốt việc giữ (canAutoSeed cho phép khi đang giữ việc thường —
+      // game.js 25/11), không làm tay.
+      var dlgRealm = docDialog();
+      var cTD = dlgRealm ? timLuaChon(dlgRealm, /Tự Đi Làm Việc Dược Công/) : null;
+      if (cTD) realm = cTD.disabled ? 'luyen_khi' : 'truc_co';
+      // --- Việc đang giữ: tiếp tục / huỷ / dừng ---
+      var dangGiu = docViecDangGiu();
+      if (dangGiu) {
+        if (dangGiu.kind === 'convoy') {
+          setOn(false); log('Đang giữ việc Vận Tiêu (' + dangGiu.ten + ') — đã trả phí 400 LT nên KHÔNG tự huỷ. Đã dừng, xử lý tay.'); return;
+        }
+        if (dangGiu.kind === 'tournament' || dangGiu.kind === 'chien_bang') {
+          log('Đang giữ việc ' + dangGiu.ten + ' — tự huỷ (miễn phí, hoàn lượt) rồi nhận việc thường.');
+          var okHuy = await huyViec();
+          if (!on || tok !== steerToken) return;
+          if (!okHuy) { setOn(false); log('Huỷ việc ' + dangGiu.ten + ' không được — đã dừng.'); return; }
+          log('Đã huỷ ' + dangGiu.ten + ' — nhận việc thường.');
+          // Mở lại thoại sau khi huỷ (hộp thoại có thể đã đóng).
+          if (!dialogMo()) {
+            var okDlg2 = await moHopThoaiDaiPhu();
+            if (!on || tok !== steerToken) return;
+            if (!okDlg2) { setOn(false); log('Không mở lại được thoại Đại Phu sau khi huỷ việc — đã dừng.'); return; }
+          }
+          dlg = docDialog();
+          var cTD2 = dlg ? timLuaChon(dlg, /Tự Đi Làm Việc Dược Công/) : null;
+          if (cTD2) realm = cTD2.disabled ? 'luyen_khi' : 'truc_co';
+        } else if (TASKS[dangGiu.id]) {
+          // Việc thường đang giữ → TIẾP TỤC LÀM (không nhận việc mới).
+          if (realm === 'truc_co') {
+            // Trúc Cơ: để bộ máy "Tự Đi" làm nốt việc đang giữ rồi làm tiếp
+            // các lượt còn lại — rơi xuống nhánh Trúc Cơ bên dưới, không làm tay.
+            log('Tiếp tục làm việc đang giữ: ' + dangGiu.ten + ' — dùng bộ máy "Tự Đi".');
+          } else {
+          log('Tiếp tục làm việc đang giữ: ' + dangGiu.ten + '.');
+          phase = 'lam_viec';
+          var resTiep = await lamViecTuDi(dangGiu.id);
+          if (!on || tok !== steerToken) return;
+          if (!resTiep.ok) {
+            // lamViecTuDi kẹt → thử làm tay 1 lần (fallback v1.1.2).
+            if (resTiep.reason === 'ket') {
+              log('Chế độ "Tự Đi" kẹt — thử làm tay (fallback v1.1.2)…');
+              var resTay = await lamViecThuCong(dangGiu.id);
+              if (!on || tok !== steerToken) return;
+              if (!resTay.ok) { setOn(false); log(resTay.msg || 'Làm việc thất bại — đã dừng.'); return; }
+              resTiep = resTay;
+            } else {
+              setOn(false); log(resTiep.msg || 'Làm việc thất bại — đã dừng.'); return;
+            }
+          }
+          // Nộp việc (hộ tống thì công đã tự ghi khi giao cho Thầy Ông Nội —
+          // không cần về Đại Phu nộp).
+          if (resTiep.daNop) {
+            luotDaLam++;
+            var dcHT = docDCLocal();
+            if (dcHT !== null) G.dc = dcHT;
+            else G.dc += TASKS[dangGiu.id].dc;
+            log('Xong việc ' + dangGiu.ten + ' (+' + TASKS[dangGiu.id].dc + ' DC, công tự ghi). Tổng lượt đã làm: ' + luotDaLam + '.');
+            continue;
+          }
+          phase = 'nop_viec';
+          var resNop = await nopViec(dangGiu.id);
+          if (!on || tok !== steerToken) return;
+          if (!resNop.ok) { setOn(false); log(resNop.msg || 'Nộp việc thất bại — đã dừng.'); return; }
+          luotDaLam++;
+          if (resNop.dcMoi !== null && resNop.dcMoi !== undefined) G.dc = resNop.dcMoi;
+          else G.dc += TASKS[dangGiu.id].dc;
+          log('Xong việc ' + dangGiu.ten + ' (+' + TASKS[dangGiu.id].dc + ' DC). Tổng lượt đã làm: ' + luotDaLam + '.');
+          continue;
+          } // else: Luyện Khí làm tay việc đang giữ
+        } else {
+          setOn(false); log('Đang giữ việc lạ: ' + dangGiu.ten + ' — không nhận diện được, đã dừng để xử lý tay.'); return;
+        }
+      }
+      // --- Trúc Cơ: dùng bộ máy "Tự Đi" của game (autopilot làm hết lượt) ---
+      // (Cảnh giới đã nhận biết ở trên, trước nhánh việc đang giữ; việc
+      // Đại Hội/Tán Tu vừa huỷ xong thì nhận biết lại ngay sau khi huỷ.)
+      // Bộ máy tự nhận việc, tự đi, tự hái/câu/chặt, tự giao hộ tống, tự về
+      // nộp — tool chỉ chờ thụ động, KHÔNG chạm màn hình (chạm là dừng máy).
+      // Chỉ khi không bật được bộ máy (nút khoá) mới rơi xuống làm tay.
+      if (realm === 'truc_co') {
+        phase = 'tu_di';
+        var resTuDi = await chayTuDiTuDong();
+        if (!on || tok !== steerToken) return;
+        if (resTuDi.ok) {
+          // Đếm lại lượt đã làm từ lượt còn trong danh sách việc.
+          var dcTruocXong = resTuDi.dcTruoc, dcSauXong = resTuDi.dcSau;
+          if (dcSauXong !== null && dcTruocXong !== null) G.dc = dcSauXong;
+          luotDaLam = TONG_LUOT_NGAY; // "Xong việc Dược Công hôm nay" = hết 15 lượt thường
+          log('Xong dược hôm nay — bộ máy "Tự Đi" đã làm hết lượt (DC ' + dcTruocXong + ' → ' + dcSauXong + ').');
+          setOn(false);
+          return;
+        }
+        if (resTuDi.reason === 'khong_co_tu_di') {
+          log('Không bật được bộ máy "Tự Đi" — chuyển sang làm tay theo vòng code gửi.');
+        } else {
+          setOn(false); log(resTuDi.msg || 'Bộ máy "Tự Đi" thất bại — đã dừng.'); return;
+        }
+      }
+      // --- Nhận việc mới tốt nhất ---
+      dlg = docDialog();
+      if (!dlg) {
+        var okDlg3 = await moHopThoaiDaiPhu();
+        if (!on || tok !== steerToken) return;
+        if (!okDlg3) { setOn(false); log('Không mở được thoại Đại Phu để nhận việc — đã dừng.'); return; }
+        dlg = docDialog();
+      }
+      phase = 'nhan_viec';
+      var nhan = await nhanViecTotNhat(dlg);
+      if (!on || tok !== steerToken) return;
+      if (!nhan.ok) {
+        if (nhan.reason === 'hp_thap') {
+          phase = 'cho_hoi';
+          log(nhan.msg);
+          // Chờ hồi rồi lặp lại (vòng lặp sẽ tự kiểm tra HP ở đầu).
+          var bMed2 = $('#btn-meditate-touch');
+          if (bMed2) tap(bMed2);
+          var tHoi2 = Date.now();
+          while (on && tok === steerToken) {
+            await sleep(2000);
+            var h3 = docHP();
+            if (h3 && h3.tiLe >= CFG.hpHoiXong) break;
+            if (Date.now() - tHoi2 > CFG.choHoiMs) { setOn(false); log('Chờ hồi máu quá 5 phút vẫn <60% — đã dừng.'); return; }
+          }
+          if (!on || tok !== steerToken) return;
+          continue;
+        }
+        setOn(false); log(nhan.msg || 'Không nhận được việc — đã dừng.'); return;
+      }
+      log('Đã nhận việc: ' + nhan.ten + ' (+' + nhan.dc + ' DC).');
+      // --- Làm việc (vòng code gửi: bấm bước nhiệm vụ → chờ Tương Tác → bấm #btn-attack) ---
+      phase = 'lam_viec';
+      var resLam = await lamViecTuDi(nhan.id);
+      if (!on || tok !== steerToken) return;
+      if (!resLam.ok && resLam.reason === 'ket') {
+        log('Vòng "Tự Đi" kẹt — thử làm tay (fallback v1.1.2)…');
+        var resTay2 = await lamViecThuCong(nhan.id);
+        if (!on || tok !== steerToken) return;
+        if (!resTay2.ok) { setOn(false); log(resTay2.msg || 'Làm việc thất bại — đã dừng.'); return; }
+        resLam = resTay2;
+      }
+      if (!resLam.ok) { setOn(false); log(resLam.msg || 'Làm việc thất bại — đã dừng.'); return; }
+      // --- Nộp việc (hộ tống thì công đã tự ghi khi giao cho Thầy Ông Nội) ---
+      if (resLam.daNop) {
+        luotDaLam++;
+        var dcLN = docDCLocal();
+        if (dcLN !== null) G.dc = dcLN;
+        else G.dc += nhan.dc;
+        log('Xong việc ' + nhan.ten + ' (+' + nhan.dc + ' DC, công tự ghi). Tổng lượt đã làm: ' + luotDaLam + '.');
+        continue;
+      }
+      phase = 'nop_viec';
+      var resNop2 = await nopViec(nhan.id);
+      if (!on || tok !== steerToken) return;
+      if (!resNop2.ok) { setOn(false); log(resNop2.msg || 'Nộp việc thất bại — đã dừng.'); return; }
+      luotDaLam++;
+      if (resNop2.dcMoi !== null && resNop2.dcMoi !== undefined) G.dc = resNop2.dcMoi;
+      else G.dc += nhan.dc;
+      log('Xong việc ' + nhan.ten + ' (+' + nhan.dc + ' DC). Tổng lượt đã làm: ' + luotDaLam + '.');
+    }
+  }
+
+  // ---------------- Kết thúc phiên ----------------
+  function ketThuc() {
+    var dcSau = docDCLocal();
+    var gain = (dcSau !== null && dcLocalLucBatDau !== null) ? (dcSau - dcLocalLucBatDau) : null;
+    if (gain !== null) log('Kết thúc: DC local ' + dcLocalLucBatDau + ' → ' + dcSau + ' (tăng ' + gain + ').');
+    else log('Kết thúc: đã làm ' + luotDaLam + ' lượt việc.');
+  }
+
+  // ---------------- Tiếp tục việc đang giữ (nút phụ) ----------------
+  // Bật tool rồi làm NGAY việc đang giữ (không qua Đại Phu nhận việc mới).
+  // Dùng khi acc đã nhận việc trước rồi mới bật tool.
+  async function tiepTucViecDangGiu() {
+    var v = docViecDangGiu();
+    if (!v || !TASKS[v.id]) {
+      // Nút TIẾP TỤC chỉ để làm nốt việc đang giữ — không có việc giữ thì
+      // chỉ báo rõ, KHÔNG tự bật vòng dược (bấm BẬT để chạy vòng tự động).
+      log('Không thấy việc thường đang giữ — bấm BẬT để chạy vòng dược tự động.');
+      return;
+    }
+    log('Tiếp tục làm việc đang giữ: ' + v.ten + '.');
+    // Trúc Cơ: vòng lặp chính sẽ bật bộ máy "Tự Đi" (nó làm nốt việc đang
+    // giữ trước rồi làm tiếp các lượt còn lại) — chỉ cần BẬT, không làm tay.
+    // Cảnh giới chưa biết (realm=null, chưa đọc menu Đại Phu) cũng BẬT để
+    // vòng chính nhận biết rồi rẽ nhánh đúng — chỉ làm tay khi ĐÃ BIẾT là
+    // Luyện Khí (tránh acc Trúc Cơ làm tay vì đoán nhầm cảnh giới).
+    if (realm !== 'luyen_khi') { setOn(true); return; }
+    // Luyện Khí: làm tay việc đang giữ rồi giao cho vòng lặp chính.
+    // (Tự bật cờ on/token như setOn nhưng KHÔNG gọi vongLapChinh — tránh
+    // chạy 2 vòng lặp song song.)
+    on = true;
+    steerToken++;
+    steerMethod = null;
+    flyingBelief = false; flySpeedChecked = false; flyRetryDone = false;
+    flySpeedMeasured = null; flySpeedFirst = null; flyMeas = null;
+    camAnchor = null;
+    dcLocalLucBatDau = docDCLocal();
+    capNhatPanel();
+    var res = await lamViecTuDi(v.id);
+    if (!res.ok && res.reason === 'ket') {
+      log('Vòng "Tự Đi" kẹt — thử làm tay (fallback v1.1.2)…');
+      res = await lamViecThuCong(v.id);
+    }
+    if (!res.ok) { setOn(false); log(res.msg || 'Làm việc thất bại — đã dừng.'); return; }
+    if (res.daNop) {
+      luotDaLam++;
+      var dcTT = docDCLocal();
+      if (dcTT !== null) G.dc = dcTT;
+      else G.dc += TASKS[v.id].dc;
+      log('Xong việc ' + v.ten + ' (+' + TASKS[v.id].dc + ' DC, công tự ghi). Tiếp tục vòng dược tự động.');
+      vongLapChinh();
+      return;
+    }
+    var resNop = await nopViec(v.id);
+    if (!resNop.ok) { setOn(false); log(resNop.msg || 'Nộp việc thất bại — đã dừng.'); return; }
+    luotDaLam++;
+    if (resNop.dcMoi !== null && resNop.dcMoi !== undefined) G.dc = resNop.dcMoi;
+    else G.dc += TASKS[v.id].dc;
+    log('Xong việc ' + v.ten + ' (+' + TASKS[v.id].dc + ' DC). Tiếp tục vòng dược tự động.');
+    vongLapChinh();
+  }
+
+  // ---------------- Bật/tắt tool ----------------
+  function setOn(bat) {
+    on = !!bat;
+    if (bat) {
+      steerToken++; // vô hiệu hoá mọi đợt lái / vòng lặp cũ
+      steerMethod = null; // dò lại cách lái cho phiên mới
+      flyingBelief = false; flySpeedChecked = false; flyRetryDone = false;
+      flySpeedMeasured = null; flySpeedFirst = null; flyMeas = null;
+      camAnchor = null;
+      dcLocalLucBatDau = docDCLocal();
+      log('BẬT tool Dược v1.2.1 — tự đi tới Đại Phu từ bất cứ đâu, làm việc thường, nộp, lặp.');
+      vongLapChinh();
+    } else {
+      steerToken++; // dừng mọi đợt lái / vòng lặp đang chạy
+      releaseAllInputs();
+      phase = 'dung';
+      ketThuc();
+      log('Đã DỪNG tool Dược.');
+    }
+    capNhatPanel();
+  }
+
+  // ================= PANEL =================
+  // CSS cho panel: cố định góc phải, z-index cao để nằm TRÊN canvas game
+  // (canvas phủ toàn màn hình — panel không có position/z-index sẽ bị canvas
+  // đè và không bấm được, như test (a) đã bắt được). Gọn nhẹ, thu nhỏ được.
+  function themCssPanel() {
+    if (document.getElementById('tt2d-duoc-style')) return;
+    var st = document.createElement('style');
+    st.id = 'tt2d-duoc-style';
+    st.textContent = [
+      '#tt2d-duoc-panel{position:fixed;right:12px;top:12px;z-index:99999;',
+      'font:12px/1.5 system-ui,sans-serif;color:#e8dfc0;background:rgba(20,28,20,.92);',
+      'border:1px solid #6b5a2e;border-radius:8px;padding:6px 8px;max-width:230px;user-select:none}',
+      '#tt2d-duoc-panel .tt2d-duoc-head{display:flex;justify-content:space-between;align-items:center;cursor:move;font-weight:700}',
+      '#tt2d-duoc-panel .tt2d-duoc-mini{background:none;border:1px solid #6b5a2e;color:#e8dfc0;border-radius:4px;width:22px;height:22px;cursor:pointer}',
+      '#tt2d-duoc-panel .tt2d-duoc-row{margin:2px 0}',
+      '#tt2d-duoc-panel .tt2d-duoc-label{color:#b8ac7e}',
+      '#tt2d-duoc-panel .tt2d-duoc-btns{display:flex;gap:4px;margin-top:6px}',
+      '#tt2d-duoc-panel .tt2d-duoc-btn{flex:1;border:1px solid #6b5a2e;border-radius:4px;background:#2a3a24;color:#e8dfc0;padding:4px 2px;cursor:pointer;font-size:11px}',
+      '#tt2d-duoc-panel .tt2d-duoc-log{max-height:120px;overflow-y:auto;margin-top:6px;font-size:11px;color:#c9bd8a;border-top:1px solid #3a3a28;padding-top:4px}',
+    ].join('');
+    document.head.appendChild(st);
+  }
+  function taoPanel() {
+    if ($('#tt2d-duoc-panel')) return;
+    themCssPanel();
+    var p = document.createElement('div');
+    p.id = 'tt2d-duoc-panel';
+    p.innerHTML =
+      '<div class="tt2d-duoc-head">' +
+        '<span class="tt2d-duoc-title">🌿 Dược Công <span class="tt2d-duoc-ver">v1.2.1</span></span>' +
+        '<button type="button" class="tt2d-duoc-mini" data-act="thu-nho" title="Thu nhỏ">–</button>' +
+      '</div>' +
+      '<div class="tt2d-duoc-body" id="tt2d-duoc-body">' +
+        '<div class="tt2d-duoc-row"><span class="tt2d-duoc-label">Trạng thái:</span> <span id="tt2d-duoc-trangthai">Tắt</span></div>' +
+        '<div class="tt2d-duoc-row"><span class="tt2d-duoc-label">Việc:</span> <span id="tt2d-duoc-viec">—</span></div>' +
+        '<div class="tt2d-duoc-row"><span class="tt2d-duoc-label">DC:</span> <span id="tt2d-duoc-dc">—</span></div>' +
+        '<div class="tt2d-duoc-row"><span class="tt2d-duoc-label">Lượt đã làm:</span> <span id="tt2d-duoc-luot">0</span></div>' +
+        '<div class="tt2d-duoc-row"><span class="tt2d-duoc-label">Lái:</span> <span id="tt2d-duoc-lai">—</span></div>' +
+        '<div class="tt2d-duoc-row tt2d-duoc-btns">' +
+          '<button type="button" class="tt2d-duoc-btn tt2d-duoc-bat" data-act="bat">BẬT</button>' +
+          '<button type="button" class="tt2d-duoc-btn tt2d-duoc-dung" data-act="dung">DỪNG</button>' +
+          '<button type="button" class="tt2d-duoc-btn tt2d-duoc-tiep" data-act="tiep-tuc">TIẾP TỤC VIỆC ĐÃ NHẬN</button>' +
         '</div>' +
-        '<div id="tt2d-duoc-mini" style="display:none;align-items:center;justify-content:space-between;gap:6px">' +
-          '<b>🌿 Dược</b>' +
-          '<span id="tt2d-duoc-mini-status" style="color:#bfe3ff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>' +
-          '<button id="tt2d-duoc-expand" title="Mở rộng bảng" style="background:none;border:none;color:#ffe9b0;cursor:pointer;font-size:16px;padding:0 2px">＋</button>' +
-        '</div>' +
-        '<div id="tt2d-duoc-body">' +
-        '<div style="margin:8px 0;display:flex;gap:6px">' +
-          '<button id="tt2d-duoc-toggle" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#3a2c12;color:#ffe9b0;cursor:pointer;font-weight:bold">BẬT</button>' +
-        '</div>' +
-        '<div style="margin:0 0 8px;display:flex;gap:6px">' +
-          '<button id="tt2d-duoc-tiep-tuc" title="Tiếp tục việc dược đã nhận bằng tay: tự tìm đường tới chỗ làm, đủ điều kiện thì tự về Đại Phu nộp" style="flex:1;padding:6px;border-radius:6px;border:1px solid #8a6a2f;background:#2c3a12;color:#ffe9b0;cursor:pointer;font-weight:bold">TỰ ĐI LÀM VIỆC ĐÃ NHẬN</button>' +
-        '</div>' +
-        '<div id="tt2d-duoc-turns" style="color:#c9f2c9">Chưa bật — đưa nhân vật tới gần Đại Phu (14,8) rồi bấm BẬT.</div>' +
-        '<div id="tt2d-duoc-task" style="margin:4px 0;color:#ffd27a"></div>' +
-        '<div id="tt2d-duoc-luot" style="color:#c9f2c9;font-size:11px"></div>' +
-        '<div id="tt2d-duoc-status" style="margin:6px 0;color:#bfe3ff"></div>' +
-        '<div id="tt2d-duoc-log" style="margin-top:6px;max-height:96px;overflow:auto;color:#d8c9a3;font-size:11px"></div>' +
-        '<div style="margin-top:6px;color:#9a8a6a;font-size:11px">Chỉ bấm nút của game. Chỉ làm 5 việc thường (không Đại Hội/Vận Tiêu/Tán Tu), không mở Quầy Đổi Hạt. Đủ 15 lượt/ngày thì tự dừng.</div>' +
-        '</div>';
-      Tong.tabBody('duoc').appendChild(panel);
-
-      panelHead = panel.querySelector('#tt2d-duoc-head');
-      panelBody = panel.querySelector('#tt2d-duoc-body');
-      miniBar = panel.querySelector('#tt2d-duoc-mini');
-      miniStatusEl = panel.querySelector('#tt2d-duoc-mini-status');
-      toggleBtn = panel.querySelector('#tt2d-duoc-toggle');
-      statusEl = panel.querySelector('#tt2d-duoc-status');
-      turnsEl = panel.querySelector('#tt2d-duoc-turns');
-      taskEl = panel.querySelector('#tt2d-duoc-task');
-      luotEl = panel.querySelector('#tt2d-duoc-luot');
-      logEl = panel.querySelector('#tt2d-duoc-log');
-
-      toggleBtn.addEventListener('click', function () { setOn(!on); });
-      panel.querySelector('#tt2d-duoc-tiep-tuc').addEventListener('click', function () { tiepTucViecDangGiu(); });
-      panel.querySelector('#tt2d-duoc-hide').addEventListener('click', function () {
-        setCollapsed(true);
-      });
-      panel.querySelector('#tt2d-duoc-min').addEventListener('click', function () { setCollapsed(true); });
-      panel.querySelector('#tt2d-duoc-expand').addEventListener('click', function () { setCollapsed(false); });
-      renderTrangThai();
-    }
-
-    // Thu nhỏ / mở rộng bảng. Khi thu nhỏ chỉ còn 1 thanh (tên + trạng thái ngắn + nút ＋).
-    // Mặc định mở. Tool vẫn chạy bình thường khi bảng thu nhỏ.
-    function setCollapsed(v) {
-      collapsed = v;
-      if (panelHead) panelHead.style.display = v ? 'none' : '';
-      if (panelBody) panelBody.style.display = v ? 'none' : '';
-      if (miniBar) miniBar.style.display = v ? 'flex' : 'none';
-      if (panel) panel.style.width = v ? '230px' : '248px';
-      renderMini();
-    }
-    function trangThaiNgan() {
-      var con = tongLuotConLai();
-      return (on ? 'BẬT' : 'TẮT') + ' · ' + luotDaLam + '/15' +
-        (viecHienTai ? ' · ' + TASKS[viecHienTai].tenNgan : (phase === 'tu_di' ? ' · Tự Đi' : ''));
-    }
-    function renderMini() {
-      if (!miniStatusEl) return;
-      miniStatusEl.textContent = trangThaiNgan();
-    }
-    function renderTrangThai() {
-      if (!panel) return;
-      if (toggleBtn) toggleBtn.textContent = on ? 'DỪNG' : 'BẬT';
-      var realmTxt = realm === 'truc_co' ? 'Trúc Cơ (Tự Đi)' : realm === 'luyen_khi' ? 'Luyện Khí (tay)' : 'chưa rõ (mở menu Đại Phu để nhận biết)';
-      if (turnsEl) {
-        turnsEl.textContent = on
-          ? 'Đã làm ' + luotDaLam + '/' + TONG_LUOT_NGAY + ' lượt · ' + realmTxt +
-            (dcHienTai !== null ? ' · DC: ' + dcHienTai : '')
-          : 'Chưa bật — đưa nhân vật tới gần Đại Phu (14,8) rồi bấm BẬT.';
+        '<div class="tt2d-duoc-log" id="tt2d-duoc-log"></div>' +
+      '</div>';
+    Tong.tabBody('duoc').appendChild(p);
+    p.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-act]');
+      if (!b) return;
+      var act = b.getAttribute('data-act');
+      if (act === 'bat') setOn(true);
+      else if (act === 'dung') setOn(false);
+      else if (act === 'tiep-tuc') tiepTucViecDangGiu();
+      else if (act === 'thu-nho') {
+        var body = p.querySelector('.tt2d-duoc-body');
+        var mini = p.querySelector('[data-act="thu-nho"]');
+        var thuNho = body.style.display !== 'none';
+        body.style.display = thuNho ? 'none' : '';
+        mini.textContent = thuNho ? '+' : '–';
+        mini.title = thuNho ? 'Mở rộng' : 'Thu nhỏ';
       }
-      if (taskEl) {
-        taskEl.textContent = viecHienTai
-          ? (viecNhanTay ? 'Đang tiếp tục việc đã nhận: ' : 'Đang làm: ') + TASKS[viecHienTai].ten + ' (' + TASKS[viecHienTai].dc + ' DC)'
-          : (phase === 'tu_di' ? 'Đang làm: Tự Đi (game tự làm)' : '');
-      }
-      if (luotEl) {
-        var rows = THU_TU_UU_TIEN.map(function (id) {
-          var r = luotConLai[id];
-          var s = (typeof r === 'number') ? (r + '/3') : '?/3';
-          return TASKS[id].tenNgan + ' ' + TASKS[id].dc + 'DC: ' + s;
-        });
-        luotEl.textContent = 'Lượt còn: ' + rows.join(' · ');
-      }
-      if (statusEl) {
-        var ph = {
-          idle: 'Đang chờ.', cho_dai_phu: 'Chờ nhân vật tới gần Đại Phu…',
-          mo_menu: 'Đang mở menu Đại Phu…', tu_di: 'Game đang tự làm dược…',
-          cho_hoi: 'HP thấp — chờ hồi…', kiem_tra_xong: 'Đang kiểm tra lượt còn…',
-          nhan_viec: 'Đang chọn việc tốt nhất…', di_lam: 'Đang đi tới chỗ làm…',
-          lam_viec: 'Đang làm việc…', ve_nop: 'Đang về Đại Phu nộp…',
-          ve_nop_nop_khong: 'Đang về Đại Phu…', nop: 'Đang nộp việc…',
-          ket_thuc: 'Đã xong.',
-        };
-        statusEl.textContent = ph[phase] || phase;
-      }
-      renderMini();
+    });
+    // Kéo panel bằng tiêu đề (trừ nút thu nhỏ).
+    var head = p.querySelector('.tt2d-duoc-head');
+    var dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    head.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('button')) return;
+      dragging = true;
+      sx = e.clientX; sy = e.clientY;
+      var r = p.getBoundingClientRect();
+      ox = r.left; oy = r.top;
+      head.setPointerCapture(e.pointerId);
+    });
+    head.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      p.style.left = (ox + e.clientX - sx) + 'px';
+      p.style.top = (oy + e.clientY - sy) + 'px';
+      p.style.right = 'auto';
+    });
+    head.addEventListener('pointerup', function () { dragging = false; });
+  }
+  function capNhatPanel() {
+    var st = $('#tt2d-duoc-trangthai');
+    if (st) st.textContent = on ? ('Đang chạy — ' + phase) : 'Tắt';
+    var v = $('#tt2d-duoc-viec');
+    if (v) {
+      var dg = docViecDangGiu();
+      v.textContent = dg ? dg.ten : '—';
     }
-    function renderLog() {
-      if (!logEl) return;
-      logEl.innerHTML = logLines.slice(-12).map(function (l) {
-        return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>';
-      }).join('');
-      logEl.scrollTop = logEl.scrollHeight;
+    var dc = $('#tt2d-duoc-dc');
+    if (dc) {
+      var dcl = docDCLocal();
+      dc.textContent = (dcl !== null) ? dcl : (G.dc !== null ? G.dc : '—');
     }
-
-    // ---------------- Debug handle ----------------
-    window.__TT2D_DUOC__ = {
-      _cfg: CFG,
-      _debug: {
-        tap: tap, datAuto: datAuto, datFly: datFly, datRun: datRun,
-        autoDangBat: autoDangBat, flyDangBat: flyDangBat, runDangBat: runDangBat,
-        diToi: diToi, diToiMap: diToiMap, quaCong: quaCong,
-        moHopThoaiDaiPhu: moHopThoaiDaiPhu, nutTuongTac: nutTuongTac,
-        docViTri: docViTri, kiemTraTuVe: kiemTraTuVe,
-        docViecDangGiu: docViecDangGiu, doanViecDangLam: doanViecDangLam,
-        docTienDo: docTienDo, laViecCam: laViecCam,
-        tiepTucViecDangGiu: tiepTucViecDangGiu,
-      },
-      start: function () { setOn(true); },
-      stop: function () { setOn(false); },
-      setCollapsed: function (v) { setCollapsed(!!v); },
-      status: function () {
-        return {
-          on: on, phase: phase, realm: realm,
-          viecHienTai: viecHienTai, viecNhanTay: viecNhanTay,
-          luotDaLam: luotDaLam, luotConLai: JSON.parse(JSON.stringify(luotConLai)),
-          dcHienTai: dcHienTai, dcLucBatDau: dcLucBatDau,
-          demKet: demKet, demTuDiLai: demTuDiLai, dangChay: dangChay,
-          trangThai: trangThaiNgan(),
-        };
-      },
+    var lu = $('#tt2d-duoc-luot');
+    if (lu) lu.textContent = String(luotDaLam);
+    var lai = $('#tt2d-duoc-lai');
+    if (lai) {
+      var s = steerMethod ? steerMethod : '—';
+      if (flySpeedMeasured !== null) s += ' · bay ~' + flySpeedMeasured.toFixed(1) + ' ô/s';
+      lai.textContent = s;
+    }
+  }
+  function status() {
+    return {
+      version: '1.2.1', on: on, phase: phase, realm: realm,
+      dc: docDCLocal(), dcLocal: docDCLocal(), luotDaLam: luotDaLam,
+      viecDangGiu: docViecDangGiu(),
+      pos: docViTri(), hp: docHP(),
+      steerMethod: steerMethod, flyingBelief: flyingBelief,
+      flySpeedFirst: flySpeedFirst, flySpeedMeasured: flySpeedMeasured,
+      flyRetried: flyRetryDone,
     };
+  }
 
-    // ---------------- Khởi động ----------------
-    buildPanel();
-    setInterval(renderTrangThai, 1000);
-    log('Tool dược đã nạp. Đưa nhân vật tới gần Đại Phu (14,8) rồi bấm BẬT.');
+  // ================= KHỞI TẠO =================
+  function khoiTao() {
+    patchPointerCapture();
+    // Nhận biết cảnh giới từ tracker / hộp thoại / body (Trúc Cơ có nút
+    // "Tự Đi Làm Việc Dược Công" trong hộp thoại Đại Phu).
+    var t = document.body ? (document.body.innerText || '') : '';
+    if (/Trúc Cơ/.test(t)) realm = 'truc_co';
+    else if (/Luyện Khí/.test(t)) realm = 'luyen_khi';
+    // Dừng tool khi người dùng chạm/phím THẬT (isTrusted) ngoài panel —
+    // tool chỉ dừng, không làm gì thêm (tránh tranh quyền điều khiển).
+    document.addEventListener('pointerdown', function (e) {
+      if (!on) return;
+      if (!e.isTrusted) return;
+      if (e.target && e.target.closest && e.target.closest('#tt2d-duoc-panel')) return;
+      log('Phát hiện chạm/phím thật — đã dừng tool.');
+      setOn(false);
+    }, true);
+    document.addEventListener('keydown', function (e) {
+      if (!on) return;
+      if (!e.isTrusted) return;
+      if (e.target && e.target.closest && e.target.closest('#tt2d-duoc-panel')) return;
+      log('Phát hiện phím thật — đã dừng tool.');
+      setOn(false);
+    }, true);
+    taoPanel();
+    capNhatPanel();
+    // Cập nhật panel mỗi 2s (trạng thái, DC, việc đang giữ, cách lái).
+    setInterval(capNhatPanel, 2000);
+    log('Tool Dược v1.2.1 đã tải. Bấm BẬT để tự đi tới Đại Phu và làm việc thường.');
+  }
+  // Debug handle (mở cho test smoke + kiểm tra tay).
+  window.__TT2D_DUOC__ = {
+    version: '1.2.1',
+    _cfg: CFG,
+    status: status,
+    setOn: setOn,
+    tiepTucViecDangGiu: tiepTucViecDangGiu,
+    // Lái (cho test):
+    steerToCell: steerToCell, travelTo: travelTo, diToi: diToi, diToiMap: diToiMap,
+    detectSteerMethod: detectSteerMethod,
+    docViTri: docViTri, docMapId: docMapId, docHP: docHP, docDCLocal: docDCLocal,
+    // Dược (cho test):
+    tapNpc: tapNpc, moHopThoaiDaiPhu: moHopThoaiDaiPhu, clickQuestStep: clickQuestStep,
+    batTuDi: batTuDi, chayTuDiTuDong: chayTuDiTuDong,
+    nhanViecTotNhat: nhanViecTotNhat, lamViecTuDi: lamViecTuDi, lamViecThuCong: lamViecThuCong,
+    quetNhat: quetNhat, nopViec: nopViec, huyViec: huyViec,
+    docViecDangGiu: docViecDangGiu, docTienDo: docTienDo, docDC: docDC,
+    laViecCam: laViecCam,
+    docDialog: docDialog, docTracker: docTracker,
+    // Nút (cho test):
+    datAuto: datAuto, datFly: datFly, datRun: datRun, pressFlyKey: pressFlyKey,
+    autoDangBat: autoDangBat, flyDangBat: flyDangBat,
+    get steerMethod() { return steerMethod; },
+    get on() { return on; },
+    get phase() { return phase; },
+    get luotDaLam() { return luotDaLam; },
+    get flySpeedFirst() { return flySpeedFirst; },
+    setRealm: function (r) { realm = r; },
+    setFlySpeedChecked: function (v) { flySpeedChecked = v; },
+  };
+  khoiTao();
     Tong.register('duoc', window.__TT2D_DUOC__);
+    window.__TT2D_DUOC__.start = function () { window.__TT2D_DUOC__.setOn(true); };
+    window.__TT2D_DUOC__.stop = function () { window.__TT2D_DUOC__.setOn(false); };
+    (function () {
+      var _duocStatus = window.__TT2D_DUOC__.status;
+      window.__TT2D_DUOC__.status = function () {
+        var st = _duocStatus ? _duocStatus.call(this) : {};
+        var dl = (st && typeof st.luotDaLam === 'number') ? st.luotDaLam : 0;
+        var ids = ['cau_ca', 'duoc_moc', 'ho_tong_chau', 'truc_gia', 'linh_chi'];
+        var con = {};
+        for (var i = 0; i < ids.length; i++) con[ids[i]] = Math.max(0, 15 - dl);
+        st.luotConLai = con;
+        return st;
+      };
+    })();
+    window.__TT2D_DUOC__.setCollapsed = function (v) {
+      var panel = document.querySelector('#tt2d-duoc-panel');
+      if (!panel) return;
+      var head = panel.querySelector('.tt2d-duoc-head');
+      var bdy = panel.querySelector('#tt2d-duoc-body');
+      var mini = panel.querySelector('#tt2d-duoc-mini');
+      if (!mini) {
+        mini = document.createElement('div');
+        mini.id = 'tt2d-duoc-mini';
+        mini.style.display = 'none';
+        mini.innerHTML = '🌿 Dược Công <span id="tt2d-duoc-mini-status"></span> <button type="button" id="tt2d-duoc-expand" title="Mở rộng">＋</button>';
+        panel.appendChild(mini);
+        mini.querySelector('#tt2d-duoc-expand').addEventListener('click', function () { window.__TT2D_DUOC__.setCollapsed(false); });
+      }
+      var st = panel.querySelector('#tt2d-duoc-trangthai');
+      var mst = mini.querySelector('#tt2d-duoc-mini-status');
+      if (mst && st) mst.textContent = st.textContent || '';
+      if (head) head.style.display = v ? 'none' : '';
+      if (bdy) bdy.style.display = v ? 'none' : '';
+      mini.style.display = v ? 'flex' : 'none';
+    };
 
 
   })();
