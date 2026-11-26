@@ -1,0 +1,11679 @@
+// ==UserScript==
+// @name         Tool Tu Tiên Pixel — Tự đi farm + Việc Dược Công
+// @namespace    tutienpixel-tool
+// @version      1.47.0
+// @description  Chọn map + điểm đến (cụm quái/NPC/bảng khu/boss) → tự Chạy + Phi Hành qua cổng → Auto + Chạy + Phi Hành farm (bật/tắt có kiểm chứng trạng thái thật); đồ thị cổng + lưới ô chặn lấy theo trạng thái SAU sửa đổi lúc chạy của client (cổng vào Miếu Ông Trường Con ở Bãi Đá); tìm đường A* trong map tránh núi/vật cản, không men theo rìa map, kẹt thì đánh dấu ô chặn tạm tính lại đường; mỗi map có 1 điểm neo — qua cổng vào map là tới điểm neo trước; Đi farm: tắt Auto suốt đường đi, tới điểm farm mới bật cả 3; map không có cổng vào thì đi tới map gần nhất + gợi ý NPC; chọn khu qua bảng khu (đứng cạnh bảng + bấm Tương Tác, kiểm chứng mở lại); vòng Việc Dược Công đúng trình tự game (đứng cạnh Đại Phu → bấm Tương Tác nhận việc → đứng cạnh điểm thu thập bấm Tương Tác → về giao + kiểm chứng Dược Công tăng); tự động câu cá ở Thảo Dược Cốc; Huyết Xích Cấm Địa: tới Miếu Hoang gặp Nữ Tu Trông Miếu đăng ký (100 Linh Thạch/người, tính 1 lượt/ngày) + tự xác nhận mở Cấm Địa (nhiều cách tìm nút xác nhận, bấm lại tối đa 5 lần) → vào cụm 3 map tự Auto đánh quái, quét sạch khu mở cấm chế rồi thu hoạch nguyên liệu (Bích Ngọc Cổ Mộc/Trấn Thần Thạch/Địa Linh Hóa Quả/Trúc Cơ Thảo). Căn giờ Boss: tự mở mục Hoạt Động trong Hành Trang đọc thời gian hồi boss làm nguồn giờ chính (đọc lại mỗi 60s khi chờ), xuất phát để có mặt tại vị trí boss trước giờ ra 5 phút. Nhiệm vụ chính: đọc mục tiêu trong bảng nhiệm vụ (#quest-objectives), bấm mục tiêu cho game tự dẫn đường (hụt thì tự tìm đường theo tên NPC/quái/map), tự đánh/hái/nói chuyện theo từng bước, bước lạ thì ghi nguyên văn rồi dừng. Khe Nứt (Vết Nứt Không Gian): canh toast #vn-toast báo map đang sáng (mở 22:00 giờ VN, cửa vào 10 phút, cần Hư Không Lệnh + Luyện Khí 13), tự tới đúng map, quét map tìm vết nứt (đọc toast-msg "Đứng sát vết nứt") rồi vào trong farm quái. Thêm v1.14: Lịch trình theo giờ (Dược Công → farm → boss sắp ra → 22:00 Khe Nứt), tự hồi sinh "Về làng / Miễn phí" rồi quay lại điểm đang làm khi chết, Thu thập khoáng/linh thảo (51 điểm/3 map), Hòm Hư Không trong Khe Nứt (quái đứng yên — giữ Auto + kỹ năng, đứng lâu khi giao chiến), tự mặc đồ tốt hơn trong túi (so điểm chỉ số), tự tránh PK (tụt Khí Huyết khi Auto tắt/caption → về điểm neo → đổi khu), kỹ năng theo nhịp khi đánh boss (đọc hồi chiêu ô #qs-0..3, không đọc được thì bấm luân phiên 2s), tự nhận Điểm Danh ngày, tự đăng kí Đại Hội Tu Tiên (suất 09:16/13:16/17:16/20:16, ghi danh trước 16 phút tại Chấp Sự Đại Hội). Thêm v1.15: tự đánh giải Đại Hội — ghi danh xong chờ trọng tài đưa vào Phòng Chờ rồi lên đài (Đài Luận Võ), bật Auto + Chạy + Bay + kỹ năng theo nhịp đánh từng trận, đọc kết quả từng trận từ toast Đại Hội; thua bị loại/hết giải thì tự bấm Về Làng rồi quay lại farm theo map/điểm đang chọn trên bảng (không dừng). Thêm v1.16: luật đánh nhau — mọi điểm bắt đầu đánh (farm, quét quái Huyết Xích, Khe Nứt, boss, nhiệm vụ chính, đài Đại Hội, lịch trình) đều bật ĐỦ Phi Hành + Chạy + Auto qua hàm chung có kiểm chứng + thử lại + nhật ký tổng kết "Bay/Chạy/Auto" (đi đường vẫn tắt Auto, chỉ Bay + Chạy). Thêm v1.17: chế độ Cày cấp tân thủ — chuỗi Luyện Khí tầng 1→13 rồi đột phá Trúc Cơ: đọc cảnh giới + bảng Đột Phá của game, ưu tiên nhiệm vụ chính → Dược Công → farm quái hợp cấp theo tầng (bảng trích từ dữ liệu quái) → đả tọa ở đài đá khi cần Đạo Hạnh → luyện đan phá quan ở Đan Lô khi đủ nguyên liệu (thiếu Trúc Cơ Thảo/Địa Linh Quả thì farm Huyết Xích) → ra đài đá phá quan (Trúc Cơ: chọn kèm 5 Bảo Mệnh Phù 100% nếu đủ, không thì 70%); bắt đầu từ tầng hiện tại, nhật ký + tổng kết phiên. Thêm v1.18: chuỗi cày cấp luôn quét từ chặng 1 (giai đoạn nhiệm vụ đầu + Luyện Khí Tầng 1) đi lên theo thứ tự — chặng đã qua (giai đoạn hiện tại lớn hơn/tầng đã đạt) thì ghi "đã qua — bỏ qua", chặng chưa qua làm đầy đủ như v1.17; nhật ký đầu phiên ghi rõ chặng/tầng hiện tại. Thêm v1.19: kiểm Điểm Danh qua bảng Sự Kiện chỉ 1 lần mỗi phiên (nhớ kết quả, lần sau bỏ qua ngay), mở/đọc/đóng bảng bằng poll ngắn thoát sớm khi có dữ liệu, quá 5 giây chưa đọc được thì bỏ qua vào việc chính; đọc Hoạt Động/Hành Trang cũng poll ngắn. Thêm v1.20: Câu Côn Bằng ở Hồ Tây — canh giờ Côn Bằng ra 12:30 + 19:30 giờ VN (6 phút/lần, theo CON_GIO trong mã client), vào Hồ Tây (van_can) Khu 1 trước khung, tới bờ hồ câu bằng nút giữ/thả .vc-nut theo pha thật trên DOM (quăng thả ở vùng Sâu → chờ phao chìm → giật → giữ/thả theo gợi ý Thả!/Nhả nhịp/Kéo! + tránh căng đỏ; pha conRanh nhấn móc Côn rồi kéo Côn theo nhịp), đọc thẻ cá + kết quả Côn ghi nhật ký, hết khung Côn thì tổng kết + dừng (cần Luyện Khí Tầng 7+). Thêm v1.21: Câu cá Hồ Tây — chế độ câu liên tục ở Hồ Tây cả ngày (tới khi bấm Dừng, trần phiên 4 giờ) + fix tỷ lệ cá cho vòng câu chung (poll chờ cắn 30ms giật ngay khi phao chìm hẳn, giật giữ luôn vào pha kéo, kéo theo gợi ý + căng dây theo xu hướng + khoảng cách cá, hụt ghi lý do suy từ căng/khoảng cách, tổng kết phiên quăng/bắt/hụt/tỷ lệ/nặng nhất); thời tiết → mồi: đọc luật hồ hiện tại (.vc-luat-ten: Nắng Gắt/Mưa Bụi/Gió Nồm/Nước Đục/Linh Triều/Lặng Sóng) chọn mồi hợp theo mô tả luật + mô tả mồi trong mã (không tự mua mồi, thiếu ghi rõ, thời tiết đổi thì đổi mồi); Điểm Danh TẮT ở đầu chế độ — chỉ mở Sự Kiện tự điểm danh sau Đại Hội có trận thắng. Thêm v1.22: sửa đọc cảnh giới cho chuỗi cày cấp — bản lưu pntt_progress_v1 của game ghi khóa "realm" (không phải "realmId") nên tool cũ luôn đọc hụt và dừng "không đọc được cảnh giới"; nay đọc đúng khóa realm (dự phòng đọc tên cảnh giới trên HUD #hud-realm), nhận đủ mọi realmId trong mã (Phàm Nhân, Luyện Khí 1–13, Trúc Cơ Sơ/Trung/Hậu Kỳ, Giả Đan, Kết Đan), không đọc được thì ghi nhật ký dữ liệu thô + nguồn; giai đoạn đầu: Phàm Nhân bỏ qua đả tọa (chưa cảm ứng linh khí), Dược Công bỏ qua khi giai đoạn nhiệm vụ dưới 8. Thêm v1.23: chuỗi cày cấp tự kiểm tra thiếu điều kiện đột phá rồi tự làm cho đủ — liệt kê từng điều kiện còn thiếu (Đạo Hạnh/giai đoạn nhiệm vụ/đan/nguyên liệu, đọc túi đồ qua bản lưu pntt_progress_v1.bag), thiếu nguyên liệu thảo thì tự đi Đại Phu đổi gói hạt bằng Dược Công → vào Vườn Cá Nhân gieo hạt + tưới nước (múc nước ở Ao Bích Thuỷ lần đầu) → trong lúc chờ cây lớn làm nhiệm vụ/farm/đả tọa → quay lại thu hoạch đúng lúc; thiếu Linh Thúy thì săn Dược Linh Thú trong vườn; thiếu nguyên liệu Huyết Xích thì chạy Huyết Xích; thiếu Yêu Đan Cấp 3 thì ghép 3 Mảnh Yêu Đan ở Đan Lô (kèm 3 Bảo Mệnh Phù = 100% nếu đủ, không thì 70% ghi rõ) hoặc canh Thần Thú Xích Long khi sắp ra; mọi việc đều tự điều hướng bằng hệ sẵn có (điểm neo, A*, cổng, đi đường tắt Auto, tới nơi bật đủ Bay+Chạy+Auto khi đánh); tự mặc đồ tốt hơn trong chuỗi (đầu chuỗi + sau farm/nhiệm vụ); nhiệm vụ cần rèn (giai đoạn 20) thì tự kiếm Huyền Thiết Khoáng ở Hang Động rồi tới Thợ Rèn rèn vũ khí (phí 50 Linh Thạch ghi rõ trước khi rèn); mục tiêu nhiệm vụ cần vật phẩm rơi từ quái thì tự tới bãi quái farm đủ số cần. Thêm v1.25: đả tọa tăng Đạo Hạnh ở Luyện Khí tầng thấp — mã client cho đả tọa từ Luyện Khí Tầng 1 trở lên (chỉ Phàm Nhân canMeditate=false), ngồi ở đài đá (Tản Viên hoặc đài trong vườn) được cộng Đạo Hạnh tối đa 60/phút; chuỗi cày cấp ở tầng thấp (1–6) thiếu Đạo Hạnh thì đả tọa ở đài gần nhất trước khi farm, đọc Đạo Hạnh trước/sau ghi rõ tăng bao nhiêu, Phàm Nhân vẫn làm nhiệm vụ Tẩy Tuỷ như cũ. Thêm v1.25 (bổ sung): nhiệm vụ chính tự trang bị theo mục tiêu ("Trang bị Phi Diệp vào ô Phi Hành" — mở Hành Trang đeo đúng món vào đúng ô, kiểm chứng ô trang bị; ô Phi Hành trống mà túi có Phi Diệp thì tự đeo để dùng Phi Hành; chưa đủ cảnh giới thì ghi rõ, không kẹt), tự gặp NPC dạng "Hoàn tất rồi gặp Tàng Kinh Lão Nhân" (tự tới Tản Viên 11,12, xử lý thoại theo luật v1.24), phân loại thêm mục tiêu sắc/luyện đan ở đan lô + câu cá theo nhiệm vụ + mục tiêu Đạo Hạnh/phá quan do chuỗi tự xử lý (không còn dừng "bước lạ" ở giai đoạn 14 — giai đoạn 15 Yêu Cốt Miếu Hoang tự đi tiếp qua Miếu Hoang); bước lạ vẫn thử tới đúng map/điểm làm việc của giai đoạn rồi ghi nguyên văn. Dược Công + đổi hạt hợp cấp độ: chỉ đổi gói hạt của đan cần cho cửa phá quan hiện tại (ghi rõ đổi gói nào vì đang cần đan gì, không đổi gói vượt/dưới cấp), nhận việc Dược Công vừa sức theo tầng (tầng thấp ưu tiên việc map an toàn, việc ở Thảo Dược Cốc quái cấp 4–5 để sau khi còn việc khác, việc khóa theo giai đoạn bỏ qua ghi rõ). Chuỗi cày cấp làm việc theo đúng chuỗi nhiệm vụ chính (đúng thứ tự giai đoạn 0→38, mục tiêu theo đúng thứ tự game liệt kê, không nhảy cóc): mỗi vòng nhật ký ghi rõ đang ở giai đoạn mấy, mục tiêu nào đã xong/còn; việc phụ (đả tọa/farm/Dược Công/luyện đan/phá quan) chỉ làm khi giai đoạn hiện tại cần hoặc bị chặn bởi điều kiện cảnh giới/đan, làm xong quay lại đúng mục tiêu đang dở. Thêm v1.26: cày tân thủ làm nhiệm vụ chính TRƯỚC mọi việc phụ (bỏ thứ tự cũ chuẩn bị vườn/gieo cây trước nhiệm vụ — cây chỉ gieo khi tới lượt việc phụ; phần farm: tới map + đổi khu xong là bật ngay Chạy+Phi Hành+Auto đánh luôn, áp mọi đường vào farm, đổi khu thất bại ghi rõ và farm ở khu hiện tại; chỉ khi nhiệm vụ chính bị chặn bởi điều kiện cảnh giới/đan/Đạo Hạnh hoặc đã làm hết phần làm được mới chuyển việc phụ, nhật ký ghi rõ lý do); muốn có hạt phải làm nhiệm vụ Dược Công để đổi — thiếu điểm Dược Công thì tự làm việc Dược Công hợp cấp ở Đại Phu (kiểm chứng qua seedQuest) cho đủ điểm rồi mới đổi gói hạt của đan cần cho cửa phá quan hiện tại, nhật ký ghi điểm trước/sau + số việc đã làm, hết lượt Dược Công trong ngày (tối đa 15 lượt/ngày) thì ghi rõ và chuyển việc khác; giai đoạn 0–23 bám trình tự hướng dẫn tân thủ trong client (phim hoạt cảnh NhiemVuHuongDan gd0–gd23: vườn gieo→múc nước→tưới→hái, đáp Bách Khoa thử đáp án tới khi đúng, đài đấu Chiến Bảng/Sân Đấu đánh trong đài, U Minh Cự Mãng vào Huyết Xích); thêm chế độ Vạn Hoang Chiến Trường (suất Thứ Hai/Thứ Sáu 21:16, ghi danh qua toast #ct-toast-act, vào trận bật đủ Bay+Chạy+Auto + kỹ năng theo nhịp) và Sỹ Sách Điện (phó bản tông môn 3 ải mở 20:16 Thứ Năm, vào qua Thủ Điện Sỹ Sách ở Miếu Ông Trường Con — cần thuộc tông môn, chưa đủ điều kiện thì ghi rõ lý do game từ chối); nút Map sáng nâng sáng vùng tối tầm nhìn (Vết Nứt/Chiến Trường vẽ lớp tối trong canvas — tool lọc sáng ở tầng hiển thị + phóng minimap), chế độ Chiến Trường tự canh hái Vạn Hoang Huyết Lan (khóm trên đảo, nút "Hái Huyết Lan" hiện khi đứng kề). Thêm v1.27: câu Hồ Tây theo luồng cá — quét thời gian thực thông báo luồng cá của server (caption + chat hệ thống "Luồng Yêu Ngư/Giao Ngư phía … vừa trồi lên", dấu nước nuoc bậc yeu/giao trong mã VanCanUI) → tính ô bờ gần luồng nhất + lực quăng theo công thức tầm quăng của client (56+194×lực px, phao gần dấu ≤58px dễ gặp bậc ấy) → tự di chuyển tới ô bờ đó rồi quăng, luồng đổi thì tính lại; không có luồng mới thì chọn vùng theo thời tiết hồ; thống kê tỷ lệ bắt từng ô bờ; vòng câu tự động trọn vẹn bằng minigame của tool (Hồ Tây không có "Tự động câu" của game — lựa chọn đó chỉ có ở hồ Thảo Dược Cốc). Lịch trình sự kiện tuần Thứ 2→Chủ Nhật: bảng lịch trích từ mã (Đại Hội 09:16/13:16/17:16/20:16 nghỉ 20:16 Thứ Ba/Năm/Bảy, Côn Bằng 12:30+19:30, Cổ Vật Đáy Hồ 10:00–22:00, Vết Nứt 22:00, Sỹ Sách Điện Thứ Năm 20:16, Chiến Trường Thứ Hai/Sáu 21:16, Tam Lộ Thứ Tư/Chủ Nhật 21:00, Tranh Bia Thứ Năm 21:00, Vận Tiêu 11:00–22:00, boss theo giờ hồi, Dược Công 15 lượt/ngày) — tới giờ sự kiện nào tự ghi danh/làm sự kiện đó (trùng giờ ưu tiên cửa vào sắp đóng trước), khoảng trống farm/Dược Công/boss như cũ; mục Sự kiện trên bảng có nút bật/tắt Tự đăng kí + Tự làm/đánh từng sự kiện, nút Tích hết/Bỏ hết, lựa chọn lưu lại. Map sáng tự bật ở bí cảnh/map sự kiện có lớp tối tầm nhìn (Vết Nứt, Chiến Trường, Sỹ Sách Điện, Tam Lộ, Tam Ma — theo drawSuong trong mã), ra map thường tự tắt. Thêm v1.28: câu Hồ Tây quăng sâu nhất + ưu tiên luồng bậc cao — vòng câu (thường + Côn Bằng) luôn thả lực ở vùng Sâu nhất của thanh lực (VUNG sau lực ≥0.68 theo mã, sóng tam giác 1.6s — thả khi lực tới đích trên chiều lên hoặc vừa qua đỉnh, ghi nhật ký lực thả thật + vùng mỗi lần quăng; không có luồng thì thả lực tối đa 1.0 = tầm quăng xa nhất 250px); quét map/thông báo tìm luồng Giao Ngư (giao ★4) và Yêu Ngư (yeu ★3) trước — có luồng bậc cao thì ưu tiên tuyệt đối (giao trước yeu, cùng bậc lấy mới nhất): tự chọn ô bờ + lực trong vùng Sâu để phao rơi vào luồng đó (điểm rơi ước theo hướng ra nước sâu về tâm hồ, trúng dấu khi cách ≤58px DAU_R); không có luồng bậc cao mới câu thường vùng Sâu; luồng bậc cao trồi lên giữa phiên thì lần quăng kế chuyển vị trí sang luồng đó ngay. Sửa v1.28 (lỗi đi farm Phong Địa qua Dược không qua cổng): đi qua nhiều map theo từng chặng có kiểm chứng — vào map tới điểm neo NPC trước, bay tới cổng đúng hướng, qua cổng đọc lại map thật rồi mới tính chặng kế (lạc sang map khác thì tính lại tuyến từ map đó); lái trong map mà map đổi giữa chừng (bước qua cổng) thì dừng lái ngay thay vì lái tiếp theo tọa độ map cũ; kẹt chặng nào nhật ký ghi rõ chặng đó. Thêm v1.29: sửa quăng sâu nhất thật (Bui báo 21:48 chạy v1.28 vẫn hụt) — game tính lực bằng sóng tam giác theo đồng hồ (Date.now()-lucTu)%1600/1600, đỉnh 1.0 tại 800ms sau nhấn (hàm X() trong VanCanUI), thả V() lấy lực tại đúng thời điểm pointerup; bản cũ poll height% 25ms gần như không bao giờ trúng cửa ±4ms quanh đỉnh 100% nên luôn thả trên chiều xuống — nay thả theo THỜI GIAN (ghi mốc nhấn, thả tại mốc + đích×800ms trên chiều lên, tính lực thật bằng đúng công thức của game + tự hiệu chỉnh độ lệch nhịp thả theo sai số đo từng lần quăng, nhật ký ghi lực đích/lực thật/vùng/phao rơi ~px mỗi lần quăng). Sửa quét luồng cá (Bui báo 21:49 chưa quét chọn được luồng tốt nhất) — nguyên nhân: dòng chat hệ thống kết thúc "." mà regex cũ đòi "!" nên nguồn chat không bao giờ khớp, caption chỉ hiện 2,8s mà tool chỉ quét lúc quăng, thông báo nhiều dấu nối " · " chỉ khớp dấu cuối, #thu-log trống khi panel chat đóng — nay theo dõi thay đổi DOM (MutationObserver trên #ritual-caption + #thu-log) ghi luồng ngay khi thông báo hiện, parser bắt mọi đoạn "Luồng <bậc> <hướng>" trong cả caption lẫn chat, chọn luồng tốt nhất còn tươi theo Giao > Yêu > Linh > Phàm, nhật ký ghi rõ quét thấy luồng nào ở nguồn nào. Thêm v1.30: Phong Địa tự kiểm tra khu đất phong — Phong Địa có 40 khu đất phong (hạng Thượng 1–4 Đạo Hạnh ×2, Trung 5–16 ×1,5, Hạ 17–40 ×1 theo mã PhongDia), khu có tông giữ (chu trong PhongDiaUI.st.khu) là đất phong: game ghi "Chưa có tông môn — chỉ vào được đất trống" nên chỉ khu Trống hoặc của tông mình mới farm được. Đi farm Phong Địa: tool tự tới bảng khu (35,17), mở bảng, đọc dấu tông giữ trên từng ô khu (class pd-chu/pd-minh/pd-cam/pd-tranh + thẻ tên tông), ghi nhật ký khu nào đất phong/khu nào đất trống, chọn khu đất trống hạng cao nhất (khu anh chọn là đất phong thì tự đổi khu khác), kiểm chứng đúng khu rồi bật Chạy+Phi Hành+Auto farm Lợn Rừng như luật v1.26; không đọc được trạng thái từ bảng khu thì dự phòng thử từng khu (vào khu tới điểm farm bật trio 15s xem có giao chiến không, ghi rõ là suy từ giao chiến); không có khu trống nào thì chỉ di chuyển, không bật Auto. Thêm v1.31: sửa quăng max tầm thật (Bui báo 21:58 chạy v1.30 vẫn chưa max) — tra mã VanCanUI: nhấn pointerdown→G() đặt lucTu đồng bộ, thả pointerup→V() lấy X() tại đúng lúc handler chạy, height% cập nhật mỗi khung hình trong VanCanUI.update; v1.29 canh rAF+setTimeout theo mốc +800ms vẫn hụt trên iPhone vì khung hình game nặng làm tick nhảy qua nhánh setTimeout, thả muộn tới 1 khung (mỗi 8ms muộn phía xuống = −1% lực) — nay thả THÍCH ỨNG: theo dõi height% theo từng khung rAF trong lúc giữ (thả ngay khi height% chạm ngưỡng 97–100 hoặc bắt đầu giảm sau đỉnh ≥90), dự phòng theo thời gian tại mốc + đích×800ms + offset hiệu chỉnh, cách nào đo lực cao hơn thì ưu tiên cách đó lần sau, tự hiệu chỉnh offset + ngưỡng height theo sai số từng lần quăng tới khi lực thả đạt ≥99%, nhật ký mỗi lần quăng ghi đầy đủ chẩn đoán (mốc nhấn/thả, height% lúc thả, lực công thức, cách thả, offset/ngưỡng, nhịp khung hình). Thêm v1.32: Huyết Xích theo cơ chế cấm chế toàn map — mỗi map quét sạch quái + boss trước rồi mới thu hoạch (thu hoạch vẫn giữ Phi Hành + Chạy + Auto, không đi bộ trong cụm, qua cổng trong cụm kiểm chứng bật lại nếu bị tắt), thu đủ mọi điểm mới qua map kế; boss 3 con đầu đàn đánh hit-and-run (vào đánh 2,5s → lùi 6 ô né đòn diện rộng 1,6s → quay lại, đổi hướng lùi mỗi nhịp); kiểm tra trạng thái thật trước khi nhấn nút Chạy/Phi Hành/Auto ở mọi nơi (đọc #btn-fly.active/#btn-run.active/#btn-auto-touch aria-pressed — đang đúng trạng thái thì không nhấn, tránh nhấn bật thành tắt). Tự dò cách lái (phím/joystick/dpad/chạm neo camera) bằng sự kiện tổng hợp, không gọi hàm nội bộ của game. Thêm v1.34: lịch trình treo 1 ngày theo cảnh giới — dưới Trúc Cơ (Luyện Khí) farm mặc định ở khu dược Thảo Dược Cốc, tự chọn khu vắng người nhất theo mức đông/vắng trên bảng khu (server trả số người từng khu, game chỉ hiện 3 mức vang/dong/day qua class ô khu — tool đọc class, khu đang vắng thì giữ, đông/đầy thì đổi, kiểm lại mỗi 10 phút farm), khung đêm 23:00–05:00 câu cá Hồ Tây thay farm; Trúc Cơ trở lên farm Phong Địa (tự kiểm tra 40 khu chọn khu trống hạng cao nhất như v1.30); anh đổi tay map/điểm/khu trên bảng thì lựa chọn tay thắng mặc định; qua 00:00 mỗi ngày làm Dược Công trước mọi việc khác (Trúc Cơ trở lên nhấn "Tự Đi Làm Việc Dược Công" của game + bật Phi Hành rồi chờ game làm xong, dưới Trúc Cơ tool tự làm vòng tay); khung Huyết Xích 1 lượt sau Dược Công. Thêm v1.35: câu Hồ Tây chọn vùng quăng Gần/Giữa/Xa/Tự động theo lực dây (VUNG trong mã client: Nông lực 0–0,34 tầm 56–122px, Giữa 0,34–0,68 tầm 122–188px, Sâu 0,68–1,0 tầm 188–250px) — nút chọn trên bảng lưu lại, mặc định Xa giữ luật sâu nhất cũ; Tự động chọn vùng theo luồng cá (luồng từ thông báo server → vùng khớp vị trí luồng ước + ô bờ gần nhất; không có thì theo luồng suy từ dữ liệu cắn + tỷ lệ cắn theo vùng, chưa đủ mẫu thì Xa), nhật ký ghi nguồn chọn vùng mỗi lần quăng; luồng Giao/Yêu vẫn thắng cả chọn tay; câu Côn Bằng giữ cách quăng cũ (móc Côn không liên quan lực quăng). Thêm v1.36: kiểm tra Phi Hành sau mỗi lần đổi map + đầu mỗi việc (Bui báo 22:46 chọn Huyết Xích đang bay qua map lại bị tắt Phi Hành) — tra mã game qua cổng không tự hạ cánh (checkPortal chỉ xét ô, nạp map không reset flying); nguyên nhân phía tool: dự phòng hạ cánh đi bộ lên ô cổng trong tryCrossPortal để lại Phi Hành TẮT (đi bộ tới điểm neo, chặng kế mới bật lại) + kiểm chứng bay bằng tốc độ trong goToTile nhấn pressFly mù có thể tắt bay đang bật; nay sau mỗi lần qua cổng chờ map ổn định rồi đọc trạng thái thật #btn-fly, cần bay thì bật lại ngay trước khi tới điểm neo; tốc độ thấp chỉ bật lại khi trạng thái thật TẮT; trong cụm Huyết Xích canh Phi Hành ở mỗi điểm quét/thu hoạch; đầu mỗi chế độ ghi nhật ký trạng thái Phi Hành lúc bắt đầu việc. Thêm v1.37: câu Hồ Tây thay cách thả lực bằng cách v3.1 trong tệp Tool Tổng Bui gửi (Bui làm rõ 22:54: bản cũ không quăng được mức sâu trên iPhone) — sự kiện nhấn/thả đúng v3.1 (PointerEvent pointerId 1, không pointerType), giữ nút cố định đích×800ms bằng setTimeout rồi thả (không canh height%, không hiệu chỉnh), đích vùng Xa đổi 1.0→0,85 (680ms, tâm vùng Sâu như castHoldMs của v3.1), lực theo luồng trần 0,95, nhật ký chẩn đoán từng lần quăng giữ nguyên (lực đích/thật/vùng/tầm rơi/thời gian giữ/height% lúc thả); tích hợp thêm từ v3.1: thu cần chủ động (.vc-thu khi chờ cắn quá 90s + đầu lượt nếu dây còn trong nước — bản cũ kẹt dây là dừng cả chế độ), tỷ lệ cắn theo thời tiết (bucket riêng từng thời tiết, ưu tiên khi chọn vùng/mồi), thời tiết dự phòng hash ngày đúng công thức client (luatKy trên chuỗi YYYY-MM-DD giờ VN) khi DOM chưa có, gợi ý vùng theo thời tiết (Nắng Gắt/Linh Triều→Sâu, Mưa Bụi→Giữa), không quăng mới 60s trước giờ Côn Bằng; giữ nguyên của tool chính: giật ngay khi phao chìm (fix tỷ lệ cá v1.21), kéo cá theo căng/khoảng cách, quét luồng Giao/Yêu từ thông báo server, 40 điểm câu, chọn vùng Gần/Giữa/Xa/Tự động (luồng Giao/Yêu vẫn thắng). Thêm chế độ Tổ đội farm rùa (lệnh Bui 22:53): tới Miếu Ông Trường Con Khu 12, bật đủ Phi Hành+Chạy+Auto farm Thạch Quy xoay 13 điểm rùa trích từ mã client, đếm tiến độ nhiệm vụ chính giai đoạn 36 "Hạ Thạch Quy biến dị" (đọc #quest-objectives, dự phòng cờ ha_tq_bien_di) tới đủ 100 thì dừng + báo; tự chấp nhận lời mời tổ đội (#invite-accept) + ghi trạng thái đội (#party-hud/#party-count) trong nhật ký — tool không tự mời người lạ (mời phải bấm vào người chơi trên canvas ≤180px, anh mời đồng đội hoặc chờ lời mời; nên lập đội ở làng/Bãi Đá vì trong miếu là đất PK tự do). Thêm v1.38: thay vòng câu Hồ Tây bằng mã câu của tệp tutien2d-ho-tay-auto-v3.user.js v3.0.0 (Bui lệnh 23:33 ngày 2026-11-26 — xóa phần auto câu Hồ Tây hiện tại, dùng nguyên logic của tệp v3): quăng giữ nút cố định theo vùng (Nông 136ms/Giữa 408ms/Sâu 680ms, ±15ms ngẫu nhiên), sự kiện nhấn/thả đúng v3 (PointerEvent pointerId 1, không pointerType/tọa độ), giật tap 60ms sau trễ 80–250ms khi phao chìm, kéo theo nhịp applyPull của v3 (căng đỏ buông, Thả! buông, Kéo! giữ, Nhả nhịp giữ rồi buông 200–350ms), chờ cắn quá 60s thì thu cần quăng lại, nghỉ 1–3s giữa 2 lần quăng, mồi theo mục tiêu của v3 (Linh→Ngọc Hà, Yêu→Xích Huyết, Giao→Long Diên Hương, Tự do→Giun Đất, Tự động→vùng+mồi tỷ lệ cắn tốt nhất), tỷ lệ cắn theo vùng/mồi của v3 (khóa tt2d_fish_v3_rates, cần ≥3 quăng mới tin tỷ lệ), 2 lần liên tiếp không cắn thì đổi vùng tìm chỗ, cắn ở vùng nào giữ vùng đó; bỏ cách thả v1.31/v1.37, bỏ mồi/vùng theo thời tiết, bỏ luật không quăng 60s trước giờ Côn (không có trong v3.0.0). Giữ của tool chính (Bui bổ sung 23:35): tự động đến Hồ Tây (van_can Khu 1) + 40 điểm câu + chọn vị trí theo luồng cá xuất hiện trên map theo thời gian thực (quét thông báo luồng caption/chat, luồng Giao/Yêu ưu tiên → tự chọn ô bờ + lực vào luồng, luồng đổi thì chuyển vị trí), nhật ký ghi rõ đã tự tới Hồ Tây/luồng nào đang xuất hiện/chọn vị trí nào vì sao + chẩn đoán từng lần quăng (lực/vùng/phao). Thêm v1.39: Huyết Xích tự hồi sinh khi chết (trong cụm nút #downed-home là \"Hồi sinh cửa\" miễn phí 60% Khí Huyết, #downed-spot tại chỗ 35% tối đa 3 lần/khu — tool ưu tiên tại chỗ giữ vị trí, hết lượt hồi cửa, ghi Linh Thạch trước/sau, sống lại còn trong cụm thì bật lại trio quay lại điểm đang làm tiếp tục, không dừng chế độ, chết quá 6 lần/lượt thì dừng), đánh boss di chuyển liên tục quanh boss (đi vòng bán kính 2↔3 ô quanh điểm boss không đứng yên, đổi bán kính mỗi vòng + đảo chiều mỗi 2 vòng, Auto + kỹ năng theo nhịp chạy suốt, nhật ký ghi từng vòng), thu hoạch đúng điểm (đứng đúng ô quanh điểm tới khi nút Tương Tác hiện + kiểm chứng bằng đếm vật phẩm trong túi trước/sau), tự nhận biết quét sạch quái/boss (caption \"Đã quét sạch yêu thú — cấm chế tan\" + thử thu hoạch điểm đầu cho số yêu thú còn lại + theo dõi boss đã gục — hết quái/boss mới thu hoạch đủ mọi điểm rồi sang map kế, nhật ký ghi \"đã quét sạch map X (0 yêu thú) — thu hoạch đủ N/N điểm — sang map kế\"). Thêm v1.40: Dược Công Trúc Cơ ấn tự động làm là bắt đầu nhiệm vụ (Bui chốt 00:02 ngày 2026-11-27) — tra mã game thấy bấm mục thoại "Tự Đi Làm Việc Dược Công" ở Đại Phu chỉ mở hộp xác nhận, phải ấn tiếp nút "Bắt Đầu Tự Làm" (#dialog-action) mới gọi pe() chạy autoDC (bản cũ không bấm nút này lại đóng thoại nên tự động không bao giờ bắt đầu); nay ấn mục thoại → ấn "Bắt Đầu Tự Làm" → kiểm chứng nhiệm vụ đã bắt đầu (caption "Tự làm việc Dược Công" / seedQuest.active / nhân vật di chuyển / điểm tăng) → xong bấm Phi Hành (ensureFly kiểm tra trạng thái trước khi nhấn; game bỏ qua nút bay khi thoại còn mở nên bấm sau khi thoại đóng) → đứng yên chờ, không gửi lệnh lái trong lúc chờ (game hủy autoDC khi có thao tác tay/di chuyển); dưới Trúc Cơ giữ vòng tay như cũ. Thêm v1.43: nhiệm vụ chính tự đến đúng chỗ NPC (Bui báo 04:29 ngày 2026-11-27 nhân vật không tự đến chỗ NPC) — tra mã game thấy bấm mục tiêu gọi diToiNhiemVu nhưng game từ chối/dừng tự đi kèm nhiều caption ("Việc này không có chỗ cố định để tự đi tới", "Đã ở đúng nơi", "Từ đây không có đường đi bộ", "Kẹt đường — dừng tự đi"…) mà bản cũ chỉ nhận diện 2 mẫu nên chờ đủ 120s đứng yên, và coi "di chuyển rồi đứng yên" là đã tới kể cả khi tự đi bị hủy giữa đường (lái đánh trả làm game hủy diNV); nay bước gặp/nói chuyện NPC: tra NPC đích từ tên trong mục tiêu/dữ liệu giai đoạn → bấm mục tiêu rồi kiểm chứng nhân vật có bắt đầu di chuyển trong 4s không, không di chuyển thì tool tự tới đúng ô kề NPC (tọa độ NPC thật trong dữ liệu), kiểm chứng đã đứng kề NPC + nút Tương Tác hiện rồi mới xử lý thoại, nhật ký ghi "Đang tới chỗ NPC … / Đã tới chỗ NPC …"; chờ tự đi nhận diện đủ caption dừng của game, đánh trả xong coi như tự đi đã hủy → tự tới chỗ NPC, không nhúc nhích quá 10s thì bỏ chờ sớm. Thêm v1.44: sửa bước Bách Khoa giai đoạn 17 — tới đúng chỗ Thầy Ông Nội (Tản Viên 9,10) mới bấm Tương Tác, chọn "Bắt đầu Hỏi Đạo", sai thì đọc gợi ý đáp án đúng của game rồi thử lại, đủ 5/5 nhận thưởng; bước "Rút 1 bí tịch CHƯA CÓ" rút thật ở tủ Tàng Kinh Sơ Cấp tới khi được quyển mới (cờ rut_bi_tich_17_2). Thêm v1.45: Dược Công Luyện Khí trọn vòng tự nhận–tự làm–tự trả tới hết 15 lượt/ngày (nhận việc đủ 3 bước gồm nút "Nhận Việc Này", trả việc bấm đúng nút hành động "Giao Nguyên Liệu"/"Giao Ba Cá", việc hụt tự hủy hoàn lượt chuyển việc khác, lỗi 1 lượt không dừng cả vòng, nhật ký "Đã nhận việc X — đang làm — đã trả, điểm Dược Công A→B — lượt n/15"); nhiệm vụ chính tự suy diễn từ chữ mục tiêu (loại việc + đích NPC/quái/vật/map + số lượng, tra MAPS/QUEST_STAGES/bảng vật phẩm) rồi tự làm, nhật ký ghi chuỗi suy diễn + tiến độ. Thêm v1.46: nhiệm vụ cần đổi hạt thì chọn làm nhiệm vụ Dược Công trước (Bui lệnh 06:48 ngày 2026-11-27) — mọi đường cần hạt (gieo trồng theo nhiệm vụ giai đoạn 8, nguyên liệu đan cho cửa phá quan, bước sắc/luyện đan theo nhiệm vụ, mục tiêu suy diễn ra thảo vườn) đều kiểm tra hạt trong túi + cây đang lớn trước: thiếu hạt thì đổi gói hạt chứa hạt đó ở Đại Phu (Tụ Khí 2 Dược Công không khóa; Luyện Khí 5 từ tầng 4; Phá Cảnh 10 từ tầng 7; Trúc Cơ 20 từ tầng 10 theo SEED_PACKS của client), thiếu điểm Dược Công thì chạy vòng Dược Công nhận–làm–trả trước cho đủ điểm rồi mới đổi, kiểm chứng hạt vào túi rồi quay lại đúng mục tiêu nhiệm vụ đang dở; hết 15 lượt Dược Công/ngày mà chưa đủ điểm thì ghi rõ chờ 00:00 reset ngày mới; nhật ký ghi "Mục tiêu cần gói hạt X (cần N điểm Dược Công, hiện có M) → làm Dược Công trước — đủ điểm → đã đổi gói hạt → quay lại nhiệm vụ". Thêm v1.47: bảng tool thu hẹp theo màn điện thoại (bề rộng tối đa 88% màn, chiều cao chừa 120px phía trên để không che hàng nút chức năng trên đầu của game, cuộn dọc trong bảng, chữ + nút nhỏ lại) — sửa lỗi bảng quá rộng che hết màn trong APK Android (Bui báo 06:55 ngày 2026-11-27). Bảng tool 2 tầng: mặc định 1 nút nhỏ, bấm mở lưới ô chức năng, bấm ô mới hiện bảng dữ liệu đang làm của chức năng đó.
+// @author       Muse (cho Bui)
+// @match        https://tutienpixel.online/*
+// @run-at       document-idle
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  // ============ Dữ liệu map nhúng (20 map, cổng + lưới theo trạng thái SAU sửa đổi lúc chạy) ============
+  // Cổng/lưới trích bằng cách chạy toàn bộ module MapData của client trong Node (extract-runtime.mjs):
+  // game sửa map lúc chạy (push cổng Bãi Đá→Miếu, xóa cổng Tản Viên→Miếu, cổng Tản Viên→Bãi Đá...) nên
+  // dữ liệu tĩnh trong mã nguồn KHÔNG dùng được. Mỗi map: name/w/h/spawn/anchor (điểm neo: ô trống kề
+  // NPC chính, không có NPC thì điểm trống mở nhất — đã kiểm chứng không chặn ở cả lưới walk lẫn fly)/
+  // anchorLabel/enemies/farm/farmCluster/monsterPoints/bossBoards/npcs/signs/portals (cổng runtime).
+  var MAPS = {
+  tan_vien:{name:"Chân Núi Tản Viên",w:40,h:30,spawn:[8,26],anchor:[11,21],anchorLabel:"cạnh NPC Vạn Bảo Phường",enemies:null,farm:null,farmCluster:null,monsterPoints:[],bossBoards:[],npcs:[{id:"tho_ren",name:"Thợ Rèn",tx:15,ty:18},{id:"van_bao_phuong",name:"Vạn Bảo Phường",tx:12,ty:22},{id:"dau_gia_cac",name:"Đấu Giá Các",tx:31,ty:20},{id:"ba_hang_com",name:"Hồng Tỷ",tx:8,ty:18},{id:"su_phu",name:"Thầy Ông Nội",tx:9,ty:10},{id:"chap_su_dai_hoi",name:"Chấp Sự Đại Hội",tx:20,ty:11},{id:"tang_kinh_lao_nhan",name:"Tàng Kinh Lão Nhân",tx:11,ty:12}],signs:[[17,19]],portals:[{tx:7,ty:29,to:"thanh_truc_lam"},{tx:8,ty:29,to:"thanh_truc_lam"},{tx:0,ty:12,to:"mieu_hoang"},{tx:0,ty:13,to:"mieu_hoang"},{tx:39,ty:14,to:"bai_da_hang_gio"},{tx:39,ty:15,to:"bai_da_hang_gio"}]},
+  thanh_truc_lam:{name:"Rừng Trúc",w:40,h:30,spawn:[7,2],anchor:[9,13],anchorLabel:"cạnh NPC Huấn Sư Huynh",enemies:26,farm:[20,15],farmCluster:{tx:13,ty:9,count:8,name:"Bọ Ngựa"},monsterPoints:[{name:"Bọ Ngựa",tx:5,ty:6,boss:false},{name:"Sơn Chuột",tx:16,ty:3,boss:false},{name:"tieu_phu",tx:12,ty:18,boss:false},{name:"thuong_nhan",tx:14,ty:10,boss:false},{name:"Tiêu Sư",tx:13,ty:10,boss:false},{name:"son_tac",tx:31,ty:14,boss:false},{name:"Kiếp Tặc",tx:13,ty:12,boss:false}],bossBoards:[{tx:37,ty:12,bossMap:"long_uyen"}],npcs:[{id:"ly_thanh",name:"Huấn Sư Huynh",tx:10,ty:14}],signs:[[10,3],[15,27]],portals:[{tx:7,ty:0,to:"tan_vien"},{tx:8,ty:0,to:"tan_vien"},{tx:12,ty:29,to:"duoc_vien"},{tx:13,ty:29,to:"duoc_vien"},{tx:39,ty:13,to:"long_uyen"},{tx:39,ty:14,to:"long_uyen"}]},
+  duoc_vien:{name:"Thảo Dược Cốc",w:40,h:30,spawn:[12,2],anchor:[13,7],anchorLabel:"cạnh NPC Đại Phu",enemies:14,farm:[20,15],farmCluster:{tx:12,ty:15,count:7,name:"thuong_nhan"},monsterPoints:[{name:"Độc Đằng Yêu",tx:20,ty:5,boss:false},{name:"nong_phu",tx:14,ty:12,boss:false},{name:"thuong_nhan",tx:12,ty:15,boss:false},{name:"Tiêu Sư",tx:11,ty:15,boss:false},{name:"son_tac",tx:23,ty:12,boss:false},{name:"Kiếp Tặc",tx:11,ty:17,boss:false}],bossBoards:[],npcs:[{id:"dai_phu",name:"Đại Phu",tx:14,ty:8}],signs:[[15,4]],portals:[{tx:12,ty:0,to:"thanh_truc_lam"},{tx:13,ty:0,to:"thanh_truc_lam"},{tx:11,ty:6,to:"vuon_ca_nhan"},{tx:11,ty:7,to:"vuon_ca_nhan"},{tx:0,ty:20,to:"van_can"},{tx:0,ty:21,to:"van_can"}],fishing:[{id:"ho_bich_thuy_cong",name:"Đài câu cá (Hồ Bích Thuỷ)",tx:18,ty:14,propTx:18,propTy:16},{id:"suoi_duoc_coc",name:"Suối Dẫn Thuỷ",tx:32,ty:12,propTx:32,propTy:12}]},
+  hang_dong_co:{name:"Hang Động",w:30,h:20,spawn:[14,16],anchor:[14,16],anchorLabel:"điểm trống",enemies:16,farm:[15,10],farmCluster:{tx:10,ty:6,count:7,name:"Thạch Yêu"},monsterPoints:[{name:"Thạch Giáp Yêu · Nhất Giai Thượng Phẩm",tx:14,ty:8,boss:false},{name:"Thạch Yêu",tx:10,ty:6,boss:false}],bossBoards:[],npcs:[],signs:[[11,17]],portals:[{tx:14,ty:19,to:"long_uyen"},{tx:15,ty:19,to:"long_uyen"}]},
+  dong_mach_ngam:{name:"Miếu Ông Trường Con",w:30,h:26,spawn:[15,22],anchor:[19,13],anchorLabel:"cạnh NPC Thủ Điện Sỹ Sách",enemies:0,farm:null,farmCluster:null,monsterPoints:[],bossBoards:[],npcs:[{id:"ong_tu_mieu",name:"Ông Từ Giữ Miếu",tx:9,ty:14},{id:"hu_thien_cuc_lac",name:"Thủ Điện Sỹ Sách",tx:20,ty:14}],signs:[[11,22]],portals:[{tx:14,ty:25,to:"bai_da_hang_gio"},{tx:15,ty:25,to:"bai_da_hang_gio"},{tx:16,ty:25,to:"bai_da_hang_gio"}]},
+  vuon_ca_nhan:{name:"Vườn Cá Nhân",w:18,h:13,spawn:[8,10],anchor:[8,10],anchorLabel:"điểm trống",enemies:2,farm:null,farmCluster:{tx:9,ty:2,count:2,name:"Dược Linh Thú"},monsterPoints:[{name:"Dược Linh Thú",tx:9,ty:2,boss:false}],bossBoards:[],npcs:[],signs:[],portals:[{tx:8,ty:12,to:"duoc_vien"},{tx:9,ty:12,to:"duoc_vien"}]},
+  mieu_hoang:{name:"Miếu Hoang",w:20,h:14,spawn:[18,6],anchor:[11,5],anchorLabel:"cạnh NPC Nữ Tu Trông Miếu",enemies:4,farm:[10,7],farmCluster:{tx:16,ty:8,count:2,name:"Yêu Quái · Nhất Giai Hạ Phẩm"},monsterPoints:[{name:"Yêu Quái · Nhất Giai Hạ Phẩm",tx:12,ty:3,boss:false}],bossBoards:[],npcs:[{id:"nu_tu_mieu_hoang",name:"Nữ Tu Trông Miếu",tx:12,ty:6}],signs:[[16,5]],portals:[{tx:19,ty:6,to:"tan_vien"},{tx:19,ty:7,to:"tan_vien"},{tx:0,ty:6,to:"phong_dia"},{tx:0,ty:7,to:"phong_dia"}]},
+  rung_mang_xa:{name:"Vùng Ngoại Vi — Rừng Mãng Xà",w:40,h:30,spawn:[18,26],anchor:[18,26],anchorLabel:"điểm trống",enemies:8,farm:null,farmCluster:{tx:14,ty:5,count:1,name:"Xích Tinh Mãng"},monsterPoints:[{name:"Xích Mãng Vương · Yêu Thú Cấp 2",tx:19,ty:6,boss:true},{name:"Xích Tinh Mãng",tx:14,ty:5,boss:false}],bossBoards:[],npcs:[],signs:[],portals:[{tx:18,ty:0,to:"mach_dat_dong"},{tx:19,ty:0,to:"mach_dat_dong"}]},
+  mach_dat_dong:{name:"Tầng Hang Động — Lòng Đất",w:40,h:30,spawn:[20,27],anchor:[20,27],anchorLabel:"điểm trống",enemies:6,farm:null,farmCluster:{tx:10,ty:8,count:1,name:"Thạch Yêu"},monsterPoints:[{name:"Thạch Mạch Vương · Yêu Thú Cấp 2",tx:30,ty:14,boss:true},{name:"Thạch Yêu",tx:10,ty:8,boss:false},{name:"Thạch Giáp Yêu · Nhất Giai Thượng Phẩm",tx:20,ty:12,boss:false}],bossBoards:[],npcs:[],signs:[],portals:[{tx:20,ty:29,to:"rung_mang_xa"},{tx:21,ty:29,to:"rung_mang_xa"},{tx:39,ty:14,to:"dam_lay_boss"},{tx:39,ty:15,to:"dam_lay_boss"}]},
+  dam_lay_boss:{name:"Vùng Trung Tâm — Đầm Lầy",w:40,h:30,spawn:[2,14],anchor:[3,14],anchorLabel:"điểm trống",enemies:3,farm:null,farmCluster:{tx:10,ty:22,count:1,name:"Xích Tinh Mãng"},monsterPoints:[{name:"U Minh Cự Mãng · Yêu Thú Cấp 2",tx:20,ty:23,boss:true},{name:"Xích Tinh Mãng",tx:10,ty:22,boss:false}],bossBoards:[],npcs:[],signs:[],portals:[{tx:0,ty:14,to:"mach_dat_dong"},{tx:0,ty:15,to:"mach_dat_dong"}]},
+  bai_da_hang_gio:{name:"Bãi Đá",w:40,h:30,spawn:[3,28],anchor:[3,27],anchorLabel:"điểm trống",enemies:17,farm:null,farmCluster:{tx:22,ty:13,count:10,name:"Nhện Ngọc Con · Yêu Thú Cấp 1"},monsterPoints:[{name:"Xuyên Sơn Giáp",tx:5,ty:22,boss:false},{name:"Nhện Bạch Ngọc · Yêu Thú Cấp 5",tx:21,ty:11,boss:true},{name:"Nhện Ngọc Con · Yêu Thú Cấp 1",tx:19,ty:10,boss:false},{name:"duoc_nong",tx:22,ty:17,boss:false},{name:"thuong_nhan",tx:21,ty:12,boss:false},{name:"Tiêu Sư",tx:20,ty:12,boss:false},{name:"son_tac",tx:10,ty:25,boss:false},{name:"Kiếp Tặc",tx:20,ty:14,boss:false}],bossBoards:[],npcs:[],signs:[[5,26],[18,12]],portals:[{tx:0,ty:27,to:"tan_vien"},{tx:0,ty:28,to:"tan_vien"},{tx:19,ty:10,to:"mo_linh_thach"},{tx:20,ty:10,to:"mo_linh_thach"},{tx:21,ty:10,to:"mo_linh_thach"},{tx:22,ty:10,to:"mo_linh_thach"},{tx:23,ty:10,to:"mo_linh_thach"},{tx:24,ty:10,to:"mo_linh_thach"},{tx:9,ty:0,to:"dong_mach_ngam"},{tx:10,ty:0,to:"dong_mach_ngam"},{tx:11,ty:0,to:"dong_mach_ngam"}]},
+  mo_linh_thach:{name:"Mỏ Linh Thạch",w:40,h:30,spawn:[3,13],anchor:[3,13],anchorLabel:"điểm trống",enemies:null,farm:null,farmCluster:null,monsterPoints:[],bossBoards:[],npcs:[],signs:[[4,11],[33,14]],portals:[{tx:1,ty:13,to:"bai_da_hang_gio"},{tx:1,ty:14,to:"bai_da_hang_gio"},{tx:38,ty:16,to:"thach_phong_thung_lung"},{tx:38,ty:17,to:"thach_phong_thung_lung"}]},
+  thach_phong_thung_lung:{name:"Thung Lũng",w:40,h:30,spawn:[3,27],anchor:[4,27],anchorLabel:"điểm trống",enemies:4,farm:null,farmCluster:{tx:33,ty:2,count:3,name:"Bạch Hổ Tuyết · Yêu Thú Cấp 1"},monsterPoints:[{name:"Linh Hổ Trấn Sơn · Yêu Thú Cấp 4",tx:33,ty:5,boss:true},{name:"Bạch Hổ Tuyết · Yêu Thú Cấp 1",tx:29,ty:4,boss:false}],bossBoards:[{tx:5,ty:27,bossMap:"thach_phong_thung_lung"}],npcs:[],signs:[],portals:[{tx:1,ty:27,to:"mo_linh_thach"},{tx:38,ty:2,to:"bat_quai_thach_phan"}]},
+  long_uyen:{name:"Long Uyên Cốc",w:40,h:30,spawn:[2,14],anchor:[24,5],anchorLabel:"cạnh NPC Lão Đạo Hành Cước",enemies:null,farm:null,farmCluster:{tx:15,ty:7,count:1,name:"Xích Lân Long Tích"},monsterPoints:[{name:"Xích Lân Long Tích",tx:15,ty:7,boss:false}],bossBoards:[{tx:7,ty:17,bossMap:"long_uyen"}],npcs:[{id:"lao_dao_hang_cave",name:"Lão Đạo Hành Cước",tx:25,ty:5}],signs:[],portals:[{tx:0,ty:14,to:"thanh_truc_lam"},{tx:0,ty:15,to:"thanh_truc_lam"},{tx:22,ty:4,to:"hang_dong_co"}]},
+  hu_thien_1:{name:"Sỹ Sách Điện · Dược Viên",w:60,h:40,spawn:[7,20],anchor:[7,20],anchorLabel:"điểm trống",enemies:null,farm:null,farmCluster:null,monsterPoints:[],bossBoards:[],npcs:[],signs:[],portals:[{tx:59,ty:19,to:"hu_thien_2"},{tx:59,ty:20,to:"hu_thien_2"},{tx:59,ty:21,to:"hu_thien_2"}]},
+  hu_thien_2:{name:"Sỹ Sách Điện · Băng Hỏa Trận",w:52,h:36,spawn:[4,18],anchor:[4,18],anchorLabel:"điểm trống",enemies:null,farm:null,farmCluster:null,monsterPoints:[],bossBoards:[],npcs:[],signs:[],portals:[{tx:0,ty:17,to:"hu_thien_1"},{tx:0,ty:18,to:"hu_thien_1"},{tx:0,ty:19,to:"hu_thien_1"},{tx:51,ty:17,to:"hu_thien_3"},{tx:51,ty:18,to:"hu_thien_3"},{tx:51,ty:19,to:"hu_thien_3"}]},
+  hu_thien_3:{name:"Sỹ Sách Điện · Nội Điện",w:56,h:44,spawn:[28,40],anchor:[28,40],anchorLabel:"điểm trống",enemies:null,farm:null,farmCluster:null,monsterPoints:[],bossBoards:[],npcs:[],signs:[],portals:[{tx:26,ty:43,to:"hu_thien_2"},{tx:27,ty:43,to:"hu_thien_2"},{tx:28,ty:43,to:"hu_thien_2"},{tx:29,ty:43,to:"hu_thien_2"},{tx:30,ty:43,to:"hu_thien_2"}]},
+  hu_thien_4:{name:"Sỹ Sách Điện · Mật Thất",w:32,h:24,spawn:[16,19],anchor:[16,19],anchorLabel:"điểm trống",enemies:null,farm:null,farmCluster:null,monsterPoints:[],bossBoards:[],npcs:[],signs:[],portals:[{tx:15,ty:23,to:"hu_thien_3"},{tx:16,ty:23,to:"hu_thien_3"},{tx:17,ty:23,to:"hu_thien_3"}]},
+  phong_dia:{name:"Phong Địa",w:40,h:30,spawn:[37,14],anchor:[34,11],anchorLabel:"cạnh NPC Phong Địa Sứ",enemies:8,farm:null,farmCluster:{tx:12,ty:21,count:3,name:"Lợn Rừng Phong Địa"},monsterPoints:[{name:"Lợn Rừng Phong Địa",tx:5,ty:5,boss:false},{name:"Hắc Mao Lợn Rừng",tx:17,ty:3,boss:false},{name:"Lợn Rừng Đầu Đàn",tx:22,ty:4,boss:false}],bossBoards:[],npcs:[{id:"pd_su_gia",name:"Phong Địa Sứ",tx:35,ty:12}],signs:[[35,17]],portals:[{tx:39,ty:14,to:"mieu_hoang"},{tx:39,ty:15,to:"mieu_hoang"}]},
+  van_can:{name:"Hồ Tây",w:56,h:36,spawn:[33,31],anchor:[34,29],anchorLabel:"cạnh NPC Lão Ngư Ông",enemies:21,farm:[33,31],farmCluster:{tx:7,ty:7,count:3,name:"Thiết Giáp Hà Giải"},monsterPoints:[{name:"Hồ Tây Thủy Yêu",tx:3,ty:5,boss:true},{name:"Thiết Giáp Hà Giải",tx:3,ty:10,boss:false},{name:"Thanh Lân Thủy Xà",tx:11,ty:3,boss:false}],bossBoards:[],npcs:[{id:"van_can_lao_ngu",name:"Lão Ngư Ông",tx:35,ty:30}],signs:[[49,15],[41,29]],portals:[{tx:55,ty:13,to:"duoc_vien"},{tx:55,ty:14,to:"duoc_vien"}]}
+  ,
+    bat_quai_thach_phan:{name:"Thành Thăng Long",w:60,h:40,spawn:[30,25],anchor:[9,28],anchorLabel:"cạnh NPC Bảnh Tiên Sinh",enemies:null,farm:null,farmCluster:null,monsterPoints:[],bossBoards:[],npcs:[{"id":"tran_phap_su","name":"Trận Pháp Sư Mặc Huyền","tx":43,"ty":34},{"id":"tong_mon_quan_su","name":"Tông Môn Quản Sự","tx":13,"ty":18},{"id":"huyet_anh_khach","name":"Bảnh Tiên Sinh","tx":10,"ty":29},{"id":"thuong_cong_su","name":"Thưởng Công Sứ","tx":46,"ty":21},{"id":"cai_nguc","name":"Cai Ngục","tx":48,"ty":12},{"id":"chap_phap_su","name":"Chấp Pháp Sứ","tx":47,"ty":10}],signs:[],portals:[{"tx":0,"ty":29,"to":"thach_phong_thung_lung"},{"tx":0,"ty":30,"to":"thach_phong_thung_lung"}]}
+  };
+  // Lưới ô chặn theo trạng thái runtime (ground + legend + decorations/props sau mọi module vá lúc chạy,
+  // đúng cơ chế MapData.load): walk = ô chặn khi đi bộ, fly = ô chặn khi bay.
+  // Mỗi lưới nén bit (1 = chặn, thứ tự hàng ngang y*w+x) rồi base64. Trích bằng extract-runtime.mjs.
+  var WALK_GRIDS = {
+    tan_vien:{w:40,h:30,walk:"///////////////////+///nf/4f/xcu/If8Awz4B5gABvgPAAAG+D+OOw78P447B/6/AgAn/zcAEQP/YAgEA/7ADwAD8AMAAAAAAwAAAADvAAAD4ucAAAPAB4GAA8AHAMAByH8A4IGAXyTuIYAfEP8Amw+AfxD/B8B/8P5fxD9Y/H/MPwD+f94/wP9//v/B/3/+////",fly:"///////////z//////P+///nc/4f/wcg/Ab8AwD4A5gAAPgPAAAA+B+OOwD8P447APy/AAAA/gcAAAD+AAAAAP7AAAAA8AEAAAAAAQAAAADvAAAAwucAAACAAwAAAMAHAAAAgB8AAAAADwAEAAAPAA4AgweADwD+B8APcP4PwA8A/H/EBQD8f9wHAP9//iPA/2f+w8P7"},
+    thanh_truc_lam:{w:40,h:30,walk:"e57///d3+n/O/W/4a/w3f/Bg4Ht/8GHwf39QZOC9HxBg4P1cAAAA/fsAAICUHgBiAJAfAPIMAA8A8IDAAwD5yyAHEPwBAAcE/gMAAwD+A+ABAPwfeJEA8B84wQDwD+jBAPAA+EEE8IDZAQDgAviBAOAEsBsAYAPgDgAAAOZVAACAz3sH9B77ZwX8Ce/fh+4///9H/fv/",fly:"O57N/7c3+BnO/W+ICPQ1f2AA4Hl/4ADwf38AAOC9HwAAIP1cAAAA+foAAAAQHgAAAIAfAAAAAAcAAACAAwAAwAAHAAAAAAcAAAAAAwAAAOAAAAAQeAEAAAA4wQAAAOgAAAAA+AAAAIDZAAAAAvgBAAAAIAMAAAIgDgAAAOYVAACAz3sFgA76ZwXECe/fB4wffr8HnXv/"},
+    duoc_vien:{w:40,h:30,walk:"/8//////z////7fI5gX+/08CGPZ/CAGA9n8ICADmDwABBPYPABAA9g/IABH2DwgIAPbPCQAA4M8LAADujwlCIOb/DwAQ8w8AIIDhTwAAwOBHAPBj8I8A/3/yFwH/P+APhP9/8jCA/3/mAJD/f+CHgf9/8AcA/z/gB0L8D/gvYPBD5L8UBPP+////////////////////",fly:"/8////n/z///+bfI5gX4BwACGPB3AACA8HcAAADgBwABAPAHAAAA8AcAAAHwBwAAAPAHAAAA4AcAAADgBwAAAOAHAAAQ8A8AAADgDwAAAOBHAAAA8A8AAEDwFwAAAOAPAAAA8hAAAADgABAAAOAHAQAA8AcAAADgB0AAAPAvYABA5L8UBPP+////////////////////"},
+    hang_dong_co:{w:30,h:20,walk:"///////w//8P8P//AfH/PwDg/wcAwf8EAOA/BADwBwAQ+AEAAP4AAMA/BAD4HxAA/gcEyv8DAPj/AQD//wDg/38A/P//4f//f/j/",fly:"///////w//8P8P//AfD/PwDg/wcAwP8AAOA/AADwBwAA+AEAAP4AAMA/AAD4HwAA/gcEwv8DAPj/AQD//wDg/38A/P//4f//f/j/"},
+    dong_mach_ngam:{w:30,h:26,walk:"/////////9/A/8Fm8H+YWfyfZgb/h9nB/2Fm8H+4kfyfYoQAiBgBQSDGCICMMYAAYz4A8Jk/AP/mAwCf+QCAYzCIYFgYAJwG/PiBAT9+YAKAARoAAAAWAACgASgK4P+P/w8=",fly:"/////////x/A/wEG8H+AQfyfYAD/B1jA/wEG8H+ggfyfYAAAABgAAAAGCICAAYAAYAAAABgAAAAGAACAAQAAYAAAAFgAAIAGAACAAQFAYAIAABoAAAAWAACgASAC4P+P/w8="},
+    vuon_ca_nhan:{w:18,h:13,walk:"//8PAHwA8D/8B2AfwH0A8ADAAwAvEDwA8ADA//wD",fly:"//8PAHwA8ADgAwAPADwA8ADAAwAvADwA8ADA//wD"},
+    mieu_hoang:{w:20,h:14,walk:"//8/AMABAJh/iAsE2ACCgBAAAAAJJJh/gANAOBDRA8D8//8=",fly:"//8/AMABABgAiAEAGACAAAAAAAABABgAgAEAOADQAwD8//8="},
+    rung_mang_xa:{w:40,h:30,walk:"///D/////8P//x/9wR/8DwAAAPwHAAAA/CcAAID8D/jBB/w/+MEH/j/wwQP/J0CAAOIDAAAAwAMAAADAB4BBAOAPwMEA8AAAAAAAAAAAAAAP0MEC+AfAwQDwAwAAAOADAAAA4AcIAAjgBwAAAPAPAAAA+A/4wQf4D8jBBPgfwMEA/B/iwRH+P+DBAf8/8MGD////w///",fly:"///D/////8P//x/8wR/8DwAAAPwHAAAA/AcAAAD8D/jBB/w/+MEH/j/wwQP/BwAAAOADAAAAwAMAAADAB4BBAOAPwMEA8AAAAAAAAAAAAAAPwMEA+AfAwQDwAwAAAOADAAAA4AcAAADgBwAAAPAPAAAA+A/4wQf4D8DBAPgfwMEA/B/gwQH+P+DBAf8/8MGD////w///"},
+    mach_dat_dong:{w:40,h:30,walk:"///D/////8P//wPwADzQEwAAAMAzAAAAwBMAAADAkzADCMITAMAPwhMAgAjC8z8ByMMDMcGJwBMAAADIAwAAAMA/AAAA+AAAAAAAAAAAAABDMIEYwfM/w5//EzAAGOATMAAY4BPwwx/gkzAAGOETMAEZ4PM/w///A/EAeMgT8AB5xAPwAHjAD/wA+PH//wD4////APj/",fly:"///D/////8P//wPwADzAAwAAAMADAAAAwAMAAADAAzADCMADAMAPwAMAAAjAAzABCMADMMEJwAMAAADAAwAAAMA/AAAA+AAAAAAAAAAAAAADMAEYwAMwwx/AAzAAGMADMAAYwAPwwx/AAzAAGMADMAAYwAMAAADAA/AAeMAD8AB4wAPwAHjAD/wA+PH//wD4////APj/"},
+    dam_lay_boss:{w:40,h:30,walk:"///D/////8P//x8AAAD4ryRBkvovAAAA+S8AAAD5DwAAAPgvAAAA+S8AAAD5DwAAAPivAABA/R8AAAD4///A//8DAMP//wAAAAAAAAAAAAAD4MMHzD/gwwfM///A////f4D//w8AAADwL0IAIfovAAAA+Q8AAAD4LxIAEvkvAAAA/Q8AAAD8///D/////8P/////w///",fly:"///D//8DAAAAwAMAAADAAwAAAMADAAAAwAMAAADAAwAAAMADAAAAwAMAAADAAwAAAMADAAAAwAMAAADAAwAAAMADAAAAwAAAAAAAAAAAAAADAAAAwAMAAADAAwAAAMADAAAAwAMAAADAAwAAAMADAAAAwAMAAADAAwAAAMADAAAAwAMAAADAAwAAAMADAAAAwP//w///"},
+    bai_da_hang_gio:{w:40,h:30,walk:"//H///9RACHugBsRAICIASAAAIBBIAiYgEEA+IOCiUT8B8AD8f8v4AH8/8fgEw/+/8D/IwA+gP8AAASAIQgAAIAhGAAAgGEIAQDIQYAAAIoJCAAggIUCAKjAgwAAYMCDDwBgkOF/gMjA7zEAiIAPASjAwQMDfPCDBwL4P4YDAOAvhAEARQCMAAAAgIgAQIABiP//////",fly:"//H///8BAABkgAsAAACIAQAAAIABAACAgEEA+IOACUT8B8AB8f8PgAG8/8eAAQ/++4D/AwA+gP8AAASAAQAAAIABCAAAgAEAAACAAYAAAIoBAAAggAUCACDAAQAAYIADDgBAgOF/AMjA7zEAiIAPACjAwQMBfPCDAQDwP4YDAIAPhAEAQQCMAAAAgIgAQIAAiP/9////"},
+    mo_linh_thach:{w:40,h:30,walk:"////////////////////H/7///8P/v///x8H///4/wP+f/D/AfgD8P8AAAD0PwAAAPgHcAAA/wP48gP+Af7/P/4Bf/8//AF+/z/8ARj8f4AfAPh/gD+A+D+AfwD4P4D/AeAP4P8AmAf8/0EwQf7/42AA////AYT///8J4P///wD9////If////+D////////////////",fly:"//////8BAAAAgAEAAACAAQAAAIABAAAAgAEAAACAAQAAAIABAAAAgAEAAACAAQAAAIABAAAAgAEAAACAAQAAAIABAAAAgAEAAACAAQAAAIABAAAAgAEAAACAAQAAAIABAAAAgAEAAACAAQAAAIABAAAAgAEAAACAAQAAAIABAAAAgAEAAACAAQAAAIABAAAAgP//////"},
+    thach_phong_thung_lung:{w:40,h:30,walk:"//////////////////+7/////4H/////wf///z/4////H/z///8H+P///wP4////A/j///8D+P///x/+////H/7///8P/v///wH+//9/AP///x8E////B4D///8HgP//fwCC//8PAID//wMAwP//AQjg/38AAOD/H0AA4P8PABD4/wcgAPz/gQAA//8DAOD/////////",fly:"//////////////////+7/////4H/////wf///z/4////H/z///8H+P///wP4////A/j///8D+P///x/+////H/7///8P/v///wH+//9/AP///x8E////B4D///8HgP//fwCC//8PAID//wMAwP//AQjA/38AAOD/H0AA4P8PAADw/wcgAPz/AQAA//8DAOD/////////"},
+    long_uyen:{w:40,h:30,walk:"////////////////////////////////////H/7f/z8I/Mf/MwQAwP865P/j/xjy/+c/GjIA5n+eMQDmPzgxAPYBAAAA8AAAAADwAAAAAOAHtDEA5hd0MQDmB3QyAObPMfL/538y5P/j/3MEHMD/fwQAwP9/GB3E//8J/sD/////w///////////////////////////",fly:"////////////////////////////////////H/zf/z8I4Mf/AwQAwP8CBADg/wACAOA/AAIA4H8CAQDgBwABAPABAAAA8AAAAADwAAAAAOAHAAEA4AdEAQDgBwACAOCHAAIA4H8CBADg/xMEAMD/HwQAwP9/CADA//8J/sD/////w///////////////////////////"},
+    hu_thien_1:{w:60,h:40,walk:"////////////////////zyoAkAgOonwCAAAAABDgAwAAAAABAHwAEAAAAADABwAAAAABADwAAAAAAADAAwAAAAABgD4AAAAAAADAAwAAAAAAADwAAAAAAADAAyQAAAAAADwIEAAAAADABwAAAAAKAD4AAAAAAADADwgAASAAADwAAQAAgADwAwAAAAAAAHAAAAAAAAAABwAAAAAAAHAAAAAAAAAAAwAAAAAAEDAAEAAAAADQCwgAAOAPfz8AAABgBEHEAwOAHwAAAH4EAPwDAADgBwDgfwAAAH0CAP4HIAjCAwDAPwAAAH4AAPgBAADAAwAEAAAAAD0AAAEACILAAwAAAAQAADwAAgAABADEA4AAAAAAAD4CqmEAZATI////////////////////",fly:"////////////////////zyoAkAgOonwCAAAAABDgAwAAAAABAHwAEAAAAADABwAAAAABADwAAAAAAADAAwAAAAABgD4AAAAAAADAAwAAAAAAADwAAAAAAADAAwAAAAAAADwIAAAAAADABwAAAAAKAD4AAAAAAADABwAAASAAADwAAAAAgADgAwAAAAAAAHAAAAAAAAAABwAAAAAAAHAAAAAAAAAAAwAAAAAAEDAAAAAAAADAAwAAAAAAAD8AAABgAADAAwMAAAAAAH4AAAAAAADgBwAAAAAAAHwCAAAAAADAAwAAAAAAAH4AAAAAAADAAwAEAAAAAD0AAAEAAADAAwAAAAQAADwAAgAAAADAA4AAAAAAAD4CqmEAZATI////////////////////"},
+    hu_thien_2:{w:52,h:36,walk:"/////////////////88qANP/P34AAvz8/8MjIADD/z98AAAA/P/DBwAAwP8/PAACAPz/wwMoAMj/PzwAAgD8/8P/PwDA/z88gAEQ/P/jA34AwP8/PuAnAPz/4wcYAMD/PzwQAAD8/8MHAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAAAHwAEAD8/8MDAADA/z884AEA/P/DAz9AwP8/PPADAPz/wwMeAMj/P34AAAD8/8MHAADA/z98AAAA/P/jgwAAwP8/fAAAAPz/4wNAgN//Pz4g1v79/9P/////////////////",fly:"/////////////////88qAND/P34AAgD8/8MDIADA/z98AAAA/P/DBwAAwP8/PAACAPz/wwMgAMD/PzwAAgD8/8P/PwDA/z88AAAQ/P/jAwAAwP8/PgAgAPz/4wcAAMD/PzwQAAD8/8MHAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAAAHwAEAD8/8MDAADA/z88AAAA/P/DAwBAwP8/PAAAAPz/wwMAAMj/P34AAAD8/8MHAADA/z98AAAA/P/jgwAAwP8/fAAAAPz/4wNAAMD/Pz4g1gb8/9P/////////////////"},
+    hu_thien_3:{w:56,h:44,walk:"////////////////////////////DwABAIAA8AcAgQACAOAHAAEAAADgBwAAAIAA4AcAAACAAOAHAAEAgADgBwABAIAA4AcAj8fjAOD/+QEAgJ//BwAJAKAA4AcAAQAAAOA/zwEAAADgBwAAAIDn+QcAAACAAODP8wEAgADgBwABAIB5/gcABQBAAOD/nAEAAADgBwAAAICf8wcAAACAAOCf5wEAgADgBwABAIDz/AcAAQAAAOB/ngkAIADgBwAAAIDP5wcAAACAAODP+UEAhADgBwABAIA5/wcAHQAAAOD/M0EABADgBwAAAIB/5gcAAACAAOA/z0EAvADgBwABAIDn+QcAAQAAAODP+UEABADgBwAEAMA5/wcAAACAAOD///+D////////g////////4P///8=",fly:"////////////////////////////BwABAIAA4AcAAQAAAOAHAAEAAADgBwAAAIAA4AcAAACAAOAHAAEAgADgBwABAIAA4AcAAQCAAOD/+QEAgJ//BwABAIAA4AcAAQAAAOA/zwEAAADgBwAAAIDn+QcAAACAAODP8wEAgADgBwABAIB5/gcAAQAAAOD/nAEAAADgBwAAAICf8wcAAACAAOCf5wEAgADgBwABAIDz/AcAAQAAAOB/ngEAAADgBwAAAIDP5wcAAACAAODP+QEAgADgBwABAIA5/wcAAQAAAOD/MwEAAADgBwAAAIB/5gcAAACAAOA/zwEAgADgBwABAIDn+QcAAQAAAODP+QEAAADgBwAAAIA5/wcAAACAAOD///+D////////g////////4P///8="},
+    hu_thien_4:{w:32,h:24,walk:"///////////PKgDQBwRAwAMAAMAnAADEBwAAwAMAAMADAADAAwAA4AMAAMADAADAAwAAwAMAAMAHAADoAwAAwBcAAOADAADAAwAAwAcAAOAHAADAJxcA3/8/+P//P/j/",fly:"///////////PKgDQBwAAwAMAAMAHAADABwAAwAMAAMADAADAAwAA4AMAAMADAADAAwAAwAMAAMAHAADgAwAAwAcAAOADAADAAwAAwAcAAOAHAADAJxcA3/8/+P//P/j/"},
+    phong_dia:{w:40,h:30,walk:"//////////////8fQP7//wcAAIAXgAAHuAcAAAC4BwAAALgfAAAEsB+AZwCwG+DnA4IDwOcDgAPgAAeAU2IAHqh/fgBegH9+AAAAf34AAAAPeABegA/wAB+AB+DnB4AH4OcDgB8AJwCIHwKAALAfAAAAsAcAAAC4BwAAALgHAAAHuAcQAAiA/3/8B+D/////////////",fly:"//////////////8fAP7//wcAAIAHAAAHuAcAAAC4BwAAALgfAAAAsB8AAACwGyAAAoADAAAAgAMAAACAAwAAEIABAABAgAEAAAAAAQAAAAABAABAgAcAABCABwAAAIAHIAACgB8AAACAHwAAALAfAAAAsAcAAAC4BwAAALgHAAAHuAcAAACA/3/8B+D/////////////"},
+    van_can:{w:56,h:36,walk:"////////////////////jw8PD//8/wEkAQ+Q8MOBAAAPCPDDZQEQBwD4BwAkgB8A9AMEDsB/AegDB/T//wfwiw/+//8P/QMH////H/gDgP///x/yB8H///8fwCPg////TwADAPj/PwABAwD4/z8Q2AMA/v//A/BD/v///xHh4/////87/sP/////k+SD/////wPoh/////+H4Af/////B+CH/////wfgD/////8B4g/+4P//AOgPAPAPfAjkDxDwhwBA4Q8A4McBAOBPAOEBIIDhDwgYBJgA5J8AgAQAWeIfBAAQAGD0P/TQj1/08P//////////////////",fly:"///3/ejm////3/vY9///Cw8PAD/8/wEEAAAA8AMAAAAAAOACYAAQAADIBwAgAAAA9AMAAAAAAOACAAAAAACwCwAAAAAA9AIAAAAAAPgDAAAAAACwAwEAAAAAQAMAAAAAAAADAAAAAAAAAwAAAAAAkAMAAAAAAOADAAAAAABgAwAAAAAA5AMAAAAAAGACAAAAAADgAwAAAACA4AcAAAAAAOAHAAAAAADgDQAAAAAA4A8AAAAAAEgMAAAAAAhgDxAAAAAA4A8AAAAAAOAPAAAAAABgDwAAAAAA4I8AAAAAUeAfBAAAAEDkP9CQBxfk8N/1+q+//7f9/5/t1+/3"}
+  ,
+    bat_quai_thach_phan:{w:60,h:40,walk:"////////////////////AwAAAAAAADwAAAAAAADAAwAAAAAAADwAAAAAAODHAwAD/AcwfjwAMMB/AOPHA3AD/Acwfjx8cMB/AOPHwwcGAACwfjx8YAAAACPEAwAAAAAAfzwAAAAAAADAAwAHAAAYHzzgMwAAwPHBcz4DAAAcHzzgOwAAwADAA6ABAAAMADwAAAAAAADAAwAAAAAAADwAHAAA4MTDA8ABAAAOPDyHHwAAwPDHA4ABAACM/zx8OAAAwADAw4cDAACc/zx8MAAAgPnPAAAAAAAAfwxAAAAAAADAAAAHAAAwAAwAYAAAAAPAAwAGAAAAfDzgAwAAAMDHAz4AAAAIfDzgAwAAAADAAwAAAAAAADwAAAAAAADA////A////////z/w////",fly:"////////////////////AwAAAAAAADwAAAAAAADAAwAAAAAAADwAAAAAAODHAwAA/AcAfjwAAMB/AODHA3AA/AcAfjx8AMB/AODHwwcAAAAAfjx8AAAAACDEAwAAAAAAfjwAAAAAAADAAwAAAAAAHzzgAwAAAPDBcz4AAAAAHzzgAwAAAADAAwAAAAAAADwAAAAAAADAAwAAAAAAADwAAAAAAMDDAwAAAAAAPDyHAwAAAMDDAwAAAAAAADx8AAAAAADAwwcAAAAAADx8AAAAAADAAAAAAAAAAAwAAAAAAADAAAAAAAAAAAwAAAAAAADAAwAAAAAAfDzgAwAAAMDHAz4AAAAAfDzgAwAAAADAAwAAAAAAADwAAAAAAADA////A////////z/w////"}
+  };
+  var FARM_MAPS = Object.keys(MAPS); // 21 map có cổng (v1.41 thêm Thành Thăng Long) — danh sách chọn map trên bảng tool
+  var NAME2ID = {};
+  Object.keys(MAPS).forEach(function (id) { NAME2ID[MAPS[id].name] = id; });
+  // Tên hiển thị lúc chạy của 3 map Huyết Xích bị game đổi thành "Huyết Xích Cấm Địa · ..." —
+  // thêm alias để readMapId() nhận diện được khi ở trong cụm (nếu không sẽ trả null).
+  NAME2ID['Huyết Xích Cấm Địa · Rừng Mãng Xà'] = 'rung_mang_xa';
+  NAME2ID['Huyết Xích Cấm Địa · Lòng Đất'] = 'mach_dat_dong';
+  NAME2ID['Huyết Xích Cấm Địa · Đầm Lầy'] = 'dam_lay_boss';
+  NAME2ID['Rừng Mãng Xà'] = 'rung_mang_xa';
+  NAME2ID['Lòng Đất'] = 'mach_dat_dong';
+  NAME2ID['Đầm Lầy'] = 'dam_lay_boss';
+  // Tên map trong toast Vết Nứt Không Gian (server gửi tên hiển thị — có thể dài hơn tên nhúng)
+  NAME2ID['Thạch Phong Thung Lũng'] = 'thach_phong_thung_lung';
+  NAME2ID['Long Uyên'] = 'long_uyen';
+  // Map Đại Hội Tu Tiên (v1.15): server tự đưa người ghi danh vào Phòng Chờ rồi lên đài —
+  // tên dài đặt trước tên ngắn để readMapId() không khớp nhầm "Đài Luận Võ" vào Phòng Chờ.
+  NAME2ID['Đài Luận Võ — Phòng Chờ'] = 'dai_hoi_cho';
+  NAME2ID['Đài Luận Võ'] = 'dai_hoi_dau';
+  NAME2ID['Phù Vân Đài'] = 'dai_hoi_doi';
+
+  // Việc Dược Công theo thứ tự ưu tiên (tên hiển thị trong thoại)
+  var JOB_PRIORITY = [
+    { id: 'duoc_moc',     names: ['Thu Gom Dược Mộc'] },
+    { id: 'linh_chi',     names: ['Linh Chi Dưới Chân Núi', 'Linh Chi'] },
+    { id: 'truc_gia',     names: ['Trúc Tâm Dẫn Dược', 'Trúc Tâm'] },
+    { id: 'cau_ca',       names: ['Câu Cá Làm Dược Liệu', 'Câu Cá'] },
+    { id: 'ho_tong_chau', names: ['Đưa Người Về Làng', 'Hộ Tống'] }
+  ];
+  // v1.25 (Bui 20:20): việc Dược Công phải hợp cấp độ — map làm việc + cấp quái quanh đó
+  // (theo FARM_BY_TIER trích từ mã) → tầng khuyến nghị tối thiểu. Tầng thấp ưu tiên việc
+  // ở map an toàn (Tản Viên không quái, Rừng Trúc quái cấp 1–3); việc ở Thảo Dược Cốc
+  // (Độc Đằng Yêu cấp 4, Tiêu Sư cấp 5) để sau khi tầng thấp còn việc khác.
+  var JOB_META = {
+    linh_chi:     { map: 'tan_vien',       minTier: 1, note: 'Tản Viên (làng, không quái)' },
+    ho_tong_chau: { map: 'duoc_vien',      minTier: 1, note: 'hộ tống về Tản Viên, không phải đánh' },
+    truc_gia:     { map: 'thanh_truc_lam', minTier: 1, note: 'Rừng Trúc (Bọ Ngựa cấp 1, Sơn Chuột cấp 3)' },
+    cau_ca:       { map: 'duoc_vien',      minTier: 2, note: 'đài câu Thảo Dược Cốc (quanh có quái cấp 4–5)' },
+    duoc_moc:     { map: 'duoc_vien',      minTier: 4, note: 'Thảo Dược Cốc (Độc Đằng Yêu cấp 4, Tiêu Sư cấp 5)' }
+  };
+  function jobOrderByTier(tier) {
+    var fit = [], over = [];
+    JOB_PRIORITY.forEach(function (j) {
+      var meta = JOB_META[j.id];
+      if (meta && tier != null && meta.minTier > tier) over.push(j); else fit.push(j);
+    });
+    return fit.concat(over);
+  }
+  // Tọa độ NPC Đại Phu trích từ mã client (props type:"npc" trong định nghĩa duoc_vien): (14,8).
+  // v1.5 ghi (16,7) — đó là ô người chơi đứng cạnh NPC, không phải ô NPC (sửa ở v1.6).
+  var DAI_PHU = { map: 'duoc_vien', tx: 14, ty: 8 };
+
+  // ============ Huyết Xích Cấm Địa (v1.9) — dữ liệu trích từ mã client + runtime-maps.json ============
+  // Đăng ký tại Nữ Tu Trông Miếu (mieu_hoang 12,6): thoại "Đăng ký Huyết Xích Cấm Địa" → hộp xác nhận
+  // "Mở Huyết Xích Cấm Địa" → Gateway.partyEnterDungeon("rung_mang_xa"). Theo thoại xác nhận trong mã:
+  // đi một mình vẫn vào được; thu 100 Linh Thạch/người + tính 1 lượt hôm nay (Luyện Khí 5 lượt/ngày,
+  // Trúc Cơ 4 — HuyetSac.LUOT_NGAY); mỗi lượt 900 giây (partyDungeon.durationSec), HUD đếm ngược sụp.
+  // Trong cụm, nguyên liệu bị cấm chế phong tới khi quét sạch yêu thú trong khu; thu hoạch = đứng cạnh
+  // prop bấm Tương Tác rồi ĐỨNG YÊN tới khi đầy thanh (server báo ms, mặc định 3s; di chuyển >12px hủy).
+  // Đồ quái rơi tự nhặt khi đi qua gần (Loot.PICK_R=40px, tự hút sau ~5s) — không cần thao tác riêng.
+  // v1.32 (Bui lệnh 22:21+22:22+22:23 ngày 2026-11-26): cơ chế cấm chế theo mã client
+  // (HuyetSacUI.sealed): cấm chế tính theo TOÀN MAP — còn yêu thú sống trong map là còn
+  // phong (chỉ 2 map đầu rung_mang_xa + mach_dat_dong; cửa sang map kế cũng phong tới khi
+  // quét sạch). Luồng mới mỗi map: vào map bật đủ Phi Hành+Chạy+Auto (KHÔNG đi bộ trong
+  // cụm) → quét sạch quái + boss (boss đánh hit-and-run né đòn diện rộng) → mới thu hoạch
+  // (thu hoạch vẫn giữ Phi Hành+Chạy+Auto) → thu đủ mọi điểm mới qua map kế. Boss 3 con
+  // đầu đàn có đòn diện rộng có vòng cảnh báo vẽ trên canvas (BossTactics: windup
+  // 1,4–1,9s, bán kính 68–160px) — tool không đọc được vòng cảnh báo qua DOM nên
+  // hit-and-run theo vị trí: vào đánh ~2,5s rồi lùi 6 ô né ~1,6s, đổi hướng lùi mỗi nhịp.
+  var HUYET = {
+    npcMap: 'mieu_hoang',
+    npc: { id: 'nu_tu_mieu_hoang', name: 'Nữ Tu Trông Miếu', tx: 12, ty: 6 },
+    fee: 100,
+    maps: ['rung_mang_xa', 'mach_dat_dong', 'dam_lay_boss'],
+    harvest: {
+      rung_mang_xa: [
+        { id: 'bich_chop_1', name: 'Bích Ngọc Cổ Mộc', tx: 7, ty: 2 },
+        { id: 'bich_chop_2', name: 'Bích Ngọc Cổ Mộc', tx: 31, ty: 2 },
+        { id: 'bich_chop_3', name: 'Bích Ngọc Cổ Mộc', tx: 17, ty: 9 },
+        { id: 'bich_chop_4', name: 'Bích Ngọc Cổ Mộc', tx: 25, ty: 9 },
+        { id: 'bich_chop_5', name: 'Bích Ngọc Cổ Mộc', tx: 8, ty: 20 },
+        { id: 'bich_chop_6', name: 'Bích Ngọc Cổ Mộc', tx: 30, ty: 20 }
+      ],
+      mach_dat_dong: [
+        { id: 'ore_1', name: 'Trấn Thần Thạch Lam Ngọc', tx: 6, ty: 3 },
+        { id: 'ore_2', name: 'Trấn Thần Thạch Lam Ngọc', tx: 33, ty: 3 },
+        { id: 'ore_3', name: 'Trấn Thần Thạch Lam Ngọc', tx: 10, ty: 6 },
+        { id: 'ore_4', name: 'Trấn Thần Thạch Lam Ngọc', tx: 21, ty: 6 },
+        { id: 'ore_5', name: 'Trấn Thần Thạch Lam Ngọc', tx: 6, ty: 11 },
+        { id: 'ore_6', name: 'Trấn Thần Thạch Lam Ngọc', tx: 33, ty: 11 },
+        { id: 'fruit_1', name: 'Địa Linh Hóa Quả', tx: 6, ty: 2 },
+        { id: 'fruit_2', name: 'Địa Linh Hóa Quả', tx: 18, ty: 2 },
+        { id: 'fruit_3', name: 'Địa Linh Hóa Quả', tx: 33, ty: 2 },
+        { id: 'fruit_4', name: 'Địa Linh Hóa Quả', tx: 10, ty: 10 },
+        { id: 'fruit_5', name: 'Địa Linh Hóa Quả', tx: 29, ty: 10 }
+      ],
+      dam_lay_boss: [
+        { id: 'tct_1', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 7, ty: 5 },
+        { id: 'tct_2', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 11, ty: 5 },
+        { id: 'tct_3', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 15, ty: 5 },
+        { id: 'tct_4', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 19, ty: 5 },
+        { id: 'tct_5', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 23, ty: 5 },
+        { id: 'tct_6', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 27, ty: 5 },
+        { id: 'tct_7', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 7, ty: 7 },
+        { id: 'tct_8', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 11, ty: 7 },
+        { id: 'tct_9', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 15, ty: 7 },
+        { id: 'tct_10', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 19, ty: 7 },
+        { id: 'tct_11', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 23, ty: 7 },
+        { id: 'tct_12', name: 'Trúc Cơ Thảo Ngũ Sắc', tx: 27, ty: 7 }
+      ]
+    }
+  };
+
+  // ============ Boss thế giới + lịch xuất hiện (v1.11, lệnh Bui 13:28 — Căn giờ Boss) ============
+  // Tra từ mã client + trích runtime (bosses-runtime.json, chạy 545 module trong Node):
+  //  - Danh sách boss thế giới của game (HoatDongUI): Xích Long, Linh Hổ, Ma Báo, Nhện Bạch Ngọc,
+  //    Giao Long. Giao Long ở map thien_dao_khuyet (ngoài 20 map của tool) → không đưa vào đây.
+  //  - Boss chu kỳ: server quyết giờ hồi sinh theo respawnSec trong định nghĩa quái, tính từ lúc
+  //    boss chết (Xích Long 10800s=3 giờ, Linh Hổ 18000s=5 giờ, Nhện Bạch Ngọc 28800s=8 giờ).
+  //    Mã client KHÔNG có giờ cố định trong ngày cho các boss này; giờ ra thật do server gửi qua
+  //    thông báo "Yêu thú sắp ra" (#yt-toast, đếm ngược) + bảng "GIỜ BOSS" vẽ trên canvas.
+  //  - Song Dực Ma Báo: mỗi ngày 1 lần, ra ngẫu nhiên 11:00–21:00 giờ VN, sống 2 giờ
+  //    (MaBao.GIO_MO=11, GIO_DONG=21, SONG_MS=2 giờ; giờ ra cụ thể do server bốc, client chỉ
+  //    nhận qua dữ liệu hoạt động — tool không tự tính được, chỉ canh khung giờ).
+  // Vị trí: điểm xuất hiện (spawn) sau sửa đổi runtime của MapData.
+  var BOSSES = [
+    { id: 'xich_long', type: 'than_thu_xich_long', name: 'Thần Thú Xích Long', short: 'Xích Long', cap: 'Yêu Thú Cấp 3', map: 'long_uyen', tx: 27, ty: 14, kind: 'cycle', respawnSec: 10800 },
+    { id: 'linh_ho', type: 'linh_ho_tran_son', name: 'Linh Hổ Trấn Sơn', short: 'Linh Hổ', cap: 'Yêu Thú Cấp 4', map: 'thach_phong_thung_lung', tx: 30, ty: 8, kind: 'cycle', respawnSec: 18000 },
+    { id: 'nhen_bach_ngoc', type: 'nhen_bach_ngoc', name: 'Nhện Bạch Ngọc', short: 'Nhện Bạch Ngọc', cap: 'Yêu Thú Cấp 5', map: 'bai_da_hang_gio', tx: 21, ty: 11, kind: 'cycle', respawnSec: 28800 },
+    { id: 'ma_bao', type: 'song_duc_ma_bao', name: 'Song Dực Ma Báo', short: 'Ma Báo', cap: 'Yêu Thú Cấp 6', map: 'mo_linh_thach', tx: 20, ty: 26, kind: 'daily', winStart: 11, winEnd: 21, liveSec: 7200 }
+  ];
+  function bossById(id) {
+    for (var i = 0; i < BOSSES.length; i++) if (BOSSES[i].id === id) return BOSSES[i];
+    return null;
+  }
+  function bossScheduleText(boss) {
+    if (boss.kind === 'cycle') return 'hồi sinh theo chu kỳ ' + fmtDur(boss.respawnSec) + ' tính từ lúc chết (server quyết giờ ra)';
+    return 'ra ngẫu nhiên mỗi ngày ' + boss.winStart + ':00–' + boss.winEnd + ':00, sống ' + fmtDur(boss.liveSec) + ' (server bốc giờ ra)';
+  }
+  function fmtDur(sec) {
+    if (sec >= 3600 && sec % 3600 === 0) return (sec / 3600) + ' giờ';
+    if (sec >= 60) return Math.round(sec / 60) + ' phút';
+    return sec + ' giây';
+  }
+  function fmtTime(ms) {
+    var d = new Date(ms);
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    return p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+  }
+  function fmtCountdown(ms) {
+    if (ms == null || ms < 0) return '0 phút';
+    var s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return h > 0 ? h + ' giờ ' + m + ' phút' : m > 0 ? m + ' phút ' + ss + ' giây' : ss + ' giây';
+  }
+  function parseClockText(t) {
+    var m = /(\d+):(\d{2})/.exec(t || '');
+    return m ? (+m[1]) * 60 + (+m[2]) : null;
+  }
+  // Đọc thông báo "Yêu thú sắp ra" của game (#yt-toast, server gửi qua tin "yeuthu"):
+  // .yt-sub = tên boss, .yt-clock = đếm ngược "m:ss", .yt-label = "Yêu thú sắp ra"/"Yêu thú đã ra".
+  function readBossToast() {
+    var box = $('#yt-toast');
+    if (!box || box.classList.contains('hidden')) return null;
+    var sub = ((box.querySelector('.yt-sub') || {}).textContent || '').trim();
+    var label = ((box.querySelector('.yt-label') || {}).textContent || '').trim();
+    var clock = ((box.querySelector('.yt-clock') || {}).textContent || '').trim();
+    var boss = null;
+    BOSSES.forEach(function (b) { if (sub && (sub.indexOf(b.short) >= 0 || sub.indexOf(b.name) >= 0 || b.name.indexOf(sub) >= 0)) boss = b; });
+    return { name: sub, label: label, secsLeft: parseClockText(clock), alive: /đã ra/.test(label), bossId: boss ? boss.id : null };
+  }
+  // ============ Đọc thời gian hồi boss trong mục Hoạt Động (v1.12, lệnh Bui 13:54) ============
+  // Tra từ mã client (HoatDongUI) + choi.html: mục "Hoạt Động" là tab trong Hành Trang —
+  // nút mở túi #btn-bag → nút tab #ht-rail [data-tab="hoat-dong"] → vùng #ht-hoat-dong;
+  // đóng bằng #bag-close. Khi mở tab, game xin dữ liệu server (Gateway.cmd "hoatdong.xem")
+  // gồm boss[] {id=spawn id, dead, con=giây còn lại} + maBao/giaoLong, rồi vẽ mỗi dòng là
+  // button.hd-o > b.hd-o-ten (tên) + span.hd-o-tt (trạng thái), title="<tên> — <trạng thái>".
+  // Chữ trạng thái (hàm T của game: còn >=1 giờ thì "H:MM:SS", còn lại "M:SS"):
+  //  - boss chu kỳ đã chết, còn giờ: "Hồi sau H:MM:SS" / "Hồi sau M:SS"
+  //  - boss chu kỳ đã chết, hết giờ: "Sắp xuất hiện"; đang sống: "Đang xuất hiện"
+  //  - chưa có dữ liệu server: "Hồi sinh 3 giờ" (theo respawnSec — KHÔNG phải đếm ngược)
+  //  - Ma Báo: "Đang xuất hiện · còn H:MM:SS" / "Hôm nay đã bị hạ" / "Hôm nay ra lúc HH:MM" /
+  //    "Hôm nay đã bỏ đi lúc HH:MM" / "Ngẫu nhiên 11:00–21:00"
+  // Bảng tự cập nhật chữ mỗi 1s khi đang mở; dữ liệu server xin lại tối đa mỗi 20s.
+  function parseHdCountdown(text) {
+    var m = /(\d+):(\d{2}):(\d{2})/.exec(text || '');
+    if (m) return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]);
+    m = /(\d+):(\d{2})/.exec(text || '');
+    if (m) return (+m[1]) * 60 + (+m[2]);
+    return null;
+  }
+  function parseHdStatus(text) {
+    var t = (text || '').trim();
+    if (!t) return { kind: 'unknown' };
+    if (/Hồi sau/.test(t)) {
+      var s = parseHdCountdown(t);
+      return s != null ? { kind: 'countdown', secsLeft: s } : { kind: 'unknown' };
+    }
+    if (/Đang xuất hiện/.test(t)) return { kind: 'alive', secsLeft: parseHdCountdown(t) };
+    if (/Sắp xuất hiện/.test(t)) return { kind: 'soon', secsLeft: 0 };
+    var m = /ra lúc\s+(\d{1,2}):(\d{2})/.exec(t);
+    if (m) return { kind: 'atTime', hh: +m[1], mm: +m[2] };
+    if (/đã bị hạ|đã bỏ đi/.test(t)) return { kind: 'done' };
+    return { kind: 'unknown' }; // "Hồi sinh X giờ" (chưa có dữ liệu server), "Ngẫu nhiên ...", "Chủ Nhật ..."
+  }
+  function bagIsOpen() {
+    var bag = $('#bag');
+    return !!(bag && !bag.classList.contains('hidden'));
+  }
+  function hoatDongIsOpen() {
+    var tab = $('#ht-hoat-dong');
+    return bagIsOpen() && !!(tab && !tab.classList.contains('hidden') && tab.querySelector('.hd-o'));
+  }
+  // Đọc 1 dòng boss trong bảng Hoạt Động (bảng phải đang mở). Trả {bossId, name, statusText, parsed, readAt} hoặc null.
+  function readHoatDongBoss(boss) {
+    var tab = $('#ht-hoat-dong');
+    if (!tab) return null;
+    var rows = tab.querySelectorAll('.hd-o');
+    for (var i = 0; i < rows.length; i++) {
+      var ten = ((rows[i].querySelector('.hd-o-ten') || {}).textContent || '').trim();
+      if (!ten) continue;
+      if (ten.indexOf(boss.short) >= 0 || ten.indexOf(boss.name) >= 0 || boss.name.indexOf(ten) >= 0) {
+        var tt = ((rows[i].querySelector('.hd-o-tt') || {}).textContent || '').trim();
+        if (!tt && rows[i].title) tt = rows[i].title.split(' — ').slice(1).join(' — ').trim();
+        return { bossId: boss.id, name: ten, statusText: tt, parsed: parseHdStatus(tt), readAt: Date.now() };
+      }
+    }
+    return null;
+  }
+  // Mở Hành Trang → tab Hoạt Động bằng sự kiện tổng hợp (pressDom) như các nút khác.
+  function openHoatDong(runId) {
+    return (async function () {
+      if (hoatDongIsOpen()) return true;
+      if (!bagIsOpen()) {
+        var btnBag = $('#btn-bag');
+        if (!btnBag) { log('Hoạt động: không thấy nút mở Hành Trang (#btn-bag)'); return false; }
+        pressDom(btnBag);
+        var opened = await waitFor(function () { return bagIsOpen() ? true : null; }, 3000, 'mở Hành Trang', 150);
+        if (!opened) { log('Hoạt động: bấm nút Hành Trang mà túi chưa mở'); return false; }
+      }
+      if (!alive(runId)) return false;
+      var tabBtn = $('#ht-rail [data-tab="hoat-dong"]');
+      if (!tabBtn) { log('Hoạt động: không thấy nút tab Hoạt Động trong Hành Trang'); return false; }
+      pressDom(tabBtn);
+      var shown = await waitFor(function () {
+        var tab = $('#ht-hoat-dong');
+        return (tab && !tab.classList.contains('hidden')) ? true : null;
+      }, 3000, 'mở tab Hoạt Động', 150);
+      if (!shown) { log('Hoạt động: bấm tab Hoạt Động mà vùng bảng chưa hiện'); return false; }
+      return true;
+    })();
+  }
+  function closeHoatDong() {
+    if (!bagIsOpen()) return;
+    var btn = $('#bag-close');
+    if (btn) pressDom(btn);
+  }
+  // Mở mục Hoạt Động → chờ dòng boss có số thật từ server (tối đa 8s) → đọc → đóng túi.
+  // Trả entry của boss (parsed.kind có thể 'unknown' nếu bảng chưa có dữ liệu server) hoặc null nếu không mở được.
+  function readHoatDongBossTimer(runId, boss) {
+    return (async function () {
+      if (!(await openHoatDong(runId))) return null;
+      var entry = null, t0 = Date.now();
+      while (alive(runId) && Date.now() - t0 < 8000) {
+        entry = readHoatDongBoss(boss);
+        if (entry && entry.parsed.kind !== 'unknown') break;
+        await sleep(250); // v1.19: poll ngắn — có dữ liệu là thoát + đóng túi ngay (giữ trần 8s)
+      }
+      closeHoatDong();
+      if (entry && entry.parsed.kind !== 'unknown') {
+        log('Hoạt động: ' + entry.name + ' — "' + entry.statusText + '"');
+      } else if (entry) {
+        log('Hoạt động: dòng ' + entry.name + ' chưa có thời gian hồi từ server ("' + entry.statusText + '")');
+      } else {
+        log('Hoạt động: không thấy dòng boss ' + boss.name + ' trong bảng');
+      }
+      return entry;
+    })();
+  }
+  function estimateTravelMs(fromMap, toMap) {
+    if (!fromMap || fromMap === toMap) return 90000;
+    var p = bfsPath(fromMap, toMap);
+    var hops = p ? p.length : 3;
+    return hops * 120000 + 90000; // ước: mỗi cổng ~2 phút + 1,5 phút trong map đích
+  }
+  function nextDailyWindowStart(boss, nowMs) {
+    var d = new Date(nowMs);
+    var start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), boss.winStart, 0, 0, 0).getTime();
+    var end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), boss.winEnd, 0, 0, 0).getTime();
+    if (nowMs < start) return start;
+    if (nowMs < end) return nowMs; // đang trong khung giờ — đi ngay
+    return start + 86400000;
+  }
+  // Kế hoạch căn giờ: giờ xuất hiện kế tiếp + giờ xuất phát (có mặt trước giờ ra 5 phút,
+  // trừ hao thời gian di chuyển ước tính). Nguồn giờ: mục Hoạt động (v1.12, tham số thứ 6 hd —
+  // thời gian hồi đọc trực tiếp từ bảng của game) > thông báo game > chu kỳ từ mốc chết > khung ngày.
+  function bossPlan(boss, nowMs, toast, anchorMs, curMap) {
+    var hd = arguments[5] || null;
+    var spawnAt = null, source = null;
+    if (hd && hd.parsed && hd.parsed.kind === 'countdown' && hd.parsed.secsLeft != null) {
+      spawnAt = (hd.readAt || nowMs) + hd.parsed.secsLeft * 1000;
+      source = 'mục Hoạt động của game (thời gian hồi đọc trực tiếp)';
+    } else if (hd && hd.parsed && (hd.parsed.kind === 'alive' || hd.parsed.kind === 'soon')) {
+      spawnAt = nowMs;
+      source = 'mục Hoạt động của game (boss đang/sắp xuất hiện)';
+    } else if (hd && hd.parsed && hd.parsed.kind === 'atTime') {
+      var dAt = new Date(nowMs);
+      var atMs = new Date(dAt.getFullYear(), dAt.getMonth(), dAt.getDate(), hd.parsed.hh, hd.parsed.mm, 0, 0).getTime();
+      spawnAt = atMs > nowMs ? atMs : nowMs;
+      source = 'mục Hoạt động của game (hôm nay ra lúc ' + fmtTime(atMs) + ')';
+    } else if (hd && hd.parsed && hd.parsed.kind === 'done' && boss.kind === 'daily') {
+      var dDone = new Date(nowMs);
+      spawnAt = new Date(dDone.getFullYear(), dDone.getMonth(), dDone.getDate() + 1, boss.winStart, 0, 0, 0).getTime();
+      source = 'mục Hoạt động của game (hôm nay đã bị hạ/bỏ đi — canh khung ngày mai)';
+    } else if (toast && toast.bossId === boss.id && (toast.alive || toast.secsLeft != null)) {
+      spawnAt = toast.alive ? nowMs : nowMs + toast.secsLeft * 1000;
+      source = 'thông báo Yêu Thú của game';
+    } else if (boss.kind === 'cycle' && anchorMs) {
+      spawnAt = anchorMs + boss.respawnSec * 1000;
+      while (spawnAt <= nowMs) spawnAt += boss.respawnSec * 1000;
+      source = 'ước theo chu kỳ hồi sinh ' + fmtDur(boss.respawnSec) + ' từ lần boss gục gần nhất';
+    } else if (boss.kind === 'daily') {
+      spawnAt = nextDailyWindowStart(boss, nowMs);
+      source = 'khung giờ ' + boss.winStart + ':00–' + boss.winEnd + ':00 (giờ ra ngẫu nhiên trong khung, canh từ đầu khung)';
+    }
+    var travelMs = estimateTravelMs(curMap, boss.map);
+    var departAt = spawnAt != null ? spawnAt - 5 * 60000 - travelMs : nowMs;
+    return { spawnAt: spawnAt, source: source, travelMs: travelMs, departAt: departAt };
+  }
+
+  // ============ Dữ liệu v1.14: điểm thu thập + bảng ô trang bị ============
+  // GATHER_POINTS trích từ runtime-maps.json (prop tương tác Tương Tác): tan_vien 20 điểm
+  // (Nấm Linh Chi Núi ×10 — mỗi ngày mọc 7–10 — + Tẩy Uế Thảo ×10), bai_da_hang_gio 13 điểm
+  // (Mạch Phong Tinh ×7 + Khóm Phong Linh Thảo ×6), mo_linh_thach 18 điểm (Mạch Hàn Tinh ×9
+  // + Mạch Tử Tinh ×8 + Mạch Lục Tinh ×1). ITEM_SLOT trích từ ITEMS của client (241 món).
+var GATHER_POINTS = {
+  tan_vien: [{id:"linh_chi_1",name:"Nấm Linh Chi Núi",tx:19,ty:2},{id:"linh_chi_2",name:"Nấm Linh Chi Núi",tx:21,ty:3},{id:"linh_chi_3",name:"Nấm Linh Chi Núi",tx:31,ty:2},{id:"linh_chi_4",name:"Nấm Linh Chi Núi",tx:6,ty:3},{id:"linh_chi_5",name:"Nấm Linh Chi Núi",tx:25,ty:3},{id:"linh_chi_6",name:"Nấm Linh Chi Núi",tx:3,ty:4},{id:"linh_chi_7",name:"Nấm Linh Chi Núi",tx:9,ty:4},{id:"linh_chi_8",name:"Nấm Linh Chi Núi",tx:14,ty:5},{id:"linh_chi_9",name:"Nấm Linh Chi Núi",tx:29,ty:4},{id:"linh_chi_10",name:"Nấm Linh Chi Núi",tx:35,ty:6},{id:"thao_1",name:"Tẩy Uế Thảo",tx:14,ty:20},{id:"thao_2",name:"Tẩy Uế Thảo",tx:20,ty:21},{id:"thao_3",name:"Tẩy Uế Thảo",tx:22,ty:26},{id:"thao_4",name:"Tẩy Uế Thảo",tx:26,ty:17},{id:"thao_5",name:"Tẩy Uế Thảo",tx:26,ty:11},{id:"thao_6",name:"Tẩy Uế Thảo",tx:23,ty:9},{id:"thao_7",name:"Tẩy Uế Thảo",tx:27,ty:10},{id:"thao_8",name:"Tẩy Uế Thảo",tx:21,ty:19},{id:"thao_9",name:"Tẩy Uế Thảo",tx:26,ty:20},{id:"thao_10",name:"Tẩy Uế Thảo",tx:22,ty:25}],
+  bai_da_hang_gio: [{id:"phong_tinh_1",name:"Mạch Phong Tinh",tx:17,ty:6},{id:"phong_tinh_2",name:"Mạch Phong Tinh",tx:12,ty:19},{id:"phong_tinh_3",name:"Mạch Phong Tinh",tx:32,ty:20},{id:"phong_tinh_4",name:"Mạch Phong Tinh",tx:24,ty:26},{id:"phong_tinh_5",name:"Mạch Phong Tinh",tx:22,ty:4},{id:"phong_tinh_6",name:"Mạch Phong Tinh",tx:26,ty:5},{id:"phong_tinh_7",name:"Mạch Phong Tinh",tx:22,ty:22},{id:"phong_thao_1",name:"Khóm Phong Linh Thảo",tx:3,ty:12},{id:"phong_thao_2",name:"Khóm Phong Linh Thảo",tx:32,ty:24},{id:"phong_thao_3",name:"Khóm Phong Linh Thảo",tx:34,ty:27},{id:"phong_thao_4",name:"Khóm Phong Linh Thảo",tx:35,ty:25},{id:"phong_thao_5",name:"Khóm Phong Linh Thảo",tx:17,ty:10},{id:"phong_thao_6",name:"Khóm Phong Linh Thảo",tx:8,ty:11}],
+  mo_linh_thach: [{id:"han_tinh_1",name:"Mạch Hàn Tinh",tx:26,ty:24},{id:"han_tinh_2",name:"Mạch Hàn Tinh",tx:10,ty:15},{id:"han_tinh_3",name:"Mạch Hàn Tinh",tx:26,ty:7},{id:"han_tinh_4",name:"Mạch Hàn Tinh",tx:9,ty:21},{id:"han_tinh_5",name:"Mạch Hàn Tinh",tx:17,ty:26},{id:"han_tinh_6",name:"Mạch Hàn Tinh",tx:32,ty:9},{id:"han_tinh_7",name:"Mạch Hàn Tinh",tx:18,ty:16},{id:"han_tinh_8",name:"Mạch Hàn Tinh",tx:35,ty:7},{id:"tu_tinh_1",name:"Mạch Tử Tinh",tx:7,ty:18},{id:"tu_tinh_2",name:"Mạch Tử Tinh",tx:30,ty:18},{id:"tu_tinh_3",name:"Mạch Tử Tinh",tx:33,ty:5},{id:"tu_tinh_4",name:"Mạch Tử Tinh",tx:22,ty:23},{id:"tu_tinh_5",name:"Mạch Tử Tinh",tx:12,ty:22},{id:"tu_tinh_6",name:"Mạch Tử Tinh",tx:19,ty:8},{id:"tu_tinh_7",name:"Mạch Tử Tinh",tx:22,ty:27},{id:"luc_tinh_1",name:"Mạch Lục Tinh",tx:32,ty:21},{id:"dao_han_tinh",name:"Mạch Hàn Tinh Nguyên Sinh",tx:6,ty:3},{id:"dao_tu_tinh",name:"Mạch Tử Tinh Nguyên Sinh",tx:6,ty:5}]
+};
+var ITEM_SLOT = {};
+["bach_hoa_y","bach_huyen_dao_bao","bach_kim_an_dien_bao","bach_kim_chien_bao","bach_kim_khong_vong","bach_loc_tien_bao","bach_nguyet_hong_lien","bach_uong_bang_y","bach_van_y","bach_y","bich_diep_bao","bich_mi_linh_ton","chi_ton_kiem_y","cung_khuyet_y","dao_si_ao_xanh","dao_truong_toc_bac","doc_tu_nam","doc_tu_nu","hac_bo_y","hac_tu_kiem_tran","hac_y","hac_y_mach_bac","hao_nhien_nho_bao","ho_ly_trang_hong","hoa_lap_y","hoang_cuu_bao_y","hoat_tu_y","huyen_cot_y","huyet_anh_y","huyet_ngoc_tu_y","huyet_tu_dao_bao","huyet_tu_nu_huyet_nguyet","kiem_tran_toc_bac","kiem_tu_nam_thanh_tieu","kiem_tu_nu_nguyet_lam","kim_cang_the_bao","kim_ngan_tien_bao","kim_truc_y","kim_van_dao_bao","lam_y","lan_thanh_y","long_tuong_y","lung_hau_y","lung_ho_y","ly_hoa_y","ma_vuong_bao","mai_ngung_y","man_ho_tu_bao","man_ho_tu_y","mi_tu_diep_vu","mi_tu_nam_huyen_diep","minh_chung_y","minh_cot_ma_bao","nam_do_den","nam_luyen_khi_bach_y","nam_luyen_khi_hoang_lam","nam_luyen_khi_huyet_anh","nam_luyen_khi_thach_phong","nam_luyen_khi_thanh_lam","nam_luyen_khi_thanh_van","nam_luyen_khi_tram_sa","nam_luyen_khi_tu_quang","nam_tan_tu_truc_co_mac_van","nam_tu_y","ngan_ho_y","nguyen_dao_y","nho_tu_nu_thanh_truc","nu_ao_quay_den","nu_bach_tu","nu_luyen_khi_hac_y","nu_luyen_khi_thanh_y","nu_luyen_khi_y_nu","nu_luyen_khi_y_nu_kem_reu","nu_luyen_khi_y_nu_vang_cam","nu_luyen_khi_y_nu_xanh_ngoc","nu_sung_hoa_do","nu_thanh_ngoc","nu_tim_den","phai_linh_y","quan_dui","quan_dui_den","quan_vu_y","quy_lao_bao","quy_tu_nam_u_minh","quy_tu_nu_u_hon","rau_trang_lao_to","sat_luc_y","ta_tu_y","ta_tu_y_xanh","tan_mo_y","tan_moc_y","than_kiem_y","than_su_phap_bao","thanh_lam_dao_bao","thanh_lam_y","thanh_tam_y","thanh_y","thap_lang_y","the_tu_nam","the_tu_nu_kim_cang","the_tu_nu_toc_dai","thien_luan_kiem_y","tieu_bach_y","tieu_truc_y","toc_truong_y","tong_ngoc_y","tri_vu_bao","truc_co_bach_kim","tu_giac_ma_bao","tu_lam_thien_y","tu_quang_y","tu_si_thuong_co","tu_van_dao_bao","tuyet_son_kiem_y","van_lo_lao_ma_bao","vuong_lam_hac_bao","vuong_lam_y","vuong_lap_y","xich_viem_y","y_bao_chu_sa"].forEach(function (id) { ITEM_SLOT[id] = "ao"; });
+["con_bang_giap","giao_long_giap","giap_huyet_xich","giap_moc_tam","giap_thach_phien","giap_trach_thao","giap_xa_lan","giap_yeu_vuong_tan","hoang_lan_giap","moc_linh_giap","thu_tuong_giap","xuyen_son_thiet_giap"].forEach(function (id) { ITEM_SLOT[id] = "giap"; });
+["giay_huyen_nham","giay_lang_phong","giay_tat_phong","giay_thanh_moc","giay_van_bo","giay_xich_viem","ngoa_huyet_xich","ngoa_thach_de","ngoa_trach_thao","ngoa_xa_bi","ngoa_yeu_vuong_tan"].forEach(function (id) { ITEM_SLOT[id] = "giay"; });
+["hu_anh_phi_hanh","van_xich_nhat_tuyen"].forEach(function (id) { ITEM_SLOT[id] = "hu_anh"; });
+["bich_linh_ho","dong_hoang_chung","huyen_bang_kinh","lan_thanh_trum_dau","mu_bach_van","mu_nguyet_bach","mu_tieu_dao","mu_tieu_dao_linh","mu_tu_lien","non_la"].forEach(function (id) { ITEM_SLOT[id] = "mu"; });
+["nhan_huyen_nham","nhan_huyet_xich","nhan_lang_tam","nhan_thach_cot","nhan_thanh_moc","nhan_trach_linh","nhan_tu_than","nhan_xa_nha","nhan_xich_viem","nhan_yeu_vuong_tan"].forEach(function (id) { ITEM_SLOT[id] = "nhan"; });
+["boi_huyet_xich","boi_thach_tam","boi_trach_vu","boi_xa_nhan","boi_yeu_vuong_tan","duoc_y_boi","lang_hon_duong_than_boi","ngung_than_boi","tam_yeu_linh_boi","truc_diep_boi","tu_linh_ngoc_boi","tu_tinh_duong_than_boi"].forEach(function (id) { ITEM_SLOT[id] = "phap_boi"; });
+["hac_tien","huyet_nguyet_ung","kim_phi_kiem","lam_phi_kiem","luc_phi_kiem","ngua_hac_tho","phi_diep","phi_hanh_ho_lo","phong_loi_si","phong_song_si","tham_than","xich_phi_kiem"].forEach(function (id) { ITEM_SLOT[id] = "phi_hanh"; });
+["bach_loi_tien","bach_van_phat_tran","bang_linh_kiem","bich_nguc_ta_dao","bich_viem_tram_dao","cung_linh","dan_hon_dang","dao_hoa_cham","hac_vu_ma_phien","hang_ma_xu","hao_nhien_truc_gian","hoa_kim_thuong","hoa_linh_kiem","hoang_loi_thuong","hong_lang","huyen_thiet_phu","huyen_thiet_trong_kiem","huyet_dao","huyet_kich","huyet_kiem","huyet_lien_tram","huyet_ma_liem","huyet_ma_phu","kim_hoan_tich_truong","luc_doc_cham","luc_tinh_kiem","ma_tri_mac","man_tuong_quyen_sao","mi_huong_linh","nhuyen_tien","o_kim_phat_chau","pha_son_chuy","phi_dao","phi_thuy_doc_ho","quat_phong","sao_ngoc_luu","thanh_huyen_kiem","thanh_minh_kiem","thanh_tieu_ngoc_cam","thanh_xa_truong","thiet_cot_nha_no","thiet_dao","thiet_kiem","thiet_thuong","truc_con","truc_kiem","truc_tieu","tu_kim_bat","tu_van_phien","tung_van_dai_dao","xa_nha_phi_dao","xich_viem_song_kich"].forEach(function (id) { ITEM_SLOT[id] = "vu_khi"; });
+
+  // ============ Điểm đến theo map (dựng lúc chạy từ MAPS) ============
+  // Thứ tự: cụm farm → điểm farm cũ → boss → bảng boss → quái → điểm câu cá → NPC → bảng khu → spawn → cổng đầu tiên.
+  function destinationsFor(mapId) {
+    var m = MAPS[mapId];
+    if (!m) return [];
+    var out = [];
+    if (m.farmCluster) out.push({ label: 'Điểm farm (cụm ' + m.farmCluster.name + ' ×' + m.farmCluster.count + ')', tx: m.farmCluster.tx, ty: m.farmCluster.ty, kind: 'farm' });
+    if (m.farm && (!m.farmCluster || m.farm[0] !== m.farmCluster.tx || m.farm[1] !== m.farmCluster.ty)) {
+      out.push({ label: 'Điểm farm cũ', tx: m.farm[0], ty: m.farm[1], kind: 'farm' });
+    }
+    (m.monsterPoints || []).forEach(function (p) { if (p.boss) out.push({ label: 'Boss: ' + p.name, tx: p.tx, ty: p.ty, kind: 'boss' }); });
+    (m.bossBoards || []).forEach(function (b) { out.push({ label: 'Bảng Boss', tx: b.tx, ty: b.ty, kind: 'bossboard' }); });
+    (m.monsterPoints || []).forEach(function (p) { if (!p.boss) out.push({ label: 'Quái: ' + p.name, tx: p.tx, ty: p.ty, kind: 'monster' }); });
+    (m.fishing || []).forEach(function (f) { out.push({ label: f.name, tx: f.tx, ty: f.ty, kind: 'fishing' }); });
+    (m.npcs || []).forEach(function (n) { out.push({ label: 'NPC ' + n.name, tx: n.tx, ty: n.ty, kind: 'npc' }); });
+    (m.signs || []).forEach(function (s, i) { out.push({ label: 'Bảng Khu' + (m.signs.length > 1 ? ' ' + (i + 1) : ''), tx: s[0], ty: s[1], kind: 'sign' }); });
+    if (m.spawn) out.push({ label: 'Điểm vào map (spawn)', tx: m.spawn[0], ty: m.spawn[1], kind: 'spawn' });
+    if (!out.length && m.portals && m.portals.length) out.push({ label: 'Ô cổng đầu tiên', tx: m.portals[0].tx, ty: m.portals[0].ty, kind: 'portal' });
+    return out;
+  }
+  // px/ô ước lượng chỉ dùng cho chạm NPC (vòng xoắn ốc bù sai số — không hiệu chuẩn nữa)
+  var PX_PER_TILE_EST = 48;
+
+  // ============ Trạng thái tool ============
+  var S = {
+    running: false, mode: null, runId: 0,
+    pxX: 32, pxY: 32, calibOk: false, calibDone: false,
+    steerMethod: null, // 'keys' | 'joystick' | 'dpad' | 'tap' — dò ở lần di chuyển đầu tiên mỗi phiên chạy
+    autoBelief: false, autoByTool: false,
+    flyingBelief: false,
+    runBelief: false, // trạng thái Chạy tin (belief) — ưu tiên đọc thật từ #btn-run.active khi có nút
+    flySpeedChecked: false, flyRetryDone: false, // kiểm chứng bay bằng tốc độ đợt lái đầu tiên
+    bossAnchor: {}, // mốc boss gục/biến mất gần nhất theo boss id (ms) — căn chu kỳ hồi sinh
+    ctx: null, // ngữ cảnh phiên để quay lại sau hồi sinh: {mode,map,tx,ty,auto,fly,run} (v1.14)
+    deathBusy: false, // đang xử lý hồi sinh (chống chồng chéo)
+    pkLastHp: null, pkLastAt: 0, pkCooldownUntil: 0, // theo dõi tụt Khí Huyết nghi PK (v1.14)
+    fbLastHp: null, fbLastAt: 0, fbBusy: false, fbCooldownUntil: 0, // đánh trả quái khi bị đánh (v1.24)
+    vcLuong: null, vcLuongList: [], vcLuongSeen: {}, vcLuongLogAt: 0, vcLuongObs: null, vcLucBias: 0, // luồng cá Hồ Tây quét từ caption/chat (v1.27; v1.28 giữ danh sách + ưu tiên giao>yeu; v1.29 MutationObserver ghi ngay + hiệu chỉnh nhịp thả lực)
+    // v1.37: bỏ trạng thái thả lực thích ứng v1.31 (vcLucOffset/vcLucReleaseH/vcLucPref/
+    // vcLucMethodStats) — thả lực nay theo cách v3.1: giữ cố định đích×800ms rồi thả.
+    mapBrightAuto: false, // Map sáng do tool tự bật ở map tối (v1.27) — tắt tay thì không tự tắt nữa
+    evDone: {}, // suất sự kiện lịch tuần đã chạy trong phiên (v1.27)
+    dailyChecked: null, // kết quả kiểm Điểm Danh phiên này (v1.19): null=chưa kiểm, 'claimed'|'not-ready'|'no-button'|'timeout'
+    vcStats: null, // thống kê phiên câu Hồ Tây (v1.21): {t0,casts,caught,miss,conDone,heaviest} — stopTool tổng kết
+    status: 'Chưa chạy'
+  };
+  var logLines = [];
+
+  function $(sel) { return document.querySelector(sel); }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  function log(msg) {
+    var line = new Date().toLocaleTimeString('vi-VN') + ' ' + msg;
+    logLines.push(line);
+    if (logLines.length > 40) logLines.shift();
+    try { console.log('[TTPX] ' + msg); } catch (e) {}
+    var el = $('#ttpx-log');
+    if (el) el.textContent = logLines.slice(-8).join('\n');
+  }
+  function setStatus(s) {
+    S.status = s;
+    var el = $('#ttpx-status');
+    if (el) {
+      var rs = readRunState();
+      var runOn = rs == null ? S.runBelief : rs;
+      el.textContent = s + ' · Bay: ' + (S.flyingBelief ? 'BẬT' : 'TẮT') + ' · Chạy: ' + (runOn ? 'BẬT' : 'TẮT');
+    }
+  }
+
+  // ============ Đọc trạng thái từ giao diện ============
+  function readPos() {
+    var t = '';
+    var hp = $('#hud-pos');
+    if (hp) t = hp.textContent || '';
+    var m = t.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    if (!m) {
+      var bt = document.body ? document.body.innerText : '';
+      m = bt.match(/\d{2}:\d{2}:\d{2}\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/) || bt.match(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    }
+    return m ? { x: +m[1], y: +m[2] } : null;
+  }
+  function readMapId() {
+    var w = $('#hud-where');
+    if (w) {
+      var t = (w.textContent || '').trim();
+      if (NAME2ID[t]) return NAME2ID[t];
+      for (var n in NAME2ID) if (t.indexOf(n) >= 0) return NAME2ID[n];
+    }
+    var els = document.querySelectorAll('#hud-where, #hud-map, #map-load-name, div, span');
+    for (var i = 0; i < els.length && i < 400; i++) {
+      var tx = (els[i].textContent || '').trim();
+      if (NAME2ID[tx]) return NAME2ID[tx];
+    }
+    return null;
+  }
+  function readHpPct() {
+    // Ưu tiên chữ "a/b" trong khu HUD trái
+    var zones = [$('#row-hp'), $('#hud-left')];
+    for (var i = 0; i < zones.length; i++) {
+      if (!zones[i]) continue;
+      var m = (zones[i].textContent || '').match(/(\d+)\s*\/\s*(\d+)/);
+      if (m && +m[2] > 0) return +m[1] / +m[2];
+    }
+    // Dự phòng: bề rộng thanh #bar-hp
+    var bar = $('#bar-hp');
+    if (bar) {
+      var fill = bar.querySelector('div') || bar;
+      var pr = bar.getBoundingClientRect(), fr = fill.getBoundingClientRect();
+      if (pr.width > 0 && fr.width >= 0 && fill !== bar) return clamp(fr.width / pr.width, 0, 1);
+      var sw = parseFloat((fill.style && fill.style.width) || '');
+      if (!isNaN(sw)) return clamp(sw / 100, 0, 1);
+    }
+    return null;
+  }
+  function autoSig() {
+    var el = $('#btn-auto-touch') || $('#btn-auto');
+    if (!el) return '';
+    return (el.className || '') + '|' + (el.getAttribute('aria-pressed') || '') + '|' + (el.getAttribute('aria-label') || '');
+  }
+  // Trạng thái Auto THẬT: khi lật Auto, game toggle class "active" trên #btn-auto + #btn-auto-touch
+  // và set aria-pressed true/false trên #btn-auto-touch (hàm lật Auto trong SceneWorld).
+  // Trả true/false khi thấy nút; null khi không thấy nút nào (không đọc được).
+  function readAutoState() {
+    var el = $('#btn-auto-touch') || $('#btn-auto');
+    if (!el) return null;
+    var ap = el.getAttribute('aria-pressed');
+    if (ap === 'true') return true;
+    if (ap === 'false') return false;
+    return el.classList.contains('active');
+  }
+  function readProgress() {
+    var o = $('#quest-objectives');
+    if (!o) return null;
+    var m = (o.textContent || '').match(/(\d+)\s*\/\s*(\d+)/);
+    return m ? { cur: +m[1], need: +m[2] } : null;
+  }
+  function readLocal() {
+    try {
+      var raw = localStorage.getItem('pntt_progress_v1');
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function dialogOpen() {
+    var d = $('#dialog');
+    if (!d) return false;
+    var r = d.getBoundingClientRect(), s = getComputedStyle(d);
+    return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
+  }
+  function interactLabel() {
+    var b = $('#btn-attack');
+    if (!b) return '';
+    var sn = b.querySelector('.skill-name');
+    return ((sn ? sn.textContent : b.textContent) || '').trim();
+  }
+  // Chữ thông báo ngắn của game (#ritual-caption) — nơi game báo lý do từ chối/cấm chế/đang thu hoạch.
+  function readCaption() {
+    var c = $('#ritual-caption');
+    if (!c || c.classList.contains('hidden')) return '';
+    return (c.textContent || '').trim();
+  }
+  // Số Linh Thạch hiện có (#stone-count) — null nếu không đọc được.
+  function readStones() {
+    var el = $('#stone-count');
+    if (!el) return null;
+    var m = (el.textContent || '').replace(/[.,\s]/g, '').match(/(\d+)/);
+    return m ? +m[1] : null;
+  }
+  // Đếm ngược "Cấm Địa sụp sau" trong Huyết Xích (#huyet-collapse) — null nếu không có.
+  function readCollapse() {
+    var b = document.querySelector('#huyet-collapse b');
+    var t = b ? (b.textContent || '').trim() : '';
+    return t || null;
+  }
+  // Nút hành động của hộp thoại xác nhận (#dialog-action, vd "Mở Huyết Xích Cấm Địa").
+  function dialogActionBtn() {
+    var b = $('#dialog-action');
+    if (!b || b.classList.contains('hidden')) return null;
+    var r = b.getBoundingClientRect();
+    return (r.width > 0 && r.height > 0) ? b : null;
+  }
+  function readDialogText() {
+    var d = $('#dialog');
+    if (!d) return '';
+    return (d.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+  }
+  function closeDialogIfOpen() {
+    if (!dialogOpen()) return false;
+    var x = $('#dialog-close');
+    if (x) { pressDom(x); return true; }
+    return false;
+  }
+
+  // ============ Xử lý thoại nhiệm vụ (v1.24, lệnh Bui 20:06 + 20:07 ngày 2026-11-26) ============
+  // Cơ chế thoại game (HUD.openDialog trong mã client): #dialog-action = nút hành động
+  // (actionLabel: "Báo Công & Bái Tạ", "Báo Công", "Bái Tạ", "Hoàn Thành Nhiệm Vụ", "Nhận...",
+  // "Bẩm Thầy Ông Nội", "Xin Chỉ Giáo", "Ghi Nhớ", "Câu tiếp theo"...), #dialog-close = nút đóng
+  // ("Để Sau" khi có nút hành động, "Lui Bước" khi không), #dialog-choices = mục chọn
+  // (button.btn-choice: span nhãn + .c-stats "+N công" + .c-note "Tốc độ X đòn/giây · Tầm Ypx"
+  // + .c-desc), bảng chọn bí tịch = thẻ .btc-ct (tên .btc-ct-ten b, hệ .btc-he, số .btc-so
+  // "ST N [×shots] · M Linh Lực · Hồi Cs", nút .btn-main.btc-nhan "Nhận Quyển Này").
+  // Game có chốt chống bấm nhầm 500ms sau khi thoại mở (đã biết từ v1.10) → chờ 750ms trước khi bấm.
+  // Luật bấm (Bui chốt 20:07): thoại 1 nút → tự bấm nút đó; nhiều nút → ưu tiên hành động/xác nhận
+  // hơn Lui Bước/Để Sau, chỉ bấm nút đóng khi không còn lựa chọn hành động nào khác.
+  function dialogCloseBtn() {
+    var b = $('#dialog-close');
+    if (!b || b.classList.contains('hidden')) return null;
+    var r = b.getBoundingClientRect();
+    return (r.width > 0 && r.height > 0) ? b : null;
+  }
+  // Cờ nhiệm vụ trong bản lưu pntt_progress_v1.flags (bao_cong_4, dai_phu_binh_khi, bi_tich_hoan_thanh...)
+  function readQuestFlags() {
+    var p = readLocal();
+    return (p && p.flags) || {};
+  }
+  // Đọc chỉ số trang bị từ chữ mục chọn: "+N công" + "Tốc độ X đòn/giây" + "Tầm Ypx"
+  function parseChoiceStats(statsText, noteText) {
+    var out = { atk: null, speed: null, reach: null };
+    var m = String(statsText || '').match(/\+\s*(\d+(?:[.,]\d+)?)/);
+    if (m) out.atk = parseFloat(m[1].replace(',', '.'));
+    var s = String(noteText || '').match(/Tốc độ\s*(\d+(?:[.,]\d+)?)\s*đòn\/giây/);
+    if (s) out.speed = parseFloat(s[1].replace(',', '.'));
+    var r = String(noteText || '').match(/Tầm\s*(\d+)\s*px/);
+    if (r) out.reach = +r[1];
+    return out;
+  }
+  // Các mục chọn đang bấm được trong #dialog-choices (kèm nhãn + chỉ số đã đọc)
+  function dialogChoiceBtns() {
+    var root = $('#dialog-choices');
+    if (!root) return [];
+    var els = root.querySelectorAll('button.btn-choice');
+    var out = [];
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.disabled) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      var labelEl = el.querySelector('span:not(.c-stats):not(.c-note)');
+      var label = (labelEl ? labelEl.textContent : el.textContent || '').replace(/\s+/g, ' ').trim();
+      var stEl = el.querySelector('.c-stats');
+      var ntEl = el.querySelector('.c-note:not(.c-desc)');
+      var stats = stEl ? (stEl.textContent || '').trim() : '';
+      var note = ntEl ? (ntEl.textContent || '').trim() : '';
+      out.push({ el: el, label: label, stats: stats, note: note, parsed: parseChoiceStats(stats, note), primary: el.classList.contains('primary') });
+    }
+    return out;
+  }
+  // Các thẻ bí tịch trong bảng chọn (.btc-ct) — ST có thể hiện "…" lúc game đang tải số
+  function dialogBtcCards() {
+    var root = $('#dialog');
+    if (!root) return [];
+    var cards = root.querySelectorAll('.btc-ct');
+    var out = [];
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      var btn = card.querySelector('.btc-nhan');
+      if (!btn || btn.disabled) continue;
+      var nameEl = card.querySelector('.btc-ct-ten b');
+      var heEl = card.querySelector('.btc-he');
+      var soEl = card.querySelector('.btc-so');
+      var soTxt = soEl ? (soEl.textContent || '').replace(/\s+/g, ' ').trim() : '';
+      var stM = soTxt.match(/ST\s*(\d+(?:[.,]\d+)?)(\s*×\s*(\d+))?/);
+      var mpM = soTxt.match(/(\d+(?:[.,]\d+)?)\s*Linh Lực/);
+      out.push({
+        el: card, btn: btn,
+        name: nameEl ? (nameEl.textContent || '').trim() : '?',
+        element: heEl ? (heEl.textContent || '').trim() : '',
+        st: stM ? parseFloat(stM[1].replace(',', '.')) : null,
+        shots: stM && stM[3] ? +stM[3] : 1,
+        mp: mpM ? parseFloat(mpM[1].replace(',', '.')) : null,
+        soTxt: soTxt
+      });
+    }
+    return out;
+  }
+  // Vòng xử lý thoại nhiệm vụ: bấm theo luật ưu tiên tới khi thoại đóng.
+  // Ưu tiên: (1) thẻ bí tịch → chọn quyển ST cao nhất; (2) mục chọn có chỉ số trang bị →
+  // chọn món tốt nhất (công → tốc độ → tầm); (3) #dialog-action (Báo Công/Nhận/Bái Tạ...);
+  // (4) mục chọn khớp needle nhiệm vụ; (5) chỉ còn #dialog-close → bấm Lui Bước/Để Sau đi tiếp.
+  // Trả {clicked:[nhãn đã bấm], closed, pickedWeapon, pickedBook, rounds}.
+  function handleQuestDialog(runId, opts) {
+    opts = opts || {};
+    return (async function () {
+      var result = { clicked: [], closed: false, pickedWeapon: null, pickedBook: null, rounds: 0 };
+      var lastSig = '';
+      for (var round = 0; round < 10 && alive(runId); round++) {
+        if (!dialogOpen()) {
+          var opened = await waitFor(function () { return dialogOpen() ? true : null; }, round === 0 ? 4000 : 1200, 'thoại nhiệm vụ mở', 200);
+          if (!opened) { result.closed = true; break; }
+        }
+        result.rounds = round + 1;
+        await sleep(750); // qua chốt chống bấm nhầm 500ms của game
+        if (!alive(runId)) break;
+        if (!dialogOpen()) { result.closed = true; break; }
+        var title = (($('#dialog-title') || {}).textContent || '').trim();
+        var act = dialogActionBtn();
+        var actLabel = act ? (act.textContent || '').replace(/\s+/g, ' ').trim() : '';
+        var cls = dialogCloseBtn();
+        var clsLabel = cls ? (cls.textContent || '').replace(/\s+/g, ' ').trim() : '';
+        var choices = dialogChoiceBtns();
+        var btc = dialogBtcCards();
+        var sig = title + '|' + actLabel + '|' + clsLabel + '|' + choices.map(function (c) { return c.label; }).join(',') + '|' + btc.map(function (b) { return b.name; }).join(',');
+        if (sig === lastSig) {
+          log('Thoại nhiệm vụ: trạng thái không đổi sau khi bấm — dừng xử lý thoại, dump để kiểm');
+          hxDumpDialog();
+          break;
+        }
+        lastSig = sig;
+        // (1) Chọn bí tịch/pháp quyết
+        if (btc.length) {
+          var waitT0 = Date.now();
+          while (btc.some(function (b) { return b.st == null; }) && Date.now() - waitT0 < 3000 && alive(runId)) {
+            await sleep(400);
+            btc = dialogBtcCards();
+            if (!btc.length) break;
+          }
+          if (btc.length) {
+            var bestB = null, bestScore = -1;
+            btc.forEach(function (b) {
+              var sc = b.st != null ? b.st * (b.shots || 1) : -1;
+              if (sc > bestScore || (sc === bestScore && bestB && (b.mp || 1e9) < (bestB.mp || 1e9))) { bestScore = sc; bestB = b; }
+            });
+            if (!bestB) bestB = btc[0];
+            log('Chọn bí tịch: "' + bestB.name + '"' + (bestB.element ? ' (' + bestB.element + ')' : '') + ' — ' +
+              (bestB.st != null ? ('ST ' + bestB.st + (bestB.shots > 1 ? ' ×' + bestB.shots : '') + (bestB.mp != null ? ', ' + bestB.mp + ' Linh Lực' : '')) : 'không đọc được số ST — chọn quyển đầu') +
+              ' (tốt nhất trong ' + btc.length + ' quyển)');
+            pressDom(bestB.btn);
+            result.clicked.push('Nhận Quyển Này: ' + bestB.name);
+            result.pickedBook = bestB.name;
+            await sleep(1200);
+            var fl = readQuestFlags();
+            if (fl.bi_tich_hoan_thanh) log('Đã nhận bí tịch — cờ bi_tich_hoan_thanh đã bật, quyển đã chọn: ' + (fl.bi_tich_chon || '?'));
+            else log('Đã bấm nhận bí tịch "' + bestB.name + '" — chưa thấy cờ bi_tich_hoan_thanh trong bản lưu, vòng sau kiểm lại');
+            continue;
+          }
+        }
+        // (2) Chọn trang bị (mục chọn có chỉ số "+N công")
+        var equipChoices = choices.filter(function (c) { return c.parsed.atk != null; });
+        if (equipChoices.length) {
+          var bestE = null;
+          equipChoices.forEach(function (c) {
+            if (!bestE) { bestE = c; return; }
+            var a = c.parsed, b = bestE.parsed;
+            if (a.atk !== b.atk) { if (a.atk > b.atk) bestE = c; return; }
+            var as = a.speed || 0, bs = b.speed || 0;
+            if (as !== bs) { if (as > bs) bestE = c; return; }
+            if ((a.reach || 0) > (b.reach || 0)) bestE = c;
+          });
+          log('Chọn trang bị: "' + bestE.label + '" (' + bestE.stats + (bestE.note ? ', ' + bestE.note : '') + ') — tốt nhất trong ' + equipChoices.length + ' món (công → tốc độ → tầm)');
+          pressDom(bestE.el);
+          result.clicked.push(bestE.label);
+          result.pickedWeapon = bestE.label;
+          await sleep(1000);
+          continue;
+        }
+        // (3) Nút hành động (Báo Công/Nhận/Bái Tạ/Hoàn Thành Nhiệm Vụ...)
+        if (act) {
+          log('Thoại nhiệm vụ: bấm nút hành động "' + actLabel + '" (thoại "' + title + '")');
+          pressDom(act);
+          result.clicked.push(actLabel);
+          await sleep(1100);
+          continue;
+        }
+        // (4) Mục chọn khớp nhiệm vụ
+        var needles = opts.needles || ['nhiệm vụ', 'Nhận việc', 'trả nhiệm vụ', 'báo công', 'Báo Công', 'Đồng ý', 'Tiếp tục', 'Tiếp Tục', 'Nhận', 'Bái Tạ', 'Hoàn Thành'];
+        var pick = null;
+        for (var ci = 0; ci < choices.length && !pick; ci++) {
+          for (var ni = 0; ni < needles.length; ni++) {
+            if (choices[ci].label.indexOf(needles[ni]) >= 0) { pick = choices[ci]; break; }
+          }
+        }
+        if (pick) {
+          log('Thoại nhiệm vụ: bấm mục "' + pick.label + '"');
+          pressDom(pick.el);
+          result.clicked.push(pick.label);
+          await sleep(1000);
+          continue;
+        }
+        // (5) Chỉ còn nút đóng → bấm Lui Bước/Để Sau để đi tiếp
+        if (cls) {
+          log('Thoại nhiệm vụ: ' + (choices.length ? 'không có mục hành động phù hợp' : 'thoại chỉ có một nút') + ' — bấm "' + clsLabel + '" để đóng thoại đi tiếp (thoại "' + title + '")');
+          pressDom(cls);
+          result.clicked.push(clsLabel);
+          await sleep(900);
+          continue;
+        }
+        log('Thoại nhiệm vụ: không thấy nút nào bấm được — dump thoại');
+        hxDumpDialog();
+        break;
+      }
+      if (!dialogOpen()) result.closed = true;
+      return result;
+    })();
+  }
+
+  // ============ Sự kiện tổng hợp ============
+  function gameCanvas() {
+    var cs = Array.from(document.querySelectorAll('canvas')), best = null, ba = 0;
+    cs.forEach(function (c) { var r = c.getBoundingClientRect(), a = r.width * r.height; if (a > ba) { ba = a; best = c; } });
+    return best;
+  }
+  // ============ Map sáng (v1.26, Bui định nghĩa 20:44 + bổ sung 20:45 ngày 2026-11-26) ============
+  // Cơ chế tối trong mã client: Vết Nứt (TAM_NHIN meCung 192/sanh 256/hom 288 px) và
+  // Vạn Hoang Chiến Trường (TAM_NHIN 192 px) vẽ lớp tối TRỰC TIẾP lên canvas game trong
+  // vòng vẽ (fillRect rgba(5,7,18,0.84) ngoài bán kính nhìn + gradient quanh nhân vật);
+  // hằng số nằm trong closure __ns_ nên tool không tắt được lớp tối của game qua DOM.
+  // Cách an toàn ở tầng DOM: lọc sáng CSS (brightness/contrast) trên chính canvas game +
+  // phóng to minimap (#minimap) — vùng tối được nâng sáng để nhìn thấy địa hình/quái/vật
+  // trong vùng tối, không đụng vào vòng vẽ hay giao thức của game.
+  // Vạn Hoang Huyết Lan (Bui gọi "Vạn Yêu Huyết Lan"; mã client chỉ có van_hoang_huyet_lan):
+  // dược liệu Địa phẩm thượng, nguyên liệu Định Cơ Đan; mọc thành khóm TRÊN ĐẢO Vạn Hoang
+  // Chiến Trường, mỗi kỳ 10 khóm (chia nhiều đảo thì mỗi đảo 6), vị trí do server quyết
+  // từng kỳ (không cố định trong mã client). Đứng kề khóm (tầm 80px) game hiện nút #ct-mo
+  // "Hái Huyết Lan" — bấm là hái vào túi. Chế độ Chiến Trường tự canh nút này để hái.
+  function setMapBright(on) {
+    var c = gameCanvas();
+    var mm = $('#minimap');
+    if (on) {
+      if (c) { c.style.filter = 'brightness(2.4) contrast(1.12) saturate(1.15)'; }
+      if (mm) { mm.style.width = '180px'; mm.style.height = '180px'; mm.style.imageRendering = 'pixelated'; mm.style.filter = 'brightness(1.6)'; }
+      S.mapBright = true;
+      log('Map sáng: BẬT — nâng sáng canvas game (lớp tối tầm nhìn của game vẽ trong canvas, tool lọc sáng ở tầng hiển thị để nhìn xuyên vùng tối) + phóng to minimap');
+    } else {
+      if (c) { c.style.filter = ''; }
+      if (mm) { mm.style.width = ''; mm.style.height = ''; mm.style.imageRendering = ''; mm.style.filter = ''; }
+      S.mapBright = false;
+      log('Map sáng: TẮT — trả canvas + minimap về mặc định');
+    }
+    return !!S.mapBright;
+  }
+  function manualBrightToggle() { S.mapBrightAuto = false; setMapBright(!S.mapBright); }
+  // v1.27 (Bui 20:56): Map sáng dùng trong bí cảnh + map sự kiện có lớp tối tầm nhìn.
+  // Theo mã client, lớp tối (drawSuong + TAM_NHIN) chỉ vẽ ở: Vết Nứt (vet_nut_*,
+  // TAM_NHIN meCung 192/sanh 256/hom 288), Chiến Trường (chien_truong*, 192),
+  // Sỹ Sách Điện (hu_thien_1..4, HuThienUI.drawSuong), Tam Lộ (tam_lo*), Tam Ma
+  // (tam_ma*) — Renderer gọi drawSuong của đúng 5 module đó. Huyết Xích + map
+  // thường KHÔNG có lớp tối. Vào map tối tool tự bật Map sáng, ra map thường
+  // tự tắt (chỉ khi chính tool tự bật — anh bật tay thì giữ nguyên).
+  var DARK_MAP_PREFIXES = ['vet_nut', 'chien_truong', 'hu_thien_', 'tam_lo', 'tam_ma'];
+  function isDarkMap(id) {
+    if (!id) return false;
+    for (var i = 0; i < DARK_MAP_PREFIXES.length; i++) if (id.indexOf(DARK_MAP_PREFIXES[i]) === 0) return true;
+    return false;
+  }
+  function brightAutoCheck() {
+    var m = readMapId();
+    if (isDarkMap(m) && !S.mapBright) {
+      S.mapBrightAuto = true;
+      log('Map sáng: đang ở map tối (' + (MAPS[m] ? MAPS[m].name : m) + ' — bí cảnh/map sự kiện có lớp tối tầm nhìn) — tự bật');
+      setMapBright(true);
+    } else if (m && !isDarkMap(m) && S.mapBright && S.mapBrightAuto) {
+      S.mapBrightAuto = false;
+      log('Map sáng: đã ra map thường (' + (MAPS[m] ? MAPS[m].name : m) + ' không bị tối) — tự tắt');
+      setMapBright(false);
+    }
+  }
+  // Hái Huyết Lan trong Chiến Trường: nút #ct-mo hiện "Hái Huyết Lan" khi đứng kề khóm.
+  function ctHuyetLanBtn() {
+    var b = $('#ct-mo');
+    if (!b || b.classList.contains('hidden')) return null;
+    var txt = (b.textContent || '').replace(/\s+/g, ' ').trim();
+    return /Hái Huyết Lan/i.test(txt) ? b : null;
+  }
+  // Vùng HUD phủ trên canvas cần tránh khi chạm lái (joystick, cụm nút, bảng tool)
+  function hudAvoidZones() {
+    var zones = [];
+    var c = gameCanvas(); if (!c) return zones;
+    var r = c.getBoundingClientRect();
+    zones.push({ x0: r.x, y0: r.y + r.height * 0.58, x1: r.x + r.width * 0.36, y1: r.y + r.height }); // joystick dưới trái
+    zones.push({ x0: r.x + r.width * 0.62, y0: r.y + r.height * 0.52, x1: r.x + r.width, y1: r.y + r.height }); // cụm nút dưới phải
+    ['#ttpx-panel', '#btn-auto-touch', '#btn-auto', '#btn-attack', '#btn-fly'].forEach(function (sel) {
+      var el = $(sel); if (!el) return;
+      var b = el.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0) zones.push({ x0: b.x - 6, y0: b.y - 6, x1: b.x + b.width + 6, y1: b.y + b.height + 6 });
+    });
+    return zones;
+  }
+  function safeTapPoint(cx, cy, r) {
+    // Kẹp trong canvas, chừa lề 12% mỗi phía
+    var mx = r.width * 0.12, my = r.height * 0.12;
+    cx = clamp(cx, r.x + mx, r.x + r.width - mx);
+    cy = clamp(cy, r.y + my, r.y + r.height - my);
+    // Rơi vào vùng HUD thì dịch điểm chạm lên trên vùng đó (giữ hướng ngang)
+    var zones = hudAvoidZones();
+    for (var i = 0; i < zones.length; i++) {
+      var z = zones[i];
+      if (cx >= z.x0 && cx <= z.x1 && cy >= z.y0 && cy <= z.y1) {
+        cy = clamp(z.y0 - 10, r.y + my, r.y + r.height - my);
+      }
+    }
+    return { x: cx, y: cy };
+  }
+  function tapCanvas(dx, dy) {
+    var c = gameCanvas();
+    if (!c) return false;
+    var r = c.getBoundingClientRect();
+    var ccx = r.x + r.width / 2, ccy = r.y + r.height / 2;
+    var pt = safeTapPoint(ccx + dx, ccy + dy, r);
+    var opts = { bubbles: true, cancelable: true, pointerId: 3, clientX: pt.x, clientY: pt.y, pointerType: 'touch', isPrimary: true };
+    c.dispatchEvent(new PointerEvent('pointerdown', opts));
+    setTimeout(function () { window.dispatchEvent(new PointerEvent('pointerup', opts)); }, 120);
+    return { dx: Math.round(pt.x - ccx), dy: Math.round(pt.y - ccy) };
+  }
+  // ============ Phím hướng (lái bằng giữ phím — không phụ thuộc camera căn giữa) ============
+  // Game Input đọc e.code: KeyW/ArrowUp=up, KeyS/ArrowDown=down, KeyA/ArrowLeft=left, KeyD/ArrowRight=right,
+  // theo dõi phím đang giữ qua keydown/keyup, không kiểm isTrusted → giữ phím tổng hợp dùng được.
+  // Sự kiện gửi lên body (bubbles) để tới được listener dù game gắn ở body/document/window.
+  var DIR_KEYS = [
+    { code: 'KeyW', key: 'w', name: 'W' },
+    { code: 'KeyS', key: 's', name: 'S' },
+    { code: 'KeyA', key: 'a', name: 'A' },
+    { code: 'KeyD', key: 'd', name: 'D' },
+    { code: 'ArrowUp', key: 'ArrowUp', name: '↑' },
+    { code: 'ArrowDown', key: 'ArrowDown', name: '↓' },
+    { code: 'ArrowLeft', key: 'ArrowLeft', name: '←' },
+    { code: 'ArrowRight', key: 'ArrowRight', name: '→' }
+  ];
+  var DIR_BY_CODE = {};
+  DIR_KEYS.forEach(function (d) { DIR_BY_CODE[d.code] = d; });
+  var heldKeys = {}; // code -> true (phím tool đang giữ)
+  function keyTarget() { return document.body || document.documentElement || window; }
+  function keyDown(code) {
+    var d = DIR_BY_CODE[code]; if (!d || heldKeys[code]) return;
+    heldKeys[code] = true;
+    keyTarget().dispatchEvent(new KeyboardEvent('keydown', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+  }
+  function keyUp(code) {
+    var d = DIR_BY_CODE[code]; if (!d || !heldKeys[code]) return;
+    delete heldKeys[code];
+    keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+  }
+  function releaseAllKeys() {
+    // Nhả toàn bộ 8 phím hướng (kể cả khi heldKeys lệch) — keyup thừa vô hại với game
+    DIR_KEYS.forEach(function (d) {
+      keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+    });
+    heldKeys = {};
+  }
+  // Giữ phím theo 1 đợt: poll vị trí mỗi 300ms, nhả khi shouldStop(p) trả lý do / kẹt 2s không đổi vị trí / hết giờ đợt.
+  // Mọi lối thoát đều nhả toàn bộ phím. Trả { reason, pos, ms }.
+  function holdKeysBurst(runId, codes, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      var lastPos = readPos();
+      var lastMoveAt = t0;
+      codes.forEach(keyDown);
+      (function tick() {
+        var now = Date.now();
+        var p = readPos();
+        if (!alive(runId)) { releaseAllKeys(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { releaseAllKeys(); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (p && now - lastMoveAt >= 2000) { releaseAllKeys(); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { releaseAllKeys(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, 300);
+      })();
+    });
+  }
+  // ============ Joystick ảo (lái bằng kéo — dự phòng khi phím tổng hợp không tới được listener) ============
+  // Game: #joystick (vòng .joystick-ring), handler tính vector từ độ lệch kéo so với tâm (có deadzone)
+  // rồi gọi Input.setJoystick(x,y,true); nhả thì setJoystick(0,0,false). Vector di chuyển ưu tiên joystick khi joy.active.
+  var JOY_PID = 11;
+  var joyState = { active: false, el: null, cx: 0, cy: 0, radius: 0 };
+  function findJoystick() {
+    var el = $('#joystick .joystick-ring') || $('#joystick');
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return null;
+    return { el: el, cx: r.x + r.width / 2, cy: r.y + r.height / 2, radius: Math.min(r.width, r.height) / 2 };
+  }
+  function joyPointer(type, x, y) {
+    var target = joyState.el || document.body;
+    target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: JOY_PID, clientX: x, clientY: y, pointerType: 'touch', isPrimary: true }));
+  }
+  function joyEngage() {
+    var j = findJoystick();
+    if (!j) return false;
+    joyState.el = j.el; joyState.cx = j.cx; joyState.cy = j.cy; joyState.radius = j.radius;
+    joyPointer('pointerdown', j.cx, j.cy);
+    joyState.active = true;
+    return true;
+  }
+  function joySetDir(vx, vy) {
+    if (!joyState.active) return;
+    var len = Math.hypot(vx, vy), nx = 0, ny = 0;
+    if (len > 0.001) { nx = vx / len; ny = vy / len; }
+    var d = joyState.radius * 0.9;
+    joyPointer('pointermove', joyState.cx + nx * d, joyState.cy + ny * d);
+  }
+  function joyRelease() {
+    if (!joyState.active) return;
+    try { joyPointer('pointerup', joyState.cx, joyState.cy); } catch (e) {}
+    joyState.active = false; joyState.el = null;
+  }
+  // Kéo joystick theo 1 đợt: giữ kéo, poll vị trí 300ms; hết đợt thì kéo về tâm (dừng di chuyển, chưa nhả) —
+  // đổi hướng đợt sau chỉ cần pointermove lại, không cần nhả. Nhả hẳn (pointerup) ở releaseAllInputs/goToTile finally/stopTool.
+  function holdJoyBurst(runId, vx, vy, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      if (!joyState.active && !joyEngage()) return resolve({ reason: 'nojoy', pos: readPos(), ms: 0 });
+      var lastPos = readPos();
+      var lastMoveAt = t0;
+      joySetDir(vx, vy);
+      (function tick() {
+        var now = Date.now();
+        var p = readPos();
+        if (!alive(runId)) { joyRelease(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { joySetDir(0, 0); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (p && now - lastMoveAt >= 2000) { joySetDir(0, 0); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { joySetDir(0, 0); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, 300);
+      })();
+    });
+  }
+
+  // ============ Nút dpad (lái bằng giữ nút hướng .dpad-btn mang data-dx/data-dy) ============
+  var DPAD_PID = 13;
+  var dpadHeld = null;
+  function dpadPointer(el, type) {
+    var r = el.getBoundingClientRect();
+    el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: DPAD_PID, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: 'touch', isPrimary: true }));
+  }
+  function dpadPress(el) {
+    if (!el || dpadHeld === el) return;
+    dpadRelease();
+    dpadPointer(el, 'pointerdown');
+    dpadHeld = el;
+  }
+  function dpadRelease() {
+    if (!dpadHeld) return;
+    var el = dpadHeld; dpadHeld = null;
+    try { dpadPointer(el, 'pointerup'); } catch (e) {}
+  }
+  function findDpadBtns(sx, sy) {
+    var btns = document.querySelectorAll('.dpad-btn');
+    var exact = null, xOnly = null, yOnly = null;
+    for (var i = 0; i < btns.length; i++) {
+      var bx = parseInt(btns[i].getAttribute('data-dx') || '0', 10);
+      var by = parseInt(btns[i].getAttribute('data-dy') || '0', 10);
+      if (bx === sx && by === sy) exact = btns[i];
+      else if (sx !== 0 && bx === sx && by === 0) xOnly = btns[i];
+      else if (sy !== 0 && by === sy && bx === 0) yOnly = btns[i];
+    }
+    return { exact: exact, xOnly: xOnly, yOnly: yOnly };
+  }
+  // Giữ nút dpad theo 1 đợt: có nút chéo khớp thì giữ nút đó; không có thì luân phiên 2 trục mỗi 400ms.
+  // Mọi lối thoát đều nhả nút.
+  function holdDpadBurst(runId, sx, sy, shouldStop, burstTimeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      var btns = findDpadBtns(sx, sy);
+      if (!btns.exact && !btns.xOnly && !btns.yOnly) return resolve({ reason: 'nodpad', pos: readPos(), ms: 0 });
+      var lastPos = readPos();
+      var lastMoveAt = t0;
+      var altFlipAt = 0, altX = true;
+      function pressCurrent() {
+        if (btns.exact) { dpadPress(btns.exact); return; }
+        if (btns.xOnly && btns.yOnly) { dpadPress(altX ? btns.xOnly : btns.yOnly); return; }
+        dpadPress(btns.xOnly || btns.yOnly);
+      }
+      pressCurrent();
+      (function tick() {
+        var now = Date.now();
+        var p = readPos();
+        if (!alive(runId)) { dpadRelease(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+        if (!btns.exact && btns.xOnly && btns.yOnly && now - altFlipAt >= 400) { altFlipAt = now; altX = !altX; pressCurrent(); }
+        if (p) {
+          if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+          var sr = shouldStop(p);
+          if (sr) { dpadRelease(); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+        }
+        if (p && now - lastMoveAt >= 2000) { dpadRelease(); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+        if (now - t0 >= burstTimeoutMs) { dpadRelease(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+        setTimeout(tick, 300);
+      })();
+    });
+  }
+
+  // ============ Chạm neo camera (dự phòng cuối khi phím/joystick/dpad đều không lái được) ============
+  // Chạm đúng tâm canvas → ô hiện tại = ô tại tâm → chạm về đích theo vị trí nhân vật thật
+  // (vị trí màn hình nhân vật = tâm + (ô nhân vật − ô tâm)×px/ô). Sau mỗi chạm, suy ô tâm mới từ điểm chạm đã dùng
+  // (ô tâm = ô nhân vật − điểm chạm/px/ô) để giữ hiệu chỉnh gần mép map. Chạm làm xa đích >2 ô → bỏ neo, neo lại đợt sau.
+  var camAnchor = null; // {x,y} ô tại tâm canvas (số thực)
+  function anchorCamera(runId) {
+    return (async function () {
+      tapCanvas(0, 0);
+      var p = await waitStablePos(runId, 12000);
+      if (p) { camAnchor = { x: p.x, y: p.y }; log('Neo camera: ô tại tâm = (' + p.x + ',' + p.y + ')'); }
+      return p;
+    })();
+  }
+  function holdTapBurst(runId, tx, ty, shouldStop, burstTimeoutMs) {
+    return (async function () {
+      var t0 = Date.now();
+      if (!camAnchor) {
+        var ap = await anchorCamera(runId);
+        if (!ap) return { reason: 'stuck', pos: readPos(), ms: Date.now() - t0 };
+        if (!alive(runId)) return { reason: 'stopped', pos: ap, ms: Date.now() - t0 };
+      }
+      var used = tapCanvas((tx - camAnchor.x) * S.pxX, (ty - camAnchor.y) * S.pxY);
+      var p = await waitStablePos(runId, Math.max(3000, burstTimeoutMs));
+      if (p && used) camAnchor = { x: p.x - used.dx / S.pxX, y: p.y - used.dy / S.pxY };
+      var sr = p ? shouldStop(p) : null;
+      return { reason: sr || (p ? 'timeout' : 'stuck'), pos: p, ms: Date.now() - t0 };
+    })();
+  }
+
+  // Nhả toàn bộ đầu vào lái: 8 phím hướng + joystick (pointerup) + nút dpad
+  function releaseAllInputs() {
+    releaseAllKeys();
+    joyRelease();
+    dpadRelease();
+  }
+  function dirName(dx, dy) {
+    var ns = dy > 0 ? 'nam' : dy < 0 ? 'bắc' : '';
+    var ew = dx > 0 ? 'đông' : dx < 0 ? 'tây' : '';
+    return ew && ns ? ew + '-' + ns : (ew || ns || 'đứng yên');
+  }
+  function codesFor(dx, dy) {
+    var codes = [];
+    if (dx > 0) codes.push('KeyD'); else if (dx < 0) codes.push('KeyA');
+    if (dy > 0) codes.push('KeyS'); else if (dy < 0) codes.push('KeyW');
+    return codes;
+  }
+
+  // ============ Tự dò cách lái (lần di chuyển đầu tiên mỗi phiên chạy) ============
+  // Thứ tự: phím → joystick → nút dpad → chạm neo camera. Mỗi cách giữ hướng về đích 1,2s, vị trí đổi ≥1 ô là đạt.
+  function detectSteerMethod(runId, tx, ty) {
+    return (async function () {
+      var p0 = readPos();
+      if (!p0) { log('Dò cách lái: không đọc được vị trí — mặc định phím'); log('Cách lái: phím'); return 'keys'; }
+      var dx = tx - p0.x, dy = ty - p0.y;
+      var movedFrom = function (q) { return (q.x !== p0.x || q.y !== p0.y) ? 'moved' : null; };
+      log('Dò cách lái… (từ (' + p0.x + ',' + p0.y + ') về (' + tx + ',' + ty + '))');
+
+      // a. Phím hướng
+      log('Dò cách lái: thử phím…');
+      var rk = await holdKeysBurst(runId, codesFor(dx, dy), movedFrom, 1200);
+      if (!alive(runId)) return 'keys';
+      if (rk.reason === 'moved') { log('Cách lái: phím'); return 'keys'; }
+      log('Phím không làm nhân vật di chuyển — thử joystick');
+
+      // b. Joystick ảo
+      if (findJoystick()) {
+        log('Dò cách lái: thử joystick…');
+        var rj = await holdJoyBurst(runId, dx, dy, movedFrom, 1200);
+        joyRelease();
+        if (!alive(runId)) return 'keys';
+        if (rj.reason === 'moved') { log('Cách lái: joystick'); return 'joystick'; }
+        log('Joystick không làm nhân vật di chuyển — thử nút dpad');
+      } else {
+        log('Không thấy joystick (#joystick) — thử nút dpad');
+      }
+
+      // c. Nút dpad
+      var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+      var sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+      var btns = findDpadBtns(sx, sy);
+      if (btns.exact || btns.xOnly || btns.yOnly) {
+        log('Dò cách lái: thử nút dpad…');
+        var rd = await holdDpadBurst(runId, sx, sy, movedFrom, 1200);
+        if (!alive(runId)) return 'keys';
+        if (rd.reason === 'moved') { log('Cách lái: dpad'); return 'dpad'; }
+        log('Nút dpad không làm nhân vật di chuyển — dùng chạm neo camera');
+      } else {
+        log('Không thấy nút dpad — dùng chạm neo camera');
+      }
+
+      // d. Chạm neo camera
+      log('Cách lái: chạm (neo camera)');
+      return 'tap';
+    })();
+  }
+
+  function pressKey(code, key) {
+    var opts = { code: code, key: key || code.replace('Key', '').toLowerCase(), bubbles: true, cancelable: true };
+    keyTarget().dispatchEvent(new KeyboardEvent('keydown', opts));
+    keyTarget().dispatchEvent(new KeyboardEvent('keyup', opts));
+  }
+  function pressDom(el) {
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    var opts = { bubbles: true, cancelable: true, pointerId: 7, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: 'touch', isPrimary: true };
+    el.dispatchEvent(new PointerEvent('pointerdown', opts));
+    el.dispatchEvent(new PointerEvent('pointerup', opts));
+    try { el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: opts.clientX, clientY: opts.clientY })); } catch (e) {}
+    return true;
+  }
+  function findByText(rootSel, needles) {
+    var root = rootSel ? $(rootSel) : document.body;
+    if (!root) return null;
+    var els = root.querySelectorAll('button, li, div, span, a');
+    for (var i = 0; i < els.length; i++) {
+      var t = (els[i].textContent || '').trim();
+      if (!t || t.length > 220) continue;
+      for (var j = 0; j < needles.length; j++) {
+        if (t.indexOf(needles[j]) >= 0) {
+          var r = els[i].getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) return els[i];
+        }
+      }
+    }
+    return null;
+  }
+
+  // ============ Chờ có hạn giờ (poll mặc định 500ms; v1.19 cho phép poll ngắn ở chỗ cần nhanh) ============
+  function waitFor(fn, timeoutMs, label, pollMs) {
+    var poll = pollMs || 500;
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      (function tick() {
+        var v;
+        try { v = fn(); } catch (e) { v = null; }
+        if (v) return resolve(v);
+        if (Date.now() - t0 >= timeoutMs) { log('Quá giờ chờ: ' + (label || '')); return resolve(null); }
+        setTimeout(tick, poll);
+      })();
+    });
+  }
+  function alive(runId) { return S.running && S.runId === runId; }
+  function waitStablePos(runId, timeoutMs) {
+    // Đứng yên = vị trí không đổi trong 800ms liên tiếp (poll 300ms)
+    return new Promise(function (resolve) {
+      var t0 = Date.now(), prev = null, stillSince = null;
+      (function tick() {
+        if (!alive(runId)) return resolve(null);
+        var p = readPos();
+        if (p) {
+          if (prev && p.x === prev.x && p.y === prev.y) {
+            if (stillSince == null) stillSince = Date.now();
+            if (Date.now() - stillSince >= 800) return resolve(p);
+          } else stillSince = null;
+          prev = p;
+        }
+        if (Date.now() - t0 >= timeoutMs) return resolve(prev);
+        setTimeout(tick, 300);
+      })();
+    });
+  }
+
+  // ============ Hiệu chuẩn px/ô ============
+  function calibrate(runId) {
+    S.calibDone = true; // chỉ hiệu chuẩn 1 lần/phiên (lười, ngay trước tapNpc đầu tiên)
+    log('Hiệu chuẩn px/ô…');
+    return (async function () {
+      var p0 = await waitStablePos(runId, 8000);
+      if (!p0 || !alive(runId)) { S.pxX = 32; S.pxY = 32; S.calibOk = false; log('Hiệu chuẩn thất bại (không đọc được vị trí) — dùng mặc định 32px/ô'); return; }
+      var measureAxis = async function (axis) {
+        var tries = [96, -96, 160, -160];
+        for (var i = 0; i < tries.length; i++) {
+          if (!alive(runId)) return 0;
+          var before = readPos(); if (!before) return 0;
+          var used = axis === 'x' ? tapCanvas(tries[i], 0) : tapCanvas(0, tries[i]);
+          var after = await waitStablePos(runId, 12000);
+          if (!after) return 0;
+          var dTiles = axis === 'x' ? (after.x - before.x) : (after.y - before.y);
+          if (dTiles !== 0) {
+            var pxUsed = used ? Math.abs(axis === 'x' ? used.dx : used.dy) : Math.abs(tries[i]);
+            return pxUsed / Math.abs(dTiles);
+          }
+        }
+        return 0;
+      };
+      var mx = await measureAxis('x');
+      var my = await measureAxis('y');
+      // Kẹp sanity: hai trục lệch nhau quá 1,6 lần → số đo rác (chạm tìm đường không đo tin cậy) → mặc định 32 cả hai
+      if (mx > 0 && my > 0 && Math.max(mx, my) / Math.min(mx, my) > 1.6) {
+        S.pxX = 32; S.pxY = 32; S.calibOk = false;
+        log('Hiệu chuẩn hỏng (pxX=' + mx.toFixed(1) + ', pxY=' + my.toFixed(1) + ' lệch quá 1,6 lần) — dùng mặc định 32px/ô');
+        return;
+      }
+      S.pxX = mx > 0 ? mx : 32;
+      S.pxY = my > 0 ? my : 32;
+      S.calibOk = mx > 0 && my > 0;
+      log('Hiệu chuẩn: pxX=' + S.pxX.toFixed(1) + (mx > 0 ? ' (đạt)' : ' (không đo được — mặc định 32)') + ', pxY=' + S.pxY.toFixed(1) + (my > 0 ? ' (đạt)' : ' (không đo được — mặc định 32)'));
+    })();
+  }
+
+  // ============ Di chuyển trong 1 map: lái theo đợt bằng cách lái đã dò, quyết định theo vị trí đọc được ============
+  // (v1.4: tự dò cách lái ở lần di chuyển đầu tiên mỗi phiên — phím → joystick → nút dpad → chạm neo camera.
+  //  Tốc độ chỉ dùng ước lượng hạn giờ đợt: đi bộ ~2,1 ô/s, bay ~4 ô/s.)
+  function goToTile(runId, tx, ty, tol, timeoutMs) {
+    tol = (tol == null ? 1 : tol); timeoutMs = timeoutMs || 180000;
+    return (async function () {
+      var t0 = Date.now();
+      var startMap = readMapId(); // v1.28: lái trong 1 map — map đổi giữa chừng (bước qua cổng) thì dừng ngay, không lái tiếp theo tọa độ map cũ
+      var stucks = 0;         // tổng lần kẹt (đợt không di chuyển / không tiến triển)
+      var perpSide = 1;       // phía giữ phím vuông góc, đổi mỗi lần kẹt
+      var noProgress = 0;     // số đợt liên tiếp không tiến gần đích hơn (khoảng cách Chebyshev)
+      var bestCheb = Infinity;
+      var diagOk = true;      // false nếu giữ 2 phím chéo không làm nhân vật di chuyển → giữ từng trục
+      var burstFrom = null;   // vị trí + khoảng cách trước đợt gần nhất (cảnh báo thoái lui)
+      function cheb(p) { return Math.max(Math.abs(tx - p.x), Math.abs(ty - p.y)); }
+      function fmtSec(ms) { return (ms / 1000).toFixed(1).replace('.', ',') + 's'; }
+      try {
+        while (true) {
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (Date.now() - t0 > timeoutMs) throw new Error('đi quá giờ tới (' + tx + ',' + ty + ')');
+          var p = readPos();
+          if (!p) { await sleep(500); continue; }
+          var nowMap = readMapId();
+          if (startMap && nowMap && nowMap !== startMap) {
+            log('Map đã đổi sang ' + (MAPS[nowMap] ? MAPS[nowMap].name : nowMap) + ' giữa lúc lái tới (' + tx + ',' + ty + ') của map cũ — dừng lái, để tầng trên xử lý');
+            throw new Error('đổi map giữa chừng → ' + nowMap);
+          }
+          if (cheb(p) <= tol) { log('Đã tới (' + tx + ',' + ty + ')'); return p; }
+          // v1.24: bị quái đánh lúc đi đường → đánh trả rồi đi tiếp
+          await fightBackCheck(runId, 'đi đường');
+          if (!alive(runId)) throw new Error('đã dừng');
+          // Cảnh báo thoái lui: đợt trước làm nhân vật xa đích hơn >2 ô
+          if (burstFrom && cheb(p) > burstFrom.cheb + 2) {
+            log('Cảnh báo: chạm làm xa đích (' + burstFrom.x + ',' + burstFrom.y + ')→(' + p.x + ',' + p.y + ')');
+            if (S.steerMethod === 'tap') { camAnchor = null; log('Bỏ neo camera — sẽ neo lại'); }
+          }
+          burstFrom = null;
+
+          // Lần di chuyển đầu tiên của phiên: tự dò cách lái (phím → joystick → dpad → chạm neo camera)
+          if (!S.steerMethod) {
+            S.steerMethod = await detectSteerMethod(runId, tx, ty);
+            if (!alive(runId)) throw new Error('đã dừng');
+            continue;
+          }
+
+          var dx = tx - p.x, dy = ty - p.y; // ô; +y là nam (KeyS)
+          var startCheb = cheb(p);
+          var startPos = { x: p.x, y: p.y };
+          var codes = [];
+          if (dx > 0) codes.push('KeyD'); else if (dx < 0) codes.push('KeyA');
+          if (dy > 0) codes.push('KeyS'); else if (dy < 0) codes.push('KeyW');
+          if (!diagOk && codes.length > 1) codes = [Math.abs(dx) >= Math.abs(dy) ? codes[0] : codes[1]];
+
+          var speed = S.flyingBelief ? 5 : 3.5; // ô/s ước lượng (bay đo thật ~5 ô/s, chạy ~3,5) — chỉ để đặt hạn giờ đợt
+          var stepMode = startCheb <= 2;        // gần đích: đợt ngắn 1 bước cho chính xác
+          var burstCap = stepMode ? 1200 : clamp(startCheb / speed * 1000 * 1.4 + 700, 800, 12000);
+          if (!stepMode && startCheb <= 3) burstCap = Math.min(burstCap, S.flyingBelief ? 900 : 1200); // gần điểm đường: đợt ngắn, tránh vượt
+          var burstBest = startCheb;            // khoảng cách gần nhất trong đợt — xa ra là đã vượt đích
+          var hpBurst0 = readHpPct();           // v1.24: mốc Khí Huyết đầu đợt để phát hiện bị quái đánh giữa đợt lái
+          var shouldStop = function (q) {
+            // v1.24: Khí Huyết tụt ≥3% trong đợt lái khi Auto tắt → nhả lái, đánh trả
+            var autoOnFb = readAutoState(); if (autoOnFb == null) autoOnFb = S.autoBelief;
+            if (!autoOnFb && hpBurst0 != null) { var hpNow = readHpPct(); if (hpNow != null && hpBurst0 - hpNow >= 0.03) return 'attacked'; }
+            var cq = cheb(q);
+            if (cq <= tol) return 'arrived';
+            if (cq < burstBest) burstBest = cq;
+            else if (cq > burstBest) return 'overshoot'; // đã vượt qua điểm gần nhất — nhả ngay, đợt sau tính lại hướng
+            if (stepMode) return (q.x !== startPos.x || q.y !== startPos.y) ? 'step' : null;
+            var qdx = tx - q.x, qdy = ty - q.y;
+            // Nhả khi một trục đã tới 0 hoặc vượt đích (đổi dấu) — đợt sau tính lại hướng (kể cả phím ngược)
+            if (dx !== 0 && (qdx === 0 || (qdx > 0) !== (dx > 0))) return 'axis';
+            if (dy !== 0 && (qdy === 0 || (qdy > 0) !== (dy > 0))) return 'axis';
+            return null;
+          };
+
+          burstFrom = { x: p.x, y: p.y, cheb: startCheb };
+          var res, burstDesc;
+          if (S.steerMethod === 'joystick') {
+            res = await holdJoyBurst(runId, dx, dy, shouldStop, burstCap);
+            burstDesc = 'kéo joystick hướng ' + dirName(dx, dy) + ' ~' + fmtSec(res.ms);
+          } else if (S.steerMethod === 'dpad') {
+            var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0, sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+            res = await holdDpadBurst(runId, sx, sy, shouldStop, burstCap);
+            burstDesc = 'giữ nút dpad (' + sx + ',' + sy + ') ~' + fmtSec(res.ms);
+          } else if (S.steerMethod === 'tap') {
+            res = await holdTapBurst(runId, tx, ty, shouldStop, burstCap);
+            burstDesc = 'chạm neo camera ~' + fmtSec(res.ms);
+          } else {
+            res = await holdKeysBurst(runId, codes, shouldStop, burstCap);
+            burstDesc = 'giữ phím [' + codes.map(function (c) { return DIR_BY_CODE[c].name; }).join('+') + '] ~' + fmtSec(res.ms);
+          }
+          log('→(' + tx + ',' + ty + ') từ (' + p.x + ',' + p.y + ') ' + burstDesc);
+          if (!alive(runId)) throw new Error('đã dừng');
+          var p2 = res.pos || readPos();
+          if (!p2) { await sleep(500); continue; }
+          if (cheb(p2) <= tol) { log('Đã tới (' + tx + ',' + ty + ')'); return p2; }
+          // v1.24: đợt lái bị ngắt vì bị quái đánh → đánh trả rồi lái tiếp (không tính là kẹt)
+          if (res.reason === 'attacked') {
+            var capFb = readCaption();
+            if (/đồ sát|tấn công|PK/i.test(capFb)) await pkCheck(runId, { aggressive: true });
+            else {
+              var rFb = await fightBack(runId, 'đi đường');
+              if (rFb === 'escalate') await pkCheck(runId, { aggressive: true, fromFightBack: true });
+            }
+            if (!alive(runId)) throw new Error('đã dừng');
+            continue;
+          }
+
+          // Kiểm chứng bay bằng tốc độ + trạng thái thật (v1.36 sửa: bản cũ tốc độ thấp
+          // là pressFly() MÙ — bay đang BẬT mà đợt lái chậm (vật cản/trễ đọc vị trí) là
+          // nhấn TẮT luôn trong khi belief vẫn true → tool lái tưởng bay, thật ra đi bộ
+          // (một nguyên nhân Bui báo 22:46 "đang bay qua map lại bị tắt phi hành").
+          // Nay đọc #btn-fly trước: TẮT thật mới bật lại qua ensureFly; BẬT thật thì
+          // không nhấn (luật 22:23); không đọc được thì không nhấn mù.
+          if (S.flyingBelief && !S.flySpeedChecked && res.ms >= 800) {
+            var distTiles = Math.hypot(p2.x - startPos.x, p2.y - startPos.y);
+            if (distTiles >= 2) {
+              var spd = distTiles / (res.ms / 1000);
+              var fsNow = readFlyState();
+              log('Phi Hành: tốc độ đo ~' + spd.toFixed(1).replace('.', ',') + ' ô/s, trạng thái thật ' + (fsNow == null ? 'không đọc được' : (fsNow ? 'BẬT' : 'TẮT')));
+              S.flySpeedChecked = true;
+              if (fsNow != null) S.flyingBelief = fsNow;
+              if (spd < 3 && fsNow === false) {
+                log('Tốc độ thấp + Phi Hành đang TẮT thật — bật lại (có kiểm tra trạng thái trước khi nhấn)');
+                await ensureFly(runId, true);
+                if (!alive(runId)) throw new Error('đã dừng');
+              } else if (spd < 3 && fsNow === true) {
+                log('Tốc độ thấp nhưng Phi Hành đang BẬT thật — không nhấn (tránh nhấn bật thành tắt)');
+              } else if (spd < 3) {
+                log('Tốc độ thấp, không đọc được trạng thái thật — không nhấn mù, giữ nguyên');
+              }
+            }
+          }
+
+          var moved = (p2.x !== startPos.x || p2.y !== startPos.y);
+          if (S.steerMethod === 'keys' && codes.length > 1 && !moved && res.reason !== 'arrived') {
+            diagOk = false;
+            log('Giữ 2 phím chéo không di chuyển — chuyển sang giữ từng trục');
+          }
+          if (cheb(p2) < bestCheb) { bestCheb = cheb(p2); noProgress = 0; } else noProgress++;
+
+          var isStuck = res.reason === 'stuck' || (!moved && res.reason !== 'arrived') || noProgress >= 3;
+          if (isStuck) {
+            stucks++;
+            if (stucks >= 3) throw new Error('kẹt đường 3 lần tại (' + p2.x + ',' + p2.y + ') map ' + (readMapId() || '?') + ' đích (' + tx + ',' + ty + ') cách lái ' + (S.steerMethod || '?'));
+            // Lái vuông góc ~0,6s để thoát vật cản, đổi phía mỗi lần kẹt (theo cách lái đang dùng)
+            var perpVec = Math.abs(dx) >= Math.abs(dy) ? { x: 0, y: perpSide } : { x: perpSide, y: 0 };
+            perpSide = -perpSide;
+            noProgress = 0;
+            log('Kẹt/dao động tại (' + p2.x + ',' + p2.y + ') lần ' + stucks + ' — né vật cản hướng ' + dirName(perpVec.x, perpVec.y) + ' ~0,6s');
+            if (S.steerMethod === 'joystick') await holdJoyBurst(runId, perpVec.x, perpVec.y, function () { return null; }, 600);
+            else if (S.steerMethod === 'dpad') await holdDpadBurst(runId, perpVec.x, perpVec.y, function () { return null; }, 600);
+            else if (S.steerMethod === 'tap') await holdTapBurst(runId, p2.x + perpVec.x * 2, p2.y + perpVec.y * 2, function () { return null; }, 6000);
+            else await holdKeysBurst(runId, codesFor(perpVec.x, perpVec.y), function () { return null; }, 600);
+            if (!alive(runId)) throw new Error('đã dừng');
+          }
+        }
+      } finally {
+        releaseAllInputs(); // mọi lối thoát (tới đích/kẹt/hết giờ/dừng/lỗi) đều nhả phím + joystick + dpad
+      }
+    })();
+  }
+
+  // ============ Định tuyến qua điểm trống (đi vào cung đường không vật cản rồi mới tới đích) ============
+  // Điểm trống đã biết của map: ô spawn + ô NPC + ô bảng khu + ô cổng (NPC/bảng đứng trên đất trống).
+  // Khoảng cách >8 ô hoặc lái thẳng bị kẹt → đi qua điểm trung gian gần tuyến nhất (ưu tiên NPC);
+  // kẹt một chặng → thử điểm trống kế tiếp gần đích hơn, tối đa 3 lần kẹt tổng.
+  function openPointsFor(mapId) {
+    var m = MAPS[mapId];
+    if (!m) return [];
+    var pts = [];
+    (m.npcs || []).forEach(function (n) { pts.push({ tx: n.tx, ty: n.ty, label: 'NPC ' + n.name, kind: 'npc' }); });
+    (m.signs || []).forEach(function (s, i) { pts.push({ tx: s[0], ty: s[1], label: 'Bảng Khu' + (m.signs.length > 1 ? ' ' + (i + 1) : ''), kind: 'sign' }); });
+    if (m.spawn) pts.push({ tx: m.spawn[0], ty: m.spawn[1], label: 'điểm trống spawn', kind: 'spawn' });
+    (m.portals || []).forEach(function (p) { pts.push({ tx: p.tx, ty: p.ty, label: 'ô cổng', kind: 'portal' }); });
+    return pts;
+  }
+  // ============ Tìm đường A* trong map trên lưới ô chặn (runtime) ============
+  // Cùng luật với Pathfinder của game: 8 hướng, chéo tốn 1,414 và không cắt góc qua ô chặn.
+  // Bay dùng lưới fly (ít chặn hơn — bay qua nước/cây), đi bộ dùng lưới walk.
+  // Đích bị chặn (ô cổng là prop, ô NPC...) → lấy ô trống gần nhất trong bán kính 6 như game.
+  // v1.8: vòng ô sát biên map (x=0, y=0, x=w-1, y=h-1) coi như chặn khi ĐI QUA — đường chạy phía trong,
+  // chỉ bước lên ô biên ở bước cuối khi đích là ô cổng ở biên (opts.allowBorder=true là dự phòng khi
+  // không có đường phía trong). opts.extraBlocked = Set chỉ số ô chặn tạm (kẹt thì đánh dấu ô phía trước).
+  var _gridCache = {};
+  function gridFor(mapId, flying) {
+    var g = WALK_GRIDS[mapId];
+    if (!g) return null;
+    var key = mapId + (flying ? ':fly' : ':walk');
+    if (_gridCache[key]) return _gridCache[key];
+    var bin;
+    try { bin = atob(flying ? g.fly : g.walk); } catch (e) { return null; }
+    var n = g.w * g.h, arr = new Uint8Array(n);
+    for (var i = 0; i < n; i++) arr[i] = (bin.charCodeAt(i >> 3) >> (i & 7)) & 1;
+    var out = { w: g.w, h: g.h, blocked: arr };
+    _gridCache[key] = out;
+    return out;
+  }
+  function gridBlocked(grid, x, y) {
+    if (x < 0 || y < 0 || x >= grid.w || y >= grid.h) return true;
+    return grid.blocked[y * grid.w + x] === 1;
+  }
+  function gridBlockedX(grid, x, y, extra) {
+    if (gridBlocked(grid, x, y)) return true;
+    return !!(extra && extra.has(y * grid.w + x));
+  }
+  function isBorderTile(grid, x, y) {
+    return x === 0 || y === 0 || x === grid.w - 1 || y === grid.h - 1;
+  }
+  function nearestGridFree(grid, tx, ty, radius, extra) {
+    if (!gridBlockedX(grid, tx, ty, extra)) return { x: tx, y: ty };
+    radius = radius || 6;
+    for (var r = 1; r <= radius; r++) {
+      for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        if (!gridBlockedX(grid, tx + dx, ty + dy, extra)) return { x: tx + dx, y: ty + dy };
+      }
+    }
+    return null;
+  }
+  function astarPath(mapId, sx, sy, tx, ty, flying, opts) {
+    var grid = gridFor(mapId, flying);
+    if (!grid) return null;
+    var extra = opts && opts.extraBlocked ? opts.extraBlocked : null;
+    var allowBorder = !!(opts && opts.allowBorder);
+    var start = nearestGridFree(grid, sx, sy, 6, extra);
+    var goal = nearestGridFree(grid, tx, ty, 6, extra);
+    if (!start || !goal) return null;
+    if (start.x === goal.x && start.y === goal.y) return [];
+    var w = grid.w, h = grid.h, n = w * h;
+    var gScore = new Float32Array(n).fill(Infinity);
+    var came = new Int32Array(n).fill(-1);
+    var closed = new Uint8Array(n);
+    var sIdx = start.y * w + start.x, gIdx = goal.y * w + goal.x;
+    function heur(x, y) {
+      var dx = Math.abs(x - goal.x), dy = Math.abs(y - goal.y);
+      return dx + dy + (1.414 - 2) * Math.min(dx, dy);
+    }
+    // Hàng đợi ưu tiên đơn giản bằng mảng + chèn tuyến tính (lưới tối đa 60×44, đủ nhanh)
+    var open = [{ i: sIdx, f: heur(start.x, start.y) }];
+    gScore[sIdx] = 0;
+    var DIRS = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
+    var expansions = 0, MAX_EXP = 20000;
+    while (open.length) {
+      var bi = 0;
+      for (var k = 1; k < open.length; k++) if (open[k].f < open[bi].f) bi = k;
+      var cur = open.splice(bi, 1)[0];
+      if (closed[cur.i]) continue;
+      closed[cur.i] = 1;
+      if (++expansions > MAX_EXP) return null;
+      if (cur.i === gIdx) {
+        var path = [], node = gIdx;
+        while (node !== -1) { path.push({ x: node % w, y: Math.floor(node / w) }); node = came[node]; }
+        path.reverse(); path.shift();
+        return path;
+      }
+      var cx = cur.i % w, cy = Math.floor(cur.i / w);
+      for (var d = 0; d < DIRS.length; d++) {
+        var nx = cx + DIRS[d][0], ny = cy + DIRS[d][1];
+        if (gridBlockedX(grid, nx, ny, extra)) continue;
+        // Không men theo rìa map: ô biên chỉ được bước lên khi nó là ô đích (ô cổng ở biên)
+        if (!allowBorder && isBorderTile(grid, nx, ny) && !(nx === goal.x && ny === goal.y)) continue;
+        if (DIRS[d][0] !== 0 && DIRS[d][1] !== 0) {
+          if (gridBlockedX(grid, cx + DIRS[d][0], cy, extra) || gridBlockedX(grid, cx, cy + DIRS[d][1], extra)) continue;
+        }
+        var nIdx = ny * w + nx;
+        if (closed[nIdx]) continue;
+        var ng = gScore[cur.i] + DIRS[d][2];
+        if (ng < gScore[nIdx]) {
+          gScore[nIdx] = ng; came[nIdx] = cur.i;
+          open.push({ i: nIdx, f: ng + heur(nx, ny) });
+        }
+      }
+    }
+    return null;
+  }
+  // Đường thẳng giữa 2 ô có trống không (lấy mẫu mỗi 0,25 ô) — để rút gọn điểm đường.
+  // Không cho đoạn thẳng chạy dọc biên: mẫu nào rơi vào ô biên (trừ 2 đầu mút) thì không trống.
+  function gridLineClear(grid, ax, ay, bx, by, extra, allowBorder) {
+    var dist = Math.hypot(bx - ax, by - ay);
+    var steps = Math.max(2, Math.ceil(dist / 0.25));
+    for (var i = 0; i <= steps; i++) {
+      var t = i / steps;
+      var x = Math.round(ax + (bx - ax) * t), y = Math.round(ay + (by - ay) * t);
+      if (gridBlockedX(grid, x, y, extra)) return false;
+      if (!allowBorder && isBorderTile(grid, x, y) && !(x === ax && y === ay) && !(x === bx && y === by)) return false;
+    }
+    return true;
+  }
+  function simplifyPath(grid, sx, sy, path, extra, allowBorder) {
+    if (!path || path.length <= 1) return path || [];
+    var out = [], ax = sx, ay = sy, i = 0;
+    while (i < path.length) {
+      var j = path.length - 1;
+      while (j > i && !gridLineClear(grid, ax, ay, path[j].x, path[j].y, extra, allowBorder)) j--;
+      out.push(path[j]);
+      ax = path[j].x; ay = path[j].y; i = j + 1;
+    }
+    return out;
+  }
+  // Đi tới (tx,ty) theo đường A* từng điểm đường; không có lưới/không có đường → dự phòng goToVia.
+  // Đích bị chặn → A* tới ô trống gần nhất (goalTile) rồi DỪNG ở đó, không lái thẳng tiếp vào vách.
+  // Kẹt một chặng → đánh dấu ô phía trước là chặn tạm + tính lại đường, tối đa 3 lần tính lại.
+  function goToPath(runId, tx, ty, tol, timeoutMs, destLabel) {
+    tol = (tol == null ? 1 : tol); timeoutMs = timeoutMs || 180000;
+    destLabel = destLabel || 'đích';
+    return (async function () {
+      var t0 = Date.now();
+      function remaining() { return Math.max(15000, timeoutMs - (Date.now() - t0)); }
+      var mapId = readMapId();
+      var p0 = readPos();
+      if (!mapId || !p0 || !WALK_GRIDS[mapId]) return await goToVia(runId, tx, ty, tol, timeoutMs, destLabel);
+      var replans = 0;
+      var tempBlocked = new Set(); // ô chặn tạm tích lũy trong lần đi này (kẹt thì thêm ô phía trước)
+      var curWp = null;
+      function chebTo(q, gx, gy) { return Math.max(Math.abs(gx - q.x), Math.abs(gy - q.y)); }
+      function markAhead(pf) {
+        var gridNow = gridFor(mapId, !!S.flyingBelief) || gridFor(mapId, false);
+        if (!gridNow || !pf) return;
+        var aim = curWp || { x: tx, y: ty };
+        var adx = Math.sign(aim.x - pf.x), ady = Math.sign(aim.y - pf.y);
+        if (!adx && !ady) return;
+        var ax = pf.x + adx, ay = pf.y + ady;
+        if (ax < 0 || ay < 0 || ax >= gridNow.w || ay >= gridNow.h) return;
+        if (ax === tx && ay === ty) return; // không chặn chính ô đích
+        tempBlocked.add(ay * gridNow.w + ax);
+        log('Đánh dấu ô (' + ax + ',' + ay + ') chặn tạm — tính lại đường vòng qua');
+      }
+      while (true) {
+        if (!alive(runId)) throw new Error('đã dừng');
+        if (Date.now() - t0 > timeoutMs) throw new Error('đi quá giờ tới (' + tx + ',' + ty + ')');
+        var p = readPos();
+        if (!p) { await sleep(500); continue; }
+        var nowMap = readMapId();
+        if (nowMap && nowMap !== mapId) throw new Error('đổi map giữa chừng → ' + nowMap); // v1.28: đã qua cổng/đổi map — dừng A* của map cũ
+        if (chebTo(p, tx, ty) <= tol) return p;
+        var flying = !!S.flyingBelief;
+        // Thứ tự thử: lưới đúng trạng thái bay (không men biên) → lưới kia → cho phép sát biên (dự phòng)
+        var attempts = [
+          { fly: flying, allowBorder: false },
+          { fly: !flying, allowBorder: false },
+          { fly: flying, allowBorder: true },
+          { fly: !flying, allowBorder: true },
+        ];
+        var raw = null, usedFly = flying, usedBorder = false;
+        for (var ai = 0; ai < attempts.length && !raw; ai++) {
+          raw = astarPath(mapId, p.x, p.y, tx, ty, attempts[ai].fly, { extraBlocked: tempBlocked, allowBorder: attempts[ai].allowBorder });
+          if (raw) { usedFly = attempts[ai].fly; usedBorder = attempts[ai].allowBorder; }
+        }
+        if (!raw) {
+          log('A*: không có đường ' + (flying ? 'bay' : 'đi bộ') + ' từ (' + p.x + ',' + p.y + ') tới (' + tx + ',' + ty + ') ở ' + (MAPS[mapId] ? MAPS[mapId].name : mapId) + ' — dự phòng qua điểm trống');
+          return await goToVia(runId, tx, ty, tol, remaining(), destLabel);
+        }
+        if (usedBorder) log('A*: không có đường phía trong tới (' + tx + ',' + ty + ') — dự phòng đường sát biên');
+        var grid = gridFor(mapId, usedFly);
+        var goalTile = raw.length ? raw[raw.length - 1] : p;
+        if (goalTile.x !== tx || goalTile.y !== ty) {
+          log('Đích (' + tx + ',' + ty + ') là ô chặn — tới ô trống gần nhất (' + goalTile.x + ',' + goalTile.y + ') rồi dừng');
+        }
+        var wps = simplifyPath(grid, p.x, p.y, raw, tempBlocked, usedBorder);
+        if (!wps.length) return p;
+        log('A*: ' + wps.length + ' điểm đường tới ' + destLabel + ' (' + tx + ',' + ty + ')' + (flying ? ' (bay)' : ' (đi bộ)') +
+          ' — ' + wps.slice(0, 4).map(function (q) { return '(' + q.x + ',' + q.y + ')'; }).join('→') + (wps.length > 4 ? '→…' : ''));
+        try {
+          for (var wi = 0; wi < wps.length; wi++) {
+            if (!alive(runId)) throw new Error('đã dừng');
+            var wp = wps[wi];
+            curWp = wp;
+            var last = wi === wps.length - 1;
+            await goToTile(runId, wp.x, wp.y, last ? tol : 1, remaining());
+          }
+          var pf = readPos();
+          if (pf && chebTo(pf, tx, ty) <= Math.max(tol, 1)) return pf;
+          // Đích bị chặn: đã tới ô trống gần nhất (goalTile) là đạt — dừng ở đó, không lái tiếp vào vách
+          if (pf && chebTo(pf, goalTile.x, goalTile.y) <= Math.max(tol, 1)) return pf;
+          if (++replans > 3) throw new Error('kẹt đường sau 3 lần tính lại A* tại (' + (pf ? pf.x : '?') + ',' + (pf ? pf.y : '?') + ')');
+          log('Chưa sát đích sau A* — tính lại đường (lần ' + replans + ')');
+          markAhead(pf);
+        } catch (e) {
+          if (!alive(runId) || !/kẹt đường/.test(e.message)) throw e;
+          if (++replans > 3) {
+            log('Kẹt 3 lần tính lại A* (' + e.message + ') — dự phòng qua điểm trống');
+            return await goToVia(runId, tx, ty, tol, remaining(), destLabel);
+          }
+          log('Kẹt một chặng A* (' + e.message + ') — tính lại đường từ vị trí hiện tại (lần ' + replans + ')');
+          markAhead(readPos());
+          await sleep(600);
+        }
+      }
+    })();
+  }
+  function goToVia(runId, tx, ty, tol, timeoutMs, destLabel) {
+    tol = (tol == null ? 1 : tol); timeoutMs = timeoutMs || 180000;
+    destLabel = destLabel || 'đích';
+    return (async function () {
+      var t0 = Date.now();
+      function remaining() { return Math.max(15000, timeoutMs - (Date.now() - t0)); }
+      function cheb2(ax, ay, bx, by) { return Math.max(Math.abs(ax - bx), Math.abs(ay - by)); }
+      var p0 = readPos();
+      var mapId = readMapId();
+      // Gần đích (≤8 ô) hoặc không đọc được vị trí/map: lái thẳng như cũ
+      if (!p0 || !mapId || cheb2(p0.x, p0.y, tx, ty) <= 8) {
+        return await goToTile(runId, tx, ty, tol, remaining());
+      }
+      var open = openPointsFor(mapId);
+      // Xếp điểm trung gian theo tổng quãng (hiện tại→điểm + điểm→đích); ưu tiên NPC khi hòa
+      var scored = open.map(function (pt) {
+        return { pt: pt, score: cheb2(p0.x, p0.y, pt.tx, pt.ty) + cheb2(pt.tx, pt.ty, tx, ty), toDest: cheb2(pt.tx, pt.ty, tx, ty) };
+      }).sort(function (a, b) {
+        if (a.score !== b.score) return a.score - b.score;
+        return (a.pt.kind === 'npc' ? 0 : 1) - (b.pt.kind === 'npc' ? 0 : 1);
+      });
+      var stuckBudget = 3;
+      var tried = {};
+      var viaIdx = 0;
+      while (true) {
+        if (!alive(runId)) throw new Error('đã dừng');
+        if (Date.now() - t0 > timeoutMs) throw new Error('đi quá giờ tới (' + tx + ',' + ty + ')');
+        var p = readPos();
+        if (!p) { await sleep(500); continue; }
+        if (cheb2(p.x, p.y, tx, ty) <= tol) return p;
+        // Chọn điểm trung gian chưa thử, gần tuyến nhất; hết điểm thì lái thẳng
+        var via = null;
+        while (viaIdx < scored.length) {
+          var cand = scored[viaIdx++];
+          var key = cand.pt.tx + ',' + cand.pt.ty;
+          if (tried[key]) continue;
+          if (cheb2(p.x, p.y, cand.pt.tx, cand.pt.ty) <= 1) continue; // đang đứng ngay điểm này
+          if (cheb2(cand.pt.tx, cand.pt.ty, tx, ty) <= tol) continue; // điểm trùng đích
+          via = cand.pt; tried[key] = true; break;
+        }
+        try {
+          if (via) {
+            if (via.kind === 'npc' && destLabel === 'cổng') {
+              log('Tuyến: (' + p.x + ',' + p.y + ') → ' + via.label + ' (' + via.tx + ',' + via.ty + ') → cổng (' + tx + ',' + ty + ')');
+            } else {
+              log('qua điểm trống (' + via.tx + ',' + via.ty + ') rồi tới ' + destLabel + ' (' + tx + ',' + ty + ')');
+            }
+            await goToTile(runId, via.tx, via.ty, 1, remaining());
+            if (!alive(runId)) throw new Error('đã dừng');
+            return await goToTile(runId, tx, ty, tol, remaining());
+          }
+          return await goToTile(runId, tx, ty, tol, remaining());
+        } catch (e) {
+          if (!alive(runId) || !/kẹt đường/.test(e.message)) throw e;
+          stuckBudget--;
+          if (stuckBudget <= 0) {
+            var untried = scored.filter(function (c2) { return !tried[c2.pt.tx + ',' + c2.pt.ty]; })[0];
+            log('Hết lượt thử điểm trống. Gợi ý điểm trống gần nhất chưa thử: ' + (untried ? untried.pt.label + ' (' + untried.pt.tx + ',' + untried.pt.ty + ')' : 'không còn điểm trống nào trong dữ liệu') + ' — đích ' + destLabel + ' (' + tx + ',' + ty + '), cách lái ' + (S.steerMethod || '?'));
+            throw e;
+          }
+          log('Kẹt một chặng (' + e.message + ') — thử điểm trống kế tiếp (còn ' + stuckBudget + ' lần kẹt)');
+        }
+      }
+    })();
+  }
+
+  // ============ BFS đường cổng + qua map ============
+  function bfsPath(from, to) {
+    if (!MAPS[from] || !MAPS[to]) return null;
+    if (from === to) return [];
+    var prev = {}, q = [from]; prev[from] = null;
+    while (q.length) {
+      var cur = q.shift();
+      var ps = MAPS[cur].portals;
+      for (var i = 0; i < ps.length; i++) {
+        if (!(ps[i].to in prev)) { prev[ps[i].to] = { from: cur, portal: ps[i] }; if (ps[i].to === to) q = []; else q.push(ps[i].to); }
+      }
+    }
+    if (!(to in prev)) return null;
+    var path = [], node = to;
+    while (prev[node]) { path.unshift(prev[node].portal); node = prev[node].from; }
+    return path;
+  }
+  function pairPortal(cur, hop) {
+    // Ô cổng cặp: cùng map đích, khác ô (dữ liệu cổng nhúng thường có cặp ty kề nhau)
+    var ps = (MAPS[cur] && MAPS[cur].portals) || [];
+    for (var i = 0; i < ps.length; i++) {
+      if (ps[i].to === hop.to && (ps[i].tx !== hop.tx || ps[i].ty !== hop.ty)) return ps[i];
+    }
+    return null;
+  }
+  // ============ Cụm liên thông + map gần nhất khi đích không có cổng vào ============
+  // Đồ thị cổng RUNTIME (sau sửa đổi lúc chạy của client): từ tan_vien tới được 13 map — gồm
+  // Bãi Đá qua cổng Tản Viên (39,14/15), Miếu Ông Trường Con qua Bãi Đá (9–11,0), Mỏ Linh Thạch, Thung Lũng.
+  // Còn ngoài: {rung_mang_xa, mach_dat_dong, dam_lay_boss} khép kín (Huyết Xích Cấm Địa — map tổ đội,
+  // cổng về tan_vien bị game xóa lúc chạy) + {hu_thien_1..4} (vào qua NPC Thủ Điện Sỹ Sách ở
+  // dong_mach_ngam, hoạt động mở Thứ Năm 20:16 — trích từ mã client HuThien.NPC/NPC_MAP).
+  function reachableFrom(from) {
+    var seen = {};
+    if (!MAPS[from]) return seen;
+    var q = [from]; seen[from] = true;
+    while (q.length) {
+      var cur = q.shift();
+      (MAPS[cur].portals || []).forEach(function (p) { if (!seen[p.to]) { seen[p.to] = true; q.push(p.to); } });
+    }
+    return seen;
+  }
+  function clusterOf(mapId) {
+    // Cụm liên thông vô hướng (cổng 2 chiều) chứa mapId trong dữ liệu nhúng
+    var seen = {};
+    if (!MAPS[mapId]) return seen;
+    var q = [mapId]; seen[mapId] = true;
+    while (q.length) {
+      var cur = q.shift();
+      (MAPS[cur].portals || []).forEach(function (p) { if (!seen[p.to]) { seen[p.to] = true; q.push(p.to); } });
+      Object.keys(MAPS).forEach(function (id) {
+        if (seen[id]) return;
+        (MAPS[id].portals || []).forEach(function (p) { if (p.to === cur) { seen[id] = true; q.push(id); } });
+      });
+    }
+    return seen;
+  }
+  // Map gần nhất đi được khi target không tới được từ cur.
+  // Ưu tiên: (1) map mà cổng RA của cụm đích trỏ về (nếu đi được từ cur);
+  // (2) hu_thien_* → dong_mach_ngam (NPC Thủ Điện Sỹ Sách mở Sỹ Sách Điện);
+  // (3) map đi được gần đích nhất theo khoảng cách vô hướng; (4) tan_vien; (5) chính cur.
+  // Tập map đi tới được target theo cổng có hướng (gồm chính target) — "phía đích" của đồ thị
+  function canReachTarget(target) {
+    var seen = {};
+    if (!MAPS[target]) return seen;
+    var q = [target]; seen[target] = true;
+    while (q.length) {
+      var cur = q.shift();
+      Object.keys(MAPS).forEach(function (id) {
+        if (seen[id]) return;
+        (MAPS[id].portals || []).forEach(function (p) { if (p.to === cur) { seen[id] = true; q.push(id); } });
+      });
+    }
+    return seen;
+  }
+  function nearestStagingMap(cur, target) {
+    var reach = reachableFrom(cur);
+    if (reach[target]) return { map: target, reason: 'reachable' };
+    // Cổng RA của phía đích: cổng từ một map thuộc phía đích sang map đi được từ cur (ngoài phía đích)
+    var side = canReachTarget(target);
+    var exits = [];
+    Object.keys(side).forEach(function (id) {
+      (MAPS[id].portals || []).forEach(function (p) { if (!side[p.to] && reach[p.to]) exits.push({ from: id, to: p.to }); });
+    });
+    if (exits.length) return { map: exits[0].to, reason: 'exit', exitFrom: exits[0].from };
+    if (/^hu_thien_/.test(target) && reach['dong_mach_ngam']) return { map: 'dong_mach_ngam', reason: 'huthien-npc' };
+    // Khoảng cách vô hướng từ mọi map đi được tới đích (BFS đa nguồn trên đồ thị vô hướng)
+    var dist = {}, q = [];
+    Object.keys(reach).forEach(function (id) { dist[id] = 0; q.push(id); });
+    while (q.length) {
+      var c = q.shift();
+      var nb = {};
+      (MAPS[c].portals || []).forEach(function (p) { nb[p.to] = true; });
+      Object.keys(MAPS).forEach(function (id) {
+        (MAPS[id].portals || []).forEach(function (p) { if (p.to === c) nb[id] = true; });
+      });
+      Object.keys(nb).forEach(function (id) { if (!(id in dist)) { dist[id] = dist[c] + 1; q.push(id); } });
+    }
+    if (target in dist) {
+      var best = null, bestD = Infinity;
+      Object.keys(reach).forEach(function (id) {
+        // khoảng cách vô hướng từ id tới target: chạy BFS ngược từ target
+        var dd = undirectedDist(id, target);
+        if (dd < bestD) { bestD = dd; best = id; }
+      });
+      if (best) return { map: best, reason: 'nearest' };
+    }
+    if (reach['tan_vien']) return { map: 'tan_vien', reason: 'hub' };
+    return { map: cur, reason: 'stay' };
+  }
+  function undirectedDist(a, b) {
+    if (a === b) return 0;
+    var seen = {}; seen[a] = true;
+    var q = [{ id: a, d: 0 }];
+    while (q.length) {
+      var n = q.shift();
+      var nb = {};
+      (MAPS[n.id].portals || []).forEach(function (p) { nb[p.to] = true; });
+      Object.keys(MAPS).forEach(function (id) {
+        (MAPS[id].portals || []).forEach(function (p) { if (p.to === n.id) nb[id] = true; });
+      });
+      var ids = Object.keys(nb);
+      for (var i = 0; i < ids.length; i++) {
+        if (ids[i] === b) return n.d + 1;
+        if (!seen[ids[i]]) { seen[ids[i]] = true; q.push({ id: ids[i], d: n.d + 1 }); }
+      }
+    }
+    return Infinity;
+  }
+  // Kế hoạch thoát map phụ (v1.11, lệnh Bui 13:24): khi BFS cổng (có hướng) từ map hiện tại
+  // không tới được đích, tìm cách tự quay ra thay vì dừng chờ người chơi.
+  //  - kind 'none': đã có đường cổng thẳng (không cần thoát).
+  //  - kind 'leave-dungeon': đang trong cụm Huyết Xích (không có cổng ra trong dữ liệu) →
+  //    thoát bằng nút "Rời" của game (#huyet-sac-hud → "Xác nhận rời phó bản" → leave_dungeon).
+  //  - kind 'portals': BFS vô hướng từ cur tới map gần nhất có đường cổng (có hướng) tới đích;
+  //    chặng "reverse" là cổng chỉ ghi ở phía map kia — ô cổng đoán theo điểm xuất hiện của map
+  //    hiện tại (chỉ gặp ở hu_thien_4 trong dữ liệu hiện tại).
+  //  - null: không có cách thoát nào trong dữ liệu cổng (cụm khép kín không nút rời).
+  function escapePlan(cur, target) {
+    if (!MAPS[cur] || !MAPS[target] || cur === target) return null;
+    if (bfsPath(cur, target)) return { kind: 'none' };
+    if (HUYET.maps.indexOf(cur) >= 0) return { kind: 'leave-dungeon' };
+    var prev = {}, q = [cur]; prev[cur] = null;
+    var found = null;
+    while (q.length) {
+      var c = q.shift();
+      if (c !== cur && bfsPath(c, target)) { found = c; break; }
+      var nb = {};
+      (MAPS[c].portals || []).forEach(function (p) { nb[p.to] = { from: c, to: p.to, portal: p, reverse: false }; });
+      Object.keys(MAPS).forEach(function (id) {
+        (MAPS[id].portals || []).forEach(function (p) {
+          if (p.to === c && !nb[id]) {
+            var sp = MAPS[c].spawn || [0, 0];
+            nb[id] = { from: c, to: id, portal: { tx: sp[0], ty: sp[1], to: id }, reverse: true };
+          }
+        });
+      });
+      Object.keys(nb).forEach(function (id) { if (!(id in prev)) { prev[id] = nb[id]; q.push(id); } });
+    }
+    if (!found) return null;
+    var hops = [], node = found;
+    while (prev[node]) { hops.unshift(prev[node]); node = prev[node].from; }
+    return { kind: 'portals', exitMap: found, hops: hops };
+  }
+  function stagingReasonText(near, target) {
+    var tName = MAPS[target] ? MAPS[target].name : target;
+    var nName = MAPS[near.map] ? MAPS[near.map].name : near.map;
+    if (near.reason === 'exit') return 'cổng ra của ' + (MAPS[near.exitFrom] ? MAPS[near.exitFrom].name : near.exitFrom) + ' về ' + nName;
+    if (near.reason === 'huthien-npc') return 'NPC Thủ Điện Sỹ Sách ở ' + nName + ' mở Sỹ Sách Điện (Thứ Năm 20:16, 30 phút)';
+    if (near.reason === 'nearest') return 'map đi được gần ' + tName + ' nhất theo đồ thị cổng';
+    if (near.reason === 'hub') return 'map trung tâm đi được';
+    return 'đang ở map đi được gần nhất';
+  }
+  function tryCrossPortal(runId, cur, portal) {
+    // v1.28: tới ô cổng → kiểm chứng đổi map SAU MỖI bước, kể cả khi lái lỗi (bước lên
+    // ô cổng có thể đã đổi map trước khi lỗi). Chưa đổi thì hạ cánh đi bộ lên ô cổng
+    // (chạy bất kể niềm tin bay — niềm tin có thể lệch trạng thái thật) rồi kiểm chứng lại.
+    return (async function () {
+      function changedTo() { var m = readMapId(); return m && m !== cur ? m : null; }
+      log('Tới ô cổng (' + portal.tx + ',' + portal.ty + ') → ' + (MAPS[portal.to] ? MAPS[portal.to].name : portal.to) + (S.flyingBelief ? ' (đang bay)' : ' (đi bộ)'));
+      try {
+        await goToPath(runId, portal.tx, portal.ty, 0, 240000, 'cổng');
+      } catch (e) {
+        if (!alive(runId)) throw e;
+        var mc = changedTo();
+        if (mc) { log('Đã qua cổng trong lúc lái (map đổi sang ' + (MAPS[mc] ? MAPS[mc].name : mc) + ')'); return mc; }
+        log('Chưa tới được ô cổng (' + portal.tx + ',' + portal.ty + '): ' + e.message + ' — hạ cánh thử đi bộ lên ô cổng');
+      }
+      var changed = await waitFor(changedTo, 12000, 'đổi map');
+      if (changed) return changed;
+      log('Chưa qua được cổng (' + portal.tx + ',' + portal.ty + ') — hạ cánh tạm đi bộ lên ô cổng (qua cổng xong bật lại Phi Hành ngay, v1.36)');
+      await ensureFly(runId, false);
+      try { await goToTile(runId, portal.tx, portal.ty, 0, 120000); }
+      catch (e2) {
+        if (!alive(runId)) throw e2;
+        var mc2 = changedTo();
+        if (mc2) { log('Đã qua cổng khi đi bộ lên ô cổng (map đổi sang ' + (MAPS[mc2] ? MAPS[mc2].name : mc2) + ')'); return mc2; }
+        log('Đi bộ cũng chưa tới được ô cổng: ' + e2.message);
+        return null;
+      }
+      changed = await waitFor(changedTo, 12000, 'đổi map (đi bộ)');
+      return changed || null;
+    })();
+  }
+  // Điểm neo của map: ô trống cố định (kề NPC chính / điểm trống) — qua cổng vào map là tới đó trước,
+  // rồi các chặng sau trong map xuất phát từ điểm neo thay vì từ ô spawn sát vách/cổng.
+  function goToAnchor(runId, mapId) {
+    return (async function () {
+      var m = MAPS[mapId];
+      if (!m || !m.anchor) return;
+      var p = readPos();
+      if (p && Math.max(Math.abs(m.anchor[0] - p.x), Math.abs(m.anchor[1] - p.y)) <= 1) {
+        log('Đã ở điểm neo của ' + m.name + ' (' + m.anchor[0] + ',' + m.anchor[1] + ')');
+        return;
+      }
+      setStatus('Tới điểm neo ' + (m.anchorLabel || '') + ' (' + m.anchor[0] + ',' + m.anchor[1] + ')…');
+      log('Tới điểm neo của ' + m.name + ': ' + (m.anchorLabel || 'điểm trống') + ' (' + m.anchor[0] + ',' + m.anchor[1] + ')');
+      try {
+        await goToPath(runId, m.anchor[0], m.anchor[1], 1, 180000, 'điểm neo');
+      } catch (e) {
+        if (!alive(runId)) throw e;
+        log('Chưa tới được điểm neo (' + e.message + ') — đi tiếp từ vị trí hiện tại');
+      }
+    })();
+  }
+  function travelTo(runId, targetMap) {
+    return (async function () {
+      var flyMode = S.flyingBelief; // vào travelTo đang bay thì giữ bay qua các chặng (hạ cánh khi cần rồi bay lại)
+      var escapes = 0;
+      var legs = 0;
+      while (true) {
+      if (!alive(runId)) throw new Error('đã dừng');
+      var cur = readMapId();
+      if (!cur) throw new Error('không đọc được map hiện tại');
+      if (cur === targetMap) { if (flyMode) await flyGuardAfterMapChange(runId, true, 'đã ở map đích'); return; }
+      var path = bfsPath(cur, targetMap);
+      if (!path) {
+        // Thoát map phụ (v1.11, lệnh Bui 13:24): BFS cổng từ map hiện tại không tới được đích
+        // (lạc vào map vườn/map phụ/cụm khép kín) → tự quay ra qua cổng gần nhất (hoặc nút Rời
+        // phó bản nếu đang trong Huyết Xích) rồi đi tiếp tới đích, không dừng chờ người chơi.
+        var plan = escapePlan(cur, targetMap);
+        if (!plan || plan.kind === 'none') throw new Error('không có đường cổng từ ' + cur + ' tới ' + targetMap);
+        if (++escapes > 4) throw new Error('thoát map phụ quá 4 lần mà chưa tới được ' + targetMap);
+        var tName = MAPS[targetMap] ? MAPS[targetMap].name : targetMap;
+        if (plan.kind === 'leave-dungeon') {
+          log('Đang ở map phụ ' + (MAPS[cur] ? MAPS[cur].name : cur) + ' — tự quay ra bằng nút Rời phó bản rồi đi tiếp ' + tName);
+          if (!(await hxLeaveDungeon(runId))) throw new Error('không thoát được Huyết Xích Cấm Địa để đi tới ' + targetMap);
+          continue;
+        }
+        for (var h = 0; h < plan.hops.length; h++) {
+          if (!alive(runId)) throw new Error('đã dừng');
+          var hopE = plan.hops[h];
+          var fromName = MAPS[hopE.from] ? MAPS[hopE.from].name : hopE.from;
+          var toName = MAPS[hopE.to] ? MAPS[hopE.to].name : hopE.to;
+          log('Đang ở map phụ ' + fromName + ' — tự quay ra qua cổng (' + hopE.portal.tx + ',' + hopE.portal.ty + ') tới ' + toName + ' rồi đi tiếp ' + tName + (hopE.reverse ? ' (cổng ngược — ô cổng đoán theo điểm xuất hiện)' : ''));
+          setStatus('Thoát map phụ: qua cổng tới ' + toName + '…');
+          if (flyMode && !S.flyingBelief) await ensureFly(runId, true);
+          var changedE = await tryCrossPortal(runId, hopE.from, hopE.portal);
+          if (!changedE) throw new Error('không qua được cổng thoát map phụ tại (' + hopE.portal.tx + ',' + hopE.portal.ty + ')');
+          log('Đã thoát tới map: ' + (MAPS[changedE] ? MAPS[changedE].name : changedE));
+          // v1.36: qua cổng xong kiểm tra Phi Hành ngay (dự phòng hạ cánh trong
+          // tryCrossPortal có thể đã tắt bay) — cần bay thì bật lại TRƯỚC điểm neo
+          await flyGuardAfterMapChange(runId, flyMode ? true : null, 'thoát map phụ qua cổng');
+          await goToAnchor(runId, changedE);
+        }
+        continue;
+      }
+      // v1.28 (Bui báo lỗi 21:21 — đi farm Phong Địa qua Dược không qua cổng): đi TỪNG
+      // CHẶNG có kiểm chứng. Vào map → tới điểm neo NPC của map → bay tới cổng đúng
+      // hướng → qua cổng → đọc lại map thật → tính chặng kế từ map thật. Không dùng
+      // tuyến tính sẵn từ đầu: qua cổng lạc sang map khác thì tính lại tuyến từ đó.
+      var hop = path[0];
+      legs++;
+      if (legs > 24) throw new Error('đi qua quá 24 chặng cổng mà chưa tới ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap) + ' (đang ở ' + (MAPS[cur] ? MAPS[cur].name : cur) + ')');
+      if (legs === 1) {
+        log('Đường đi: ' + [cur].concat(path.map(function (hh) { return hh.to; })).map(function (id) { return MAPS[id] ? MAPS[id].name : id; }).join(' → ') + ' (' + path.length + ' cổng)' + (flyMode ? ' — bay' : ''));
+      }
+      log('Chặng ' + legs + ': ' + (MAPS[cur] ? MAPS[cur].name : cur) + ' → ' + (MAPS[hop.to] ? MAPS[hop.to].name : hop.to) + ' qua cổng (' + hop.tx + ',' + hop.ty + ') — còn ' + path.length + ' cổng tới ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap));
+      setStatus('Qua cổng tới ' + (MAPS[hop.to] ? MAPS[hop.to].name : hop.to) + '…');
+      if (flyMode && !S.flyingBelief) await ensureFly(runId, true);
+      var changed = await tryCrossPortal(runId, cur, hop);
+      if (!changed) {
+        var pair = pairPortal(cur, hop);
+        if (pair) {
+          log('Thử ô cổng cặp (' + pair.tx + ',' + pair.ty + ') → ' + (MAPS[pair.to] ? MAPS[pair.to].name : pair.to));
+          if (flyMode && !S.flyingBelief) await ensureFly(runId, true);
+          changed = await tryCrossPortal(runId, cur, pair);
+        }
+      }
+      if (!changed) {
+        // Dự phòng cuối (giữ từ v1.1): chạm thêm 1 ô theo hướng ra mép
+        log('Chưa qua được cổng (' + hop.tx + ',' + hop.ty + ') — chạm thêm ra mép (dự phòng)');
+        var p = readPos();
+        if (p) tapCanvas(clamp((hop.tx - p.x) * S.pxX, -2 * S.pxX, 2 * S.pxX) || (hop.tx === 0 ? -2 * S.pxX : 2 * S.pxX), clamp((hop.ty - p.y) * S.pxY, -2 * S.pxY, 2 * S.pxY) || (hop.ty === 0 ? -2 * S.pxY : 2 * S.pxY));
+        changed = await waitFor(function () { var m = readMapId(); return m && m !== cur ? m : null; }, 12000, 'đổi map (lần cuối)');
+      }
+      if (!changed) throw new Error('không qua được cổng chặng ' + legs + ' tại (' + hop.tx + ',' + hop.ty + ') từ ' + (MAPS[cur] ? MAPS[cur].name : cur) + ' tới ' + (MAPS[hop.to] ? MAPS[hop.to].name : hop.to) + ' — kiểm tra nhật ký chặng này');
+      if (changed !== hop.to) log('Chặng ' + legs + ': qua cổng sang map ' + (MAPS[changed] ? MAPS[changed].name : changed) + ' (khác dự kiến ' + (MAPS[hop.to] ? MAPS[hop.to].name : hop.to) + ') — tính lại tuyến từ map này');
+      else log('Chặng ' + legs + ' xong — đã tới map: ' + (MAPS[changed] ? MAPS[changed].name : changed));
+      // v1.36: qua cổng xong kiểm tra Phi Hành ngay (dự phòng hạ cánh trong
+      // tryCrossPortal có thể đã tắt bay) — cần bay thì bật lại TRƯỚC điểm neo,
+      // không đi bộ tới điểm neo rồi chặng kế mới bật lại như bản cũ
+      await flyGuardAfterMapChange(runId, flyMode ? true : null, 'qua cổng chặng ' + legs);
+      await goToAnchor(runId, changed); // vào map nào cũng tới điểm neo NPC của map đó trước
+      brightAutoCheck(); // v1.27: vào bí cảnh/map sự kiện tối thì tự bật Map sáng
+      }
+    })();
+  }
+
+  // ============ Chọn khu qua bảng khu (KhuUI) ============
+  // Chạm prop bảng khu (type:"khu_board") → KhuUI.open() hiện panel #khu-panel (bỏ class hidden).
+  // Nút khu: button.khu-o[data-khu="N"], khu hiện tại có class "dang"; .khu-note ghi "Đang ở khu N…".
+  // Bấm khu khác → game gửi Gateway {op:"khu",act:"chon"} rồi đóng panel + tải lại map theo khu.
+  // Panel tạo lười lần mở đầu; đóng rồi DOM vẫn còn nhưng chữ cũ (stale) → kiểm chứng phải mở lại bảng.
+  function khuPanelOpen() {
+    var p = $('#khu-panel');
+    if (!p || p.classList.contains('hidden')) return false;
+    var r = p.getBoundingClientRect(), s = getComputedStyle(p);
+    return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
+  }
+  function readCurrentZone() {
+    var cur = document.querySelector('#khu-panel .khu-o.dang');
+    if (cur) {
+      var n = parseInt(cur.getAttribute('data-khu') || '', 10);
+      if (!isNaN(n)) return n;
+    }
+    var note = document.querySelector('#khu-panel .khu-note');
+    if (note) {
+      var m = (note.textContent || '').match(/Đang ở khu\s*(\d+)/);
+      if (m) return +m[1];
+    }
+    return null;
+  }
+  function closeKhuPanel() {
+    var x = document.querySelector('#khu-panel .khu-x');
+    if (x) pressDom(x);
+  }
+  // Mở bảng khu: đứng cạnh bảng → bấm nút Tương Tác; không thấy nút → dự phòng chạm xoắn ốc
+  function openKhuPanel(runId, budgetMs) {
+    return (async function () {
+      if (khuPanelOpen()) return true;
+      if (await pressInteractBtn(runId, Math.min(8000, budgetMs || 8000), 'bảng khu')) {
+        var ok = await waitFor(function () { return khuPanelOpen() ? true : null; }, 5000, 'bảng khu hiện');
+        if (ok) { log('Bước chọn khu: đã mở bảng khu bằng nút Tương Tác'); return true; }
+        log('Bấm Tương Tác mà bảng khu chưa hiện — dự phòng chạm xoắn ốc');
+      } else {
+        log('Dự phòng chạm xoắn ốc mở bảng khu');
+      }
+      return await tapSpiral(runId, khuPanelOpen, 'bảng khu', budgetMs);
+    })();
+  }
+  function ensureZone(runId, mapId, want) {
+    return (async function () {
+      var m = MAPS[mapId];
+      var signs = (m && m.signs) || [];
+      if (!signs.length) { log('Map ' + (m ? m.name : mapId) + ' không có bảng khu trong dữ liệu — không chọn được khu — farm ở khu hiện tại'); return false; }
+      var cur0 = readCurrentZone();
+      if (cur0 === want) { log('Đã ở Khu ' + want + ' — không cần đổi'); return true; }
+      if (cur0 == null) log('Không đọc được khu hiện tại — vẫn tới bảng chọn Khu ' + want + ' (chọn trùng vô hại)');
+      var board = signs[0];
+      setStatus('Tới bảng khu (' + board[0] + ',' + board[1] + ') chọn Khu ' + want + '…');
+      await standNextTo(runId, board[0], board[1], 'bảng khu');
+      await ensureFly(runId, false); // hạ cánh, đứng cạnh bảng mới tương tác được
+      // Khâu tại bảng tối đa 15s: mở bảng → đọc khu → bấm chọn → mở lại kiểm chứng
+      var boardT0 = Date.now(), BOARD_BUDGET = 15000;
+      function boardLeft() { return Math.max(1000, BOARD_BUDGET - (Date.now() - boardT0)); }
+      log('Bước chọn khu: đứng cạnh bảng, bấm Tương Tác mở bảng…');
+      if (!(await openKhuPanel(runId, boardLeft()))) { log('không chọn được khu — farm ở khu hiện tại (không mở được bảng khu)'); return false; }
+      await sleep(500);
+      var cur = readCurrentZone();
+      log('Bước chọn khu: bảng đã hiện, khu hiện tại đọc được: ' + (cur == null ? 'không rõ' : cur));
+      if (cur === want) { log('Đã ở Khu ' + want + ' — đóng bảng'); closeKhuPanel(); await sleep(500); return true; }
+      var btn = document.querySelector('#khu-panel .khu-o[data-khu="' + want + '"]');
+      if (!btn) { log('Bảng khu không có Khu ' + want + ' (map này ít khu hơn) — không chọn được khu — farm ở khu hiện tại'); closeKhuPanel(); await sleep(500); return false; }
+      log('Bước chọn khu: đang ở Khu ' + (cur == null ? '?' : cur) + ' — bấm chọn Khu ' + want);
+      pressDom(btn);
+      // Chờ panel đóng + nhân vật đứng yên (đổi khu tải lại map)
+      await waitFor(function () { return !khuPanelOpen() ? true : null; }, 8000, 'bảng khu đóng sau khi chọn');
+      await waitStablePos(runId, 15000);
+      if (!alive(runId)) return false;
+      // Mở lại bảng kiểm chứng (chữ cũ stale cho tới lần render sau)
+      log('Bước chọn khu: mở lại bảng kiểm chứng…');
+      if (await openKhuPanel(runId, boardLeft())) {
+        await sleep(500);
+        var cur2 = readCurrentZone();
+        if (cur2 === want) log('Đã đổi sang Khu ' + want + ' (kiểm chứng qua bảng khu)');
+        else log('Khu hiện tại đọc được: ' + (cur2 == null ? 'không rõ' : cur2) + ' (muốn Khu ' + want + ') — không chọn được khu — farm ở khu hiện tại');
+        closeKhuPanel();
+        await sleep(500);
+        return cur2 === want;
+      }
+      log('Không mở lại được bảng khu để kiểm chứng trong hạn 15s — coi như đã chọn Khu ' + want);
+      return true;
+    })();
+  }
+
+  // ============ v1.30 (Bui 21:53 ngày 2026-11-26): Phong Địa — tự kiểm tra khu đất phong ============
+  // Cơ chế theo mã client (module PhongDia + PhongDiaUI + KhuUI):
+  // - Phong Địa có SO_KHU=40 khu đất phong, 3 hạng: Thượng (khu 1–4, Đạo Hạnh ×2),
+  //   Trung (5–16, ×1,5), Hạ (17–40, ×1). Kỳ tranh Thứ Năm 21:00–21:30.
+  // - Trạng thái từng khu server trả (PhongDiaUI.st.khu[]): chu = tông đang giữ khu,
+  //   minh = của tông mình, cam = mình không vào được, tranh = đang tranh Bia.
+  //   Game ghi rõ: "Chưa có tông môn — chỉ vào được đất trống." → khu có chủ tông khác
+  //   là đất phong, không farm được; khu Trống (không chu) hoặc của tông mình mới farm được.
+  // - Bảng khu KhuUI (#khu-panel .khu-o[data-khu]) ở Phong Địa được trang trí theo st:
+  //   class pd-chu (có tông giữ) + pd-minh (tông mình) + pd-cam (không vào được) +
+  //   pd-tranh (đang tranh), thẻ .khu-tag ghi tên tông giữ. st tự tải khi ở map
+  //   (PhongDiaUI.setMap chạy interval 500ms) nên mở bảng phải chờ trang trí hiện.
+  var PD_HANG = [{ id: 'thuong', ten: 'Thượng', tu: 1, den: 4, daoHanh: 2 }, { id: 'trung', ten: 'Trung', tu: 5, den: 16, daoHanh: 1.5 }, { id: 'ha', ten: 'Hạ', tu: 17, den: 40, daoHanh: 1 }];
+  function pdHangOf(k) {
+    for (var i = 0; i < PD_HANG.length; i++) if (k >= PD_HANG[i].tu && k <= PD_HANG[i].den) return PD_HANG[i];
+    return PD_HANG[PD_HANG.length - 1];
+  }
+  // Đọc trạng thái các khu từ bảng khu đang mở. hasInfo=false khi chưa ô nào có dấu
+  // pd- (st chưa tải — bảng chưa được trang trí, không phân biệt được đất phong).
+  function readPhongDiaZones() {
+    var cells = document.querySelectorAll('#khu-panel .khu-o[data-khu]');
+    var list = [], hasInfo = false;
+    for (var i = 0; i < cells.length; i++) {
+      var c = cells[i], k = parseInt(c.getAttribute('data-khu') || '', 10);
+      if (isNaN(k)) continue;
+      var cl = c.classList;
+      var tagEl = c.querySelector ? c.querySelector('.khu-tag') : null;
+      var z = {
+        k: k,
+        chu: !!(cl && cl.contains('pd-chu')),
+        minh: !!(cl && cl.contains('pd-minh')),
+        cam: !!(cl && cl.contains('pd-cam')),
+        tranh: !!(cl && cl.contains('pd-tranh')),
+        tag: tagEl ? (tagEl.textContent || '').trim() : '',
+        dang: !!(cl && cl.contains('dang'))
+      };
+      if (z.chu || z.minh || z.cam || z.tranh || z.tag) hasInfo = true;
+      z.farmable = !z.cam && !z.tranh && (!z.chu || z.minh);
+      list.push(z);
+    }
+    list.sort(function (a, b) { return a.k - b.k; });
+    return { list: list, hasInfo: hasInfo };
+  }
+  // Khu farm được tốt nhất: hạng cao trước (Đạo Hạnh ×2 > ×1,5 > ×1), cùng hạng số nhỏ trước.
+  function pdPickFarmable(list) {
+    var ok = list.filter(function (z) { return z.farmable; });
+    if (!ok.length) return null;
+    ok.sort(function (a, b) {
+      var d = pdHangOf(b.k).daoHanh - pdHangOf(a.k).daoHanh;
+      return d !== 0 ? d : a.k - b.k;
+    });
+    return ok[0];
+  }
+  function pdZoneText(z) {
+    if (z.cam) return 'không vào được';
+    if (z.tranh) return 'đang tranh' + (z.tag ? ' (' + z.tag + ')' : '');
+    if (z.minh) return 'của tông mình';
+    if (z.chu) return 'đất phong' + (z.tag ? ' — ' + z.tag + ' giữ' : ' (có tông giữ)');
+    return 'đất trống';
+  }
+  // Dự phòng khi không đọc được trạng thái đất phong từ bảng khu: thử từng khu —
+  // vào khu, tới điểm farm, bật trio 15s xem có dấu hiệu giao chiến (Khí Huyết tụt
+  // hoặc nhân vật dịch chuyển theo Auto) không. Có quái = farm được (suy từ giao chiến).
+  function pdFallbackTryZones(runId, want) {
+    return (async function () {
+      log('Phong Địa: không đọc được trạng thái đất phong từ bảng khu — dự phòng thử từng khu xem có quái farm được không (kiểm tra suy từ giao chiến)');
+      var m = MAPS.phong_dia;
+      var fc = (m && m.farmCluster) || { tx: 12, ty: 21, name: 'Lợn Rừng Phong Địa' };
+      var cands = [], seen = {};
+      function addCand(k) { if (k && !seen[k]) { seen[k] = true; cands.push(k); } }
+      addCand(want); addCand(readCurrentZone());
+      var order = [];
+      for (var k = 1; k <= 40; k++) order.push(k);
+      order.sort(function (a, b) { var d = pdHangOf(b).daoHanh - pdHangOf(a).daoHanh; return d !== 0 ? d : a - b; });
+      order.forEach(addCand);
+      cands = cands.slice(0, 6);
+      for (var i = 0; i < cands.length; i++) {
+        if (!alive(runId)) return null;
+        var cand = cands[i];
+        log('Phong Địa (dự phòng): thử Khu ' + cand + ' (hạng ' + pdHangOf(cand).ten + ')…');
+        await ensureZone(runId, 'phong_dia', cand);
+        if (!alive(runId)) return null;
+        await goToPath(runId, fc.tx, fc.ty, 1, 120000, 'điểm farm ' + fc.name);
+        if (!alive(runId)) return null;
+        await ensureCombatTrio(runId, 'kiểm tra quái Khu ' + cand + ' Phong Địa');
+        var hp0 = readHpPct(), p0 = readPos(), fought = false;
+        var t0 = Date.now();
+        while (alive(runId) && Date.now() - t0 < 15000) {
+          await sleep(1500);
+          var hp = readHpPct(), p = readPos();
+          if (hp0 != null && hp != null && hp0 - hp >= 0.03) { fought = true; break; }
+          if (p0 && p && Math.max(Math.abs(p.x - p0.x), Math.abs(p.y - p0.y)) >= 3) { fought = true; break; }
+          if (hp != null && hp < 0.35) break;
+        }
+        if (fought) { log('Phong Địa (dự phòng): Khu ' + cand + ' có quái giao chiến — farm ở khu này'); return cand; }
+        log('Phong Địa (dự phòng): Khu ' + cand + ' không thấy giao chiến sau 15s — thử khu kế');
+        await ensureAuto(runId, false);
+      }
+      log('Phong Địa (dự phòng): thử ' + cands.length + ' khu đều không thấy quái — không farm được');
+      return null;
+    })();
+  }
+  // Bảo đảm đang ở khu Phong Địa farm được (không phải đất phong). Trả số khu hoặc null.
+  // want = khu người dùng chọn (có thể null). Khu đang chọn là đất phong → tự đổi khu khác.
+  function phongDiaEnsureFarmZone(runId, want) {
+    return (async function () {
+      if (readMapId() !== 'phong_dia') { log('Phong Địa: chưa ở map Phong Địa — bỏ qua kiểm tra khu'); return null; }
+      var m = MAPS.phong_dia;
+      var signs = (m && m.signs) || [];
+      if (!signs.length) { log('Phong Địa: không có bảng khu trong dữ liệu — dự phòng thử từng khu'); return await pdFallbackTryZones(runId, want); }
+      var board = signs[0];
+      setStatus('Phong Địa: tới bảng khu kiểm tra đất phong…');
+      await standNextTo(runId, board[0], board[1], 'bảng khu Phong Địa');
+      await ensureFly(runId, false);
+      if (!alive(runId)) return null;
+      if (!(await openKhuPanel(runId, 15000))) { log('Phong Địa: không mở được bảng khu — dự phòng thử từng khu'); return await pdFallbackTryZones(runId, want); }
+      // Chờ bảng được trang trí dấu tông giữ (st tải qua interval 500ms của game)
+      var zones = readPhongDiaZones(), waitT0 = Date.now();
+      while (!zones.hasInfo && Date.now() - waitT0 < 6000 && alive(runId)) {
+        await sleep(500);
+        if (!khuPanelOpen()) { if (!(await openKhuPanel(runId, 8000))) break; }
+        zones = readPhongDiaZones();
+      }
+      if (!alive(runId)) return null;
+      if (!zones.hasInfo || !zones.list.length) {
+        closeKhuPanel(); await sleep(500);
+        return await pdFallbackTryZones(runId, want);
+      }
+      var phong = zones.list.filter(function (z) { return z.chu && !z.minh; });
+      var trong = zones.list.filter(function (z) { return z.farmable; });
+      var cam = zones.list.filter(function (z) { return z.cam; });
+      log('Phong Địa: bảng khu có ' + zones.list.length + ' khu — đất phong (có tông giữ): ' + (phong.length ? phong.map(function (z) { return z.k + (z.tag ? ' (' + z.tag + ')' : ''); }).join(', ') : 'không có') + ' · đất trống farm được: ' + (trong.length ? trong.map(function (z) { return z.k; }).join(', ') : 'không có') + (cam.length ? ' · không vào được: ' + cam.map(function (z) { return z.k; }).join(', ') : ''));
+      var cur = readCurrentZone();
+      var byK = {};
+      zones.list.forEach(function (z) { byK[z.k] = z; });
+      var target = null;
+      if (want && byK[want]) {
+        if (byK[want].farmable) target = want;
+        else log('Phong Địa: Khu ' + want + ' anh chọn là ' + pdZoneText(byK[want]) + ' — tự đổi sang khu đất trống');
+      }
+      if (target == null && cur && byK[cur] && byK[cur].farmable && !want) target = cur;
+      if (target == null) {
+        var best = pdPickFarmable(zones.list);
+        if (!best) { log('Phong Địa: cả ' + zones.list.length + ' khu đều là đất phong/không vào được — không có khu farm được'); closeKhuPanel(); await sleep(500); return null; }
+        target = best.k;
+        log('Phong Địa: chọn Khu ' + target + ' (' + pdZoneText(best) + ', hạng ' + pdHangOf(target).ten + ' — Đạo Hạnh ×' + String(pdHangOf(target).daoHanh).replace('.', ',') + ') để farm');
+      }
+      if (cur === target) { log('Phong Địa: đã ở Khu ' + target + ' (' + pdZoneText(byK[target]) + ') — farm luôn'); closeKhuPanel(); await sleep(500); return target; }
+      var btn = document.querySelector('#khu-panel .khu-o[data-khu="' + target + '"]');
+      if (!btn) { log('Phong Địa: bảng khu không có Khu ' + target + ' — không đổi được'); closeKhuPanel(); await sleep(500); return null; }
+      log('Phong Địa: đang ở Khu ' + (cur == null ? '?' : cur) + (cur && byK[cur] ? ' (' + pdZoneText(byK[cur]) + ')' : '') + ' — bấm đổi sang Khu ' + target);
+      pressDom(btn);
+      await waitFor(function () { return !khuPanelOpen() ? true : null; }, 8000, 'bảng khu đóng sau khi chọn');
+      await waitStablePos(runId, 15000);
+      if (!alive(runId)) return null;
+      if (await openKhuPanel(runId, 10000)) {
+        await sleep(500);
+        var cur2 = readCurrentZone();
+        closeKhuPanel(); await sleep(500);
+        if (cur2 === target) { log('Phong Địa: đã đổi sang Khu ' + target + ' (kiểm chứng qua bảng khu)'); return target; }
+        log('Phong Địa: khu hiện tại đọc được ' + (cur2 == null ? 'không rõ' : cur2) + ' (muốn Khu ' + target + ') — không đổi được khu');
+        return null;
+      }
+      log('Phong Địa: không mở lại được bảng khu để kiểm chứng — coi như đã đổi sang Khu ' + target);
+      return target;
+    })();
+  }
+
+  // ============ v1.34 (Bui chốt 22:34 ngày 2026-11-26): Luyện Khí farm khu dược vắng người ============
+  // "Khu dược" = Thảo Dược Cốc (duoc_vien): map dược liệu (Đại Phu, việc Dược Công,
+  // cổng Vườn Cá Nhân), quái farm cho Luyện Khí: Độc Đằng Yêu ×6 (cấp 4, requireStage 7)
+  // + cụm Tiêu Sư/Kiếp Tặc/Sơn Tặc quanh (11–23,12–17) — theo enemies trong decl DUOC_VIEN.
+  // Cơ chế đông/vắng theo mã client (KhuUI): server trả {dem:[số người từng khu],
+  // toiDa: trần, tran:[trần từng khu]} qua onList, nhưng DOM chỉ hiện class 3 mức trên
+  // ô khu: "vang" (số người ≤ 50% trần), "dong" (> 50%), "day" (đầy = chạm trần).
+  // Mảng dem nằm trong closure KhuUI — JS tiêm không đọc được số người chính xác,
+  // nên tool chọn khu vắng nhất theo mức class (ghi rõ cách suy này trong nhật ký):
+  // ưu tiên khu "vang", tránh "dong", không vào "day"; khu hiện tại đang "vang" thì giữ.
+  var DUOC_MAP = 'duoc_vien';
+  function isLuyenKhiRealm(ri) {
+    if (!ri) return false;
+    if (ri.realmId) return ri.realmId.indexOf('luyen_khi_') === 0;
+    return typeof ri.tier === 'number' && ri.tier >= REALM_ORDER.indexOf('luyen_khi_1') && ri.tier < REALM_ORDER.indexOf('truc_co_1');
+  }
+  function isTrucCoUpRealm(ri) {
+    if (!ri) return false;
+    if (typeof ri.tier === 'number') return ri.tier >= REALM_ORDER.indexOf('truc_co_1');
+    return false;
+  }
+  // Đọc mức đông/vắng các khu từ bảng khu đang mở. hasInfo=false khi chưa ô nào có
+  // class vang/dong/day (danh sách số người server chưa về — onList chưa chạy).
+  function readKhuCrowd() {
+    var cells = document.querySelectorAll('#khu-panel .khu-o[data-khu]');
+    var list = [], hasInfo = false;
+    for (var i = 0; i < cells.length; i++) {
+      var c = cells[i], k = parseInt(c.getAttribute('data-khu') || '', 10);
+      if (isNaN(k)) continue;
+      var cl = c.classList;
+      var crowd = (cl && cl.contains('day')) ? 'day' : (cl && cl.contains('dong')) ? 'dong' : (cl && cl.contains('vang')) ? 'vang' : '?';
+      if (crowd !== '?') hasInfo = true;
+      list.push({ k: k, crowd: crowd, dang: !!(cl && cl.contains('dang')) });
+    }
+    list.sort(function (a, b) { return a.k - b.k; });
+    return { list: list, hasInfo: hasInfo };
+  }
+  function khuCrowdText(crowd) {
+    return crowd === 'vang' ? 'vắng người (≤50% trần)' : crowd === 'dong' ? 'đông người (>50% trần)' : crowd === 'day' ? 'đầy (chạm trần)' : 'không rõ mức';
+  }
+  // Khu vắng nhất theo mức class: bỏ khu đầy; khu hiện tại đang vắng thì giữ nguyên;
+  // không thì khu vắng số nhỏ nhất; không có khu vắng thì khu đông số nhỏ nhất
+  // (ghi rõ là không có khu vắng). Trả {k, crowd} hoặc null khi mọi khu đều đầy.
+  function khuPickEmptiest(list, cur) {
+    var ok = list.filter(function (z) { return z.crowd !== 'day'; });
+    if (!ok.length) return null;
+    var curZ = null;
+    ok.forEach(function (z) { if (z.k === cur) curZ = z; });
+    if (curZ && curZ.crowd === 'vang') return curZ;
+    var vang = ok.filter(function (z) { return z.crowd === 'vang'; });
+    if (vang.length) return vang[0];
+    return ok[0];
+  }
+  // Bảo đảm đang ở khu vắng người nhất của Thảo Dược Cốc (khu dược). Trả số khu hoặc
+  // null khi không đổi được (farm ở khu hiện tại). Khuôn theo phongDiaEnsureFarmZone.
+  function duocEnsureEmptyZone(runId) {
+    return (async function () {
+      if (readMapId() !== DUOC_MAP) { log('Khu dược: chưa ở Thảo Dược Cốc — bỏ qua chọn khu vắng người'); return null; }
+      var m = MAPS[DUOC_MAP];
+      var signs = (m && m.signs) || [];
+      if (!signs.length) { log('Khu dược: không có bảng khu trong dữ liệu — farm ở khu hiện tại'); return null; }
+      var board = signs[0];
+      setStatus('Khu dược: tới bảng khu chọn khu vắng người nhất…');
+      await standNextTo(runId, board[0], board[1], 'bảng khu Thảo Dược Cốc');
+      await ensureFly(runId, false);
+      if (!alive(runId)) return null;
+      if (!(await openKhuPanel(runId, 15000))) { log('Khu dược: không mở được bảng khu — farm ở khu hiện tại'); return null; }
+      // Chờ server trả số người từng khu (onList → game vẽ lại class vang/dong/day)
+      var crowd = readKhuCrowd(), waitT0 = Date.now();
+      while (!crowd.hasInfo && Date.now() - waitT0 < 6000 && alive(runId)) {
+        await sleep(500);
+        if (!khuPanelOpen()) { if (!(await openKhuPanel(runId, 8000))) break; }
+        crowd = readKhuCrowd();
+      }
+      if (!alive(runId)) return null;
+      if (!crowd.hasInfo || !crowd.list.length) {
+        log('Khu dược: bảng khu chưa hiện mức đông/vắng (server chưa trả số người) — farm ở khu hiện tại, không suy đoán');
+        closeKhuPanel(); await sleep(500);
+        return null;
+      }
+      var cur = readCurrentZone();
+      var vang = crowd.list.filter(function (z) { return z.crowd === 'vang'; });
+      var dong = crowd.list.filter(function (z) { return z.crowd === 'dong'; });
+      var day = crowd.list.filter(function (z) { return z.crowd === 'day'; });
+      log('Khu dược: bảng khu có ' + crowd.list.length + ' khu — vắng người: ' + (vang.length ? vang.map(function (z) { return z.k; }).join(', ') : 'không có') + ' · đông người: ' + (dong.length ? dong.map(function (z) { return z.k; }).join(', ') : 'không có') + ' · đầy: ' + (day.length ? day.map(function (z) { return z.k; }).join(', ') : 'không có') + ' (game chỉ hiện 3 mức qua class ô khu, không hiện số người chính xác)');
+      var best = khuPickEmptiest(crowd.list, cur);
+      if (!best) { log('Khu dược: mọi khu đều đầy — không đổi được khu, farm ở khu hiện tại'); closeKhuPanel(); await sleep(500); return null; }
+      if (cur === best.k) {
+        log('Khu dược: đã ở Khu ' + best.k + ' (' + khuCrowdText(best.crowd) + ') — khu vắng nhất, farm luôn');
+        closeKhuPanel(); await sleep(500);
+        return best.k;
+      }
+      log('Khu dược: chọn Khu ' + best.k + ' (' + khuCrowdText(best.crowd) + ') — khu vắng người nhất' + (best.crowd !== 'vang' ? ' (không có khu nào vắng hẳn)' : ''));
+      var btn = document.querySelector('#khu-panel .khu-o[data-khu="' + best.k + '"]');
+      if (!btn) { log('Khu dược: bảng khu không có Khu ' + best.k + ' — không đổi được'); closeKhuPanel(); await sleep(500); return null; }
+      log('Khu dược: đang ở Khu ' + (cur == null ? '?' : cur) + ' — bấm đổi sang Khu ' + best.k);
+      pressDom(btn);
+      await waitFor(function () { return !khuPanelOpen() ? true : null; }, 8000, 'bảng khu đóng sau khi chọn');
+      await waitStablePos(runId, 15000);
+      if (!alive(runId)) return null;
+      if (await openKhuPanel(runId, 10000)) {
+        await sleep(500);
+        var cur2 = readCurrentZone();
+        closeKhuPanel(); await sleep(500);
+        if (cur2 === best.k) { log('Khu dược: đã đổi sang Khu ' + best.k + ' (kiểm chứng qua bảng khu)'); return best.k; }
+        log('Khu dược: khu hiện tại đọc được ' + (cur2 == null ? 'không rõ' : cur2) + ' (muốn Khu ' + best.k + ') — không đổi được khu, farm ở khu hiện tại');
+        return null;
+      }
+      log('Khu dược: không mở lại được bảng khu để kiểm chứng — coi như đã đổi sang Khu ' + best.k);
+      return best.k;
+    })();
+  }
+
+  // ============ Auto ============
+  // Trạng thái Auto thật đọc từ class "active"/aria-pressed của #btn-auto-touch (readAutoState).
+  // Bật/tắt có kiểm chứng: bấm nút → đọc lại; chưa ăn → phím KeyT → đọc lại; không đọc được
+  // trạng thái thì quay về phát hiện lật qua autoSig như v1.6 và ghi rõ "không đọc được trạng thái".
+  function toggleAutoOnce() {
+    var before = autoSig();
+    pressKey('KeyT', 't');
+    return sleep(1100).then(function () {
+      if (autoSig() !== before) return true;
+      var el = $('#btn-auto-touch') || $('#btn-auto');
+      if (el) pressDom(el);
+      return sleep(1100).then(function () { return autoSig() !== before; });
+    });
+  }
+  function pressAutoBtn() {
+    var el = $('#btn-auto-touch') || $('#btn-auto');
+    if (!el) return false;
+    return pressDom(el);
+  }
+  function ensureAuto(runId, on) {
+    return (async function () {
+      var cur = readAutoState();
+      var state = cur == null ? S.autoBelief : cur;
+      if (state === on) {
+        S.autoBelief = on;
+        log('Auto: ' + (on ? 'BẬT' : 'TẮT') + (cur != null ? ' (đã kiểm chứng)' : ' (tin — không đọc được trạng thái)'));
+        return true;
+      }
+      // Cách 1: bấm nút #btn-auto-touch (v1.32: chỉ bấm khi trạng thái thật đang sai
+      // ý ở trên; bấm xong đọc lại — chưa đúng thì ghi trước/sau rồi mới thử cách 2)
+      if (pressAutoBtn()) {
+        await sleep(900);
+        if (!alive(runId)) return false;
+        cur = readAutoState();
+        if (cur === on) {
+          S.autoBelief = on; if (on) S.autoByTool = true;
+          log('Auto: ' + (on ? 'BẬT' : 'TẮT') + ' (đã kiểm chứng)');
+          return true;
+        }
+        log('Auto: bấm nút chưa đúng ý — trạng thái trước: ' + (state ? 'BẬT' : 'TẮT') + ', sau: ' + (cur == null ? 'không đọc được' : (cur ? 'BẬT' : 'TẮT')) + ' — thử phím KeyT');
+      }
+      // Cách 2: phím KeyT (KeyR cũng lật Auto trong game)
+      pressKey('KeyT', 't');
+      await sleep(900);
+      if (!alive(runId)) return false;
+      cur = readAutoState();
+      if (cur === on) {
+        S.autoBelief = on; if (on) S.autoByTool = true;
+        log('Auto: ' + (on ? 'BẬT' : 'TẮT') + ' (đã kiểm chứng)');
+        return true;
+      }
+      if (cur != null) {
+        S.autoBelief = cur;
+        log('Auto: ' + (cur ? 'BẬT' : 'TẮT') + ' (chưa đúng ý — trạng thái thật đọc từ nút Auto)');
+        return false;
+      }
+      // Không đọc được trạng thái thật: quay về phát hiện lật qua autoSig
+      var ok = await toggleAutoOnce();
+      if (!alive(runId)) return false;
+      if (ok) { S.autoBelief = on; if (on) S.autoByTool = true; log('Auto: đã bấm ' + (on ? 'BẬT' : 'TẮT') + ' (không đọc được trạng thái)'); }
+      else log('Không lật được trạng thái Auto (nút + KeyT đều không đổi) — kiểm tra tay');
+      return ok;
+    })();
+  }
+
+  // ============ Phi Hành (ngự kiếm) ============
+  // Nút #btn-fly bind pointerdown (Input.pressFlyToggle). v1.32: game gắn/bỏ class
+  // "active" trên #btn-fly theo player.flying thật → đọc được trạng thái bay thật
+  // (readFlyState); S.flyingBelief chỉ còn là dự phòng khi không thấy nút.
+  function findFlyButton() {
+    var el = $('#btn-fly');
+    if (el) return el;
+    var els = document.querySelectorAll('button, [role="button"], div, span');
+    for (var i = 0; i < els.length; i++) {
+      var al = els[i].getAttribute('aria-label') || '';
+      if (/Phi Hành|Phi Hanh|Bay/i.test(al)) {
+        var r = els[i].getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) return els[i];
+      }
+    }
+    return findByText(null, ['Phi Hành']);
+  }
+  function pressFly() {
+    var el = findFlyButton();
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    var opts = { bubbles: true, cancelable: true, pointerId: 5, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: 'touch', isPrimary: true };
+    el.dispatchEvent(new PointerEvent('pointerdown', opts));
+    setTimeout(function () { el.dispatchEvent(new PointerEvent('pointerup', opts)); }, 120);
+    return true;
+  }
+  // Trạng thái bay THẬT (v1.32, Bui lệnh 22:23 ngày 2026-11-26 — kiểm tra trạng thái
+  // trước khi nhấn, tránh nhấn "bật" thành tắt): game gắn/bỏ class "active" trên
+  // #btn-fly theo player.flying thật (hàm cập nhật HUD trong mã client) → đọc được
+  // trạng thái thật từ classList, dự phòng aria-pressed. Trả true/false/null.
+  function readFlyState() {
+    var el = $('#btn-fly');
+    if (!el) return null;
+    var ap = el.getAttribute('aria-pressed');
+    if (ap === 'true') return true;
+    if (ap === 'false') return false;
+    return el.classList.contains('active');
+  }
+  // Bật/tắt Phi Hành có kiểm tra trạng thái trước khi nhấn (v1.32): đọc trạng thái
+  // thật từ #btn-fly.active — đang đúng trạng thái cần thì KHÔNG nhấn; sai mới nhấn
+  // 1 lần rồi đọc lại kiểm chứng; vẫn sai thì ghi trạng thái trước/sau + thử lại 1 lần
+  // có kiểm tra, không nhấn mù liên tiếp. Không đọc được nút → tin theo belief như cũ.
+  function ensureFly(runId, on) {
+    return (async function () {
+      var cur = readFlyState();
+      var state = cur == null ? S.flyingBelief : cur;
+      if (state === on) {
+        S.flyingBelief = on;
+        if (cur != null) log('Phi Hành: ' + (on ? 'BẬT' : 'TẮT') + ' (đã kiểm chứng — đang đúng trạng thái, không nhấn)');
+        return true;
+      }
+      for (var attempt = 1; attempt <= 2; attempt++) {
+        var before = readFlyState();
+        if (before === on) { S.flyingBelief = on; log('Phi Hành: ' + (on ? 'BẬT' : 'TẮT') + ' (đã kiểm chứng — không nhấn thêm)'); return true; }
+        if (!pressFly()) { log('Không thấy nút Phi Hành (#btn-fly) — không ' + (on ? 'bật bay' : 'hạ cánh') + ' được'); return false; }
+        if (on) {
+          // Thăng 0,25s; lần bay đầu có hoạt cảnh vài giây → chờ đứng yên (tối đa 8s) + 1s, tổng tối thiểu 3,5s
+          var t0 = Date.now();
+          await waitStablePos(runId, 8000);
+          var elapsed = Date.now() - t0;
+          if (elapsed < 3500) await sleep(3500 - elapsed);
+          await sleep(1000);
+        } else {
+          await sleep(1500);
+        }
+        if (!alive(runId)) return false;
+        var after = readFlyState();
+        if (after === on) {
+          S.flyingBelief = on;
+          log('Phi Hành: ' + (on ? 'BẬT' : 'TẮT') + ' (đã kiểm chứng' + (attempt > 1 ? ', lần nhấn ' + attempt : '') + ')');
+          setStatus(S.status);
+          return true;
+        }
+        if (after == null) {
+          // Không đọc được trạng thái thật: tin theo lệnh nhấn như cũ, không nhấn thêm
+          S.flyingBelief = on;
+          log('Phi Hành: ' + (on ? 'BẬT' : 'TẮT') + ' (tin theo lệnh nhấn — không đọc được trạng thái thật)');
+          setStatus(S.status);
+          return true;
+        }
+        S.flyingBelief = after;
+        log('Phi Hành: nhấn lần ' + attempt + ' chưa đúng ý — trạng thái trước: ' + (before == null ? '?' : (before ? 'BẬT' : 'TẮT')) + ', sau: ' + (after ? 'BẬT' : 'TẮT') + (attempt < 2 ? ' — thử lại có kiểm tra' : ''));
+      }
+      setStatus(S.status);
+      return S.flyingBelief === on;
+    })();
+  }
+  function manualFlyToggle() {
+    if (!pressFly()) { log('Không thấy nút Phi Hành (#btn-fly)'); return; }
+    setTimeout(function () {
+      var after = readFlyState();
+      S.flyingBelief = after == null ? !S.flyingBelief : after;
+      log('Phi Hành (tay): ' + (S.flyingBelief ? 'BẬT' : 'TẮT') + (after == null ? ' (tin — không đọc được trạng thái)' : ' (đã kiểm chứng)'));
+      setStatus(S.status);
+    }, 600);
+  }
+
+  // ============ Canh Phi Hành sau đổi map + đầu mỗi việc (v1.36) ============
+  // Bui báo lỗi 22:46 ngày 2026-11-26: "chọn huyết xích đang bay qua map lại bị tắt
+  // phi hành" + lệnh "khi chọn làm việc gì thì kiểm tra phi hành có đang bật không".
+  // Tra mã client: qua cổng game KHÔNG tự hạ cánh — checkPortal chỉ xét ô (không xét
+  // flying), switchMap→Ee nạp map không reset player.flying, dọn dẹp đổi map không
+  // reset flying, player.stop() chỉ xóa path. Nguyên nhân phía tool: (1) dự phòng
+  // hạ cánh đi bộ lên ô cổng trong tryCrossPortal để lại Phi Hành TẮT — travelTo đi
+  // bộ tới điểm neo rồi chặng kế mới bật lại; (2) kiểm chứng bay bằng tốc độ trong
+  // goToTile nhấn pressFly() mù có thể TẮT bay đang bật (đã sửa ở goToTile);
+  // (3) đọc #btn-fly ngay sau đổi map có thể chưa ổn định (nạp map ≥380ms + fade,
+  // HUD.bind ở cuối) → chờ map ổn định rồi mới tin trạng thái đọc được.
+  function waitMapSettle(runId, timeoutMs) {
+    return (async function () {
+      var t0 = Date.now(), lastMap = null, stable = 0;
+      while (alive(runId) && Date.now() - t0 < (timeoutMs || 4000)) {
+        var m = readMapId(), p = readPos();
+        if (m && p) {
+          if (m === lastMap) { stable++; if (stable >= 2) return m; }
+          else { lastMap = m; stable = 1; }
+        } else { lastMap = null; stable = 0; }
+        await sleep(300);
+      }
+      return lastMap;
+    })();
+  }
+  // Sau MỖI lần đổi map: chờ map ổn định → đọc trạng thái Phi Hành thật → cần bay
+  // thì bật lại ngay (ensureFly tự kiểm tra trạng thái trước khi nhấn, luật 22:23 —
+  // đang bật thì không nhấn), cần hạ cánh thì hạ. wantFly=null: chỉ ghi nhật ký +
+  // đồng bộ belief theo trạng thái thật.
+  function flyGuardAfterMapChange(runId, wantFly, label) {
+    return (async function () {
+      var m = await waitMapSettle(runId, 4000);
+      if (!alive(runId)) return false;
+      var st = readFlyState();
+      var cur = st == null ? S.flyingBelief : st;
+      if (st != null) S.flyingBelief = st;
+      log('Sau đổi map (' + label + ')' + (m ? ' — ' + (MAPS[m] ? MAPS[m].name : m) : '') + ': Phi Hành đang ' + (cur ? 'BẬT' : 'TẮT') + (st == null ? ' (tin theo belief — không đọc được #btn-fly)' : ' (đã kiểm chứng từ #btn-fly)'));
+      if (wantFly == null || cur === wantFly) return true;
+      log('Phi Hành đang ' + (cur ? 'BẬT' : 'TẮT') + ' — cần ' + (wantFly ? 'BẬT' : 'TẮT') + ', chỉnh lại ngay (kiểm tra trạng thái trước khi nhấn)');
+      return await ensureFly(runId, wantFly);
+    })();
+  }
+  // Đầu mỗi chế độ/việc được chọn (Bui lệnh 22:46): kiểm tra Phi Hành có đang bật
+  // không, ghi nhật ký trạng thái lúc bắt đầu việc; việc cần bay thì bật (có kiểm
+  // tra trước khi nhấn), cần hạ cánh thì hạ. wantFly=null: chỉ kiểm tra + ghi.
+  function flyCheckAtStart(runId, taskLabel, wantFly) {
+    return (async function () {
+      var st = readFlyState();
+      var cur = st == null ? S.flyingBelief : st;
+      if (st != null) S.flyingBelief = st;
+      log('Bắt đầu ' + taskLabel + ' — kiểm tra Phi Hành: đang ' + (cur ? 'BẬT' : 'TẮT') + (st == null ? ' (tin theo belief — không đọc được #btn-fly)' : ' (đã kiểm chứng từ #btn-fly)') + (wantFly == null ? '' : ' — việc này cần ' + (wantFly ? 'BẬT (bay)' : 'TẮT (hạ cánh)')));
+      if (wantFly != null && cur !== wantFly) return await ensureFly(runId, wantFly);
+      return true;
+    })();
+  }
+
+  // ============ Chạy (Run) ============
+  // Nút #btn-run bind pointerdown (Input.toggleRun); Input.onRunChange gắn/bỏ class "active"
+  // trên #btn-run theo trạng thái chạy THẬT → đọc được trạng thái thật từ classList.
+  // Phím Shift (ShiftLeft/ShiftRight keydown, không repeat) cũng toggleRun — dự phòng khi không thấy nút.
+  function readRunState() {
+    var el = $('#btn-run');
+    if (!el) return null;
+    return el.classList.contains('active');
+  }
+  function pressRunPointer() {
+    var el = $('#btn-run');
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    var opts = { bubbles: true, cancelable: true, pointerId: 9, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: 'touch', isPrimary: true };
+    el.dispatchEvent(new PointerEvent('pointerdown', opts));
+    setTimeout(function () { el.dispatchEvent(new PointerEvent('pointerup', opts)); }, 120);
+    return true;
+  }
+  function pressRunShift() {
+    // Phím ShiftLeft (game đọc e.code, không kiểm isTrusted) cũng toggleRun
+    keyTarget().dispatchEvent(new KeyboardEvent('keydown', { code: 'ShiftLeft', key: 'Shift', bubbles: true, cancelable: true }));
+    keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: 'ShiftLeft', key: 'Shift', bubbles: true, cancelable: true }));
+    return true;
+  }
+  function pressRunClick() {
+    var el = $('#btn-run');
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2 }));
+    return true;
+  }
+  function pressRun() {
+    return pressRunPointer() || pressRunShift();
+  }
+  // Bật/tắt Chạy có kiểm chứng: đọc #btn-run.active trước/sau từng cách, tối đa 3 cách
+  // (pointerdown+up → ShiftLeft → click). Không thấy nút → tin theo lệnh bấm như cũ.
+  function ensureRun(runId, on) {
+    return (async function () {
+      var cur = readRunState();
+      var state = cur == null ? S.runBelief : cur;
+      if (state === on) {
+        S.runBelief = on;
+        if (cur != null) log('Chạy: ' + (on ? 'BẬT' : 'TẮT') + ' (đã kiểm chứng)');
+        return true;
+      }
+      if (cur == null) {
+        pressRun();
+        await sleep(700);
+        if (!alive(runId)) return false;
+        S.runBelief = on;
+        log('Chạy: ' + (on ? 'BẬT' : 'TẮT') + ' (không đọc được trạng thái thật — tin theo lệnh bấm)');
+        setStatus(S.status);
+        return true;
+      }
+      var ways = [
+        { name: 'bấm nút (pointer)', fn: pressRunPointer },
+        { name: 'phím Shift', fn: pressRunShift },
+        { name: 'sự kiện click', fn: pressRunClick }
+      ];
+      for (var wi = 0; wi < ways.length; wi++) {
+        if (!ways[wi].fn()) continue;
+        await sleep(700);
+        if (!alive(runId)) return false;
+        var after = readRunState();
+        if (after === on) {
+          S.runBelief = on;
+          log('Chạy: ' + (on ? 'BẬT' : 'TẮT') + ' (đã kiểm chứng, cách ' + (wi + 1) + ': ' + ways[wi].name + ')');
+          setStatus(S.status);
+          return true;
+        }
+        log('Chạy: cách ' + (wi + 1) + ' (' + ways[wi].name + ') chưa ăn — trạng thái thật vẫn ' + (after ? 'BẬT' : 'TẮT'));
+      }
+      var fin = readRunState();
+      S.runBelief = fin == null ? S.runBelief : fin;
+      log('Chạy: ' + (S.runBelief ? 'BẬT' : 'TẮT') + ' (chưa đúng ý sau 3 cách — trạng thái thật đọc từ #btn-run)');
+      setStatus(S.status);
+      return false;
+    })();
+  }
+  function manualRunToggle() {
+    pressRun();
+    setTimeout(function () {
+      var after = readRunState();
+      S.runBelief = after == null ? !S.runBelief : after;
+      log('Chạy (tay): ' + (S.runBelief ? 'BẬT' : 'TẮT') + (after == null ? ' (tin — không đọc được trạng thái)' : ' (đã kiểm chứng)'));
+      setStatus(S.status);
+    }, 400);
+  }
+
+  // ============ Luật đánh nhau: bật cả Bay + Chạy + Auto (v1.16) ============
+  // Lệnh Bui 18:33 ngày 2026-11-26: "Nhớ bật cả bay cả chạy cả auto". Mọi điểm bắt đầu
+  // đánh nhau đều đi qua hàm này: gọi ensureFly/ensureRun/ensureAuto (mỗi hàm tự kiểm
+  // chứng trạng thái thật), đọc lại trạng thái, cái nào chưa BẬT thì thử lại 1 lần, rồi
+  // ghi tổng kết "Bay: …, Chạy: …, Auto: …" tại lúc bắt đầu đánh. Luật di chuyển giữ
+  // nguyên (Bui chốt 07:39): đang đi đường thì TẮT Auto, chỉ Phi Hành + Chạy — hàm này
+  // CHỈ dùng tại điểm đánh, không dùng khi di chuyển/thu hoạch/đứng cạnh NPC.
+  function trioState() {
+    var a = readAutoState(), r = readRunState(), f = readFlyState();
+    return {
+      fly: f == null ? S.flyingBelief : f,
+      run: r == null ? S.runBelief : r,
+      auto: a == null ? S.autoBelief : a,
+      flyKnown: f != null, runKnown: r != null, autoKnown: a != null
+    };
+  }
+  function ensureCombatTrio(runId, where) {
+    return (async function () {
+      await ensureFly(runId, true);
+      if (!alive(runId)) return false;
+      await ensureRun(runId, true);
+      if (!alive(runId)) return false;
+      await ensureAuto(runId, true);
+      if (!alive(runId)) return false;
+      var st = trioState();
+      if (!st.fly) { log('Bay chưa BẬT — thử bật lại'); await ensureFly(runId, true); if (!alive(runId)) return false; }
+      if (!st.run) { log('Chạy chưa BẬT — thử bật lại'); await ensureRun(runId, true); if (!alive(runId)) return false; }
+      if (!st.auto) { log('Auto chưa BẬT — thử bật lại'); await ensureAuto(runId, true); if (!alive(runId)) return false; }
+      st = trioState();
+      log('Bắt đầu đánh (' + where + ') — Bay: ' + (st.fly ? 'BẬT' : 'TẮT') + (st.flyKnown ? ' (đã kiểm chứng)' : ' (tin — không đọc được cờ bay thật)') +
+        ', Chạy: ' + (st.run ? 'BẬT' : 'TẮT') + (st.runKnown ? ' (đã kiểm chứng)' : ' (tin)') +
+        ', Auto: ' + (st.auto ? 'BẬT' : 'TẮT') + (st.autoKnown ? ' (đã kiểm chứng)' : ' (tin)'));
+      return st.fly && st.run && st.auto;
+    })();
+  }
+
+  // ============ Farm ============
+  function runFarm(runId, targetMap, dest, zone) {
+    return (async function () {
+      log('Bắt đầu di chuyển…');
+      await flyCheckAtStart(runId, 'Đi farm', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      await ensureAuto(runId, false); // Đi farm: tắt Auto suốt đường đi, chỉ Phi Hành + Chạy; tới điểm farm mới bật cả 3
+      // Map đích không có cổng vào từ vị trí hiện tại → đi tới map gần nhất + gợi ý, không farm mù
+      var curMap = readMapId();
+      if (curMap && MAPS[targetMap] && !bfsPath(curMap, targetMap)) {
+        var esc = escapePlan(curMap, targetMap);
+        if (esc && esc.kind !== 'none') {
+          // Đang lạc ở map phụ nhưng có cách quay ra (v1.11): travelTo sẽ tự thoát rồi đi tiếp, không dừng chờ
+          log('Đang ở map phụ ' + (MAPS[curMap] ? MAPS[curMap].name : curMap) + ' — tool tự quay ra rồi đi tiếp ' + MAPS[targetMap].name + ' (không dừng chờ)');
+        } else {
+          var near = nearestStagingMap(curMap, targetMap);
+          var tName = MAPS[targetMap].name, nName = MAPS[near.map] ? MAPS[near.map].name : near.map;
+          log('Map ' + tName + ' không có cổng vào từ đây. Điểm vào gần nhất: ' + nName + ' (' + stagingReasonText(near, targetMap) + ') — ' + (near.map === curMap ? 'đã ở đó' : 'đang tới đó') + '.');
+          if (near.map !== curMap) {
+            await ensureRun(runId, true);
+            await ensureFly(runId, true);
+            await travelTo(runId, near.map);
+          }
+          log('Đã tới ' + nName + ' — anh tìm NPC/cổng vào ' + tName + ' quanh đây.');
+          setStatus('Đã tới điểm gần nhất: ' + nName);
+          stopTool('map đích không có cổng vào — đã tới điểm gần nhất');
+          return;
+        }
+      }
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, targetMap);
+      // v1.26 (Bui 20:44 ngày 2026-11-26): tới map + đổi khu xong là bật ngay
+      // Chạy + Phi Hành + Auto đánh luôn, không chờ thêm nhịp nào.
+      var zoneOk = true, pdFarmable = false;
+      // v1.30 (Bui 21:53 ngày 2026-11-26): Phong Địa có 40 khu — tự kiểm tra khu nào
+      // không phải đất phong (đất trống/của tông mình) thì mới farm; khu đang chọn là
+      // đất phong thì tự đổi khu khác.
+      if (targetMap === 'phong_dia') {
+        var pdZone = await phongDiaEnsureFarmZone(runId, zone);
+        if (pdZone) { zone = pdZone; pdFarmable = true; } else zoneOk = false;
+        if (!alive(runId)) return;
+      } else if (zone) zoneOk = await ensureZone(runId, targetMap, zone);
+      var dests = destinationsFor(targetMap);
+      var d = dest || dests[0] || { label: 'điểm farm', tx: 20, ty: 15 };
+      var noAuto = false;
+      if (targetMap === 'phong_dia' && !pdFarmable) { log('Phong Địa: không tìm được khu đất trống farm được — chỉ di chuyển, không bật Auto'); noAuto = true; }
+      else if (targetMap === 'phong_dia') log('Phong Địa: đã ở Khu ' + zone + ' đất trống (không phải đất phong) — bật Auto farm');
+      else if (MAPS[targetMap] && MAPS[targetMap].enemies === 0) { log('Map ' + MAPS[targetMap].name + ' không có quái tĩnh — chỉ di chuyển, không bật Auto'); noAuto = true; }
+      if (!noAuto) {
+        log('Đã tới map ' + MAPS[targetMap].name + (zone ? (zoneOk ? ' + đổi khu xong' : ' + đổi khu không được — farm ở khu hiện tại') : '') + ' → bật Chạy+Phi Hành+Auto đánh luôn');
+        await ensureCombatTrio(runId, 'điểm farm ' + MAPS[targetMap].name + ' — ' + d.label);
+      } else {
+        await ensureFly(runId, true);
+        await ensureRun(runId, true);
+      }
+      setStatus('Tới ' + d.label + ' (' + d.tx + ',' + d.ty + ')…');
+      await goToPath(runId, d.tx, d.ty, 1, 180000, d.label);
+      if (noAuto) {
+        var rSt2 = readRunState();
+        log('Tại điểm tới (map không farm) — Bay: ' + (S.flyingBelief ? 'BẬT' : 'TẮT') + ', Chạy: ' + ((rSt2 == null ? S.runBelief : rSt2) ? 'BẬT' : 'TẮT') + ', Auto: không bật (map không farm)');
+      }
+      setStatus((noAuto ? 'Đã tới ' : 'Đang farm tại ') + MAPS[targetMap].name + ' — ' + d.label);
+      log((noAuto ? 'Đã tới ' : 'Bắt đầu farm tại ') + MAPS[targetMap].name + ' (' + d.label + ')');
+      snapshotCtx('farm', targetMap, d.tx, d.ty, !noAuto, true, true);
+      while (alive(runId)) {
+        await sleep(1500);
+        if (isDowned()) { await handleDeath(runId); if (!alive(runId)) return; continue; }
+        if (await pkCheck(runId, {})) {
+          if (!alive(runId)) return;
+          log('Đã tránh PK — bật lại Chạy+Phi Hành+Auto rồi quay lại điểm farm');
+          if (!noAuto) await ensureCombatTrio(runId, 'quay lại điểm farm sau tránh PK');
+          try { await goToPath(runId, d.tx, d.ty, 1, 120000, d.label); } catch (e) { if (!alive(runId)) throw e; }
+          continue;
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% (' + Math.round(hp * 100) + '%) — tắt Auto, dừng'); await ensureAuto(runId, false); if (S.flyingBelief) await ensureFly(runId, false); stopTool('Khí Huyết thấp'); return; }
+        var m = readMapId();
+        if (m && m !== targetMap) { log('Bị văng sang map khác (' + m + ') — dừng'); stopTool('lệch map'); return; }
+      }
+    })();
+  }
+
+  // ============ Việc Dược Công ============
+  // Chạm xoắn ốc quanh nhân vật tới khi isOpenFn() đúng (thoại mở / bảng khu mở).
+  // Ô đối tượng thật + px/ô chỉ là ước lượng nên chạm lần lượt quanh chỗ đứng —
+  // chạm trúng sprite thì game mở thoại/panel (hoặc cho đi tới cạnh rồi mở).
+  function tapSpiral(runId, isOpenFn, whatLabel, maxMs) {
+    return (async function () {
+      var spiralT0 = Date.now();
+      function overBudget() { return maxMs != null && Date.now() - spiralT0 > maxMs; }
+      if (isOpenFn()) return true;
+      var step = PX_PER_TILE_EST;
+      var ring1 = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]; // lưới 3×3, bỏ tâm ở vòng đầu
+      var cardinals = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+      var scales = [1.25, 0.75];
+      var tapCount = 0;
+      var tryTap = async function (dx, dy, px) {
+        tapCount++;
+        log('chạm ' + whatLabel + ' hướng ' + dirName(dx, dy) + ' bước ' + Math.round(px));
+        tapCanvas(dx * px, dy * px);
+        var t0 = Date.now();
+        var posBefore = readPos();
+        var moved = false;
+        while (Date.now() - t0 < 2500) {
+          if (!alive(runId)) return false;
+          if (isOpenFn()) return true;
+          var p = readPos();
+          if (p && posBefore && (p.x !== posBefore.x || p.y !== posBefore.y)) moved = true;
+          await sleep(300);
+        }
+        if (isOpenFn()) return true;
+        if (moved) {
+          await waitStablePos(runId, 10000);
+          var t1 = Date.now();
+          while (Date.now() - t1 < 2000) {
+            if (!alive(runId)) return false;
+            if (isOpenFn()) return true;
+            await sleep(300);
+          }
+        }
+        return isOpenFn();
+      };
+      for (var i = 0; i < ring1.length; i++) {
+        if (!alive(runId)) return false;
+        if (overBudget()) { log('Hết hạn chạm ' + whatLabel + ' (' + Math.round(maxMs / 1000) + 's, đã chạm ' + tapCount + ' điểm)'); return false; }
+        if (await tryTap(ring1[i][0], ring1[i][1], step)) return true;
+        log('Chạm ' + whatLabel + ' chưa mở (lần ' + tapCount + ')');
+      }
+      for (var s = 0; s < scales.length; s++) {
+        for (var j = 0; j < cardinals.length; j++) {
+          if (!alive(runId)) return false;
+          if (overBudget()) { log('Hết hạn chạm ' + whatLabel + ' (' + Math.round(maxMs / 1000) + 's, đã chạm ' + tapCount + ' điểm)'); return false; }
+          if (await tryTap(cardinals[j][0], cardinals[j][1], step * scales[s])) return true;
+          log('Chạm ' + whatLabel + ' chưa mở (lần ' + tapCount + ')');
+        }
+      }
+      log('không mở được ' + whatLabel + ' (đã chạm ' + tapCount + ' điểm quanh nhân vật)');
+      return false;
+    })();
+  }
+  function tapNpc(runId, tx, ty) {
+    return tapSpiral(runId, dialogOpen, 'NPC');
+  }
+  // Ô trống kề bên (tx,ty): ô không chặn (cả lưới đi bộ lẫn bay) gần nhất, ưu tiên vòng kề 1, tránh ô biên.
+  function adjacentFreeTile(mapId, tx, ty) {
+    var gw = gridFor(mapId, false), gf = gridFor(mapId, true);
+    if (!gw) return null;
+    var best = null;
+    for (var r = 1; r <= 3; r++) {
+      for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        var x = tx + dx, y = ty + dy;
+        if (gridBlocked(gw, x, y) || (gf && gridBlocked(gf, x, y))) continue;
+        var border = isBorderTile(gw, x, y);
+        if (!border) return { x: x, y: y };
+        if (!best) best = { x: x, y: y };
+      }
+      if (best) return best;
+    }
+    return null;
+  }
+  // Di chuyển tới đứng KỀ BÊN (tx,ty) — không đứng lên ô đích, không chỉ tới gần.
+  function standNextTo(runId, tx, ty, label) {
+    return (async function () {
+      var p = readPos();
+      if (p && Math.max(Math.abs(tx - p.x), Math.abs(ty - p.y)) <= 1) {
+        log('Đã đứng cạnh ' + label + ' tại (' + p.x + ',' + p.y + ')');
+        return p;
+      }
+      var mapId = readMapId();
+      var adj = mapId ? adjacentFreeTile(mapId, tx, ty) : null;
+      var gx = adj ? adj.x : tx, gy = adj ? adj.y : ty;
+      log('Tới ô kề bên ' + label + ' (' + gx + ',' + gy + ') cạnh (' + tx + ',' + ty + ')');
+      return await goToPath(runId, gx, gy, adj ? 0 : 1, 180000, 'cạnh ' + label);
+    })();
+  }
+  // Chờ nút "Tương Tác" của game hiện (#btn-attack đổi nhãn khi đứng cạnh NPC/vật tương tác) rồi bấm.
+  function pressInteractBtn(runId, timeoutMs, whatLabel) {
+    return (async function () {
+      var t0 = Date.now();
+      while (alive(runId) && Date.now() - t0 < (timeoutMs || 8000)) {
+        if (interactLabel() === 'Tương Tác') {
+          log('Nút Tương Tác đã hiện (' + whatLabel + ') — bấm');
+          pressDom($('#btn-attack'));
+          return true;
+        }
+        await sleep(400);
+      }
+      log('Không thấy nút Tương Tác (' + whatLabel + ') sau ' + Math.round((timeoutMs || 8000) / 1000) + 's');
+      return false;
+    })();
+  }
+  // Mở thoại NPC đúng trình tự game: đứng cạnh → hạ cánh → bấm Tương Tác → chờ thoại.
+  // Không thấy nút / bấm không mở được thoại → dự phòng chạm xoắn ốc như v1.7.
+  function openNpcDialog(runId, tx, ty, label) {
+    return (async function () {
+      if (dialogOpen()) { log('Thoại ' + label + ' đang mở sẵn'); return true; }
+      await standNextTo(runId, tx, ty, label);
+      await ensureFly(runId, false); // hạ cánh, đứng cạnh NPC mới tương tác được
+      if (await pressInteractBtn(runId, 8000, label)) {
+        var ok = await waitDialogChoices(runId, 5000);
+        if (ok) { log('Đã mở thoại ' + label + ' bằng nút Tương Tác'); return true; }
+        log('Bấm Tương Tác mà thoại ' + label + ' chưa hiện — dự phòng chạm xoắn ốc');
+      } else {
+        log('Dự phòng chạm xoắn ốc mở thoại ' + label);
+      }
+      return await tapNpc(runId, tx, ty);
+    })();
+  }
+  function clickDialogChoice(needles, label) {
+    var el = findByText('#dialog-choices', needles) || findByText('#dialog', needles);
+    if (!el) { log('Không thấy mục thoại: ' + label); return false; }
+    pressDom(el);
+    log('Đã bấm thoại: ' + label);
+    return true;
+  }
+  function clickQuestStep() {
+    var li = document.querySelector('#quest-objectives li[data-di]') || document.querySelector('#quest-objectives li');
+    if (!li) { log('Không thấy bước nhiệm vụ trong bảng nhiệm vụ'); return false; }
+    pressDom(li);
+    log('Đã bấm bước nhiệm vụ (Tự đi làm nhiệm vụ)');
+    return true;
+  }
+  // Tên hiển thị việc Dược Công (để kiểm chứng qua bảng nhiệm vụ)
+  var JOB_NAMES = {
+    duoc_moc: 'Thu Gom Dược Mộc', linh_chi: 'Linh Chi Dưới Chân Núi', truc_gia: 'Trúc Tâm Dẫn Dược',
+    cau_ca: 'Câu Cá Làm Dược Liệu', ho_tong_chau: 'Đưa Người Về Làng',
+    dai_hoi: 'Thắng Trận Đại Hội', van_tieu: 'Vận Tiêu Một Chuyến', chien_bang: 'Thắng Trận Tán Tu Chiến Bảng'
+  };
+  var JOB_VERBS = ['Thu Gom', 'Hái', 'Chặt', 'Câu', 'Hộ Tống'];
+  function readSeedState() {
+    var p = readLocal();
+    var sq = p && p.seedQuest;
+    if (!sq) return null;
+    return { active: !!sq.active, task: sq.task || null, collected: sq.collected };
+  }
+  // ---- v1.45: Dược Công Luyện Khí trọn vòng (Bui lệnh 06:38 ngày 2026-11-27) ----
+  // Mã game nhận việc 3 bước: thoại Đại Phu "Nhận Việc Dược Công" → danh sách việc →
+  // thoại offer nút hành động "Nhận Việc Này" (#dialog-action) mới startSeedQuest.
+  // Trả việc: nút hành động "Giao Nguyên Liệu"/"Giao Ba Cá" (#dialog-action, actionFirst).
+  // Thưởng Dược Công theo việc (bảng SEED_TASKS trong mã client): linh_chi 1, truc_gia 1,
+  // ho_tong_chau 2, duoc_moc 3, cau_ca 4 (tân thủ dưới Luyện Khí 10 được ×2, trần +50).
+  var SEED_JOB_META_V145 = {
+    linh_chi: { item: 'nam_linh_chi', need: 3, reward: 1, stones: 10 },
+    truc_gia: { item: 'truc_tam', need: 4, reward: 1, stones: 15 },
+    duoc_moc: { item: 'canh_kho', need: 5, reward: 3, stones: 20 },
+    cau_ca: { items: ['ca_song', 'linh_ngu'], need: 3, reward: 4, stones: 30 },
+    ho_tong_chau: { need: 1, reward: 2, stones: 25 }
+  };
+  var SEED_JOBS_LK = ['linh_chi', 'truc_gia', 'duoc_moc', 'cau_ca', 'ho_tong_chau'];
+  function vnTodayStrV145() {
+    var d = new Date(Date.now() + 252e5); // giờ VN (UTC+7) như today() trong mã game
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate());
+  }
+  // Đọc lượt đã dùng hôm nay từ seedQuest.daily (mỗi việc tối đa 3 lượt/ngày — SEED_TASK_DAILY_LIMIT)
+  function readSeedDaily() {
+    var p = readLocal();
+    var sq = p && p.seedQuest;
+    var today = vnTodayStrV145();
+    var used = {}, total15 = 0;
+    SEED_JOBS_LK.forEach(function (id) {
+      var rec = sq && sq.daily && sq.daily[id];
+      var n = (rec && rec.day === today) ? (rec.n || 0) : 0;
+      used[id] = n; total15 += n;
+    });
+    return { used: used, total15: total15, left15: 15 - total15, today: today };
+  }
+  function dialogChoiceByLabel(labels) {
+    var btns = dialogChoiceBtns();
+    for (var i = 0; i < btns.length; i++) {
+      for (var j = 0; j < labels.length; j++) if (btns[i].label === labels[j]) return btns[i];
+    }
+    for (var i2 = 0; i2 < btns.length; i2++) {
+      for (var j2 = 0; j2 < labels.length; j2++) if (btns[i2].label.indexOf(labels[j2]) >= 0) return btns[i2];
+    }
+    return null;
+  }
+  // Bấm nút hành động của thoại (#dialog-action) khi nhãn khớp — chờ qua chốt chống bấm nhầm 500ms của game
+  function pressDialogActionByLabel(runId, labels, what) {
+    return (async function () {
+      var btn = await waitFor(function () {
+        var b = dialogActionBtn();
+        if (!b) return null;
+        var lbl = (b.textContent || '').replace(/\s+/g, ' ').trim();
+        for (var i = 0; i < labels.length; i++) if (lbl.indexOf(labels[i]) >= 0) return { el: b, label: lbl };
+        return null;
+      }, 6000, 'nút hành động "' + labels[0] + '" hiện');
+      if (!btn) { log('Không thấy nút hành động "' + labels.join('/') + '" (' + what + ') — thoại ghi: ' + readDialogText()); return false; }
+      await sleep(750);
+      pressDom(btn.el);
+      log('Đã bấm nút hành động "' + btn.label + '" (' + what + ')');
+      return true;
+    })();
+  }
+  // Nhận việc Dược Công đủ 3 bước + kiểm chứng seedQuest.active/task. Trả {picked} | {reason}.
+  function acceptSeedJob(runId) {
+    return (async function () {
+      await travelTo(runId, DAI_PHU.map);
+      for (var attempt = 1; attempt <= 2; attempt++) {
+        if (!alive(runId)) return { reason: 'stopped' };
+        if (!(await openNpcDialog(runId, DAI_PHU.tx, DAI_PHU.ty, 'Đại Phu'))) { log('Nhận việc: không mở được thoại Đại Phu (lần ' + attempt + ')'); continue; }
+        await sleep(700);
+        await waitDialogChoices(runId, 5000);
+        var men = dialogChoiceByLabel(['Nhận Việc Dược Công']);
+        if (!men) {
+          log('Nhận việc: thoại Đại Phu không có mục "Nhận Việc Dược Công" — thoại ghi: ' + readDialogText());
+          dumpDialogChoices();
+          closeDialogIfOpen();
+          return { reason: 'nomenu' };
+        }
+        pressDom(men.el);
+        log('Đã bấm "Nhận Việc Dược Công" — chờ danh sách việc…');
+        await sleep(900);
+        await waitDialogChoices(runId, 5000);
+        var cand = pickJobChoice();
+        if (!cand) { dumpDialogChoices(); closeDialogIfOpen(); return { reason: 'nojobs' }; }
+        await sleep(700);
+        if (!(await pressDialogActionByLabel(runId, ['Nhận Việc Này'], 'xác nhận nhận việc ' + (JOB_NAMES[cand] || cand)))) { closeDialogIfOpen(); continue; }
+        if (await verifyAccepted(runId, cand)) {
+          var sqNow = readSeedState();
+          var picked = (sqNow && sqNow.task) || cand;
+          closeDialogIfOpen();
+          return { picked: picked };
+        }
+        log('Nhận việc: đã bấm "Nhận Việc Này" mà seedQuest chưa active (lần ' + attempt + ')');
+        closeDialogIfOpen();
+      }
+      return { reason: 'fail' };
+    })();
+  }
+  // Hủy việc Dược Công đang giữ ("Huỷ Nhiệm Vụ" — game hoàn lại 1 lượt nhận hôm nay) + kiểm chứng seedQuest tắt
+  function cancelSeedJob(runId) {
+    return (async function () {
+      await travelTo(runId, DAI_PHU.map);
+      if (!(await openNpcDialog(runId, DAI_PHU.tx, DAI_PHU.ty, 'Đại Phu'))) { log('Hủy việc: không mở được thoại Đại Phu'); return false; }
+      await sleep(700);
+      await waitDialogChoices(runId, 5000);
+      var btn = dialogChoiceByLabel(['Huỷ Nhiệm Vụ', 'Hủy Nhiệm Vụ']);
+      if (!btn) { log('Hủy việc: thoại không có mục "Huỷ Nhiệm Vụ" — thoại ghi: ' + readDialogText()); dumpDialogChoices(); closeDialogIfOpen(); return false; }
+      pressDom(btn.el);
+      log('Đã bấm "Huỷ Nhiệm Vụ" (game hoàn lại 1 lượt nhận hôm nay)');
+      var ok = await waitFor(function () { var st = readSeedState(); return (st && !st.active) ? true : null; }, 5000, 'seedQuest tắt sau hủy');
+      closeDialogIfOpen();
+      if (ok) log('Đã hủy việc — seedQuest đã tắt (kiểm chứng)');
+      return !!ok;
+    })();
+  }
+  // Trả việc: về Đại Phu bấm đúng nút hành động giao + kiểm chứng seedQuest tắt (điểm tăng do vòng ngoài ghi)
+  function returnSeedJob(runId, picked) {
+    return (async function () {
+      var dcB = (readLocal() || {}).duocCong;
+      for (var attempt = 1; attempt <= 2; attempt++) {
+        if (!alive(runId)) return { ok: false };
+        await ensureRun(runId, true);
+        await ensureFly(runId, true);
+        await travelTo(runId, DAI_PHU.map);
+        if (!(await openNpcDialog(runId, DAI_PHU.tx, DAI_PHU.ty, 'Đại Phu'))) { log('Trả việc: không mở được thoại Đại Phu (lần ' + attempt + ')'); continue; }
+        await sleep(700);
+        await waitDialogChoices(runId, 5000);
+        if (!(await pressDialogActionByLabel(runId, ['Giao Nguyên Liệu', 'Giao Ba Cá'], 'trả việc ' + (JOB_NAMES[picked] || picked)))) { dumpDialogChoices(); closeDialogIfOpen(); continue; }
+        await sleep(1500);
+        closeDialogIfOpen();
+        var dcA = (readLocal() || {}).duocCong;
+        var sqA = readSeedState();
+        var gained = (typeof dcB === 'number' && typeof dcA === 'number') ? dcA - dcB : null;
+        if (sqA && !sqA.active) return { ok: true, dcBefore: dcB, dcAfter: dcA, gained: gained };
+        log('Trả việc: đã bấm giao mà seedQuest vẫn active (lần ' + attempt + ') — thử giao lại');
+      }
+      return { ok: false, dcBefore: dcB };
+    })();
+  }
+  // Việc Câu Cá: tới đài câu bật "Tự động câu" của game, chờ đủ cá trong túi (tiến độ theo countItem)
+  function doFishJob(runId) {
+    return (async function () {
+      setStatus('Tới đài câu cá làm việc Câu Cá…');
+      await travelTo(runId, FISH_SPOT.map);
+      await ensureFly(runId, true);
+      await goToPath(runId, FISH_SPOT.tx, FISH_SPOT.ty, 1, 180000, 'đài câu cá');
+      await ensureFly(runId, false);
+      if (!(await startAutoFishing(runId))) { log('Việc Câu Cá: không bật được tự động câu'); return false; }
+      setStatus('Đang tự động câu (việc Câu Cá)…');
+      var fishT0 = Date.now();
+      var full = false;
+      while (alive(runId)) {
+        var prf = jobProgress('cau_ca');
+        if (prf.need > 0 && prf.cur >= prf.need) { full = true; break; }
+        if (Date.now() - fishT0 > 600000) { log('Việc Câu Cá: câu 10 phút chưa đủ tiến độ (' + prf.cur + '/' + prf.need + ' qua ' + prf.src + ')'); break; }
+        if (!fishingActive()) {
+          log('Câu bị ngắt — bật lại tự động câu');
+          if (!(await startAutoFishing(runId))) break;
+        }
+        var hpf = readHpPct();
+        if (hpf != null && hpf < 0.35) { log('Khí Huyết dưới 35% khi câu — dừng việc Câu Cá'); break; }
+        await sleep(3000);
+      }
+      stopFishingGame();
+      return full;
+    })();
+  }
+  function doSeedJobWork(runId, picked) {
+    return (async function () {
+      if (picked === 'ho_tong_chau') return await doEscortJob(runId);
+      if (picked === 'cau_ca') return await doFishJob(runId);
+      return await doCollectJob(runId, picked);
+    })();
+  }
+  // Kiểm chứng đã nhận việc: poll localStorage seedQuest.active + task khớp (nguồn chính);
+  // chỉ khi không đọc được bản lưu mới dự phòng chữ bảng nhiệm vụ (bản cũ nhận cả động từ
+  // thu gom trong mục tiêu nhiệm vụ chính → báo "đã nhận" giả).
+  function verifyAccepted(runId, jobId) {
+    return (async function () {
+      var name = JOB_NAMES[jobId] || jobId || '';
+      var okSq = await waitFor(function () {
+        var sq = readSeedState();
+        return (sq && sq.active && (!jobId || !sq.task || sq.task === jobId)) ? sq : null;
+      }, 6000, 'seedQuest.active' + (jobId ? ' task=' + jobId : ''));
+      if (okSq) { log('Đã nhận việc: ' + name + ' (kiểm chứng: localStorage seedQuest.active' + (okSq.task ? ' task=' + okSq.task : '') + ')'); return true; }
+      if (!readLocal()) {
+        var qo = $('#quest-objectives');
+        var qtxt = qo ? (qo.textContent || '') : '';
+        if (name && qtxt.indexOf(name) >= 0) { log('Đã nhận việc: ' + name + ' (kiểm chứng dự phòng: bảng nhiệm vụ có tên việc — không đọc được localStorage)'); return true; }
+      }
+      log('Chưa nhận được việc ' + name + ' (seedQuest: ' + JSON.stringify(readSeedState()) + ')');
+      return false;
+    })();
+  }
+  // Chọn việc trong thoại (v1.45): dùng dialogChoiceBtns (chỉ nút bấm được — game disable
+  // việc hết lượt/khóa) + đọc note lượt còn ("còn X/3 lượt" / "Hết 3/3 lượt hôm nay" /
+  // "Cần đạt Trúc Cơ Sơ Kỳ"). Ưu tiên việc hợp tầng theo JOB_PRIORITY; không còn việc Luyện Khí
+  // nào thì ghi rõ các mục hiện có rồi trả null (không bấm mù việc lạ như bản cũ).
+  function pickJobChoice() {
+    var riJob = readRealmInfo();
+    var tierJob = riJob ? riJob.tier : null;
+    var ordered = jobOrderByTier(tierJob);
+    var btns = dialogChoiceBtns();
+    if (!btns.length) { log('Chọn việc: thoại chưa có mục chọn nào'); return null; }
+    for (var j = 0; j < ordered.length; j++) {
+      var hit = null;
+      for (var b = 0; b < btns.length; b++) {
+        var lbl = btns[b].label;
+        var nameHit = ordered[j].names.some(function (nm) { return lbl === nm || lbl.indexOf(nm) >= 0; }) || lbl === (JOB_NAMES[ordered[j].id] || '');
+        if (nameHit) { hit = btns[b]; break; }
+      }
+      if (!hit) continue;
+      var note = ((hit.note || '') + ' ' + (hit.stats || '')).trim();
+      if (/Hết|Cần đạt|khóa/i.test(note)) { log('Bỏ việc ' + ordered[j].id + ' (' + note.slice(0, 80) + ')'); continue; }
+      var metaJ = JOB_META[ordered[j].id];
+      var overTier = metaJ && tierJob != null && metaJ.minTier > tierJob;
+      pressDom(hit.el);
+      log('Đã bấm chọn việc: ' + ordered[j].id + ' ("' + hit.label + '"' + (hit.note ? ' — ' + hit.note : '') + ')' + (metaJ ? ' — ' + metaJ.note + (tierJob != null ? ', nhân vật tầng ' + tierJob : '') : '') + (overTier ? ' (việc này hợp từ tầng ' + metaJ.minTier + ' — chỉ còn việc này nhận được nên vẫn nhận, đánh trả khi bị quái đánh)' : ''));
+      return ordered[j].id;
+    }
+    log('Chọn việc: không việc Luyện Khí nào còn lượt trong danh sách — các mục hiện có: ' + btns.map(function (x) { return '"' + x.label + '"' + (x.note ? ' (' + x.note + ')' : ''); }).join('; '));
+    return null;
+  }
+  // ============ Câu cá (cơ chế game: chạm mặt nước → thoại "Thả câu"/"Tự động câu") ============
+  // pa(prop, true) = tự động câu: game tự thả lại sau mỗi lượt; dừng bằng #btn-fishing-stop-touch hoặc di chuyển.
+  // Đọc trạng thái đang tự câu: nút dừng hiện (không class hidden).
+  var FISH_SPOT = { map: 'duoc_vien', tx: 18, ty: 15, label: 'Đài câu cá (Hồ Bích Thuỷ)' };
+  function fishingActive() {
+    var b = $('#btn-fishing-stop-touch') || $('#btn-fishing-stop');
+    if (!b || b.classList.contains('hidden')) return false;
+    var r = b.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+  function stopFishingGame() {
+    var b = $('#btn-fishing-stop-touch') || $('#btn-fishing-stop');
+    if (b && fishingActive()) { pressDom(b); log('Đã bấm nút dừng câu của game'); return true; }
+    return false;
+  }
+  // Bật tự động câu đúng cách game (v1.11, lệnh Bui 13:23): đứng tại/kề đài câu cá → bấm nút
+  // "Tương Tác" → thoại câu cá hiện 2 mục "Thả câu"/"Tự động câu" (mã client: openDialog choices
+  // label "Thả câu" + "Tự động câu") → chọn "Tự động câu" → kiểm chứng đang câu (nút dừng câu
+  // hiện / caption "Tự động câu... còn Ns"). Không thấy nút Tương Tác thì dự phòng chạm mặt nước
+  // (xoắn ốc) như cũ. Thoại không có mục "Tự động câu" → dump thoại rồi dừng rõ ràng.
+  function startAutoFishing(runId) {
+    return (async function () {
+      if (fishingActive()) { log('Đang tự động câu rồi'); return true; }
+      log('Bấm Tương Tác tại đài câu cá để mở thoại câu cá…');
+      var opened = false;
+      if (await pressInteractBtn(runId, 8000, 'đài câu cá')) {
+        opened = await waitDialogChoices(runId, 5000);
+        if (opened) log('Đã mở thoại câu cá bằng nút Tương Tác');
+        else log('Bấm Tương Tác mà thoại câu cá chưa hiện — dự phòng chạm mặt nước');
+      } else {
+        log('Dự phòng chạm mặt nước mở thoại câu cá');
+      }
+      if (!opened) {
+        if (!(await tapSpiral(runId, dialogOpen, 'mặt nước'))) { log('Không mở được thoại câu cá (Tương Tác + chạm mặt nước đều không được)'); return false; }
+        opened = await waitDialogChoices(runId, 5000);
+      }
+      await sleep(600);
+      if (!clickDialogChoice(['Tự động câu'], 'Tự động câu')) {
+        log('Thoại câu cá không có mục "Tự động câu" — dump thoại rồi dừng:');
+        dumpDialogChoices();
+        log('Dump thoại — caption: "' + readCaption() + '"');
+        return false;
+      }
+      var ok = await waitFor(function () { return fishingActive() ? true : null; }, 6000, 'nút dừng câu hiện (đang tự câu)');
+      if (ok) log('Đã bật tự động câu — đang câu (kiểm chứng: nút dừng câu hiện' + (readCaption() ? ', caption: "' + readCaption() + '"' : '') + ')');
+      else log('Đã chọn "Tự động câu" nhưng chưa thấy đang câu sau 6s — caption: "' + readCaption() + '"');
+      return !!ok;
+    })();
+  }
+  // Kế hoạch tự lái làm việc Dược Công (tọa độ prop trích từ mã client, không dùng nút "Tự đi làm nhiệm vụ"):
+  // linh_chi: 10 prop linh_chi_1..10 ở tan_vien (herb, không chặn); truc_gia: 4 prop truc_gia_1..4 ở
+  // thanh_truc_lam (block — đứng cạnh chặt); duoc_moc: 1 prop co_thu_linh_moc (34,25) ở duoc_vien, chặt lặp.
+  var JOB_PLAN = {
+    linh_chi: { map: 'tan_vien', need: 3, points: [
+      { id: 'linh_chi_1', tx: 19, ty: 2 }, { id: 'linh_chi_2', tx: 21, ty: 3 }, { id: 'linh_chi_3', tx: 31, ty: 2 },
+      { id: 'linh_chi_4', tx: 6, ty: 3 }, { id: 'linh_chi_5', tx: 25, ty: 3 }, { id: 'linh_chi_6', tx: 3, ty: 4 },
+      { id: 'linh_chi_7', tx: 9, ty: 4 }, { id: 'linh_chi_8', tx: 14, ty: 5 }, { id: 'linh_chi_9', tx: 29, ty: 4 },
+      { id: 'linh_chi_10', tx: 35, ty: 6 }
+    ] },
+    truc_gia: { map: 'thanh_truc_lam', need: 4, points: [
+      { id: 'truc_gia_1', tx: 18, ty: 5 }, { id: 'truc_gia_2', tx: 27, ty: 12 },
+      { id: 'truc_gia_3', tx: 10, ty: 20 }, { id: 'truc_gia_4', tx: 31, ty: 8 }
+    ] },
+    duoc_moc: { map: 'duoc_vien', need: 5, repeat: true, points: [
+      { id: 'co_thu_linh_moc', tx: 34, ty: 25 }
+    ] }
+  };
+  var SU_PHU = { map: 'tan_vien', tx: 9, ty: 10 }; // Thầy Ông Nội — đích hộ tống (prop npc trích từ mã client)
+  function dialogChoicesOpen() {
+    var c = $('#dialog-choices');
+    if (!c) return false;
+    var r = c.getBoundingClientRect(), s = getComputedStyle(c);
+    return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden' && c.children.length > 0;
+  }
+  function waitDialogChoices(runId, timeoutMs) {
+    return waitFor(function () { return dialogChoicesOpen() ? true : null; }, timeoutMs || 5000, 'mục thoại hiện');
+  }
+  function dumpDialogChoices() {
+    var dcEl = $('#dialog-choices');
+    var dcTxt = dcEl ? (dcEl.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300) : '(không thấy #dialog-choices)';
+    log('Các mục thoại hiện có: ' + dcTxt);
+  }
+  // Tiến độ việc (v1.45): ưu tiên đếm vật phẩm của việc trong túi qua countItem (đúng cơ chế
+  // seedQuestProgress trong mã game: collect = Inventory.count(item), fishing = đếm cá);
+  // dự phòng chữ "n/m" bảng nhiệm vụ rồi seedQuest.collected.
+  function jobProgress(jobId) {
+    var meta = SEED_JOB_META_V145[jobId];
+    if (meta) {
+      if (meta.item) {
+        var n1 = countItem(meta.item);
+        if (n1 != null) return { cur: n1, need: meta.need, src: 'đếm vật phẩm việc trong túi' };
+      }
+      if (meta.items) {
+        var sum = 0, any = false;
+        meta.items.forEach(function (it) { var v = countItem(it); if (v != null) { sum += v; any = true; } });
+        if (any) return { cur: sum, need: meta.need, src: 'đếm cá trong túi' };
+      }
+    }
+    var plan = JOB_PLAN[jobId];
+    var pr = readProgress();
+    if (pr && pr.need > 0) return { cur: pr.cur, need: pr.need, src: 'bảng nhiệm vụ' };
+    var sq = readSeedState();
+    if (sq && sq.collected && plan) {
+      var n = 0;
+      Object.keys(sq.collected).forEach(function (k) { if (sq.collected[k]) n++; });
+      return { cur: n, need: plan.need, src: 'seedQuest.collected' };
+    }
+    return { cur: 0, need: plan ? plan.need : (meta ? meta.need : 0), src: 'chưa đọc được tiến độ' };
+  }
+  // Tự lái tới từng điểm thu thập, bấm "Tương Tác" lặp tới khi đủ số (giới hạn lần + ghi từng lần)
+  function doCollectJob(runId, jobId) {
+    return (async function () {
+      var plan = JOB_PLAN[jobId];
+      if (!plan) { log('Việc ' + jobId + ' không có kế hoạch tự lái — dừng'); return false; }
+      log('Bước đi làm việc: ' + (JOB_NAMES[jobId] || jobId) + ' — tới ' + (MAPS[plan.map] ? MAPS[plan.map].name : plan.map) + ', thu thập ' + plan.need + ' tại ' + plan.points.length + ' điểm (tool tự lái)');
+      setStatus('Đi làm việc ' + (JOB_NAMES[jobId] || jobId) + '…');
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, plan.map);
+      await ensureFly(runId, false); // hạ cánh để đứng cạnh prop tương tác
+      var tried = {}, totalPresses = 0, MAX_PRESSES = 60;
+      var jobT0 = Date.now(), goFails = 0;
+      while (alive(runId)) {
+        if (Date.now() - jobT0 > 20 * 60 * 1000) { log('Bước đi làm việc: quá 20 phút chưa đủ tiến độ — dừng'); return false; }
+        if (goFails >= 6) { log('Bước đi làm việc: 6 lần không tới được điểm thu thập — dừng'); return false; }
+        var prog = jobProgress(jobId);
+        if (prog.need > 0 && prog.cur >= prog.need) { log('Bước đi làm việc: đủ tiến độ ' + prog.cur + '/' + prog.need + ' (' + prog.src + ')'); return true; }
+        // v1.24: bị quái đánh lúc thu hoạch → đánh trả rồi làm tiếp
+        await fightBackCheck(runId, 'thu hoạch Dược Công');
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% khi làm việc — dừng'); return false; }
+        // Chọn điểm chưa thu thập, chưa thử, gần nhất
+        var sq = readSeedState();
+        var p = readPos();
+        var cand = plan.points.filter(function (pt) {
+          if (sq && sq.collected && sq.collected[pt.id]) return false;
+          return !tried[pt.id];
+        });
+        if (!cand.length) {
+          if (plan.repeat) { tried = {}; cand = plan.points.slice(); }
+          else { log('Bước đi làm việc: đã thử hết ' + plan.points.length + ' điểm mà tiến độ mới ' + prog.cur + '/' + prog.need + ' — dừng'); return false; }
+        }
+        cand.sort(function (a, b) {
+          var da = p ? Math.max(Math.abs(a.tx - p.x), Math.abs(a.ty - p.y)) : 0;
+          var db = p ? Math.max(Math.abs(b.tx - p.x), Math.abs(b.ty - p.y)) : 0;
+          return da - db;
+        });
+        var pt = cand[0];
+        tried[pt.id] = true;
+        log('Bước đi làm việc: tới đứng cạnh điểm ' + pt.id + ' (' + pt.tx + ',' + pt.ty + ')');
+        try {
+          await standNextTo(runId, pt.tx, pt.ty, 'điểm ' + pt.id);
+          goFails = 0;
+        } catch (e) {
+          if (!alive(runId)) throw e;
+          goFails++;
+          log('Chưa tới được điểm ' + pt.id + ': ' + e.message + ' — thử điểm kế (lần hỏng ' + goFails + '/6)');
+          continue;
+        }
+        // Bấm Tương Tác lặp tại điểm này
+        var pressesAt = 0, noGain = 0, waits = 0, lastCur = jobProgress(jobId).cur;
+        var maxAt = plan.repeat ? 24 : 6, maxNoGain = plan.repeat ? 8 : 4;
+        while (alive(runId) && pressesAt < maxAt && totalPresses < MAX_PRESSES) {
+          var pr2 = jobProgress(jobId);
+          if (pr2.need > 0 && pr2.cur >= pr2.need) break;
+          if (interactLabel() === 'Tương Tác') {
+            if (pressesAt === 0) log('Nút Tương Tác đã hiện tại ' + pt.id + ' — bấm thu hoạch');
+            pressDom($('#btn-attack'));
+            pressesAt++; totalPresses++; waits = 0;
+            await sleep(1600);
+            var pr3 = jobProgress(jobId);
+            log('Tương Tác lần ' + totalPresses + ' tại ' + pt.id + ' (' + pt.tx + ',' + pt.ty + ') — tiến độ ' + pr3.cur + '/' + pr3.need + ' (' + pr3.src + ')');
+            if (pr3.cur > lastCur) {
+              lastCur = pr3.cur; noGain = 0;
+              if (!plan.repeat) break; // mỗi điểm thu 1 lần (linh chi/trúc già) → sang điểm kế
+            } else if (++noGain >= maxNoGain) {
+              log('Bấm ' + noGain + ' lần tại ' + pt.id + ' mà tiến độ không tăng — sang điểm kế');
+              break;
+            }
+          } else {
+            if (++waits > 8) { log('Nút Tương Tác chưa hiện tại ' + pt.id + ' sau ~7s — sang điểm kế'); break; }
+            await sleep(800);
+          }
+          var hp2 = readHpPct();
+          if (hp2 != null && hp2 < 0.35) { log('Khí Huyết dưới 35% khi làm việc — dừng'); return false; }
+          // v1.24: bị quái đánh lúc đứng thu hoạch tại điểm → đánh trả rồi thu tiếp
+          await fightBackCheck(runId, 'thu hoạch Dược Công');
+        }
+        if (totalPresses >= MAX_PRESSES) { log('Bước đi làm việc: đã bấm Tương Tác ' + MAX_PRESSES + ' lần mà chưa đủ — dừng'); return false; }
+      }
+      return false;
+    })();
+  }
+  // Hộ tống: đi bộ (không bay, cháu đi theo sau) về Thầy Ông Nội, bấm "Bẩm Thầy Ông Nội", kiểm chứng seedQuest tắt
+  function doEscortJob(runId) {
+    return (async function () {
+      log('Bước hộ tống: đi bộ dẫn cháu từ Thảo Dược Cốc qua Rừng Trúc về Thầy Ông Nội (9,10) ở Chân Núi Tản Viên');
+      setStatus('Hộ tống cháu về làng…');
+      await ensureFly(runId, false);
+      await ensureRun(runId, true);
+      await travelTo(runId, SU_PHU.map);
+      if (!(await openNpcDialog(runId, SU_PHU.tx, SU_PHU.ty, 'Thầy Ông Nội'))) { log('Kẹt: không mở được thoại Thầy Ông Nội'); return false; }
+      await sleep(700);
+      await waitDialogChoices(runId, 5000);
+      // v1.45: "Bẩm Thầy Ông Nội" là nút hành động #dialog-action (actionLabel) — bấm đúng nút đó trước
+      if (!(await pressDialogActionByLabel(runId, ['Bẩm Thầy Ông Nội'], 'trả việc hộ tống')) && !clickDialogChoice(['Bẩm Thầy Ông Nội'], 'Bẩm Thầy Ông Nội')) dumpDialogChoices();
+      await sleep(1500);
+      if (!alive(runId)) return false;
+      var sq = readSeedState();
+      if (sq && !sq.active) { log('Bước hộ tống: xong — seedQuest đã tắt (kiểm chứng)'); return true; }
+      log('Bước hộ tống: chưa thấy hoàn thành (seedQuest: ' + JSON.stringify(sq) + ') — dừng');
+      return false;
+    })();
+  }
+  // v1.34 (Bui chốt 22:36 + xác nhận 22:37 ngày 2026-11-26): Trúc Cơ trở lên dùng phần
+  // tự động "Tự Đi Làm Việc Dược Công" của game (mục thoại ở Đại Phu — mã client:
+  // note "Tự đi làm các lượt còn lại · trừ việc Đại Hội, Vận Tiêu", dưới Trúc Cơ bị mờ
+  // với note "Cần đạt Trúc Cơ Sơ Kỳ"). v1.40 (Bui chốt 00:02 ngày 2026-11-27 "Ấn tự
+  // động làm là được — Xong bấm phi hành"): luồng đúng theo mã game là 2 bước — ấn
+  // mục thoại → hộp xác nhận hiện nút "Bắt Đầu Tự Làm" (#dialog-action) → ấn nút đó
+  // mới gọi pe() bắt đầu nhiệm vụ (caption "Tự làm việc Dược Công · chạm màn hình
+  // hoặc di chuyển để dừng") → xong mới bấm Phi Hành (game bỏ qua nút bay khi thoại
+  // còn mở; pe() tự hạ cánh lúc bắt đầu, cất cánh sau đó không hủy autoDC) → đứng
+  // yên chờ game làm xong, không gửi thêm lệnh di chuyển vì game hủy autoDC khi có
+  // thao tác tay ("Đã dừng tự làm việc"). Kiểm chứng bằng điểm Dược Công tăng trong
+  // bản lưu. Trả số lượt ước tính, hoặc null khi không dùng được tự động của game
+  // (dự phòng vòng tay).
+  function runDuocCongGameAuto(runId, opts) {
+    opts = opts || {};
+    return (async function () {
+      var before = readLocal();
+      var dcBefore = before && typeof before.duocCong === 'number' ? before.duocCong : null;
+      log('Dược Công (tự động của game): điểm Dược Công trước: ' + (dcBefore == null ? 'không đọc được' : dcBefore));
+      setStatus('Dược Công: tới Đại Phu bật tự động của game…');
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, DAI_PHU.map);
+      if (!(await openNpcDialog(runId, DAI_PHU.tx, DAI_PHU.ty, 'Đại Phu'))) {
+        log('Dược Công (tự động của game): không mở được thoại Đại Phu — dự phòng vòng tay của tool');
+        return null;
+      }
+      await sleep(700);
+      await waitDialogChoices(runId, 5000);
+      var el = findByText('#dialog-choices', ['Tự Đi Làm Việc Dược Công']) || findByText('#dialog', ['Tự Đi Làm Việc Dược Công']);
+      if (!el) {
+        dumpDialogChoices();
+        log('Dược Công (tự động của game): không thấy mục "Tự Đi Làm Việc Dược Công" trong thoại — dự phòng vòng tay của tool');
+        if (dialogOpen()) { var dcx0 = $('#dialog-close'); if (dcx0) pressDom(dcx0); await sleep(500); }
+        return null;
+      }
+      var disabled = !!el.disabled || el.getAttribute('aria-disabled') === 'true' ||
+        (el.classList && (el.classList.contains('mo') || el.classList.contains('disabled') || el.classList.contains('khoa')));
+      if (disabled) {
+        log('Dược Công (tự động của game): mục "Tự Đi Làm Việc Dược Công" đang bị mờ/khóa — chữ trên mục: "' + (el.textContent || '').replace(/\s+/g, ' ').trim() + '" — dự phòng vòng tay của tool');
+        if (dialogOpen()) { var dcx1 = $('#dialog-close'); if (dcx1) pressDom(dcx1); await sleep(500); }
+        return null;
+      }
+      pressDom(el);
+      log('Dược Công (tự động của game): đã ấn mục "Tự Đi Làm Việc Dược Công" — chờ hộp xác nhận "Bắt Đầu Tự Làm" (mã game: bấm mục thoại chỉ mở hộp xác nhận, chưa chạy ngay)');
+      // v1.40 (Bui chốt 00:02 ngày 2026-11-27): ấn tự động làm là bắt đầu nhiệm vụ.
+      // Mã game: onChoose của mục thoại mở HUD.openDialog với actionLabel
+      // "Bắt Đầu Tự Làm" (nút #dialog-action), onAction mới gọi pe() đặt autoDC.
+      // Bản v1.34 chỉ bấm mục thoại rồi đóng thoại → autoDC không bao giờ chạy.
+      var actBtn = null, actT0 = Date.now();
+      while (alive(runId) && Date.now() - actT0 < 5000) {
+        actBtn = dialogActionBtn();
+        if (actBtn) break;
+        await sleep(300);
+      }
+      if (!actBtn) {
+        log('Dược Công (tự động của game): không thấy nút xác nhận "Bắt Đầu Tự Làm" (#dialog-action) sau 5s — dự phòng vòng tay của tool. Thoại hiện tại: ' + readDialogText());
+        if (dialogOpen()) { var dcx3 = $('#dialog-close'); if (dcx3) pressDom(dcx3); await sleep(500); }
+        return null;
+      }
+      var actLabel = (actBtn.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!/Bắt Đầu Tự Làm/i.test(actLabel)) {
+        log('Dược Công (tự động của game): nút xác nhận hiện chữ "' + actLabel + '" (không phải "Bắt Đầu Tự Làm") — không bấm mù, dự phòng vòng tay của tool');
+        if (dialogOpen()) { var dcx4 = $('#dialog-close'); if (dcx4) pressDom(dcx4); await sleep(500); }
+        return null;
+      }
+      await sleep(750); // chốt chống bấm nhầm 500ms của game (đã biết từ v1.10)
+      pressDom(actBtn);
+      log('Dược Công (tự động của game): đã ấn "Bắt Đầu Tự Làm" — kiểm chứng nhiệm vụ đã bắt đầu');
+      // Kiểm chứng đã bắt đầu: caption của pe() "Tự làm việc Dược Công · chạm màn hình
+      // hoặc di chuyển để dừng", hoặc thoại đã đóng + seedQuest.active / nhân vật bắt
+      // đầu di chuyển / điểm Dược Công tăng. Caption báo lý do chặn (autoSeedBlock)
+      // thì dừng, dự phòng vòng tay.
+      var started = false, startSignal = '', posAtStart = readPos(), verT0 = Date.now(), repress = 0;
+      while (alive(runId) && Date.now() - verT0 < 20000) {
+        var cap0 = readCaption();
+        if (cap0 && /Tự làm việc Dược Công/i.test(cap0)) { started = true; startSignal = 'caption "' + cap0 + '"'; break; }
+        if (cap0 && /Chưa nhận việc của Đại Phu|Cần đạt Trúc Cơ|Hôm nay hết lượt|Đang giữ việc|Hạ phi hành xuống/i.test(cap0)) {
+          log('Dược Công (tự động của game): game báo "' + cap0 + '" — tự động không bắt đầu được, dự phòng vòng tay của tool');
+          if (dialogOpen()) { var dcx5 = $('#dialog-close'); if (dcx5) pressDom(dcx5); await sleep(500); }
+          return null;
+        }
+        if (!dialogOpen()) {
+          var sq0 = readSeedState();
+          if (sq0 && sq0.active) { started = true; startSignal = 'seedQuest.active' + (sq0.task ? ' task=' + sq0.task : ''); break; }
+          var pNow = readPos();
+          if (pNow && posAtStart && (pNow.x !== posAtStart.x || pNow.y !== posAtStart.y)) { started = true; startSignal = 'nhân vật bắt đầu di chuyển (' + posAtStart.x + ',' + posAtStart.y + ' → ' + pNow.x + ',' + pNow.y + ')'; break; }
+          var loc0 = readLocal();
+          if (loc0 && typeof loc0.duocCong === 'number' && dcBefore != null && loc0.duocCong > dcBefore) { started = true; startSignal = 'điểm Dược Công đã tăng ' + dcBefore + ' → ' + loc0.duocCong; break; }
+        } else if (Date.now() - verT0 > 6000 && repress < 1) {
+          // Thoại còn mở sau 6s: có thể cú bấm đầu hụt chốt 500ms — bấm lại 1 lần
+          var actBtn2 = dialogActionBtn();
+          if (actBtn2 && /Bắt Đầu Tự Làm/i.test(actBtn2.textContent || '')) { repress++; pressDom(actBtn2); log('Dược Công (tự động của game): thoại còn mở — bấm lại "Bắt Đầu Tự Làm" lần 2'); }
+        }
+        await sleep(500);
+      }
+      if (!started) {
+        log('Dược Công (tự động của game): 20s chưa thấy dấu hiệu nhiệm vụ bắt đầu (caption/seedQuest/di chuyển/điểm) — dự phòng vòng tay của tool');
+        if (dialogOpen()) { var dcx6 = $('#dialog-close'); if (dcx6) pressDom(dcx6); await sleep(500); }
+        return null;
+      }
+      log('Dược Công (tự động của game): nhiệm vụ đã bắt đầu (kiểm chứng: ' + startSignal + ') — bấm Phi Hành rồi đứng yên chờ game tự làm các lượt còn lại');
+      // Bui chốt: "Xong bấm phi hành" — bấm SAU khi thoại đã đóng (game bỏ qua
+      // consumeFlyToggle khi dialogOpen) và sau khi autoDC đã chạy (pe() hạ cánh
+      // lúc bắt đầu; cất cánh sau đó không hủy autoDC theo mã game).
+      await ensureFly(runId, true);
+      log('Dược Công (tự động của game): đã bấm Phi Hành (ensureFly kiểm tra trạng thái trước khi nhấn) — từ đây đứng yên, không gửi lệnh lái (game hủy tự động khi có thao tác tay/di chuyển)');
+      setStatus('Dược Công: game đang tự làm việc…');
+      var t0 = Date.now(), lastDc = dcBefore, noInc = 0, lastPos = null, stablePos = 0, stopped = false;
+      while (alive(runId)) {
+        if (Date.now() - t0 > 45 * 60000) { log('Dược Công (tự động của game): chờ quá 45 phút — dừng chờ, tính theo điểm đã tăng'); break; }
+        await sleep(10000);
+        if (!alive(runId)) break;
+        var cap = readCaption();
+        if (cap && /dừng tự làm việc|Đã dừng tự/i.test(cap)) { log('Dược Công (tự động của game): game báo "' + cap + '" — tự động đã dừng'); stopped = true; break; }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Dược Công (tự động của game): Khí Huyết dưới 35% — dừng chờ'); break; }
+        var now = readLocal();
+        var dcNow = now && typeof now.duocCong === 'number' ? now.duocCong : null;
+        var p = readPos();
+        if (p && lastPos && p.x === lastPos.x && p.y === lastPos.y) stablePos++; else stablePos = 0;
+        lastPos = p;
+        if (dcNow != null && lastDc != null && dcNow > lastDc) { noInc = 0; log('Dược Công (tự động của game): điểm Dược Công ' + lastDc + ' → ' + dcNow); }
+        else noInc++;
+        if (dcNow != null) lastDc = dcNow;
+        // Xong khi: điểm đã tăng mà 3 nhịp liên tiếp (30s) không tăng nữa + nhân vật đứng yên
+        if (dcBefore != null && lastDc != null && lastDc > dcBefore && noInc >= 3 && stablePos >= 2) {
+          log('Dược Công (tự động của game): điểm không tăng thêm + nhân vật đứng yên — coi như game đã làm xong các lượt còn lại');
+          break;
+        }
+        // Không tăng điểm nào sau 5 phút + đứng yên: game không chạy (hết lượt hôm nay?)
+        if (dcBefore != null && lastDc === dcBefore && Date.now() - t0 > 300000 && stablePos >= 2) {
+          log('Dược Công (tự động của game): 5 phút không tăng điểm + nhân vật đứng yên — game không chạy thêm (có thể đã hết lượt hôm nay)');
+          break;
+        }
+      }
+      var end = readLocal();
+      var dcAfter = end && typeof end.duocCong === 'number' ? end.duocCong : lastDc;
+      var delta = (dcBefore != null && dcAfter != null) ? dcAfter - dcBefore : null;
+      var est = delta != null && delta > 0 ? Math.max(1, Math.round(delta / 3)) : 0;
+      log('Dược Công (tự động của game): xong — điểm Dược Công ' + (dcBefore == null ? '?' : dcBefore) + ' → ' + (dcAfter == null ? '?' : dcAfter) + (delta != null ? ' (+' + delta + ' điểm, ước ' + est + ' lượt theo 1 việc ≈ 3 điểm)' : ' (không đọc được điểm)') + (stopped ? ' — tự động bị dừng giữa chừng' : ''));
+      return est;
+    })();
+  }
+  function runDuocCong(runId, opts) {
+    opts = opts || {};
+    return (async function () {
+      var hp0 = readHpPct();
+      if (hp0 != null && hp0 < 0.5) { log('Khí Huyết dưới 50% — không nhận việc'); if (opts.schedule) return 0; stopTool('Khí Huyết thấp'); return; }
+      await flyCheckAtStart(runId, 'Việc Dược Công', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      // v1.34 (Bui chốt 22:36 + xác nhận 22:37 ngày 2026-11-26): Trúc Cơ trở lên dùng
+      // tự động Dược Công của game; dưới Trúc Cơ tool tự làm vòng tay như cũ.
+      var riDC = readRealmInfo();
+      if (isTrucCoUpRealm(riDC)) {
+        log('Dược Công: cảnh giới ' + riDC.name + ' (Trúc Cơ trở lên) — dùng phần tự động của game, không chạy vòng tay của tool');
+        var ga = await runDuocCongGameAuto(runId, opts);
+        if (ga != null) {
+          if (opts.schedule) return ga;
+          stopTool('xong Dược Công bằng tự động của game (' + ga + ' lượt ước tính)');
+          return;
+        }
+        log('Dược Công: tự động của game không dùng được — chuyển vòng tay của tool');
+      } else {
+        log('Dược Công: cảnh giới ' + (riDC ? riDC.name : 'không đọc được') + ' (dưới Trúc Cơ) — tool tự làm vòng tay: tới Đại Phu nhận việc → thu hoạch → trả việc');
+      }
+      // v1.45 (Bui lệnh 06:38 ngày 2026-11-27): vòng tay Luyện Khí trọn vòng tự nhận → tự làm →
+      // tự trả → tự nhận lượt kế tới hết 15 lượt/ngày. Lỗi một lượt không dừng cả vòng: làm hụt
+      // thử lại 1 lần, vẫn hụt thì hủy việc (game hoàn lượt nhận) chuyển việc khác; việc ngoài
+      // 5 việc Luyện Khí cũng tự hủy rồi nhận việc khác. Chỉ dừng khi hết lượt thật (đọc
+      // seedQuest.daily), Khí Huyết thấp, hoặc mọi việc còn lượt đều đã thử hụt 2 lần.
+      var stageDC = questStageNum(readQuestState().stage);
+      if (stageDC != null && stageDC < 8) {
+        log('Dược Công: giai đoạn nhiệm vụ chính ' + stageDC + ' chưa mở việc Dược Công (mã game cần giai đoạn 8+) — chưa nhận việc được, làm nhiệm vụ chính trước');
+        if (opts.schedule) return 0;
+        stopTool('chưa tới giai đoạn 8 để nhận việc Dược Công');
+        return;
+      }
+      log('Bắt đầu di chuyển…');
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      var jobsDone = 0;
+      var failedJobs = {};
+      var iter = 0;
+      while (alive(runId)) {
+        if (++iter > 30) { log('Dược Công: đã chạy 30 vòng lặp — dừng để tránh lặp vô hạn'); break; }
+        if (isDowned()) { await handleDeath(runId); if (!alive(runId)) break; }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.5) { log('Khí Huyết dưới 50% — dừng nhận việc'); break; }
+        var daily0 = readSeedDaily();
+        if (daily0.left15 <= 0) { log('Đã hết 15 lượt Dược Công hôm nay (5 việc Luyện Khí × 3 lượt, đã dùng ' + daily0.total15 + '/15) — mai 00:00 reset'); break; }
+        if (opts.targetDc != null) {
+          var dcNow0 = (readLocal() || {}).duocCong;
+          if (typeof dcNow0 === 'number' && dcNow0 >= opts.targetDc) { log('Dược Công: đã đủ ' + dcNow0 + '/' + opts.targetDc + ' điểm cần — dừng vòng tay'); break; }
+        }
+        var picked = null;
+        var sq0 = readSeedState();
+        if (sq0 && sq0.active && sq0.task) {
+          if (SEED_JOBS_LK.indexOf(sq0.task) >= 0) {
+            picked = sq0.task;
+            log('Đang giữ việc: ' + (JOB_NAMES[picked] || picked) + ' — đi làm luôn, không nhận mới (lượt hôm nay đã dùng ' + daily0.total15 + '/15)');
+          } else {
+            log('Đang giữ việc ngoài 5 việc Luyện Khí (' + (JOB_NAMES[sq0.task] || sq0.task) + ') — tự hủy việc (game hoàn lại 1 lượt nhận) rồi nhận việc Luyện Khí khác');
+            if (!(await cancelSeedJob(runId))) { log('Không hủy được việc ngoài kế hoạch — dừng vòng Dược Công'); break; }
+            continue;
+          }
+        }
+        if (!picked) {
+          setDoing('Dược Công: tới Đại Phu nhận việc (lượt hôm nay đã dùng ' + daily0.total15 + '/15)');
+          setStatus('Về Thảo Dược Cốc gặp Đại Phu nhận việc…');
+          var acc = await acceptSeedJob(runId);
+          if (!alive(runId)) break;
+          if (!acc.picked) {
+            if (acc.reason === 'nojobs') { log('Không còn việc Luyện Khí nào nhận được (hết lượt từng việc hoặc khóa) — kết thúc vòng Dược Công'); break; }
+            if (acc.reason === 'nomenu') { log('Thoại Đại Phu không có mục nhận việc Dược Công — kết thúc vòng (xem thoại ghi ở nhật ký trên)'); break; }
+            log('Chưa nhận được việc sau 2 lần thử — kết thúc vòng Dược Công'); break;
+          }
+          picked = acc.picked;
+          if (SEED_JOBS_LK.indexOf(picked) < 0) {
+            log('Việc vừa nhận (' + (JOB_NAMES[picked] || picked) + ') không nằm trong 5 việc Luyện Khí — tự hủy rồi nhận việc khác');
+            if (!(await cancelSeedJob(runId))) { log('Không hủy được việc lạ — dừng vòng Dược Công'); break; }
+            continue;
+          }
+          var daily1 = readSeedDaily();
+          log('Đã nhận việc: ' + (JOB_NAMES[picked] || picked) + ' — đang làm (lượt hôm nay đã dùng ' + daily1.total15 + '/15, thưởng ' + (SEED_JOB_META_V145[picked] ? SEED_JOB_META_V145[picked].reward : '?') + ' Dược Công)');
+        }
+        var dcBefore = (readLocal() || {}).duocCong;
+        setDoing('Dược Công: đang làm việc ' + (JOB_NAMES[picked] || picked));
+        var full = await doSeedJobWork(runId, picked);
+        if (!alive(runId)) break;
+        if (!full) {
+          failedJobs[picked] = (failedJobs[picked] || 0) + 1;
+          var prNow = jobProgress(picked);
+          log('Việc ' + (JOB_NAMES[picked] || picked) + ' chưa làm xong (tiến độ ' + prNow.cur + '/' + prNow.need + ' qua ' + prNow.src + ') — lần hụt ' + failedJobs[picked]);
+          if (failedJobs[picked] < 2) { log('Thử làm lại việc này thêm 1 lần'); continue; }
+          log('Việc này hụt 2 lần — hủy việc (game hoàn lượt nhận) chuyển việc khác, không dừng cả vòng');
+          if (!(await cancelSeedJob(runId))) { log('Không hủy được việc hụt — dừng vòng Dược Công'); break; }
+          var dailyF = readSeedDaily();
+          var remain = SEED_JOBS_LK.filter(function (id) { return (failedJobs[id] || 0) < 2 && (dailyF.used[id] || 0) < 3; });
+          if (!remain.length) { log('Mọi việc Luyện Khí còn lượt đều đã thử hụt 2 lần — kết thúc vòng Dược Công'); break; }
+          continue;
+        }
+        var escortDone = (picked === 'ho_tong_chau');
+        var dcAfter = null, gained = null, retOk = escortDone;
+        if (!escortDone) {
+          setDoing('Dược Công: quay về Đại Phu trả việc ' + (JOB_NAMES[picked] || picked));
+          var ret = await returnSeedJob(runId, picked);
+          if (!alive(runId)) break;
+          retOk = ret.ok; dcAfter = ret.dcAfter; gained = ret.gained;
+          if (!retOk) { log('Chưa trả được việc ' + (JOB_NAMES[picked] || picked) + ' sau 2 lần giao — việc vẫn được giữ, vòng sau trả tiếp; dừng vòng này'); break; }
+        } else {
+          dcAfter = (readLocal() || {}).duocCong;
+          gained = (typeof dcBefore === 'number' && typeof dcAfter === 'number') ? dcAfter - dcBefore : null;
+        }
+        jobsDone++;
+        var daily2 = readSeedDaily();
+        log('Đã trả việc ' + (JOB_NAMES[picked] || picked) + (typeof dcBefore === 'number' && typeof dcAfter === 'number' ? ' — điểm Dược Công ' + dcBefore + '→' + dcAfter + (gained != null ? ' (+' + gained + ')' : '') : ' (không đọc được điểm Dược Công trước/sau)') + ' — lượt ' + daily2.total15 + '/15 hôm nay (phiên này xong ' + jobsDone + ' lượt)');
+        if (typeof dcBefore === 'number' && typeof dcAfter === 'number' && dcAfter <= dcBefore) log('Cảnh báo: chưa thấy Dược Công tăng sau khi trả việc — kiểm tra tay');
+      }
+      log('Kết thúc vòng Dược Công: ' + jobsDone + ' lượt');
+      if (opts.schedule) return jobsDone;
+      stopTool('xong Dược Công');
+    })();
+  }
+
+  // ============ Câu cá tự động (chế độ riêng) ============
+  // ============ Huyết Xích Cấm Địa (v1.9; tự xác nhận mở v1.10; nhận diện + thu hết map v1.11) ============
+  function hxInDungeon(mapId) { return HUYET.maps.indexOf(mapId) >= 0; }
+  // Vòng canh Phi Hành trong cụm Huyết Xích (v1.36, Bui lệnh 22:46 + luật 22:22 không
+  // đi bộ trong cụm): gọi ở mỗi điểm quét quái/thu hoạch — thấy Phi Hành TẮT là bật
+  // lại ngay qua ensureFly (tự kiểm tra trạng thái trước khi nhấn, luật 22:23).
+  function hxFlyGuard(runId, label) {
+    return (async function () {
+      var m = readMapId();
+      if (!hxInDungeon(m)) return true;
+      var st = readFlyState();
+      var cur = st == null ? S.flyingBelief : st;
+      if (cur) { if (st != null) S.flyingBelief = true; return true; }
+      log('Canh Phi Hành trong Huyết Xích (' + label + '): thấy Phi Hành đang TẮT — bật lại ngay (không đi bộ trong cụm)');
+      return await ensureFly(runId, true);
+    })();
+  }
+
+  // Vật phẩm thu được theo tiền tố id điểm thu hoạch (để kiểm chứng thu hoạch bằng
+  // đếm túi đồ — v1.39): bich_chop→Cổ Bích Mộc, ore→Trấn Thần Thạch, fruit→Địa Linh
+  // Hóa Quả, tct→Trúc Cơ Thảo (ITEM_NAMES_V123 + props trong runtime-maps.json).
+  var HX_ITEM_BY_PREFIX = { bich_chop: 'co_bich_moc', ore: 'tran_than_thach', fruit: 'dia_linh_qua', tct: 'truc_co_thao' };
+  function hxItemOf(pt) {
+    var pre = String((pt && pt.id) || '').replace(/_\d+$/, '');
+    return HX_ITEM_BY_PREFIX[pre] || null;
+  }
+  // Đọc trạng thái cấm chế từ caption hiện tại (v1.39): caption game khi còn phong
+  // "Cấm chế còn phong — quét sạch N yêu thú trong khu này rồi mới thu hoạch được.";
+  // khi hết quái game báo "Đã quét sạch yêu thú — cấm chế tan, cửa sang X đã mở."
+  // (camCheNhac/cuaMo trong mã client). Trả {clear:true} | {clear:false,left:N|null} | null.
+  function hxSealState() {
+    var cap = readCaption();
+    if (!cap) return null;
+    if (/Đã quét sạch yêu thú|cấm chế tan|cửa sang .* đã mở/.test(cap)) return { clear: true, cap: cap };
+    var m = cap.match(/quét sạch\s*(\d+)\s*yêu thú/);
+    if (m) return { clear: false, left: +m[1], cap: cap };
+    if (cap.indexOf('Cấm chế còn phong') >= 0 || cap.indexOf('Cửa còn phong ấn') >= 0) return { clear: false, left: null, cap: cap };
+    return null;
+  }
+  // Tự hồi sinh khi chết TRONG Huyết Xích rồi quay lại việc đang làm (v1.39, Bui báo
+  // lỗi 23:45 ngày 2026-11-26 "chết không tự hồi sinh"). Cơ chế theo mã client
+  // (CONFIG.DOWNED + DownedUI + SceneWorld): chết → bảng #downed sau 1,2s;
+  // #downed-spot "Hồi sinh / Tại chỗ" (ONSPOT_HP 35%, tối đa MAX_REVIVES=3 lần/khu,
+  // phí phía server không hiện trong client — tool ghi Linh Thạch trước/sau);
+  // #downed-home trong map huyetSac được game đổi nhãn thành "Hồi sinh cửa"
+  // (timer "Tự hồi cửa sau") = hồi sinh ở cửa Cấm Địa, miễn phí, Khí Huyết 60% —
+  // KHÔNG về tan_vien như map thường; không bấm gì thì 60s game tự hồi cửa.
+  // Tool ưu tiên tại chỗ (giữ vị trí), hết lượt thì hồi cửa; sống lại còn trong cụm
+  // thì bật lại trio + quay lại điểm đang làm + tiếp tục (không dừng chế độ); đã ra
+  // khỏi cụm thì báo rõ và KHÔNG tự đăng ký lại (tránh tốn thêm lượt/phí).
+  // Trả null (chưa chết) | 'revived' | 'out' | 'failed'.
+  function hxReviveIfDown(runId, mapId, pt, totals) {
+    return (async function () {
+      if (!isDowned()) return null;
+      totals = totals || {};
+      totals.deaths = (totals.deaths || 0) + 1;
+      releaseAllInputs();
+      var stonesBefore = readStones();
+      log('Huyết Xích: nhân vật đã gục ở ' + (MAPS[mapId] ? MAPS[mapId].name : mapId) + ' (lần chết ' + totals.deaths + ' trong lượt) — tự hồi sinh rồi quay lại việc đang làm');
+      setStatus('Đã gục trong Huyết Xích — đang hồi sinh…');
+      if (totals.deaths > 6) { log('Đã chết quá 6 lần trong lượt Huyết Xích này — dừng để tránh mất Đạo Hạnh tiếp (chết bị trừ Đạo Hạnh theo server)'); return 'failed'; }
+      var shown = await waitFor(function () { return downedPanelVisible() ? true : null; }, 6000, 'bảng hồi sinh');
+      if (!alive(runId)) return 'failed';
+      var spot = $('#downed-spot'), home = $('#downed-home');
+      var spotNote = (($('#downed-spot-note') || {}).textContent || '').trim();
+      var spotOk = !!(spot && !spot.disabled);
+      if (shown && spotOk) {
+        log('Hồi sinh tại chỗ (#downed-spot — Khí Huyết 35%, tối đa 3 lần/khu' + (spotNote ? ', ghi chú game: "' + spotNote + '"' : '') + ') — giữ nguyên vị trí trong Cấm Địa');
+        pressDom(spot);
+      } else if (shown && home) {
+        log('Hồi sinh cửa (#downed-home — trong Huyết Xích game đổi nhãn "Hồi sinh cửa", miễn phí, Khí Huyết 60%)' + (spot ? ' — tại chỗ không dùng được (' + (spotNote || 'Hết lượt') + ')' : ''));
+        pressDom(home);
+      } else {
+        log('Không thấy bảng hồi sinh sau 6s — chờ game tự hồi cửa (tối đa 60s)');
+      }
+      var aliveOk = await waitFor(function () {
+        var hp = readHpPct();
+        return (!downedPanelVisible() && hp != null && hp > 0) ? true : null;
+      }, 90000, 'hồi sinh xong');
+      if (!alive(runId)) return 'failed';
+      if (!aliveOk) { log('Chờ 90s chưa thấy hồi sinh xong — dừng xử lý chết'); return 'failed'; }
+      S.flyingBelief = false; S.autoBelief = false; S.autoByTool = false;
+      var stonesAfter = readStones();
+      var feeNote = (stonesBefore != null && stonesAfter != null && stonesAfter < stonesBefore) ? ' — Linh Thạch giảm ' + (stonesBefore - stonesAfter) + ' (phí hồi sinh phía server)' : '';
+      var nowMap = readMapId();
+      log('Đã hồi sinh ở ' + (MAPS[nowMap] ? MAPS[nowMap].name : nowMap) + ' (Khí Huyết ' + Math.round((readHpPct() || 0) * 100) + '%)' + feeNote);
+      if (!hxInDungeon(nowMap)) { log('Hồi sinh xong đã ra khỏi Cấm Địa — lượt Huyết Xích này kết thúc (không tự đăng ký lại để tránh tốn thêm lượt/phí)'); return 'out'; }
+      await ensureCombatTrio(runId, 'sau hồi sinh trong Huyết Xích');
+      try {
+        if (nowMap !== mapId) { log('Quay lại map đang làm: ' + MAPS[mapId].name); await travelTo(runId, mapId); }
+        if (pt && pt.tx != null) await goToPath(runId, pt.tx, pt.ty, 1, 120000, 'điểm đang làm trước khi chết');
+      } catch (e) {
+        if (!alive(runId)) throw e;
+        log('Chưa quay lại được điểm cũ (' + e.message + ') — tiếp tục từ vị trí hiện tại');
+      }
+      if (!hxInDungeon(readMapId())) return 'out';
+      log('Đã quay lại việc đang làm trong Huyết Xích sau hồi sinh');
+      return 'revived';
+    })();
+  }
+  // Đứng đúng ô để thu hoạch (v1.39, Bui lệnh "thu hoạch đúng điểm"): thử ô của điểm
+  // + 8 ô kề (chỉ ô không chặn cả lưới đi bộ lẫn lưới bay — props Huyết Xích có
+  // block:false/flyBlock:false nên đứng lên ô điểm cũng được), ô nào nút Tương Tác
+  // hiện thì dùng ô đó. Trả 'ok' | 'nointeract' | 'downed'.
+  function hxStandForHarvest(runId, pt) {
+    return (async function () {
+      var mapId = readMapId();
+      var gw = mapId ? gridFor(mapId, false) : null;
+      var gf = mapId ? gridFor(mapId, true) : null;
+      var p = readPos();
+      var cands = [];
+      for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+        var x = pt.tx + dx, y = pt.ty + dy;
+        if (gw && gridBlocked(gw, x, y)) continue;
+        if (gf && gridBlocked(gf, x, y)) continue;
+        var d = p ? Math.max(Math.abs(x - p.x), Math.abs(y - p.y)) : 0;
+        cands.push({ x: x, y: y, d: d, onProp: dx === 0 && dy === 0 });
+      }
+      cands.sort(function (a, b) { return (a.d - b.d) || ((a.onProp ? 1 : 0) - (b.onProp ? 1 : 0)); });
+      if (!cands.length) cands = [{ x: pt.tx, y: pt.ty, d: 0, onProp: true }];
+      for (var i = 0; i < Math.min(cands.length, 4); i++) {
+        if (!alive(runId)) throw new Error('đã dừng');
+        if (isDowned()) return 'downed';
+        var c = cands[i];
+        var cur = readPos();
+        if (!cur || cur.x !== c.x || cur.y !== c.y) {
+          try { await goToPath(runId, c.x, c.y, 0, 60000, 'ô đứng thu hoạch ' + pt.id); }
+          catch (e) { if (!alive(runId)) throw e; log('Chưa tới được ô (' + c.x + ',' + c.y + ') cạnh điểm ' + pt.id + ': ' + e.message); continue; }
+        }
+        var d0 = Date.now();
+        while (alive(runId) && Date.now() - d0 < 2500) {
+          if (isDowned()) return 'downed';
+          if (interactLabel() === 'Tương Tác') { log('Đứng đúng ô (' + c.x + ',' + c.y + ') cạnh điểm ' + pt.id + ' — nút Tương Tác đã hiện'); return 'ok'; }
+          await sleep(300);
+        }
+        log('Đứng ô (' + c.x + ',' + c.y + ') chưa thấy nút Tương Tác cho điểm ' + pt.id + ' — thử ô kề khác');
+      }
+      return 'nointeract';
+    })();
+  }
+  // Các ô trên vòng quanh điểm boss (Chebyshev bán kính r, chỉ ô bay được, sắp theo
+  // góc để đi vòng liên tục) — dùng cho đánh boss di chuyển liên tục (v1.39).
+  function hxOrbitTiles(mapId, pt, r) {
+    var gf = gridFor(mapId, true);
+    var tiles = [];
+    for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      var x = pt.tx + dx, y = pt.ty + dy;
+      if (gf && gridBlocked(gf, x, y)) continue;
+      tiles.push({ x: x, y: y, a: Math.atan2(dy, dx) });
+    }
+    tiles.sort(function (p, q) { return p.a - q.a; });
+    return tiles;
+  }
+
+  // Tìm phần tử theo chữ trong vùng #dialog, ưu tiên phần tử có chữ NGẮN NHẤT (nút thật
+  // thắng phần tử cha chứa nó — click phải trúng đúng nút game gắn handler).
+  function hxFindBtnByText(needles) {
+    var d = $('#dialog'); if (!d) return null;
+    var els = d.querySelectorAll('button, li, a, span, div');
+    var best = null, bestLen = Infinity;
+    for (var i = 0; i < els.length; i++) {
+      var t = (els[i].textContent || '').trim();
+      if (!t || t.length > 80) continue;
+      for (var j = 0; j < needles.length; j++) {
+        if (t.indexOf(needles[j]) >= 0) {
+          var r = els[i].getBoundingClientRect();
+          if (r.width > 0 && r.height > 0 && t.length < bestLen) { best = els[i]; bestLen = t.length; }
+          break;
+        }
+      }
+    }
+    return best;
+  }
+  // Tìm nút xác nhận của hộp thoại bằng nhiều cách, xoay vòng theo lần thử (cách ưu tiên trước,
+  // cách đó không thấy thì thử tiếp các cách còn lại). Trả {el, method} hoặc null.
+  //  0: #dialog-action hiện (selector chính của game)
+  //  1: chữ "Mở Huyết Xích Cấm Địa" trong vùng #dialog
+  //  2: chữ "Xác nhận"/"Đồng ý" trong vùng #dialog
+  //  3: nút button bất kỳ đang hiện trong #dialog (trừ #dialog-close "Để Sau")
+  //  4: #dialog-action chỉ cần không bị ẩn class hidden (rect có thể 0 lúc hộp mới mở)
+  function hxFindConfirmBtn(prefer) {
+    var methods = [
+      function () { return dialogActionBtn(); },
+      function () { return hxFindBtnByText(['Mở Huyết Xích Cấm Địa']); },
+      function () { return hxFindBtnByText(['Xác nhận', 'Đồng ý']); },
+      function () {
+        var d = $('#dialog'); if (!d) return null;
+        var btns = d.querySelectorAll('button');
+        for (var i = 0; i < btns.length; i++) {
+          var b = btns[i];
+          if (b.id === 'dialog-close' || b.classList.contains('hidden')) continue;
+          var r = b.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) return b;
+        }
+        return null;
+      },
+      function () {
+        var b = $('#dialog-action');
+        return (b && !b.classList.contains('hidden')) ? b : null;
+      }
+    ];
+    var start = ((prefer || 0) % methods.length + methods.length) % methods.length;
+    for (var k = 0; k < methods.length; k++) {
+      var mi = (start + k) % methods.length;
+      var el = null;
+      try { el = methods[mi](); } catch (e) { el = null; }
+      if (el) return { el: el, method: mi };
+    }
+    return null;
+  }
+  // Dump toàn bộ vùng thoại ra nhật ký khi không tìm/bấm được nút xác nhận.
+  function hxDumpDialog() {
+    var d = $('#dialog');
+    if (!d) { log('Dump thoại: không thấy #dialog'); return; }
+    var title = (($('#dialog-title') || {}).textContent || '').trim();
+    var text = (($('#dialog-text') || {}).textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+    log('Dump thoại — tiêu đề: "' + title + '" | nội dung: "' + text + '"');
+    var els = d.querySelectorAll('button, li, a');
+    var parts = [];
+    for (var i = 0; i < els.length; i++) {
+      var t = (els[i].textContent || '').trim();
+      var r = els[i].getBoundingClientRect();
+      parts.push((els[i].id ? '#' + els[i].id : els[i].tagName.toLowerCase()) + ':"' + t.slice(0, 60) + '"' + (r.width > 0 ? '' : '(ẩn)'));
+    }
+    log('Dump thoại — các nút/mục: ' + (parts.length ? parts.join(' | ') : '(không có nút nào)'));
+    log('Dump thoại — caption: "' + readCaption() + '"');
+  }
+  // Tự xác nhận mở Huyết Xích Cấm Địa (v1.10): chờ hộp xác nhận → tự bấm nút xác nhận
+  // (pointerdown+pointerup+click qua pressDom; nút của game nghe sự kiện "click"). Game có chốt
+  // chống bấm nhầm 500ms sau khi hộp mở nên chờ 700ms trước mỗi lần bấm. Bấm xong chờ 1s kiểm tra:
+  // đã đổi map vào cụm → xong; hộp đóng mà chưa vào → chờ đổi map tối đa 20s, hộp xác nhận thứ hai
+  // hiện thì bấm tiếp cùng cơ chế; hộp vẫn mở → bấm lại (đổi cách tìm nút), tối đa 5 lần bấm.
+  // Không tìm thấy nút sau các lần thử → dump vùng thoại rồi dừng. Trả 'entered'|'rejected'|'notfound'|'stopped'.
+  function hxAutoConfirm(runId) {
+    return (async function () {
+      var MAX_PRESS = 5, presses = 0, t0 = Date.now(), noBtnSince = null;
+      log('Tự xác nhận mở Huyết Xích: chờ hộp xác nhận…');
+      while (alive(runId)) {
+        var m = readMapId();
+        if (hxInDungeon(m)) { log('Đã tự xác nhận mở Huyết Xích — đã vào ' + MAPS[m].name); return 'entered'; }
+        if (Date.now() - t0 > 90000) break;
+        var found = hxFindConfirmBtn(presses);
+        if (found) {
+          noBtnSince = null;
+          presses++;
+          if (presses > MAX_PRESS) break;
+          var label = (found.el.textContent || '').trim();
+          if (presses === 1) log('Thoại xác nhận: "' + readDialogText() + '"');
+          log('Tự xác nhận lần ' + presses + '/' + MAX_PRESS + ' (cách tìm ' + found.method + '): bấm "' + (label || '(nút không chữ)') + '" — thu ' + HUYET.fee + ' Linh Thạch, tính 1 lượt hôm nay');
+          await sleep(700); // qua chốt chống bấm nhầm 500ms của game
+          if (!alive(runId)) return 'stopped';
+          pressDom(found.el);
+          await sleep(1000);
+          m = readMapId();
+          if (hxInDungeon(m)) { log('Đã tự xác nhận mở Huyết Xích — đã vào ' + MAPS[m].name); return 'entered'; }
+          if (!dialogOpen()) {
+            // Hộp đã đóng: chờ đổi map tối đa 20s; hộp xác nhận thứ hai hiện thì quay lại bấm tiếp
+            var w0 = Date.now(), again = false;
+            while (alive(runId) && Date.now() - w0 < 20000) {
+              m = readMapId();
+              if (hxInDungeon(m)) { log('Đã tự xác nhận mở Huyết Xích — đã vào ' + MAPS[m].name); return 'entered'; }
+              if (hxFindConfirmBtn(0)) { again = true; break; }
+              await sleep(500);
+            }
+            if (!alive(runId)) return 'stopped';
+            if (again) { log('Hộp xác nhận nữa hiện — bấm tiếp cùng cơ chế'); continue; }
+            log('Hộp xác nhận đã đóng nhưng chưa vào được Cấm Địa sau 20s — caption: "' + readCaption() + '"');
+            return 'rejected';
+          }
+          log('Hộp xác nhận vẫn mở sau lần bấm ' + presses + ' — thử lại (đổi cách tìm nút)');
+          continue;
+        }
+        // Chưa thấy nút xác nhận
+        if (!dialogOpen()) {
+          // Thoại đóng mà chưa thấy nút: có thể đang chuyển map
+          var m3 = await waitFor(function () { var mm = readMapId(); return hxInDungeon(mm) ? mm : null; }, 8000, 'đổi map vào Huyết Xích');
+          if (m3) { log('Đã tự xác nhận mở Huyết Xích — đã vào ' + MAPS[m3].name); return 'entered'; }
+          if (!dialogOpen()) { log('Thoại đã đóng, không thấy hộp xác nhận và chưa vào được Cấm Địa — caption: "' + readCaption() + '"'); return 'rejected'; }
+          continue;
+        }
+        if (noBtnSince == null) noBtnSince = Date.now();
+        if (Date.now() - noBtnSince > 8000) break;
+        await sleep(500);
+      }
+      if (!alive(runId)) return 'stopped';
+      log('Không bấm được nút xác nhận sau ' + presses + ' lần thử — dump vùng thoại:');
+      hxDumpDialog();
+      return 'notfound';
+    })();
+  }
+
+  // Đăng ký tại Nữ Tu Trông Miếu: mở thoại → chọn "Đăng ký Huyết Xích Cấm Địa" → TỰ XÁC NHẬN
+  // mở Cấm Địa (hxAutoConfirm v1.10: nhiều cách tìm nút, bấm lại tối đa 5 lần) → chờ đổi map vào cụm.
+  // Game từ chối thì ghi nguyên văn caption/thoại rồi dừng (không bấm lại vô hạn). Trả true nếu đã vào được cụm.
+  function hxRegister(runId) {
+    return (async function () {
+      var stones = readStones();
+      log('Huyết Xích: đăng ký thu ' + HUYET.fee + ' Linh Thạch/người + tính 1 lượt hôm nay (theo thoại game)' + (stones != null ? ' — Linh Thạch hiện có: ' + stones : ' — không đọc được số Linh Thạch'));
+      if (stones != null && stones < HUYET.fee) { log('Không đủ Linh Thạch (' + stones + ' < ' + HUYET.fee + ') — không đăng ký'); return false; }
+      setStatus('Tới Nữ Tu Trông Miếu đăng ký Huyết Xích…');
+      if (!(await openNpcDialog(runId, HUYET.npc.tx, HUYET.npc.ty, HUYET.npc.name))) {
+        log('Không mở được thoại ' + HUYET.npc.name + ' — dừng đăng ký');
+        return false;
+      }
+      await waitDialogChoices(runId, 5000);
+      dumpDialogChoices();
+      if (!clickDialogChoice(['Đăng ký Huyết Xích Cấm Địa'], 'Đăng ký Huyết Xích Cấm Địa')) {
+        log('Không thấy mục "Đăng ký Huyết Xích Cấm Địa" trong thoại — dừng');
+        return false;
+      }
+      // Tự xác nhận mở Cấm Địa (v1.10): tự bấm nút xác nhận, bấm lại tối đa 5 lần nếu chưa ăn
+      var cf = await hxAutoConfirm(runId);
+      if (cf === 'entered') {
+        var st2 = readStones();
+        var entered = readMapId();
+        log('Đăng ký thành công — đã vào ' + MAPS[entered].name + (st2 != null ? ' (Linh Thạch còn ' + st2 + ')' : '') + (readCollapse() ? ' — Cấm Địa sụp sau ' + readCollapse() : ''));
+        return true;
+      }
+      if (cf === 'rejected') log('Đăng ký chưa vào được — caption: "' + readCaption() + '" | thoại: "' + readDialogText() + '"');
+      else if (cf === 'notfound') log('Không tìm/bấm được nút xác nhận mở Huyết Xích — dừng đăng ký (xem dump thoại ở trên)');
+      closeDialogIfOpen();
+      return false;
+    })();
+  }
+
+  // Đánh boss di chuyển LIÊN TỤC quanh boss trong Huyết Xích (v1.39, Bui báo lỗi
+  // 23:45 ngày 2026-11-26: "không được đứng yên đánh boss phải vừa di chuyển vừa
+  // đánh liên tục quanh boss"). Thay nhịp hit-and-run đứng yên của v1.32 (vào đánh
+  // 2,5s → lùi né 1,6s): nhân vật đi vòng quanh điểm boss không nghỉ — các ô trên
+  // vòng Chebyshev bán kính 2↔3 ô (chỉ ô bay được, sắp theo góc), hết vòng thì đổi
+  // bán kính, mỗi 2 vòng đảo chiều đi để tránh đòn đường thẳng (Độc Tuyến 260px);
+  // Auto + kỹ năng theo nhịp vẫn chạy suốt lúc di chuyển. Boss 3 con đầu đàn có
+  // đòn diện rộng (BossTactics: windup 1,4–1,9s, bán kính 68–160px, vòng cảnh báo
+  // vẽ trên canvas nên tool không đọc được qua DOM) — di chuyển liên tục + đổi
+  // bán kính/chiều là cách né theo vị trí. Nhận biết boss gục: đã giao chiến (Khí
+  // Huyết tụt) rồi Khí Huyết đứng yên 12s trong lúc vẫn đi vòng quanh điểm boss.
+  // Chết giữa trận → hxReviveIfDown hồi sinh rồi đánh tiếp (tối đa 3 lần chết/trận
+  // thì bỏ trận này). Trả 'dead' | 'timeout' | 'hp' | 'mapchange'.
+  function hxBossHitRun(runId, mapId, pt, totals) {
+    return (async function () {
+      var m = MAPS[mapId];
+      totals = totals || {};
+      log('Boss ' + pt.name + ' (' + pt.tx + ',' + pt.ty + '): đánh di chuyển liên tục quanh boss (đi vòng bán kính 2–3 ô, đổi bán kính mỗi vòng + đảo chiều mỗi 2 vòng, không đứng yên — Bay+Chạy+Auto, kỹ năng theo nhịp)');
+      setStatus('Đánh boss ' + pt.name + ' (di chuyển liên tục quanh boss)…');
+      await ensureCombatTrio(runId, 'đánh boss ' + pt.name);
+      var rot = skillRotation(runId, function () { return true; });
+      var t0 = Date.now(), lap = 0, deathsHere = 0;
+      var hpRef = readHpPct(), fought = false, lastDropAt = 0;
+      function done(r) { if (rot) rot.stop(); return r; }
+      function noteHp() {
+        var hp = readHpPct();
+        if (hp != null) {
+          if (hpRef != null && hpRef - hp >= 0.02) { if (!fought) log('Đang giao chiến boss ' + pt.name + ' (Khí Huyết tụt)'); fought = true; lastDropAt = Date.now(); }
+          hpRef = hp;
+        }
+        return hp;
+      }
+      // Tới điểm boss trước rồi mới bắt đầu đi vòng
+      try { await goToPath(runId, pt.tx, pt.ty, 1, 60000, pt.name); }
+      catch (e) { if (!alive(runId)) throw e; log('Chưa vào được điểm boss ' + pt.name + ': ' + e.message + ' — vẫn bắt đầu đi vòng từ vị trí hiện tại'); }
+      while (alive(runId)) {
+        if (isDowned()) {
+          deathsHere++;
+          var rv = await hxReviveIfDown(runId, mapId, pt, totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv === 'out') return done('mapchange');
+          if (rv === 'failed' || deathsHere >= 3) { log('Boss ' + pt.name + ': đã chết ' + deathsHere + ' lần trong trận này — bỏ trận boss này'); return done('hp'); }
+          hpRef = readHpPct(); lastDropAt = Date.now();
+        }
+        var mm = readMapId();
+        if (mm && mm !== mapId) return done('mapchange');
+        if (Date.now() - t0 > 240000) { log('Đánh boss ' + pt.name + ' quá 240s chưa gục — chuyển điểm kế (boss có thể vẫn còn)'); return done('timeout'); }
+        lap++;
+        var radius = lap % 2 === 1 ? 2 : 3;
+        var dirSign = Math.floor((lap - 1) / 2) % 2 === 0 ? 1 : -1;
+        var tiles = hxOrbitTiles(mapId, pt, radius);
+        if (!tiles.length) { log('Không có ô bay được trên vòng bán kính ' + radius + ' quanh boss ' + pt.name + ' — đứng tại điểm boss đánh tiếp'); tiles = [{ x: pt.tx, y: pt.ty }]; }
+        if (dirSign < 0) tiles.reverse();
+        // Bắt đầu vòng từ ô gần vị trí hiện tại nhất để không cắt ngang qua boss
+        var pNow = readPos(), startIdx = 0, bestD = 1e9;
+        if (pNow) tiles.forEach(function (t, i) { var d = Math.max(Math.abs(t.x - pNow.x), Math.abs(t.y - pNow.y)); if (d < bestD) { bestD = d; startIdx = i; } });
+        var hpLap = noteHp();
+        log('Boss ' + pt.name + ': vòng di chuyển ' + lap + ' quanh boss (bán kính ' + radius + ' ô, chiều ' + (dirSign > 0 ? 'thuận' : 'ngược') + ', ' + tiles.length + ' ô' + (hpLap != null ? ', Khí Huyết ' + Math.round(hpLap * 100) + '%' : '') + ') — vừa đi vừa đánh, không đứng yên');
+        for (var li = 0; li < tiles.length; li++) {
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (isDowned()) break; // lên đầu vòng while xử lý hồi sinh
+          var mm2 = readMapId();
+          if (mm2 && mm2 !== mapId) return done('mapchange');
+          var t = tiles[(startIdx + li) % tiles.length];
+          try { await goToPath(runId, t.x, t.y, 0, 20000, 'vòng quanh boss ' + pt.name); }
+          catch (e) { if (!alive(runId)) throw e; /* ô vòng không tới được — sang ô kế, vẫn di chuyển liên tục */ }
+          noteHp();
+          if (fought && Date.now() - lastDropAt > 12000) {
+            log('Boss ' + pt.name + ' đã gục (Khí Huyết đứng yên 12s sau giao chiến, ' + lap + ' vòng di chuyển liên tục)');
+            return done('dead');
+          }
+          if (Date.now() - t0 > 240000) break;
+        }
+      }
+      throw new Error('đã dừng');
+    })();
+  }
+
+  // Một vòng quét quái trong khu: bật Auto + Chạy (+Bay tùy flyOn), đi qua từng điểm quái, chờ Auto đánh.
+  // Điểm boss dùng di chuyển liên tục quanh boss (v1.39). Chết giữa vòng → tự hồi sinh
+  // trong cụm rồi quét tiếp (v1.39). survive=true (pha quét sạch): Khí Huyết <35% vẫn
+  // đánh tiếp (chết thì hồi sinh), không kết thúc lượt; survive=false (farm map cuối):
+  // giữ luật dừng ở <35%. Boss đã gục (totals.bossDead[mapId]) thì bỏ qua điểm boss.
+  // Trả 'done' | 'hp' | 'mapchange'.
+  function hxFightRound(runId, mapId, flyOn, roundNo, totals, survive) {
+    return (async function () {
+      var m = MAPS[mapId];
+      totals = totals || {};
+      var pts = (m.monsterPoints || []).slice();
+      pts.sort(function (a, b) { return (a.boss ? 1 : 0) - (b.boss ? 1 : 0); }); // quái thường trước, boss sau
+      log('Huyết Xích: vòng quét quái ' + roundNo + ' ở ' + m.name + ' — ' + pts.length + ' điểm quái (Bay+Chạy+Auto)');
+      setStatus('Quét quái ' + m.name + ' (vòng ' + roundNo + ')…');
+      await ensureCombatTrio(runId, 'quét quái Huyết Xích ' + m.name + ' vòng ' + roundNo);
+      for (var i = 0; i < pts.length; i++) {
+        if (!alive(runId)) throw new Error('đã dừng');
+        if (isDowned()) {
+          var rv = await hxReviveIfDown(runId, mapId, pts[i], totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv === 'out') return 'mapchange';
+          if (rv === 'failed') return 'hp';
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) {
+          if (!survive) { log('Khí Huyết dưới 35% (' + Math.round(hp * 100) + '%) khi quét quái — dừng'); return 'hp'; }
+          log('Khí Huyết dưới 35% (' + Math.round(hp * 100) + '%) khi quét quái — vẫn đánh tiếp (chết sẽ tự hồi sinh trong cụm)');
+        }
+        var mm = readMapId();
+        if (mm && mm !== mapId) return 'mapchange';
+        var pt = pts[i];
+        await hxFlyGuard(runId, 'quét quái ' + pt.name); // v1.36: canh Phi Hành từng điểm, tắt là bật lại
+        snapshotCtx('huyet', mapId, pt.tx, pt.ty, true, true, true);
+        if (pt.boss) {
+          if (totals.bossDead && totals.bossDead[mapId]) { log('Boss ' + pt.name + ' đã gục ở vòng trước — bỏ qua điểm boss'); continue; }
+          // v1.39: boss đánh di chuyển liên tục quanh boss, không đứng yên
+          var br = await hxBossHitRun(runId, mapId, pt, totals);
+          if (br === 'dead') { totals.bossDead = totals.bossDead || {}; totals.bossDead[mapId] = true; }
+          if (br === 'hp') return 'hp';
+          if (br === 'mapchange') return 'mapchange';
+          continue;
+        }
+        log('Quét: tới điểm ' + pt.name + ' (' + pt.tx + ',' + pt.ty + ')');
+        try { await goToPath(runId, pt.tx, pt.ty, 1, 120000, pt.name); }
+        catch (e) { if (!alive(runId)) throw e; log('Chưa tới được điểm ' + pt.name + ': ' + e.message + ' — sang điểm kế'); continue; }
+        // Chờ Auto đánh tại điểm này — poll ngắn để bắt chết/hồi sinh ngay giữa chừng
+        var w0 = Date.now();
+        while (alive(runId) && Date.now() - w0 < 7000) {
+          if (isDowned()) break;
+          await sleep(500);
+        }
+        if (isDowned()) {
+          var rv2 = await hxReviveIfDown(runId, mapId, pt, totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv2 === 'out') return 'mapchange';
+          if (rv2 === 'failed') return 'hp';
+          i--; // hồi sinh xong quay lại điểm này quét tiếp
+        }
+      }
+      return 'done';
+    })();
+  }
+
+  // Thu hoạch 1 điểm (v1.39: đứng đúng ô + kiểm chứng bằng túi đồ): đứng đúng ô
+  // (hxStandForHarvest — thử ô điểm + ô kề tới khi nút Tương Tác hiện) → đếm vật
+  // phẩm trong túi trước → bấm Tương Tác → đọc caption quyết định → đứng yên tới
+  // khi caption "Thu hoạch được …" hoặc hết giờ đứng → đếm lại túi: tăng = thu
+  // thật. Trả 'done' | 'sealed:N' | 'tried' | 'downed'.
+  function hxHarvestPoint(runId, pt) {
+    return (async function () {
+      var stand = await hxStandForHarvest(runId, pt);
+      if (stand === 'downed') return 'downed';
+      if (stand !== 'ok') { log('Thu hoạch ' + pt.id + ': không thấy nút Tương Tác ở ô nào quanh điểm — bỏ điểm này'); return 'tried'; }
+      var itemId = hxItemOf(pt);
+      var bagBefore = itemId ? countItem(itemId) : null;
+      var pressed = await pressInteractBtn(runId, 2000, pt.name);
+      if (!pressed) { log('Thu hoạch ' + pt.id + ': không thấy nút Tương Tác — bỏ điểm này'); return 'tried'; }
+      await sleep(1200);
+      if (isDowned()) return 'downed';
+      var cap = readCaption();
+      var sealedM = cap.match(/quét sạch\s*(\d+)\s*yêu thú/);
+      if (sealedM || cap.indexOf('Cấm chế còn phong') >= 0) {
+        log('Thu hoạch ' + pt.id + ': "' + cap + '"');
+        return 'sealed:' + (sealedM ? sealedM[1] : '?');
+      }
+      if (dialogOpen()) {
+        var dt = readDialogText();
+        log('Thu hoạch ' + pt.id + ': thoại "' + dt + '"');
+        closeDialogIfOpen();
+        await sleep(600);
+        return dt.indexOf('đã được đội thu hoạch') >= 0 ? 'done' : 'tried';
+      }
+      var standM = cap.match(/đứng yên\s*(\d+)\s*giây/);
+      if (cap.indexOf('Đang thu hoạch') >= 0 || standM) {
+        var secs = standM ? +standM[1] : 3;
+        log('Thu hoạch ' + pt.id + ' (' + pt.name + '): "' + cap + '" — đứng yên ' + secs + 's (giữ Phi Hành+Chạy+Auto, không di chuyển)');
+        // Poll caption trong lúc đứng: xong sớm thì thoát sớm, đứt/chết thì báo ngay
+        var t0 = Date.now(), gotDone = false;
+        while (alive(runId) && Date.now() - t0 < secs * 1000 + 2500) {
+          if (isDowned()) return 'downed';
+          var capP = readCaption();
+          if (capP.indexOf('Thu hoạch được') >= 0) { gotDone = true; break; }
+          if (capP.indexOf('bị gián đoạn') >= 0 || capP.indexOf('bị đứt') >= 0 || capP.indexOf('Di chuyển nên') >= 0) {
+            log('Thu hoạch ' + pt.id + ' bị đứt vì di chuyển — caption: "' + capP + '" — sẽ thử lại');
+            return 'tried';
+          }
+          await sleep(400);
+        }
+        // Kiểm chứng bằng túi đồ: vật phẩm của điểm này phải tăng
+        if (itemId && bagBefore != null) {
+          await sleep(800);
+          var bagAfter = countItem(itemId);
+          if (bagAfter != null && bagAfter > bagBefore) {
+            log('Thu hoạch ' + pt.id + ' xong — kiểm chứng túi đồ: ' + itemNameV123(itemId) + ' ' + bagBefore + ' → ' + bagAfter);
+            return 'done';
+          }
+          if (bagAfter != null && !gotDone) {
+            log('Thu hoạch ' + pt.id + ': túi đồ không tăng ' + itemNameV123(itemId) + ' (' + bagBefore + ' → ' + bagAfter + ') — coi như chưa thu được, sẽ thử lại');
+            return 'tried';
+          }
+          log('Thu hoạch ' + pt.id + ' xong (caption đã báo thu được; túi đồ chưa cập nhật kịp: ' + bagBefore + ' → ' + bagAfter + ')');
+          return 'done';
+        }
+        log('Thu hoạch ' + pt.id + ' xong' + (gotDone ? ' — caption: "' + readCaption() + '"' : ' (không đọc được túi đồ để kiểm chứng)'));
+        return 'done';
+      }
+      log('Thu hoạch ' + pt.id + ': caption "' + cap + '" — coi như chưa thu được');
+      return 'tried';
+    })();
+  }
+
+  // Quét quái QUANH một điểm thu hoạch (v1.11): bật Auto + Chạy + Bay, đi qua tối đa 3 điểm
+  // quái gần điểm thu hoạch nhất (boss nhường sau), chờ Auto đánh 7s/điểm.
+  // v1.39: chết giữa chừng → tự hồi sinh trong cụm rồi quét tiếp; Khí Huyết <35% vẫn
+  // đánh tiếp (chết thì hồi sinh). Trả 'done' | 'hp' | 'mapchange'.
+  function hxSweepAroundPoint(runId, mapId, pt, totals) {
+    return (async function () {
+      var m = MAPS[mapId];
+      totals = totals || {};
+      var pts = (m.monsterPoints || []).slice();
+      function distTo(p) { return Math.max(Math.abs(p.tx - pt.tx), Math.abs(p.ty - pt.ty)) + (p.boss ? 5 : 0); }
+      pts.sort(function (a, b) { return distTo(a) - distTo(b); });
+      pts = pts.slice(0, 3);
+      log('Quét quái quanh điểm ' + pt.id + ' — ' + pts.length + ' điểm quái gần nhất (Bay+Chạy+Auto)');
+      setStatus('Quét quái quanh điểm ' + pt.id + '…');
+      await ensureCombatTrio(runId, 'quét quái quanh điểm ' + pt.id);
+      for (var i = 0; i < pts.length; i++) {
+        if (!alive(runId)) throw new Error('đã dừng');
+        if (isDowned()) {
+          var rv = await hxReviveIfDown(runId, mapId, pts[i], totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv === 'out') return 'mapchange';
+          if (rv === 'failed') return 'hp';
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) log('Khí Huyết dưới 35% (' + Math.round(hp * 100) + '%) khi quét quanh điểm — vẫn đánh tiếp (chết sẽ tự hồi sinh trong cụm)');
+        var mm = readMapId();
+        if (mm && mm !== mapId) return 'mapchange';
+        var mp = pts[i];
+        await hxFlyGuard(runId, 'quét quanh điểm ' + pt.id); // v1.36: canh Phi Hành từng điểm
+        log('Quét quanh điểm: tới điểm quái ' + mp.name + ' (' + mp.tx + ',' + mp.ty + ')');
+        try { await goToPath(runId, mp.tx, mp.ty, 1, 120000, mp.name); }
+        catch (e) { if (!alive(runId)) throw e; log('Chưa tới được điểm quái ' + mp.name + ': ' + e.message + ' — sang điểm kế'); continue; }
+        var w0 = Date.now();
+        while (alive(runId) && Date.now() - w0 < 7000) {
+          if (isDowned()) break;
+          await sleep(500);
+        }
+        if (isDowned()) {
+          var rv2 = await hxReviveIfDown(runId, mapId, mp, totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv2 === 'out') return 'mapchange';
+          if (rv2 === 'failed') return 'hp';
+          i--; // hồi sinh xong quay lại điểm này quét tiếp
+        }
+      }
+      return 'done';
+    })();
+  }
+
+  // Quét sạch quái + boss của một map TRƯỚC khi thu hoạch (v1.32, Bui lệnh 22:21 ngày
+  // 2026-11-26 — cơ chế game: cấm chế tính theo TOÀN MAP, còn yêu thú sống là còn
+  // phong, cửa sang map kế cũng phong). v1.39 (Bui báo lỗi 23:45: "không tự động
+  // nhận biết đã giết hết quái boss"): tự nhận biết quét sạch bằng 3 tín hiệu —
+  // (1) caption game "Đã quét sạch yêu thú — cấm chế tan…" (hxSealState), (2) thử
+  // thu hoạch điểm đầu tiên chưa thu: caption "quét sạch N yêu thú" cho số còn lại,
+  // thu được = cấm chế đã tan, (3) boss đã gục (totals.bossDead từ hxBossHitRun).
+  // Hết quái/boss → ghi rõ "đã quét sạch map X (0 yêu thú)" rồi mới thu hoạch.
+  // Tối đa 8 vòng quét. Trả 'done' | 'hp' | 'mapchange'.
+  function hxClearMap(runId, mapId, totals, doneIds) {
+    return (async function () {
+      var points = (HUYET.harvest[mapId] || []);
+      var bossPt = ((MAPS[mapId].monsterPoints || []).filter(function (p) { return p.boss; })[0]) || null;
+      log('Map ' + MAPS[mapId].name + ': quét sạch quái + boss trước khi thu hoạch (cấm chế tính theo toàn map — Bay+Chạy+Auto, không đi bộ)');
+      setStatus('Huyết Xích: quét sạch ' + MAPS[mapId].name + '…');
+      await ensureCombatTrio(runId, 'quét sạch ' + MAPS[mapId].name);
+      function clearedLog(round) {
+        var bossTxt = bossPt ? (totals.bossDead && totals.bossDead[mapId] ? ', boss ' + bossPt.name + ' đã gục' : ', boss ' + bossPt.name + ' chưa xác nhận gục') : '';
+        log('Đã quét sạch map ' + MAPS[mapId].name + ' (0 yêu thú' + bossTxt + ', sau vòng quét ' + round + ') — chuyển sang thu hoạch đủ ' + points.length + ' điểm');
+      }
+      for (var round = 1; round <= 8; round++) {
+        if (!alive(runId)) throw new Error('đã dừng');
+        var fr = await hxFightRound(runId, mapId, true, round, totals, true);
+        if (fr === 'hp') return 'hp';
+        if (fr === 'mapchange') return 'mapchange';
+        // Tín hiệu 1: caption game báo cấm chế tan (hiện ngay khi con quái cuối gục)
+        var seal = hxSealState();
+        if (seal && seal.clear) { clearedLog(round); return 'done'; }
+        var probe = null;
+        for (var i = 0; i < points.length; i++) { if (!doneIds[points[i].id]) { probe = points[i]; break; } }
+        if (!probe) { log('Map ' + MAPS[mapId].name + ': đã thu hết điểm từ pha quét — cấm chế coi như đã tan'); return 'done'; }
+        // Tín hiệu 2: thử thu hoạch — thu được = hết quái; còn cấm chế = caption cho số yêu thú còn lại
+        var res;
+        try { res = await hxHarvestPoint(runId, probe); }
+        catch (e) { if (!alive(runId)) throw e; log('Thử cấm chế tại ' + probe.id + ' lỗi: ' + e.message); res = 'tried'; }
+        if (res === 'downed') {
+          var rv = await hxReviveIfDown(runId, mapId, probe, totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv === 'out') return 'mapchange';
+          if (rv === 'failed') return 'hp';
+          round--; continue; // hồi sinh xong thử lại cấm chế ngay
+        }
+        if (res === 'done') {
+          doneIds[probe.id] = true; totals.harvested++;
+          clearedLog(round);
+          return 'done';
+        }
+        seal = hxSealState();
+        if (seal && seal.clear) { clearedLog(round); return 'done'; }
+        if (res.indexOf('sealed:') === 0) {
+          var leftN = res.slice(7);
+          if (leftN === '0') { clearedLog(round); return 'done'; }
+          log('Vòng quét ' + round + ' xong — cấm chế còn phong, còn ' + leftN + ' yêu thú trong map ' + MAPS[mapId].name + ' — quét tiếp vòng ' + (round + 1));
+        } else {
+          log('Vòng quét ' + round + ' xong — thử điểm ' + probe.id + ' chưa kết luận được cấm chế (' + res + ') — quét tiếp vòng ' + (round + 1));
+        }
+        var mm = readMapId();
+        if (mm && mm !== mapId) return 'mapchange';
+      }
+      log('Đã quét 8 vòng ở ' + MAPS[mapId].name + ' mà cấm chế chưa tan hẳn — sang pha thu hoạch, điểm nào còn cấm chế sẽ quét quanh điểm rồi thử lại');
+      return 'done';
+    })();
+  }
+
+  // Thu hoạch HẾT một map (v1.32, Bui lệnh 22:21+22:22 ngày 2026-11-26): GIỮ Phi Hành
+  // + Chạy + Auto suốt lúc thu hoạch (không tắt Auto/hạ cánh như trước, không đi bộ
+  // trong cụm); thu đủ mọi điểm mới qua map khác — 2 lượt: lượt 1 từng điểm (còn cấm
+  // chế → quét quái quanh điểm → thử lại), lượt 2 rà lại điểm còn sót. Trả 'done' | 'hp' | 'mapchange'.
+  function hxHarvestMap(runId, mapId, totals, doneIds) {
+    return (async function () {
+      doneIds = doneIds || {};
+      var points = (HUYET.harvest[mapId] || []).slice();
+      var nameCount = {};
+      points.forEach(function (p) { nameCount[p.name] = (nameCount[p.name] || 0) + 1; });
+      var nameList = Object.keys(nameCount).map(function (n) { return n + ' ×' + nameCount[n]; }).join(', ');
+      var already = points.filter(function (p) { return doneIds[p.id]; }).length;
+      log('Map ' + MAPS[mapId].name + ': thu hoạch ' + points.length + ' điểm (' + nameList + ')' + (already ? ' — đã thu ' + already + ' điểm ở pha quét sạch' : '') + (readCollapse() ? ' — Cấm Địa sụp sau ' + readCollapse() : ''));
+      setStatus('Huyết Xích: thu hoạch ' + MAPS[mapId].name + '…');
+      // v1.32: thu hoạch GIỮ Phi Hành + Chạy + Auto (Bui lệnh 22:21+22:22 — không tắt
+      // Auto/hạ cánh, không đi bộ trong cụm). Quái đã quét sạch ở pha trước nên Auto
+      // không kéo nhân vật đi; điểm nào bị đứt vì di chuyển thì thử lại.
+      await ensureCombatTrio(runId, 'thu hoạch ' + MAPS[mapId].name);
+      var doneCount = already;
+      // Một lượt thu 1 điểm: thử → (chết → hồi sinh rồi thử lại) → (còn cấm chế/chưa
+      // được) quét quanh điểm → thử lại.
+      async function harvestOne(pt) {
+        var st = trioState();
+        if (!st.fly || !st.auto || !st.run) { log('Thu hoạch ' + pt.id + ': thấy ' + (!st.fly ? 'Phi Hành' : (!st.auto ? 'Auto' : 'Chạy')) + ' đang TẮT — bật lại (chỉ nhấn nút đang tắt)'); await ensureCombatTrio(runId, 'thu hoạch ' + pt.id); }
+        var res;
+        try { res = await hxHarvestPoint(runId, pt); }
+        catch (e) { if (!alive(runId)) throw e; log('Thu hoạch ' + pt.id + ' lỗi: ' + e.message); res = 'tried'; }
+        if (res === 'downed') {
+          var rv = await hxReviveIfDown(runId, mapId, pt, totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv === 'out') return 'mapchange';
+          if (rv === 'failed') return 'hp';
+          log('Hồi sinh xong — thử thu hoạch lại điểm ' + pt.id);
+          try { res = await hxHarvestPoint(runId, pt); }
+          catch (e) { if (!alive(runId)) throw e; log('Thu hoạch lại ' + pt.id + ' lỗi: ' + e.message); res = 'tried'; }
+          if (res === 'downed') return 'skip';
+        }
+        if (res === 'done') return 'done';
+        log('Điểm ' + pt.id + ' chưa thu được (' + (res.indexOf('sealed:') === 0 ? 'còn cấm chế, còn ' + res.slice(7) + ' yêu thú' : 'chưa thu được') + ') — quét quái quanh điểm rồi thử lại');
+        var sr = await hxSweepAroundPoint(runId, mapId, pt, totals);
+        if (sr === 'hp') return 'hp';
+        if (sr === 'mapchange') return 'mapchange';
+        await ensureCombatTrio(runId, 'thu hoạch lại ' + pt.id);
+        var res2;
+        try { res2 = await hxHarvestPoint(runId, pt); }
+        catch (e) { if (!alive(runId)) throw e; log('Thu hoạch lại ' + pt.id + ' lỗi: ' + e.message); res2 = 'tried'; }
+        if (res2 === 'downed') {
+          var rv2 = await hxReviveIfDown(runId, mapId, pt, totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv2 === 'out') return 'mapchange';
+          if (rv2 === 'failed') return 'hp';
+          return 'skip'; // lượt rà sau sẽ thử lại điểm này
+        }
+        return res2 === 'done' ? 'done' : 'skip';
+      }
+      for (var pass = 1; pass <= 2; pass++) {
+        var remaining = points.filter(function (p) { return !doneIds[p.id]; });
+        if (!remaining.length) break;
+        if (pass === 2) log('Rà lại ' + remaining.length + ' điểm còn sót ở ' + MAPS[mapId].name + ' (lượt 2) — thu đủ mới qua map khác');
+        for (var i = 0; i < remaining.length; i++) {
+          if (!alive(runId)) throw new Error('đã dừng');
+          var mm = readMapId();
+          if (mm && mm !== mapId) { log('Đã rời map ' + MAPS[mapId].name + ' (sang ' + (MAPS[mm] ? MAPS[mm].name : mm) + ')'); return 'mapchange'; }
+          if (isDowned()) {
+            var rv = await hxReviveIfDown(runId, mapId, remaining[i], totals);
+            if (!alive(runId)) throw new Error('đã dừng');
+            if (rv === 'out') return 'mapchange';
+            if (rv === 'failed') return 'hp';
+            i--; continue; // hồi sinh xong thu lại điểm này
+          }
+          var pt = remaining[i];
+          var r1 = await harvestOne(pt);
+          if (r1 === 'hp') return 'hp';
+          if (r1 === 'mapchange') return 'mapchange';
+          if (r1 === 'done') { doneIds[pt.id] = true; doneCount++; totals.harvested++; }
+          else if (pass === 2) log('Điểm ' + pt.id + ' (' + pt.name + ') vẫn chưa thu được sau 2 lượt — ghi rõ, sang điểm kế');
+        }
+      }
+      var left = points.filter(function (p) { return !doneIds[p.id]; });
+      if (!left.length) log('Đã quét sạch map ' + MAPS[mapId].name + ' (0 yêu thú) — thu hoạch đủ ' + doneCount + '/' + points.length + ' điểm — sang map kế');
+      else log('Thu hoạch map ' + MAPS[mapId].name + ' — thu được ' + doneCount + '/' + points.length + ' điểm, còn sót ' + left.length + ' điểm: ' + left.map(function (p) { return p.id; }).join(', '));
+      return 'done';
+    })();
+  }
+
+  // Farm quái một vòng ở một map (Auto+Chạy+Bay quét các điểm quái) — dùng khi sang map sau.
+  // Trả 'done' | 'hp' | 'mapchange'.
+  function hxFarmMap(runId, mapId, totals) {
+    return (async function () {
+      log('Farm quái ở ' + MAPS[mapId].name + ' (Auto+Chạy+Bay quét các điểm quái)…');
+      return await hxFightRound(runId, mapId, true, 1, totals || {}, false);
+    })();
+  }
+
+  // Số giây còn lại của Cấm Địa theo HUD đếm ngược "m:ss" (#huyet-collapse) — null nếu không đọc được.
+  function hxCollapseSecs() {
+    var t = readCollapse();
+    if (!t) return null;
+    var m = t.match(/(\d+)\s*:\s*(\d{1,2})/);
+    if (!m) return null;
+    return (+m[1]) * 60 + (+m[2]);
+  }
+
+  // Thoát Huyết Xích Cấm Địa bằng nút Rời của game (v1.11, lệnh Bui 13:24 — thoát map phụ):
+  // HUD #huyet-sac-hud có nút "Rời" → hộp xác nhận "Xác nhận rời phó bản" → Gateway leave_dungeon.
+  // Lượt không được hoàn lại; vật phẩm đã thu hoạch vẫn được giữ (theo thoại game).
+  function hxLeaveDungeon(runId) {
+    return (async function () {
+      var btn = document.querySelector('#huyet-sac-hud button');
+      if (!btn) { log('Không thấy nút Rời phó bản (#huyet-sac-hud) — không thoát được Cấm Địa bằng nút Rời'); return false; }
+      log('Bấm nút Rời phó bản để thoát Huyết Xích Cấm Địa…');
+      pressDom(btn);
+      await sleep(700); // chờ qua chốt chống bấm nhầm 500ms của hộp xác nhận
+      var found = hxFindConfirmBtn(0);
+      if (found) {
+        log('Xác nhận rời phó bản: bấm "' + ((found.el.textContent || '').trim()) + '"');
+        pressDom(found.el);
+      } else {
+        log('Không thấy hộp xác nhận rời phó bản — chờ đổi map…');
+      }
+      var m = await waitFor(function () { var mm = readMapId(); return mm && !hxInDungeon(mm) ? mm : null; }, 20000, 'rời Cấm Địa');
+      if (m) { log('Đã rời Huyết Xích Cấm Địa — đang ở ' + (MAPS[m] ? MAPS[m].name : m)); return true; }
+      log('Chưa rời được Cấm Địa sau 20s — caption: "' + readCaption() + '"');
+      return false;
+    })();
+  }
+  // Map cuối thu hoạch xong: farm quái lặp tới khi Khí Huyết <35% hoặc hết giờ Cấm Địa
+  // (đếm ngược về 0) hoặc ra khỏi cụm. Chết giữa lúc farm → tự hồi sinh trong cụm rồi
+  // farm tiếp (v1.39). Trả 'hp' | 'timeout' | 'mapchange' | 'done'.
+  function hxFarmUntilEnd(runId, mapId, totals) {
+    return (async function () {
+      totals = totals || {};
+      log('Map cuối ' + MAPS[mapId].name + ' đã thu hoạch xong — farm quái tới khi Khí Huyết <35% hoặc hết giờ Cấm Địa');
+      setStatus('Farm quái ' + MAPS[mapId].name + ' (map cuối)…');
+      var round = 0;
+      while (alive(runId)) {
+        if (isDowned()) {
+          var rv = await hxReviveIfDown(runId, mapId, null, totals);
+          if (!alive(runId)) throw new Error('đã dừng');
+          if (rv === 'out') return 'mapchange';
+          if (rv === 'failed') return 'hp';
+          continue; // hồi sinh xong farm tiếp
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% (' + Math.round(hp * 100) + '%) — dừng farm'); return 'hp'; }
+        var secs = hxCollapseSecs();
+        if (secs != null && secs <= 0) { log('Hết giờ Cấm Địa (đếm ngược về 0) — dừng farm'); return 'timeout'; }
+        var mm = readMapId();
+        if (mm && mm !== mapId) { log('Đã rời map cuối ' + MAPS[mapId].name + ' (sang ' + (MAPS[mm] ? MAPS[mm].name : mm) + ') — dừng farm'); return 'mapchange'; }
+        round++;
+        log('Farm quái vòng ' + round + ' ở ' + MAPS[mapId].name + (secs != null ? ' — Cấm Địa còn ' + readCollapse() : ''));
+        var fr = await hxFightRound(runId, mapId, true, round, totals, false);
+        if (fr === 'hp') return 'hp';
+        if (fr === 'mapchange') return 'mapchange';
+      }
+      return 'done';
+    })();
+  }
+
+  function runHuyetXich(runId, opts) {
+    opts = opts || {};
+    return (async function () {
+      // Trong chuỗi cày cấp (v1.17): trả lý do kết thúc thay vì dừng tool
+      function hxEnd(reason) { if (opts.chain || opts.schedule) { log('Huyết Xích (' + (opts.chain ? 'trong chuỗi cày cấp' : 'lịch trình') + '): kết thúc lượt — ' + reason); return reason; } stopTool(reason); return reason; }
+      var hp0 = readHpPct();
+      if (hp0 != null && hp0 < 0.5) { log('Khí Huyết dưới 50% — không vào Huyết Xích'); return hxEnd('Khí Huyết thấp'); }
+      log('Bắt đầu Huyết Xích… (mỗi map: quét sạch quái+boss — tự nhận biết hết quái qua caption cấm chế — rồi thu hoạch đủ mọi điểm mới sang map kế; luôn Bay+Chạy+Auto; đánh boss di chuyển liên tục quanh boss không đứng yên; chết trong cụm tự hồi sinh rồi quay lại việc đang làm)');
+      await flyCheckAtStart(runId, 'Huyết Xích', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      var cur = readMapId();
+      // v1.32 (Bui lệnh 22:22): đang trong cụm Huyết Xích thì giữ Phi Hành+Auto luôn,
+      // không tắt Auto/hạ cánh; ngoài cụm mới tắt Auto khi di chuyển như luật cũ.
+      if (hxInDungeon(cur)) await ensureCombatTrio(runId, 'vào Huyết Xích (đang trong cụm)');
+      else await ensureAuto(runId, false); // di chuyển ngoài cụm: tắt Auto, chỉ Phi Hành + Chạy
+      if (!hxInDungeon(cur)) {
+        if (cur && !bfsPath(cur, HUYET.npcMap)) {
+          var escH = escapePlan(cur, HUYET.npcMap);
+          if (escH && escH.kind !== 'none') {
+            // Đang lạc ở map phụ nhưng có cách quay ra (v1.11): travelTo sẽ tự thoát rồi đi tiếp Miếu Hoang
+            log('Đang ở map phụ ' + (MAPS[cur] ? MAPS[cur].name : cur) + ' — tool tự quay ra rồi đi tiếp Miếu Hoang (không dừng chờ)');
+          } else {
+            var near = nearestStagingMap(cur, HUYET.npcMap);
+            var nName = MAPS[near.map] ? MAPS[near.map].name : near.map;
+            log('Không có đường cổng từ đây tới Miếu Hoang. Điểm vào gần nhất: ' + nName + ' (' + stagingReasonText(near, HUYET.npcMap) + ').');
+            if (near.map !== cur) { await ensureRun(runId, true); await ensureFly(runId, true); await travelTo(runId, near.map); }
+            log('Đã tới ' + nName + ' — anh tự vào Miếu Hoang rồi bấm lại Huyết Xích.');
+            hxEnd('không có đường cổng tới Miếu Hoang');
+            return;
+          }
+        }
+        await ensureRun(runId, true);
+        await ensureFly(runId, true);
+        await travelTo(runId, HUYET.npcMap);
+        if (!(await hxRegister(runId))) { return hxEnd('đăng ký Huyết Xích chưa thành công'); }
+      } else {
+        log('Đang ở trong Huyết Xích (' + MAPS[cur].name + ') — bỏ qua đăng ký, quét sạch quái + thu hoạch theo luồng v1.39 (đánh boss di chuyển liên tục, chết tự hồi sinh)');
+      }
+      var totals = { harvested: 0, deaths: 0, bossDead: {} };
+      var order = HUYET.maps.slice();
+      var startIdx = Math.max(0, order.indexOf(readMapId()));
+      var mapChangeRetries = 0;
+      for (var k = startIdx; k < order.length; k++) {
+        if (!alive(runId)) throw new Error('đã dừng');
+        var target = order[k];
+        var cm = readMapId();
+        if (!hxInDungeon(cm)) { log('Đã ra khỏi Huyết Xích (map ' + (cm || '?') + ') — dừng'); return hxEnd('ra khỏi Cấm Địa'); }
+        if (cm !== target) {
+          // Qua cổng trong cụm: giữ Phi Hành + Chạy + Auto luôn (v1.32, Bui lệnh 22:22)
+          await ensureCombatTrio(runId, 'qua cổng trong cụm Huyết Xích tới ' + MAPS[target].name);
+          await travelTo(runId, target);
+          // Qua cổng game có thể tự hạ cánh/tắt Auto: kiểm chứng đọc lại, tắt thì bật lại ngay
+          var stAfter = trioState();
+          if (!stAfter.fly || !stAfter.auto || !stAfter.run) {
+            log('Qua cổng xong thấy ' + [!stAfter.fly ? 'Phi Hành TẮT' : null, !stAfter.auto ? 'Auto TẮT' : null, !stAfter.run ? 'Chạy TẮT' : null].filter(Boolean).join(', ') + ' — bật lại ngay (chỉ nhấn nút đang tắt)');
+            await ensureCombatTrio(runId, 'sau cổng ' + MAPS[target].name);
+          } else {
+            log('Qua cổng xong: Phi Hành+Chạy+Auto vẫn BẬT (đã kiểm chứng) — không nhấn thêm');
+          }
+        }
+        var isLast = k === order.length - 1;
+        // v1.32: mỗi map quét sạch quái + boss trước (cấm chế toàn map), rồi mới thu hoạch
+        var doneIds = {};
+        var cr = await hxClearMap(runId, target, totals, doneIds);
+        if (cr === 'hp') { await ensureAuto(runId, false); return hxEnd('Khí Huyết thấp'); }
+        if (cr === 'mapchange') {
+          if (++mapChangeRetries > 6) { log('Đổi map liên tục bất thường — dừng'); return hxEnd('lệch map'); }
+          k--; continue; // kiểm tra lại map ở đầu vòng
+        }
+        var r = await hxHarvestMap(runId, target, totals, doneIds);
+        if (r === 'hp') { await ensureAuto(runId, false); return hxEnd('Khí Huyết thấp'); }
+        if (r === 'mapchange') {
+          if (++mapChangeRetries > 6) { log('Đổi map liên tục bất thường — dừng'); return hxEnd('lệch map'); }
+          k--; continue; // kiểm tra lại map ở đầu vòng
+        }
+        if (!isLast) {
+          log('Thu hoạch hết map ' + MAPS[target].name + ' — sang map sau (giữ Phi Hành+Chạy+Auto)');
+        } else {
+          // Map cuối thu hoạch xong: farm quái tới khi Khí Huyết <35% hoặc hết giờ Cấm Địa
+          var fe = await hxFarmUntilEnd(runId, target, totals);
+          log('Huyết Xích: xong — thu hoạch tổng ' + totals.harvested + ' điểm. Đồ quái rơi tự nhặt khi đi qua gần (game tự hút sau ~5s).');
+          if (fe === 'hp') { await ensureAuto(runId, false); return hxEnd('Khí Huyết thấp'); }
+          if (fe === 'timeout') { await ensureAuto(runId, false); return hxEnd('hết giờ Cấm Địa'); }
+          if (fe === 'mapchange') { return hxEnd('ra khỏi Cấm Địa'); }
+        }
+      }
+      log('Huyết Xích: xong cả 3 khu — thu hoạch tổng ' + totals.harvested + '/29 điểm, chết ' + totals.deaths + ' lần (đã tự hồi sinh)' + (readCollapse() ? ', Cấm Địa sụp sau ' + readCollapse() : '') + '. Đồ quái rơi tự nhặt khi đi qua gần (game tự hút sau ~5s).');
+      if (opts.chain) { await hxLeaveDungeon(runId); return hxEnd('done'); }
+      setStatus('Huyết Xích xong — đang chờ trong Cấm Địa');
+      while (alive(runId)) {
+        await sleep(1500);
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% — dừng'); await ensureAuto(runId, false); return hxEnd('Khí Huyết thấp'); }
+        var m = readMapId();
+        if (m && !hxInDungeon(m)) { log('Đã ra khỏi Huyết Xích (map ' + (MAPS[m] ? MAPS[m].name : m) + ') — dừng'); return hxEnd('ra khỏi Cấm Địa'); }
+      }
+    })();
+  }
+
+  // Chờ + đánh tại điểm boss: Auto đã bật. Nhận biết đã giao chiến qua Khí Huyết tụt;
+  // boss gục/biến mất khi đã giao chiến rồi Khí Huyết đứng yên 30s. Trả 'hp' | 'dead' | 'none'.
+  function bossWaitFight(runId, boss, plan) {
+    return (async function () {
+      var arriveAt = Date.now();
+      var deadline;
+      if (boss.kind === 'daily') {
+        var d = new Date(arriveAt);
+        deadline = new Date(d.getFullYear(), d.getMonth(), d.getDate(), boss.winEnd, 0, 0, 0).getTime() + 30 * 60000;
+        if (deadline < arriveAt + 30 * 60000) deadline = arriveAt + 30 * 60000;
+      } else {
+        deadline = (plan.spawnAt != null ? plan.spawnAt : arriveAt) + 30 * 60000;
+      }
+      var hpStart = readHpPct(), hpMin = hpStart, fought = false, lastDropAt = 0, announced = false;
+      var rot = null; // bấm kỹ năng theo nhịp khi đã giao chiến (v1.14)
+      function finish(r) { if (rot) rot.stop(); return r; }
+      while (alive(runId)) {
+        if (isDowned()) {
+          if (rot) { rot.stop(); rot = null; }
+          await handleDeath(runId);
+          if (!alive(runId)) return finish('none');
+          hpStart = readHpPct(); hpMin = hpStart;
+          continue;
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) return finish('hp');
+        if (hp != null) {
+          if (hpMin == null || hp < hpMin) hpMin = hp;
+          if (hpStart != null && hpStart - hp >= 0.03) { if (!fought) { log('Đang giao chiến tại điểm boss ' + boss.name + ' (Khí Huyết tụt)'); rot = skillRotation(runId, function () { return true; }); log('Boss: bật bấm kỹ năng theo nhịp song song Auto'); } fought = true; lastDropAt = Date.now(); hpStart = hp; }
+        }
+        if (!fought && (await pkCheck(runId, {}))) return finish('pk');
+        if (!announced) {
+          var t = readBossToast();
+          if (t && t.bossId === boss.id && t.alive) { log('Thông báo game: ' + boss.name + ' đã xuất hiện'); announced = true; }
+        }
+        if (fought && Date.now() - lastDropAt > 30000) {
+          log('Boss ' + boss.name + ' đã gục hoặc biến mất lúc ' + fmtTime(Date.now()) + ' (Khí Huyết đứng yên 30s sau giao chiến)');
+          return finish('dead');
+        }
+        if (Date.now() > deadline) {
+          log('Chờ tại điểm boss ' + boss.name + ' tới ' + fmtTime(deadline) + ' mà chưa giao chiến — boss chưa ra hoặc đã bị hạ bởi người khác');
+          return finish('none');
+        }
+        setStatus('Canh boss ' + boss.name + (plan.spawnAt != null ? ': còn ' + fmtCountdown(plan.spawnAt - Date.now()) : ': chờ tại chỗ'));
+        await sleep(5000);
+      }
+      throw new Error('đã dừng');
+    })();
+  }
+  // Căn giờ Boss (v1.11, lệnh Bui 13:28; v1.12 đọc thời gian hồi trong mục Hoạt Động làm
+  // nguồn giờ chính, lệnh Bui 13:54): canh giờ xuất hiện, xuất phát sớm theo thời gian di
+  // chuyển ước tính để CÓ MẶT tại vị trí boss TRƯỚC giờ ra 5 phút, đứng chờ với Auto sẵn sàng,
+  // đánh xong chờ lượt kế (cùng boss). Nhật ký ghi giờ xuất hiện + giờ có mặt (trước bao nhiêu phút).
+  function runBossTimer(runId, boss) {
+    return (async function () {
+      log('Căn giờ Boss: ' + boss.name + ' (' + boss.cap + ') ở ' + MAPS[boss.map].name + ' (' + boss.tx + ',' + boss.ty + ') — ' + bossScheduleText(boss));
+      await flyCheckAtStart(runId, 'Căn giờ Boss', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      await ensureAuto(runId, false); // di chuyển: tắt Auto, chỉ Phi Hành + Chạy
+      var round = 0;
+      while (alive(runId)) {
+        round++;
+        // Nguồn giờ CHÍNH (v1.12): mở mục Hoạt Động đọc thời gian hồi của boss
+        var hd = await readHoatDongBossTimer(runId, boss);
+        if (!alive(runId)) throw new Error('đã dừng');
+        var plan = bossPlan(boss, Date.now(), readBossToast(), S.bossAnchor[boss.id] || null, readMapId(), hd);
+        if (hd && hd.parsed && hd.parsed.kind === 'countdown') {
+          log('Hoạt động: ' + boss.name + ' hồi sau ' + fmtCountdown(hd.parsed.secsLeft * 1000) + ' — xuất phát lúc ' + fmtTime(plan.departAt));
+        } else if (!hd || !hd.parsed || hd.parsed.kind === 'unknown') {
+          log('Không đọc được thời gian hồi trong mục Hoạt động — quay về cách ước (thông báo Yêu thú sắp ra + chu kỳ hồi sinh)');
+        }
+        if (plan.spawnAt != null) {
+          log('Giờ xuất hiện kế tiếp: ' + fmtTime(plan.spawnAt) + ' (' + plan.source + ') — di chuyển ước ' + Math.round(plan.travelMs / 60000) + ' phút, xuất phát ' + fmtTime(plan.departAt) + ' để có mặt trước 5 phút');
+        } else {
+          log('Chưa biết giờ xuất hiện của ' + boss.name + ' (không có thông báo game, chưa có mốc chu kỳ) — đi tới vị trí boss ngay và chờ tại chỗ');
+        }
+        var lastHdAt = Date.now();
+        while (alive(runId) && Date.now() < plan.departAt) {
+          setStatus('Căn giờ ' + boss.name + ': còn ' + fmtCountdown(plan.spawnAt - Date.now()) + ' tới giờ ra');
+          await sleep(Math.min(20000, plan.departAt - Date.now()));
+          var t2 = readBossToast();
+          if (t2 && t2.bossId === boss.id) {
+            var plan2 = bossPlan(boss, Date.now(), t2, S.bossAnchor[boss.id] || null, readMapId());
+            if (plan2.spawnAt !== plan.spawnAt) { plan = plan2; log('Cập nhật giờ xuất hiện: ' + fmtTime(plan.spawnAt) + ' (' + plan.source + ') — xuất phát ' + fmtTime(plan.departAt)); }
+          }
+          // Đọc lại mục Hoạt động mỗi 60s để chỉnh giờ nếu thời gian hồi thay đổi (v1.12)
+          if (alive(runId) && Date.now() < plan.departAt && Date.now() - lastHdAt >= 60000) {
+            lastHdAt = Date.now();
+            var hd2 = await readHoatDongBossTimer(runId, boss);
+            if (hd2 && hd2.parsed && hd2.parsed.kind !== 'unknown') {
+              var plan3 = bossPlan(boss, Date.now(), readBossToast(), S.bossAnchor[boss.id] || null, readMapId(), hd2);
+              if (plan3.spawnAt != null && (plan.spawnAt == null || Math.abs(plan3.spawnAt - plan.spawnAt) > 60000)) {
+                plan = plan3;
+                log('Hoạt động (đọc lại): ' + boss.name + ' — "' + hd2.statusText + '" — giờ ra ' + fmtTime(plan.spawnAt) + ', xuất phát lúc ' + fmtTime(plan.departAt));
+              }
+            }
+          }
+        }
+        if (!alive(runId)) throw new Error('đã dừng');
+        await ensureRun(runId, true);
+        await ensureFly(runId, true);
+        await travelTo(runId, boss.map);
+        setStatus('Tới vị trí boss ' + boss.name + ' (' + boss.tx + ',' + boss.ty + ')…');
+        await goToPath(runId, boss.tx, boss.ty, 1, 180000, 'vị trí boss');
+        var arriveAt = Date.now();
+        if (plan.spawnAt != null) {
+          var earlyMin = Math.round((plan.spawnAt - arriveAt) / 60000);
+          log('Đã có mặt tại vị trí boss ' + boss.name + ' lúc ' + fmtTime(arriveAt) + (earlyMin > 0 ? ' — trước giờ xuất hiện ' + earlyMin + ' phút' : earlyMin === 0 ? ' — đúng giờ xuất hiện' : ' — sau giờ xuất hiện ' + (-earlyMin) + ' phút (boss có thể đã ra)'));
+        } else {
+          log('Đã có mặt tại vị trí boss ' + boss.name + ' lúc ' + fmtTime(arriveAt) + ' — chờ tại chỗ với Auto sẵn sàng');
+        }
+        await ensureCombatTrio(runId, 'vị trí boss ' + boss.name);
+        var fought = await bossWaitFight(runId, boss, plan);
+        if (fought === 'hp') { log('Khí Huyết dưới 35% khi canh boss — dừng'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
+        if (fought === 'pk') log('Đã tránh PK khi canh boss — vòng kế sẽ quay lại điểm boss');
+        S.bossAnchor[boss.id] = Date.now();
+        if (boss.kind === 'cycle') log('Lượt ' + round + ' xong — lượt kế của ' + boss.name + ' ước lúc ' + fmtTime(S.bossAnchor[boss.id] + boss.respawnSec * 1000) + ' (chu kỳ ' + fmtDur(boss.respawnSec) + ')');
+        else log('Lượt ' + round + ' xong — chờ lượt kế của ' + boss.name + ' (khung ' + boss.winStart + ':00–' + boss.winEnd + ':00 ngày mai)');
+        await ensureAuto(runId, false);
+        await sleep(5000);
+      }
+    })();
+  }
+
+  function runFishing(runId) {
+    return (async function () {
+      log('Bắt đầu di chuyển tới đài câu cá…');
+      await flyCheckAtStart(runId, 'Câu cá Thảo Dược Cốc', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, FISH_SPOT.map);
+      setStatus('Tới ' + FISH_SPOT.label + '…');
+      log('Tới đài câu cá (' + FISH_SPOT.tx + ',' + FISH_SPOT.ty + ') ở Thảo Dược Cốc…');
+      await goToPath(runId, FISH_SPOT.tx, FISH_SPOT.ty, 1, 180000, 'đài câu cá');
+      await ensureFly(runId, false);
+      log('Đã tới đài câu cá — bấm Tương Tác rồi chọn "Tự động câu"');
+      if (!(await startAutoFishing(runId))) { stopTool('không bật được tự động câu'); return; }
+      setStatus('Đang tự động câu tại ' + FISH_SPOT.label);
+      var t0 = Date.now(), restarts = 0, lastBeat = Date.now();
+      snapshotCtx('fishing', FISH_SPOT.map, FISH_SPOT.tx, FISH_SPOT.ty, false, false, false);
+      while (alive(runId)) {
+        await sleep(5000);
+        // v1.24: bị quái đánh lúc câu cá → đánh trả (câu bị ngắt sẽ được bật lại ở dưới)
+        await fightBackCheck(runId, 'câu cá', { maxGapMs: 8000 });
+        if (isDowned()) {
+          await handleDeath(runId);
+          if (!alive(runId)) return;
+          log('Câu cá: đã hồi sinh và quay lại đài — bật lại tự động câu');
+          if (!(await startAutoFishing(runId))) { stopTool('không bật lại được tự động câu'); return; }
+          continue;
+        }
+        if (!fishingActive()) {
+          restarts++;
+          if (restarts > 3) { log('Câu bị ngắt quá 3 lần — dừng'); stopTool('câu bị ngắt'); return; }
+          log('Câu bị ngắt (lần ' + restarts + ') — bật lại tự động câu');
+          if (!(await startAutoFishing(runId))) { stopTool('không bật lại được tự động câu'); return; }
+        }
+        if (Date.now() - lastBeat >= 60000) {
+          lastBeat = Date.now();
+          log('Đang tự động câu… (đã câu ' + Math.round((Date.now() - t0) / 60000) + ' phút)');
+        }
+      }
+    })();
+  }
+
+  // ============ Câu Côn Bằng ở Hồ Tây (v1.20, lệnh Bui 19:25) ============
+  // Cơ chế game (module VanCan + VanCanUI trong mã client js/game.531628916167.js):
+  // - Map van_can "Hồ Tây" (56x36), khu câu = Khu 1 (KHU_CAU=1), cần Luyện Khí tầng 7+
+  //   (CANH_TOI_THIEU="luyen_khi_7"). Hồ mở cả ngày (MO_CA_NGAY=true).
+  // - Côn Bằng ra 12:30 và 19:30 giờ VN (CON_GIO=[[12,30],[19,30]]), mỗi lần 6 phút
+  //   (CON_DAI_MS=360000), báo trước 30s (CON_BAO_TRUOC_MS); nút vào .vc-vao hiện trước
+  //   10 phút (NUT_VAO_TRUOC_MS=600000) dưới dạng đếm ngược và bị khóa (vc-bao) — phải
+  //   vào khu câu TRƯỚC khung 10 phút đó. Server có thể cấp phiên riêng (ky.chuKyMs) —
+  //   tool canh theo CON_GIO của client + đọc pha thật trên DOM nên vẫn khớp khi ở hồ.
+  // - Câu bằng nút giữ/thả .vc-nut (pointerdown=giữ G(), pointerup=thả V(); Space tương đương):
+  //   pha ranh → giữ lấy lực (luc, lực dao động chu kỳ 1.6s CHU_KY_LUC_MS) → thả ở vùng Sâu
+  //   (lực ≥0.68, .vc-nut-chu hiện "Sâu") để quăng (vc.quang); pha cho → chờ phao chìm
+  //   (.vc-nut-chu "Giật!") → nhấn giật (vc.giat); pha keo → giữ/thả theo gợi ý .vc-goi
+  //   ("Thả!"/"Nhả nhịp"/"Kéo!") + tránh căng đỏ (vc-do = căng ≥90). Pha conRanh → nhấn
+  //   móc Côn (vc.con) → conKeo kéo theo nhịp NHIP_CON (Thở/Quẫy/Lặn/Kiệt, cùng gợi ý .vc-goi).
+  // - Mồi mặc định Giun Đất (item null = vô hạn), cần câu game tự chọn cần tốt nhất (canTot).
+  // - Thưởng: Ngư Lân, cá theo cân lên bảng top ngày/tuần; Côn: Bảo Vật Côn Bằng (bốc thăm
+  //   theo góp sức, .vc-bv-so %), cá >150.000 cân (CON_BANG_CAN) được danh hiệu Côn Bằng Khách.
+  var CONBANG = {
+    map: 'van_can', zone: 1,
+    gio: [[12, 30], [19, 30]], daiMs: 360000, baoTruocMs: 30000, nutVaoTruocMs: 600000,
+    // Ô bờ hồ: ô đi được kề mặt nước (trích từ lưới walk runtime van_can, kiểm chứng A* tới được
+    // từ spawn (33,31) + cổng vào (53,13)); bờ nam gần NPC Lão Ngư Ông (35,30) trước.
+    // v1.33 (Bui 22:30 "thêm nhiều điểm để hạ cánh câu cá trong hồ"): mở rộng 13→40 ô theo đúng
+    // điều kiện game — ô đi được + tâm ô cách ô nước ≤52px (SAT_NUOC_PX, hàm ganNuoc trong mã
+    // client; nước = ký tự w/L của ground van_can 56×36). Trích bằng extract-vc-shore.mjs +
+    // pick-vc-shore.mjs: 230 ô hợp lệ tới được, lọc còn 40 ô đại diện quanh hồ (13 ô cũ giữ
+    // nguyên thứ tự đầu danh sách + 3 ô cầu câu của tệp v3 Bui gửi + 24 ô mới cách nhau ≥3 ô).
+    shore: [[35,27],[34,27],[36,27],[33,26],[32,26],[31,26],[37,27],[38,27],[27,27],[24,7],[27,7],[42,16],[15,16],[40,15],[39,14],[38,14],[30,6],[18,15],[35,5],[39,7],[41,24],[17,8],[7,17],[42,19],[7,22],[8,25],[16,25],[30,3],[20,7],[14,9],[10,16],[19,25],[11,26],[36,2],[42,6],[45,8],[45,11],[12,12],[45,14],[44,22]]
+  };
+  function vcVnMidnight(nowMs) {
+    var D = 24 * 3600 * 1000, OFF = 7 * 3600 * 1000; // VN_OFFSET_MS=7h trong mã client
+    return Math.floor((nowMs + OFF) / D) * D - OFF;
+  }
+  function conBangWindows(nowMs) {
+    var base = vcVnMidnight(nowMs), out = [];
+    CONBANG.gio.forEach(function (g) {
+      var s = base + g[0] * 3600000 + g[1] * 60000;
+      out.push({ start: s, end: s + CONBANG.daiMs });
+    });
+    return out;
+  }
+  // Khung Côn đang diễn ra hoặc kế tiếp (theo CON_GIO của client)
+  function conBangNext(nowMs) {
+    var ws = conBangWindows(nowMs), i;
+    for (i = 0; i < ws.length; i++) if (nowMs < ws[i].end) return ws[i];
+    var base = vcVnMidnight(nowMs) + 24 * 3600 * 1000, g = CONBANG.gio[0];
+    var s = base + g[0] * 3600000 + g[1] * 60000;
+    return { start: s, end: s + CONBANG.daiMs };
+  }
+  function vcHudOn() { var h = $('.vc-hud'); return !!(h && !h.classList.contains('hidden')); }
+  function vcNutEl() { return $('.vc-nut'); }
+  function vcPhase() {
+    var n = vcNutEl(); if (!n) return null;
+    var m = (n.className || '').match(/vc-pha-([A-Za-z]+)/);
+    return m ? m[1] : null;
+  }
+  function vcNutChu() { var e = $('.vc-nut-chu'); return e ? (e.textContent || '').trim() : ''; }
+  // Mức lực hiện tại của thanh lực (0–100) — .vc-nut-nuoc height = Math.round(100*lực)% theo mã client (v1.28)
+  function vcNutHeightPct() { var e = $('.vc-nut-nuoc'); var h = e ? parseFloat(e.style.height || '0') : 0; return isNaN(h) ? 0 : h; }
+  function vcGoi() {
+    var e = $('.vc-goi');
+    if (!e) return { text: '', kind: '' };
+    var kind = e.classList.contains('vc-goi-tha') ? 'tha' : e.classList.contains('vc-goi-nhip') ? 'nhip' : e.classList.contains('vc-goi-keo') ? 'keo' : '';
+    return { text: (e.textContent || '').trim(), kind: kind };
+  }
+  // Căng dây: 2 = đỏ (≥90, sắp đứt), 1 = vàng (≥70), 0 = an toàn (class trên .vc-nut)
+  function vcTension() {
+    var n = vcNutEl(); if (!n) return 0;
+    return n.classList.contains('vc-do') ? 2 : n.classList.contains('vc-vang') ? 1 : 0;
+  }
+  // Khoảng cách cá (0–100): .vc-day-ca style.left % (game đặt = a.d; ≥85 cá sắp sổng — class vc-day-xa).
+  // Chỉ có ở pha keo thường; pha conKeo game không đặt → trả null.
+  function vcDistance() {
+    var e = $('.vc-day-ca');
+    if (!e) return null;
+    var v = parseFloat(e.style.left || '');
+    return isNaN(v) ? null : v;
+  }
+  // v1.38 (Bui lệnh 23:33 ngày 2026-11-26: xóa phần auto câu Hồ Tây hiện tại, thay bằng
+  // mã tệp tutien2d-ho-tay-auto-v3.user.js v3.0.0): toàn bộ vòng lái câu (quăng/giật/kéo/
+  // mồi/tỷ lệ cắn/đổi vùng) dùng nguyên logic của tệp v3.0.0 — bỏ cách thả v1.31/v1.37,
+  // bỏ mồi/vùng theo thời tiết (v1.21/v1.37), bỏ luật không quăng 60s trước giờ Côn
+  // (v3.0.0 không có). Giữ của tool chính (Bui bổ sung 23:35): tự động đến Hồ Tây
+  // (van_can Khu 1), 40 điểm câu, chọn vị trí theo luồng cá xuất hiện trên map theo
+  // thời gian thực (quét thông báo luồng caption/chat — luồng Giao/Yêu ưu tiên → tự
+  // chọn ô bờ + lực vào luồng, luồng đổi thì chuyển vị trí). v3 quyết CÁCH QUĂNG,
+  // tool chính quyết ĐỨNG ĐÂU + QUĂNG VÀO LUỒNG NÀO.
+  var VC_MOI = {
+    giun: { ten: 'Giun Đất' },
+    ngoc_ha: { ten: 'Ngọc Hà' },
+    linh_nhi: { ten: 'Linh Nhĩ Mồi' },
+    van_khau: { ten: 'Vân Linh Khâu' },
+    huyet_tinh: { ten: 'Xích Huyết Mồi' },
+    long_huong: { ten: 'Long Diên Hương' }
+  };
+  // Mục tiêu câu (TARGETS của tệp v3.0.0 — mồi + vùng + thứ tự thử vùng):
+  // Linh→Ngọc Hà (dự phòng Vân Linh Khâu) vùng Giữa; Yêu→Xích Huyết Mồi (dự phòng
+  // Vân Linh Khâu) vùng Sâu; Giao→Long Diên Hương (dự phòng Linh Nhĩ Mồi) vùng Sâu;
+  // Tự do→Giun Đất vùng Giữa; Tự động→vùng + mồi theo tỷ lệ cắn tốt nhất đã quan sát
+  // (vcV3ChonTuDong, cần ≥3 lần quăng mới tin tỷ lệ; chưa đủ mẫu thì thử Giữa→Sâu→Nông).
+  var VC_TARGETS = {
+    linh: { ten: 'Linh Ngư', moi: 'ngoc_ha', duPhong: 'van_khau', vung: 'giua', vungThu: ['giua', 'sau', 'nong'] },
+    yeu: { ten: 'Yêu Ngư', moi: 'huyet_tinh', duPhong: 'van_khau', vung: 'sau', vungThu: ['sau', 'giua', 'nong'] },
+    giao: { ten: 'Giao Ngư', moi: 'long_huong', duPhong: 'linh_nhi', vung: 'sau', vungThu: ['sau', 'giua', 'nong'] },
+    tudo: { ten: 'Tự do', moi: 'giun', duPhong: null, vung: 'giua', vungThu: ['giua', 'sau', 'nong'] },
+    auto: { ten: 'Tự động', moi: 'ngoc_ha', duPhong: 'van_khau', vung: 'giua', vungThu: ['giua', 'sau', 'nong'] }
+  };
+  var VC_TARGET_KEY = 'ttpx_vc_target_v1';
+  function vcTargetGet() {
+    try { var v = localStorage.getItem(VC_TARGET_KEY); if (v && VC_TARGETS[v]) return v; } catch (e) {}
+    return 'auto'; // mặc định Tự động (bao gồm logic mồi theo thời tiết khi chưa đủ mẫu)
+  }
+  function vcTargetSet(key) {
+    if (!VC_TARGETS[key]) return;
+    try { localStorage.setItem(VC_TARGET_KEY, key); } catch (e) {}
+  }
+  // v1.35 (Bui 22:42 ngày 2026-11-26 "Thêm chọn Gần/Giữa/Xa" + bổ sung "Tự động chọn
+  // gần giữa sâu theo luồng cá"): chọn VÙNG QUĂNG theo lực dây. Khoảng lực lấy nguyên
+  // văn từ VUNG trong mã client: Nông tu 0 den .34, Giữa tu .34 den .68, Sâu tu .68
+  // den 1.01; tầm quăng tamQuang(luc)=56+194*luc px (QUANG_GAN=56, QUANG_XA=250) →
+  // Gần (Nông) 56–122px, Giữa 122–188px, Xa (Sâu) 188–250px. Lực đích: tâm vùng cho
+  // Gần (0.17) + Giữa (0.51) để sai số nhịp thả vẫn nằm trong vùng; Xa đích 0.85 (tâm
+  // vùng Sâu — v1.37, xem ghi chú dưới VC_ZONES). Mặc định Xa.
+  // v1.35: khoảng lực lấy nguyên văn VUNG trong mã client (Nông 0–0,34; Giữa 0,34–0,68;
+  // Sâu 0,68–1,01). Lực đích = TÂM VÙNG cho cả 3 vùng (Gần 0,17 = 136ms, Giữa 0,51 =
+  // 408ms, Xa 0,85 = 680ms — đúng castHoldMs của v3.1 trong tệp Tool Tổng) để sai số
+  // nhịp thả trên iPhone vẫn nằm trong vùng; v1.37 bỏ đích Xa = 1.0 (đỉnh 800ms, cửa
+  // ±8ms) vì Bui báo không đạt được vùng Sâu trên máy anh.
+  var VC_ZONES = {
+    gan: { ten: 'Gần', vungTen: 'Nông', tu: 0, den: 0.34, luc: 0.17 },
+    giua: { ten: 'Giữa', vungTen: 'Giữa', tu: 0.34, den: 0.68, luc: 0.51 },
+    xa: { ten: 'Xa', vungTen: 'Sâu', tu: 0.68, den: 1.01, luc: 0.85 },
+    auto: { ten: 'Tự động', vungTen: null, tu: null, den: null, luc: null }
+  };
+  var VC_ZONE_KEY = 'ttpx_vc_zone_v1';
+  function vcZoneGet() {
+    try { var v = localStorage.getItem(VC_ZONE_KEY); if (v && VC_ZONES[v]) return v; } catch (e) {}
+    return 'xa'; // mặc định Xa (giữ luật quăng sâu nhất cũ khi chưa chọn)
+  }
+  function vcZoneSet(key) {
+    if (!VC_ZONES[key]) return;
+    try { localStorage.setItem(VC_ZONE_KEY, key); } catch (e) {}
+  }
+  function vcZoneKeyOfVungTen(vungTen) { return vungTen === 'Nông' ? 'gan' : vungTen === 'Giữa' ? 'giua' : 'xa'; }
+  // ---- Trạng thái + hằng số vòng câu v3.0.0 (nguyên văn tệp v3 của Bui) ----
+  var VC_V3_CFG = {
+    jerkDelayMin: 80, jerkDelayMax: 250,        // trễ trước khi giật (ms)
+    waitBiteTimeoutMs: 60000,                   // chờ cắn tối đa 60s rồi thu cần, quăng lại
+    recastDelayMin: 1000, recastDelayMax: 3000, // nghỉ giữa 2 lần quăng (ms)
+    tapHoldMin: 200, tapHoldMax: 350,           // "Nhả nhịp": giữ bao lâu rồi buông
+    jerkTapMs: 60,                              // giật: bấm giữ 60ms rồi buông
+    conTapMs: 60,                               // nối Côn Bằng: bấm giữ 60ms rồi buông
+    khongCanDoiVung: 2,                         // quăng N lần không cắn thì đổi vùng tìm chỗ
+    tiLeToiThieuMau: 3                          // cần tối thiểu N lần quăng/vùng (hoặc/mồi) mới tin tỷ lệ
+  };
+  // Thời gian giữ nút để quăng theo vùng (castHoldMs của v3: nong 136 / giua 408 / sau 680ms
+  // = lực 0,17/0,51/0,85 tâm vùng trên sóng tam giác 1600ms) — khóa theo VC_ZONES.
+  var VC_CAST_HOLD_MS = { gan: 136, giua: 408, xa: 680 };
+  var VC_VUNG_THU_TU = ['giua', 'sau', 'nong']; // thứ tự thử vùng khi chưa đủ mẫu (v3)
+  // Trạng thái vòng câu v3: vùng đang dùng (nong/giua/sau), đếm không cắn, chỗ đã tìm
+  // thấy, luồng suy từ cắn (vùng vừa cắn), mồi đã chọn/đang dùng, nút đang giữ.
+  var vcV3 = { vungHien: 'giua', demKhongCan: 0, choTimDuoc: null, luongHienTai: null, moiDaChon: null, moiDangDung: 'giun', pressHeld: false };
+  function vcRandInt(a, b) { return Math.round(a + Math.random() * (b - a)); }
+  function vcV3ZoneOfKey(zk) { return zk === 'gan' ? 'nong' : zk === 'giua' ? 'giua' : 'sau'; }
+  function vcKeyOfV3Zone(z) { return z === 'nong' ? 'gan' : z === 'giua' ? 'giua' : 'xa'; }
+  function vcV3DoiVung(z) { vcV3.vungHien = z; }
+  function vcV3VungTiepTheo() {
+    var list = VC_TARGETS[vcTargetGet()].vungThu;
+    var i = list.indexOf(vcV3.vungHien);
+    return list[(i + 1) % list.length];
+  }
+  // v3 chonTuDong: chọn vùng + mồi theo tỷ lệ cắn tốt nhất đã quan sát (mục tiêu Tự động).
+  // Cần ≥3 lần quăng/vùng (hoặc/mồi) mới tin tỷ lệ; chưa đủ mẫu thì thử Giữa→Sâu→Nông.
+  // exclude: vùng cần loại trừ (khi vừa 2 lần không cắn ở vùng đó).
+  function vcV3ChonTuDong(exclude, lyDo) {
+    var r = vcRatesLoad();
+    var totNhat = null, totNhatTiLe = -1, tatCaDuMau = true, coTiLeDuong = false;
+    VC_VUNG_THU_TU.forEach(function (z) {
+      if (z === exclude) return;
+      var o = r.vung[z];
+      if (o.quang < VC_V3_CFG.tiLeToiThieuMau) tatCaDuMau = false;
+      if (o.quang >= VC_V3_CFG.tiLeToiThieuMau) {
+        var t = o.quang > 0 ? o.can / o.quang : 0;
+        if (t > 0) coTiLeDuong = true;
+        if (t > totNhatTiLe || (t === totNhatTiLe && totNhat && o.quang > r.vung[totNhat].quang)) { totNhat = z; totNhatTiLe = t; }
+      }
+    });
+    var vungChon = null;
+    if (totNhat && (coTiLeDuong || tatCaDuMau)) {
+      vungChon = totNhat;
+    } else {
+      for (var i = 0; i < VC_VUNG_THU_TU.length; i++) {
+        if (VC_VUNG_THU_TU[i] === exclude) continue;
+        if (r.vung[VC_VUNG_THU_TU[i]].quang < VC_V3_CFG.tiLeToiThieuMau) { vungChon = VC_VUNG_THU_TU[i]; break; }
+      }
+      if (!vungChon) vungChon = totNhat || 'giua';
+    }
+    var moiTot = null, moiTotTiLe = -1;
+    Object.keys(r.moi).forEach(function (k) {
+      var o = r.moi[k];
+      if (o.quang >= VC_V3_CFG.tiLeToiThieuMau) {
+        var t = o.quang > 0 ? o.can / o.quang : 0;
+        if (t > 0 && t > moiTotTiLe) { moiTot = k; moiTotTiLe = t; }
+      }
+    });
+    var moiChon = moiTot || 'ngoc_ha';
+    var changed = (vcV3.vungHien !== vungChon) || (VC_TARGETS.auto.moi !== moiChon);
+    if (VC_TARGETS.auto.moi !== moiChon) vcV3.moiDaChon = null; // mồi đổi thì để vcEnsureBait chọn lại
+    VC_TARGETS.auto.moi = moiChon;
+    VC_TARGETS.auto.duPhong = (moiChon === 'van_khau') ? 'ngoc_ha' : 'van_khau';
+    vcV3DoiVung(vungChon);
+    if (changed || lyDo) log('Tự động' + (lyDo ? ' (' + lyDo + ')' : '') + ': chọn vùng ' + VC_ZONES[vcKeyOfV3Zone(vungChon)].vungTen + ' (cắn ' + vcRatePct(r.vung[vungChon]) + '%) + mồi ' + VC_MOI[moiChon].ten + '.');
+    return { zone: vungChon, moi: moiChon };
+  }
+  // v3 ghiNhanKhongCan: quăng N lần không thấy cắn ở vùng hiện tại → đổi vùng tìm chỗ.
+  function vcV3KhongCan() {
+    vcV3.demKhongCan++;
+    if (vcV3.demKhongCan >= VC_V3_CFG.khongCanDoiVung) {
+      var vungCu = vcV3.vungHien;
+      vcV3.demKhongCan = 0;
+      if (vcTargetGet() === 'auto') {
+        vcV3ChonTuDong(vungCu, '2 lần không cắn ở ' + VC_ZONES[vcKeyOfV3Zone(vungCu)].vungTen);
+      } else {
+        var vungMoi = vcV3VungTiepTheo();
+        vcV3DoiVung(vungMoi);
+        log('Không thấy cắn ở vùng ' + VC_ZONES[vcKeyOfV3Zone(vungCu)].vungTen + ' — đang tìm chỗ khác (vùng ' + VC_ZONES[vcKeyOfV3Zone(vungMoi)].vungTen + ').');
+      }
+    }
+  }
+  // v3 ghiNhanCan: đã cắn ở vùng hiện tại → ghi nhớ "chỗ" đã tìm thấy, giữ vùng đó,
+  // ghi tỷ lệ cắn + luồng suy từ cắn = vùng này.
+  function vcV3Can(vungTen, moiId) {
+    var z = vungTen === 'Nông' ? 'nong' : vungTen === 'Giữa' ? 'giua' : 'sau';
+    if (vcV3.choTimDuoc !== z) {
+      vcV3.choTimDuoc = z;
+      log('Tìm thấy chỗ! Cá cắn ở vùng ' + vungTen + ' — giữ vùng này.');
+    }
+    vcV3.demKhongCan = 0;
+    vcRateRecord('can', vungTen, moiId);
+    vcV3.luongHienTai = z;
+  }
+  // Kế hoạch quăng theo vùng của v3 (khi không có luồng server + không chọn tay):
+  // mục tiêu Tự động → vcV3ChonTuDong; mục tiêu thường → vùng hiện tại của v3
+  // (VC_TARGETS[target].vung, xoay khi 2 lần không cắn, giữ khi vừa cắn).
+  function vcV3ZonePlan(curSpot) {
+    var t = vcTargetGet();
+    if (t === 'auto') vcV3ChonTuDong(null);
+    var zk = vcKeyOfV3Zone(vcV3.vungHien);
+    var z = VC_ZONES[zk];
+    return {
+      shoreIdx: -1, shore: curSpot || null, luc: z.luc, holdMs: VC_CAST_HOLD_MS[zk], distPx: vcTamQuang(z.luc), luong: null,
+      bac: null, bacTen: null, errPx: null, zoneKey: zk,
+      zoneSrc: t === 'auto' ? 'Tự động theo tỷ lệ cắn (v3)' : 'vùng theo mục tiêu ' + VC_TARGETS[t].ten + ' (v3)',
+      why: 'vùng ' + z.ten + ' (' + z.vungTen + ') theo ' + (t === 'auto' ? 'tỷ lệ cắn tốt nhất đã quan sát (v3 Tự động)' : 'mục tiêu ' + VC_TARGETS[t].ten + ' (v3)') + (vcV3.choTimDuoc === vcV3.vungHien ? ' — đã tìm thấy chỗ (vùng vừa cắn)' : ' — đang tìm chỗ') + ', giữ nút ' + VC_CAST_HOLD_MS[zk] + 'ms như v3, phao rơi ~' + Math.round(vcTamQuang(z.luc)) + 'px'
+    };
+  }
+  // Tỷ lệ cắn/câu được theo vùng + mồi — hệ của tệp v3.0.0 (ratesVung/ratesMoi, khóa
+  // localStorage 'tt2d_fish_v3_rates'): mỗi vùng (nong/giua/sau) + mỗi mồi đếm
+  // {quang, can, cauDuoc}. Dữ liệu cũ của tool chính (khóa 'ttpx_vc_rates_v1', ghi từ
+  // v1.33) được chuyển sang khóa v3 một lần nếu khóa v3 còn trống (chỉ vùng + mồi,
+  // bỏ bucket thời tiết của v1.37).
+  var VC_V3_RATES_KEY = 'tt2d_fish_v3_rates';
+  var VC_OLD_RATES_KEY = 'ttpx_vc_rates_v1';
+  var _vcRates = null;
+  function vcRatesBlank() {
+    return { vung: { nong: { quang: 0, can: 0, cauDuoc: 0 }, giua: { quang: 0, can: 0, cauDuoc: 0 }, sau: { quang: 0, can: 0, cauDuoc: 0 } }, moi: {} };
+  }
+  function vcRatesLoad() {
+    if (_vcRates) return _vcRates;
+    _vcRates = vcRatesBlank();
+    try {
+      var raw = localStorage.getItem(VC_V3_RATES_KEY);
+      var migrated = false;
+      if (!raw) { raw = localStorage.getItem(VC_OLD_RATES_KEY); migrated = !!raw; }
+      if (raw) {
+        var d = JSON.parse(raw);
+        if (d && d.vung) ['nong', 'giua', 'sau'].forEach(function (z) {
+          if (d.vung[z]) { _vcRates.vung[z].quang = d.vung[z].quang | 0; _vcRates.vung[z].can = d.vung[z].can | 0; _vcRates.vung[z].cauDuoc = d.vung[z].cauDuoc | 0; }
+        });
+        if (d && d.moi) Object.keys(d.moi).forEach(function (k) {
+          if (VC_MOI[k]) _vcRates.moi[k] = { quang: d.moi[k].quang | 0, can: d.moi[k].can | 0, cauDuoc: d.moi[k].cauDuoc | 0 };
+        });
+        if (migrated) vcRatesSave();
+      }
+    } catch (e) { _vcRates = vcRatesBlank(); }
+    return _vcRates;
+  }
+  function vcRatesSave() { try { localStorage.setItem(VC_V3_RATES_KEY, JSON.stringify(vcRatesLoad())); } catch (e) {} }
+  function vcRatesReset() { _vcRates = vcRatesBlank(); vcRatesSave(); vcV3.luongHienTai = null; log('Câu Hồ Tây: đã xóa dữ liệu tỷ lệ cắn (bắt đầu ghi lại từ 0)'); }
+  // Ghi tỷ lệ như v3 (ghiNhanQuang/ghiNhanCan/ghiNhanCauDuoc): kind = 'quang'|'can'|'cauDuoc';
+  // vung theo vùng quăng (Nông/Giữa/Sâu).
+  function vcRateRecord(kind, vungTen, moiId) {
+    var r = vcRatesLoad();
+    var zk = vungTen === 'Nông' ? 'nong' : vungTen === 'Giữa' ? 'giua' : 'sau';
+    if (r.vung[zk] && r.vung[zk][kind] != null) r.vung[zk][kind]++;
+    if (moiId && VC_MOI[moiId]) {
+      if (!r.moi[moiId]) r.moi[moiId] = { quang: 0, can: 0, cauDuoc: 0 };
+      if (r.moi[moiId][kind] != null) r.moi[moiId][kind]++;
+    }
+    vcRatesSave();
+  }
+  function vcRatePct(o) { return o && o.quang > 0 ? Math.round(o.can * 100 / o.quang) : 0; }
+  function vcRatesText() {
+    var r = vcRatesLoad(), parts = [];
+    ['nong', 'giua', 'sau'].forEach(function (z) {
+      var o = r.vung[z];
+      if (o.quang > 0) parts.push((z === 'nong' ? 'Nông' : z === 'giua' ? 'Giữa' : 'Sâu') + ' ' + o.quang + 'q·' + o.can + ' cắn ' + vcRatePct(o) + '%·' + o.cauDuoc + ' được');
+    });
+    var mp = [];
+    Object.keys(r.moi).forEach(function (k) { var o = r.moi[k]; if (o.quang > 0) mp.push(VC_MOI[k].ten + ' ' + o.quang + 'q·' + o.can + ' cắn ' + vcRatePct(o) + '%·' + o.cauDuoc + ' được'); });
+    if (!parts.length && !mp.length) return 'chưa có dữ liệu tỷ lệ (hệ v3, ghi từ v1.38)';
+    return (parts.length ? 'vùng: ' + parts.join('; ') : '') + (mp.length ? (parts.length ? ' | ' : '') + 'mồi: ' + mp.join('; ') : '');
+  }
+  // v1.27 (Bui 20:50): luồng cá Hồ Tây = "dấu nước" (nuoc) server gửi qua tin nhắn vc
+  // (act "tt" có a.nuoc, act "nuoc" o.nuoc=a — VanCanUI.nhan). Dấu {t:bậc, x, y} px thế
+  // giới; bậc: pham "Chim bói cá lượn", linh "Đàn cá con đớp nước", yeu "Bóng lớn lướt
+  // dưới nước", giao "Bọt khí lẻ" (DAU trong mã VanCan). Dấu MỚI bậc yeu/giao được game
+  // báo qua caption HUD + chat hệ thống: "Luồng Yêu Ngư phía Đông vừa trồi lên!" (8 hướng
+  // theo vị trí người chơi lúc báo; cách <160px thì "ngay gần đây") — tool quét 2 nguồn
+  // đó. Dấu vẽ trên canvas (kn/veDau) nên không đọc trực tiếp được tọa độ; hướng dẫn
+  // game: "Quăng gần dấu nước dễ gặp bậc ấy" — phao cách dấu ≤58px (DAU_R) là "trúng".
+  // Tầm quăng theo công thức client tamQuang(luc)=56+194*luc px (QUANG_GAN/QUANG_XA),
+  // hướng quăng tự động ra vùng nước sâu (huongRa), điểm rơi cuối do SERVER quyết
+  // (client gửi vc.quang {luc, moi} → server trả {px,py}).
+  var VC_DIRS = [
+    { ten: 'Đông', dx: 1, dy: 0 }, { ten: 'Đông Nam', dx: 1, dy: 1 },
+    { ten: 'Nam', dx: 0, dy: 1 }, { ten: 'Tây Nam', dx: -1, dy: 1 },
+    { ten: 'Tây', dx: -1, dy: 0 }, { ten: 'Tây Bắc', dx: -1, dy: -1 },
+    { ten: 'Bắc', dx: 0, dy: -1 }, { ten: 'Đông Bắc', dx: 1, dy: -1 }
+  ];
+  // v1.29 (Bui báo 21:49): parser MỚI bắt MỌI đoạn "Luồng <bậc> <hướng>" trong một
+  // chuỗi — mã client Z() nối nhiều dấu bằng " · " (caption) / ", " (chat) rồi mới
+  // thêm " vừa trồi lên!"/" vừa trồi lên." ở cuối, nên parser cũ (đòi "vừa trồi"
+  // ngay sau hướng + kết thúc "!") chỉ khớp dấu CUỐI của caption và không bao giờ
+  // khớp dòng chat (kết thúc "."). Parser mới không đòi hậu tố, bắt cả 4 bậc.
+  var VC_BAC_TEN = { 'Phàm Ngư': 'pham', 'Linh Ngư': 'linh', 'Yêu Ngư': 'yeu', 'Giao Ngư': 'giao' };
+  function vcParseLuongAll(text) {
+    var out = [];
+    var re = /Luồng\s+(Phàm Ngư|Linh Ngư|Yêu Ngư|Giao Ngư)\s+(ngay gần đây|phía\s+(Đông Nam|Đông Bắc|Tây Nam|Tây Bắc|Đông|Tây|Nam|Bắc))/g;
+    var m;
+    var s = String(text || '');
+    while ((m = re.exec(s)) !== null) {
+      var dirIdx = -1, dirText = 'ngay gần đây';
+      if (m[3]) {
+        dirText = 'phía ' + m[3];
+        for (var i = 0; i < VC_DIRS.length; i++) if (VC_DIRS[i].ten === m[3]) dirIdx = i;
+      }
+      out.push({ bac: VC_BAC_TEN[m[1]] || 'pham', bacTen: m[1], dirIdx: dirIdx, dirText: dirText, raw: m[0] });
+    }
+    return out;
+  }
+  function vcParseLuongText(text) {
+    var all = vcParseLuongAll(text);
+    for (var i = 0; i < all.length; i++) if (all[i].bac === 'yeu' || all[i].bac === 'giao') return all[i];
+    return all[0] || null;
+  }
+  // v1.28 (Bui 21:17): giữ DANH SÁCH luồng bậc cao gần đây + ưu tiên tuyệt đối:
+  // Giao Ngư (giao ★4) trước Yêu Ngư (yeu ★3), cùng bậc lấy thông báo mới nhất.
+  // Quét MỌI thông báo trong caption/chat (một đợt server có thể báo nhiều dấu).
+  function vcBestLuong() {
+    var now = Date.now();
+    S.vcLuongList = (S.vcLuongList || []).filter(function (l) { return now - l.t0 <= 180000; }); // dấu quá 3 phút coi như tan (luongBiet của game cũng 180s)
+    var best = null;
+    var rank = function (b) { return b === 'giao' ? 4 : b === 'yeu' ? 3 : b === 'linh' ? 2 : 1; }; // v1.29: Giao > Yêu > Linh > Phàm
+    for (var i = 0; i < S.vcLuongList.length; i++) {
+      var l = S.vcLuongList[i];
+      if (!best) { best = l; continue; }
+      if (rank(l.bac) > rank(best.bac) || (rank(l.bac) === rank(best.bac) && l.t0 > best.t0)) best = l;
+    }
+    S.vcLuong = best;
+    return best;
+  }
+  // Ghi một luồng vừa thấy vào danh sách (dùng chung cho poll + MutationObserver).
+  // Game nhớ dấu đã biết 180s (luongBiet) nên cùng 1 luồng không báo lại trong 3 phút;
+  // tool coi thông báo là luồng mới nếu chưa thấy hướng+bậc này trong 150s.
+  function vcRecordLuong(found, srcName) {
+    if (!found) return false;
+    var key = found.bac + '|' + found.dirIdx;
+    var seenAt = S.vcLuongSeen[key] || 0;
+    if (Date.now() - seenAt <= 150000) return false;
+    S.vcLuongSeen[key] = Date.now();
+    var pos = readPos();
+    S.vcLuongList.push({ bac: found.bac, bacTen: found.bacTen, dirIdx: found.dirIdx, dirText: found.dirText, raw: found.raw, fromPos: pos, t0: Date.now() });
+    log('Luồng cá: thấy "' + found.raw + '" ở ' + srcName + (pos ? ' (đang đứng ô ' + pos.x + ',' + pos.y + ' lúc báo)' : '') + ' — ghi vào danh sách luồng còn tươi (ưu tiên Giao > Yêu > Linh > Phàm)');
+    return true;
+  }
+  // Quét poll 3 nguồn (dự phòng cho MutationObserver): caption #ritual-caption,
+  // chat #thu-log (chỉ có chữ khi panel chat mở đúng tab — Chat.line đẩy vào kho
+  // kênh c.map.dong và chỉ render khi n.cur===o.key), dòng chat thế giới.
+  function vcScanLuong() {
+    var srcs = [];
+    var cap = readCaption(); if (cap) srcs.push({ name: 'caption', text: cap });
+    var logEl = $('#thu-log');
+    if (logEl) { var lt = logEl.innerText || logEl.textContent || ''; if (lt) srcs.push({ name: 'chat #thu-log', text: lt.slice(-3000) }); }
+    var wl = $('#world-chat-line');
+    if (wl && wl.textContent) srcs.push({ name: 'chat thế giới', text: wl.textContent });
+    var foundAny = 0;
+    for (var ti = 0; ti < srcs.length; ti++) {
+      var all = vcParseLuongAll(srcs[ti].text);
+      for (var mi = 0; mi < all.length; mi++) if (vcRecordLuong(all[mi], srcs[ti].name)) foundAny++;
+    }
+    var best = vcBestLuong();
+    if (!best && Date.now() - (S.vcLuongLogAt || 0) > 60000) {
+      S.vcLuongLogAt = Date.now();
+      log('Quét luồng cá: chưa thấy luồng nào còn tươi — đã quét ' + (srcs.length ? srcs.map(function (s) { return s.name; }).join(' + ') : 'không nguồn nào có chữ') + ' (caption chỉ hiện 2,8s; chat chỉ hiện khi panel mở đúng tab — tool còn theo dõi DOM liên tục để ghi ngay khi thông báo hiện)');
+    }
+    return best;
+  }
+  // v1.29: theo dõi DOM liên tục — caption tự ẩn sau 2,8s (HUD.setCaption) nên poll
+  // lúc quăng dễ hụt; MutationObserver ghi luồng NGAY khi thông báo hiện, kể cả
+  // giữa pha kéo dài. Gắn khi vào chế độ câu Hồ Tây, gỡ khi dừng tool.
+  function vcLuongWatchStart() {
+    if (S.vcLuongObs || typeof MutationObserver === 'undefined') return;
+    var obs = [];
+    function watch(el, srcName) {
+      if (!el) return;
+      var mo = new MutationObserver(function () {
+        if (!S.running) return;
+        var txt = el.textContent || '';
+        var all = vcParseLuongAll(txt);
+        for (var i = 0; i < all.length; i++) vcRecordLuong(all[i], srcName);
+      });
+      try { mo.observe(el, { childList: true, characterData: true, subtree: true }); obs.push(mo); } catch (e) {}
+    }
+    watch($('#ritual-caption'), 'caption (theo dõi DOM)');
+    watch($('#thu-log'), 'chat #thu-log (theo dõi DOM)');
+    S.vcLuongObs = obs;
+    if (obs.length) log('Đã bật theo dõi thông báo luồng cá liên tục (' + obs.length + ' nguồn DOM) — luồng trồi lúc nào ghi ngay lúc đó');
+  }
+  function vcLuongWatchStop() {
+    if (!S.vcLuongObs) return;
+    S.vcLuongObs.forEach(function (mo) { try { mo.disconnect(); } catch (e) {} });
+    S.vcLuongObs = null;
+  }
+  function vcTamQuang(luc) { var l = Math.max(0, Math.min(1, luc || 0)); return 56 + 194 * l; }
+  function vcLucForDist(px) { return Math.max(0.05, Math.min(0.95, ((px || 0) - 56) / 194)); } // v1.37: trần 0,95 — tránh mép đỉnh 800ms (lệch rơi ≤10px, dấu cá bán kính 58px)
+  function vcVungOfLuc(luc) { return luc < 0.34 ? 'Nông' : luc < 0.68 ? 'Giữa' : 'Sâu'; }
+  // v1.28 (Bui 21:17): LUÔN quăng vùng Sâu nhất (VUNG sau = lực ≥0.68 theo mã client;
+  // không có luồng bậc cao thì thả lực 0,85 — tâm vùng Sâu theo cách v3.1, v1.37).
+  var VC_LUC_SAU_MIN = 0.68;
+  // Kế hoạch quăng theo 1 luồng (hàm thuần, kiểm offline được):
+  // - Có luồng Giao/Yêu: ước điểm luồng (vị trí lúc báo + hướng × ~320px; "ngay gần đây"
+  //   thì dấu <160px quanh chỗ đứng lúc báo) → chọn ô bờ + lực TRONG vùng Sâu sao cho
+  //   tầm quăng (56+194*lực px) khớp khoảng cách ô bờ→điểm luồng ước nhất (phao cách
+  //   dấu ≤58px DAU_R là trúng — hướng quăng thật do game tự ra nước sâu, điểm rơi
+  //   cuối server quyết nên đây là ước lượng, ghi rõ trong nhật ký).
+  // - Không có luồng bậc cao: thả lực 0,85 (tâm vùng Sâu, v1.37) tại ô bờ hiện tại.
+  function vcPlanForLuong(luong, curSpot) {
+    var px = S.pxX || 32;
+    // v1.29: chỉ đuổi theo luồng bậc cao Giao/Yêu; luồng Linh/Phàm (game không báo
+    // qua caption/chat nên hiếm khi thấy) chỉ ghi nhận, vẫn quăng sâu nhất như thường.
+    if (luong && luong.fromPos && (luong.bac === 'yeu' || luong.bac === 'giao')) {
+      if (luong.dirIdx < 0) {
+        // "ngay gần đây": dấu <160px quanh chỗ đứng lúc báo — đứng yên ô bờ hiện tại,
+        // thả đầu vùng Sâu (0.68 → phao ~188px) cho phao rơi sát dấu nhất trong vùng Sâu.
+        var shore0 = curSpot || CONBANG.shore[0];
+        return {
+          shoreIdx: CONBANG.shore.indexOf(shore0), shore: shore0, luc: VC_LUC_SAU_MIN, holdMs: Math.round(VC_LUC_SAU_MIN * 800), distPx: vcTamQuang(VC_LUC_SAU_MIN), luong: luong,
+          bac: luong.bac, bacTen: luong.bacTen, errPx: null,
+          why: 'luồng ' + luong.bacTen + ' (bậc cao) ngay gần đây — đứng ô bờ (' + shore0[0] + ',' + shore0[1] + '), thả đầu vùng Sâu cho phao rơi gần dấu nhất'
+        };
+      }
+      var distTiles = 10;
+      var d = VC_DIRS[luong.dirIdx];
+      var est = {
+        x: Math.max(2, Math.min(53, luong.fromPos.x + d.dx * distTiles)),
+        y: Math.max(2, Math.min(33, luong.fromPos.y + d.dy * distTiles))
+      };
+      var best = null;
+      for (var i = 0; i < CONBANG.shore.length; i++) {
+        var sh = CONBANG.shore[i];
+        var distPx = Math.hypot(sh[0] - est.x, sh[1] - est.y) * px;
+        var luc = Math.max(VC_LUC_SAU_MIN, Math.min(0.95, vcLucForDist(distPx))); // v1.37: trần 0,95 như vcLucForDist
+        var err = Math.abs(vcTamQuang(luc) - distPx);
+        if (!best || err < best.errPx || (err === best.errPx && distPx < best.distPx)) {
+          best = { shoreIdx: i, shore: sh, luc: luc, distPx: distPx, errPx: err };
+        }
+      }
+      return {
+        shoreIdx: best.shoreIdx, shore: best.shore, luc: best.luc, holdMs: Math.round(best.luc * 800), distPx: best.distPx, luong: luong,
+        bac: luong.bac, bacTen: luong.bacTen, errPx: best.errPx,
+        why: 'luồng ' + luong.bacTen + ' (bậc cao) ' + luong.dirText + ' (ước điểm luồng quanh ô ' + est.x + ',' + est.y + ' — server chỉ báo hướng, không báo tọa độ dấu) → ô bờ (' + best.shore[0] + ',' + best.shore[1] + ') cách điểm ước ~' + Math.round(best.distPx) + 'px, thả vùng Sâu phao rơi lệch ước ~' + Math.round(best.errPx) + 'px (≤58px là trúng dấu)'
+      };
+    }
+    return {
+      shoreIdx: -1, shore: curSpot || null, luc: 0.85, holdMs: VC_CAST_HOLD_MS.xa, distPx: vcTamQuang(0.85), luong: null,
+      bac: null, bacTen: null, errPx: null,
+      why: luong ? 'luồng tốt nhất còn tươi là ' + luong.bacTen + ' ' + luong.dirText + ' (bậc thấp, không đuổi theo) — quăng vùng Sâu lực 85% (tâm vùng, giữ nút 680ms như v3), phao rơi ~221px'
+                 : 'chưa thấy luồng Giao Ngư/Yêu Ngư còn tươi (đã quét caption + chat + theo dõi DOM) — quăng vùng Sâu lực 85% (tâm vùng, giữ nút 680ms như v3), phao rơi ~221px'
+    };
+  }
+  // v1.38: kế hoạch quăng cho vùng Tự động — chọn vị trí theo luồng cá xuất hiện trên
+  // map theo thời gian thực (giữ của tool chính, Bui bổ sung 23:35 ngày 2026-11-26):
+  // 1) Có luồng từ thông báo server (mọi bậc còn tươi): ước điểm luồng như v1.28
+  //    (vị trí lúc báo + hướng × ~320px; "ngay gần đây" thì dấu <160px) → ô bờ gần
+  //    luồng nhất + lực khớp khoảng cách (KHÔNG ép vùng Sâu) → vùng theo lực đó.
+  // 2) Không có luồng server: vùng theo logic v3 (vcV3ZonePlan — mục tiêu Tự động
+  //    chọn theo tỷ lệ cắn, mục tiêu thường theo vùng của mục tiêu + xoay khi không cắn).
+  function vcPlanAutoZone(luong, curSpot) {
+    var px = S.pxX || 32;
+    if (luong && luong.fromPos) {
+      if (luong.dirIdx < 0) {
+        var shore0 = curSpot || CONBANG.shore[0];
+        var luc0 = vcLucForDist(110); // dấu <160px quanh chỗ đứng lúc báo — ước ~110px
+        var zk0 = vcZoneKeyOfVungTen(vcVungOfLuc(luc0));
+        return {
+          shoreIdx: CONBANG.shore.indexOf(shore0), shore: shore0, luc: luc0, holdMs: Math.round(luc0 * 800), distPx: vcTamQuang(luc0), luong: luong,
+          bac: null, bacTen: null, errPx: null, zoneKey: zk0, zoneSrc: 'luồng ' + luong.bacTen + ' (thông báo server)',
+          why: 'Tự động theo luồng: luồng ' + luong.bacTen + ' ngay gần đây (thông báo server, dấu <160px quanh chỗ đứng lúc báo) → chọn vùng ' + VC_ZONES[zk0].ten + ' (' + VC_ZONES[zk0].vungTen + '), đứng ô bờ (' + shore0[0] + ',' + shore0[1] + ') thả lực ' + Math.round(luc0 * 100) + '% phao rơi ~' + Math.round(vcTamQuang(luc0)) + 'px'
+        };
+      }
+      var d = VC_DIRS[luong.dirIdx];
+      var est = {
+        x: Math.max(2, Math.min(53, luong.fromPos.x + d.dx * 10)),
+        y: Math.max(2, Math.min(33, luong.fromPos.y + d.dy * 10))
+      };
+      var best = null;
+      for (var i = 0; i < CONBANG.shore.length; i++) {
+        var sh = CONBANG.shore[i];
+        var distPx = Math.hypot(sh[0] - est.x, sh[1] - est.y) * px;
+        var luc = vcLucForDist(distPx); // không ép Sâu — vùng theo khoảng cách tới luồng
+        var err = Math.abs(vcTamQuang(luc) - distPx);
+        if (!best || err < best.errPx || (err === best.errPx && distPx < best.distPx)) {
+          best = { shoreIdx: i, shore: sh, luc: luc, distPx: distPx, errPx: err };
+        }
+      }
+      var zk = vcZoneKeyOfVungTen(vcVungOfLuc(best.luc));
+      return {
+        shoreIdx: best.shoreIdx, shore: best.shore, luc: best.luc, holdMs: Math.round(best.luc * 800), distPx: best.distPx, luong: luong,
+        bac: null, bacTen: null, errPx: best.errPx, zoneKey: zk, zoneSrc: 'luồng ' + luong.bacTen + ' (thông báo server)',
+        why: 'Tự động theo luồng: luồng ' + luong.bacTen + ' ' + luong.dirText + ' (thông báo server, ước điểm luồng quanh ô ' + est.x + ',' + est.y + ') → ô bờ (' + best.shore[0] + ',' + best.shore[1] + ') cách điểm ước ~' + Math.round(best.distPx) + 'px → chọn vùng ' + VC_ZONES[zk].ten + ' (' + VC_ZONES[zk].vungTen + '), thả lực ' + Math.round(best.luc * 100) + '% phao rơi lệch ước ~' + Math.round(best.errPx) + 'px (≤58px là trúng dấu)'
+      };
+    }
+    return vcV3ZonePlan(curSpot);
+  }
+  // v1.35: kế hoạch quăng có chọn vùng. Thứ tự ưu tiên: luồng Giao/Yêu (v1.28) thắng
+  // tuyệt đối → chọn tay Gần/Giữa/Xa → Tự động theo luồng. opts.conBang (chế độ Câu
+  // Côn Bằng) giữ nguyên cách quăng cũ: móc Côn ở pha conRanh không liên quan lực
+  // quăng (mã client vc.con không dùng luc) nên không áp chọn vùng.
+  function vcPlanCast(curSpot, opts) {
+    opts = opts || {};
+    var luong = vcScanLuong();
+    if (opts.conBang) return vcPlanForLuong(luong, curSpot);
+    var zoneMode = vcZoneGet();
+    if (luong && luong.fromPos && (luong.bac === 'yeu' || luong.bac === 'giao')) {
+      var p = vcPlanForLuong(luong, curSpot);
+      p.zoneKey = 'xa';
+      p.zoneSrc = 'luồng ' + luong.bacTen + ' bậc cao (thông báo server)';
+      if (zoneMode !== 'xa') p.why += ' — luồng bậc cao thắng lựa chọn vùng ' + VC_ZONES[zoneMode].ten + ' trên bảng';
+      return p;
+    }
+    if (zoneMode !== 'auto') {
+      var z = VC_ZONES[zoneMode];
+      return {
+        shoreIdx: -1, shore: curSpot || null, luc: z.luc, holdMs: VC_CAST_HOLD_MS[zoneMode], distPx: vcTamQuang(z.luc), luong: null,
+        bac: null, bacTen: null, errPx: null, zoneKey: zoneMode, zoneSrc: 'chọn tay vùng ' + z.ten,
+        why: 'vùng quăng ' + z.ten + ' (' + z.vungTen + ', lực ' + z.tu + '–' + z.den + ') theo lựa chọn trên bảng — thả lực ' + Math.round(z.luc * 100) + '%, phao rơi ~' + Math.round(vcTamQuang(z.luc)) + 'px' + (luong ? ' (luồng ' + luong.bacTen + ' bậc thấp còn tươi, chọn tay thắng nên không đuổi theo)' : '')
+      };
+    }
+    return vcPlanAutoZone(luong, curSpot);
+  }
+  // v1.28: ghi nhật ký khi bậc luồng đích đổi — luồng bậc cao trồi giữa phiên thì
+  // lần quăng kế chuyển ngay sang luồng đó (kế hoạch tính lại mỗi vòng câu).
+  var vcLastPlanBac = null;
+  function vcNotePlanBac(plan) {
+    var bac = plan && plan.bac ? plan.bac : null;
+    if (bac === vcLastPlanBac) return;
+    if (bac) log('Câu: chuyển sang câu theo luồng bậc cao ' + plan.bacTen + ' — lần quăng này tự chọn ô bờ + lực vùng Sâu vào luồng đó');
+    else if (vcLastPlanBac) log('Câu: luồng bậc cao đã tan (quá 3 phút không báo lại) — quay lại vùng quăng theo lựa chọn trên bảng (' + VC_ZONES[vcZoneGet()].ten + ')');
+    vcLastPlanBac = bac;
+  }
+  function vcNoteShore(shore, res) {
+    var st = S.vcStats; if (!st || !shore || !res) return;
+    if (!st.shore) st.shore = {};
+    var k = shore[0] + ',' + shore[1];
+    if (!st.shore[k]) st.shore[k] = { casts: 0, caught: 0 };
+    if (res.cast) st.shore[k].casts++;
+    if (res.r === 'caught' || res.r === 'con-done') st.shore[k].caught++;
+  }
+  function vcShoreStatsText() {
+    var st = S.vcStats; if (!st || !st.shore) return '';
+    var parts = [];
+    for (var k in st.shore) {
+      var v = st.shore[k];
+      if (v.casts > 0) parts.push('ô (' + k + ') bắt ' + v.caught + '/' + v.casts + ' (' + Math.round(v.caught * 100 / v.casts) + '%)');
+    }
+    return parts.join('; ');
+  }
+  function vcBaitState() {
+    var out = {};
+    var btns = document.querySelectorAll('.vc-moi-nut[data-moi]');
+    for (var i = 0; i < btns.length; i++) {
+      var b = btns[i], id = b.getAttribute('data-moi');
+      var so = b.querySelector('.vc-moi-so');
+      var txt = so ? (so.textContent || '').trim() : '';
+      out[id] = {
+        el: b,
+        count: txt === '∞' ? Infinity : (parseInt(txt, 10) || 0),
+        selected: b.classList.contains('chon'),
+        disabled: !!b.disabled,
+        hidden: b.classList.contains('hidden')
+      };
+    }
+    return out;
+  }
+  // Đảm bảo đúng mồi cho mục tiêu trước khi quăng — damBaoMoi của tệp v3.0.0: mồi chính
+  // của mục tiêu, hết thì mồi dự phòng, hết nữa thì Giun Đất (vô hạn); đổi mồi bằng
+  // .click() lên nút mồi của game như chonMoi của v3. Mục tiêu Tự động: vcV3ChonTuDong
+  // chọn vùng + mồi theo tỷ lệ cắn trước.
+  function vcEnsureBait(runId) {
+    return (async function () {
+      if (!alive(runId)) return;
+      var t = vcTargetGet();
+      if (t === 'auto') vcV3ChonTuDong(null);
+      var tg = VC_TARGETS[t];
+      var st = vcBaitState();
+      var chon = tg.moi || 'giun';
+      var s0 = st[chon];
+      var sl = !s0 ? -1 : s0.count; // -1 = chưa đọc được số lượng (chưa vào giao diện câu) — cứ chọn mồi chính như v3
+      if (sl === 0) {
+        if (tg.duPhong && st[tg.duPhong] && st[tg.duPhong].count > 0) {
+          chon = tg.duPhong;
+          log('Hết ' + VC_MOI[tg.moi].ten + ' — đổi sang ' + VC_MOI[tg.duPhong].ten + '.');
+        } else {
+          chon = 'giun';
+          log('Hết ' + VC_MOI[tg.moi].ten + ' (dự phòng cũng hết) — dùng Giun Đất.');
+        }
+      }
+      if (vcV3.moiDaChon !== chon) {
+        var b = st[chon] && st[chon].el;
+        if (b) {
+          b.click(); // chonMoi của v3: bấm nút mồi để game đổi mồi (o.moi = key)
+          vcV3.moiDaChon = chon;
+          log('Đã chọn mồi: ' + VC_MOI[chon].ten + '.');
+          await sleep(150);
+        }
+      }
+      vcV3.moiDangDung = chon;
+    })();
+  }
+  // Tổng kết phiên câu Hồ Tây (v1.21): quăng/bắt/hụt/tỷ lệ/nặng nhất — dùng chung 2 chế độ + stopTool.
+  function vcLogStats(prefix) {
+    var st = S.vcStats; if (!st) return;
+    var mins = Math.max(1, Math.round((Date.now() - st.t0) / 60000));
+    var rate = st.casts > 0 ? Math.round(st.caught * 100 / st.casts) : 0;
+    log(prefix + ': quăng ' + st.casts + ' lần, bắt ' + st.caught + ' con, hụt ' + st.miss + ' (tỷ lệ ' + rate + '%), kéo Côn ' + st.conDone + ' lượt' + (st.heaviest ? ', nặng nhất: ' + st.heaviest.name + ' ' + st.heaviest.weight : '') + ' — câu ' + mins + ' phút');
+    var shoreTxt = vcShoreStatsText();
+    if (shoreTxt) log('Câu: tỷ lệ theo ô bờ — ' + shoreTxt);
+    log('Câu: tỷ lệ cắn đã lưu (vùng/mồi, hệ v3) — ' + vcRatesText());
+  }
+  function vcHolding() { var n = vcNutEl(); return !!(n && n.classList.contains('vc-giu')); }
+  function vcConOn() { var b = $('.vc-con'); return !!(b && !b.classList.contains('hidden')); }
+  function vcConChu() { var e = $('.vc-con-chu'); return e ? (e.textContent || '').trim() : ''; }
+  function vcBvSo() { var e = $('.vc-bv-so'); return e ? (e.textContent || '').trim() : ''; }
+  function vcCatchCard() {
+    var t = $('.vc-the'); if (!t || t.classList.contains('hidden')) return null;
+    var ten = (($('.vc-the-ten') || {}).textContent || '').trim();
+    if (!ten) return null;
+    var so = (($('.vc-the-so') || {}).textContent || '').trim();
+    var dv = (($('.vc-the-dv') || {}).textContent || '').trim();
+    return { name: ten, weight: (so + ' ' + dv).trim(), can: parseFloat(so.replace(/\./g, '').replace(',', '.')) || 0 };
+  }
+  // Nhấn/thả nút câu .vc-nut — press()/release() của tệp v3.0.0 (Bui lệnh 23:33 ngày
+  // 2026-11-26 thay vòng câu bằng mã v3): PointerEvent pointerdown/pointerup với
+  // {bubbles, cancelable, pointerId:1, isPrimary:true}, KHÔNG pointerType, KHÔNG
+  // clientX/clientY. Mã client VanCanUI: pointerdown → preventDefault + try
+  // setPointerCapture(pointerId) + G() đặt lucTu; pointerup/pointercancel/
+  // lostpointercapture → V() lấy lực X() tại lúc đó. Cờ vcV3.pressHeld như biến
+  // holding của v3 (đã nhấn chưa thả thì không nhấn lại).
+  function vcPointer(type) {
+    var el = vcNutEl(); if (!el) return false;
+    try {
+      el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true }));
+      return true;
+    } catch (e) { return false; }
+  }
+  function vcPress() {
+    if (vcV3.pressHeld) return false;
+    var ok = vcPointer('pointerdown');
+    if (ok) vcV3.pressHeld = true;
+    return ok;
+  }
+  function vcRelease() {
+    if (!vcV3.pressHeld) return false;
+    var ok = vcPointer('pointerup');
+    vcV3.pressHeld = false;
+    return ok;
+  }
+  // tap() của v3: bấm nhanh — giữ `ms` rồi buông (giật 60ms, nối Côn 60ms).
+  function vcTap(runId, ms) {
+    return (async function () {
+      if (!vcPress()) return false;
+      await sleep(ms);
+      vcRelease();
+      return true;
+    })();
+  }
+  // Căng dây đỏ (≥90, sắp đứt): class vc-do trên .vc-nut (vcTension) hoặc .vc-cang-do
+  // (tensionHigh của v3) — kiểm cả hai cho chắc.
+  function vcTensionHigh() { return vcTension() >= 2 || !!$('.vc-cang-do'); }
+  function vcWaitPhase(runId, phases, timeoutMs) {
+    return waitFor(function () {
+      if (!alive(runId)) return 'stopped';
+      var p = vcPhase();
+      return (p && phases.indexOf(p) >= 0) ? p : null;
+    }, timeoutMs, 'pha câu ' + phases.join('/'), 60);
+  }
+  // THU CẦN CHỦ ĐỘNG như v3: nút .vc-thu của game (gửi vc.thu, hiện ở pha cho/can) —
+  // chờ cắn quá 60s thì bấm Thu cần rồi mới tính không cắn; đầu lượt nếu dây còn trong
+  // nước (pha cho/can) thì thu cần trước. v3 bấm bằng .click() (thuCanBtn().click()).
+  function vcThuCanBtn() {
+    var b = $('.vc-thu');
+    return (b && !b.classList.contains('hidden')) ? b : null;
+  }
+  function vcRetrieveLine(runId) {
+    return (async function () {
+      var b = vcThuCanBtn();
+      if (!b) return false;
+      b.click(); // như v3: thuCanBtn().click()
+      var p = await vcWaitPhase(runId, ['ranh', 'conRanh'], 6000);
+      return !!p && p !== 'stopped';
+    })();
+  }
+  // Kéo cá/Côn theo nhịp — applyPull() của tệp v3.0.0: căng dây đỏ (≥90) thì buông
+  // ngay khỏi đứt; gợi ý Thả! (vc-goi-tha) → buông; Kéo! (vc-goi-keo) → giữ chặt;
+  // Nhả nhịp (vc-goi-nhip) → giữ rồi buông (200–350ms, đang giữ thì 150–300ms);
+  // không gợi ý (cá Bơi) → giữ để cuốn dây. Poll 50ms như vòng tick của v3, tới khi
+  // pha rời keo/conKeo. Căng đỉnh + khoảng cách cuối vẫn ghi (quan sát) để suy lý do hụt.
+  // Trả {r: 'done'|'timeout'|'stopped', peakTen, lastDist}.
+  function vcReel(runId, conMode) {
+    return (async function () {
+      var t0 = Date.now(), lastLuongScan = 0, lastKind = '', nhipRelAt = 0;
+      var peakTen = vcTension(), lastDist = vcDistance();
+      while (alive(runId)) {
+        var pha = vcPhase();
+        if (pha !== 'keo' && pha !== 'conKeo') { vcRelease(); return { r: 'done', peakTen: peakTen, lastDist: lastDist }; }
+        if (Date.now() - t0 > 240000) { vcRelease(); return { r: 'timeout', peakTen: peakTen, lastDist: lastDist }; }
+        var now = Date.now();
+        // Quét poll luồng dự phòng mỗi ~2s trong lúc kéo (MutationObserver là chính)
+        if (now - lastLuongScan > 2000) { lastLuongScan = now; try { vcScanLuong(); } catch (e) {} }
+        var ten = vcTension(); if (ten > peakTen) peakTen = ten;
+        var dist = vcDistance(); if (dist != null) lastDist = dist;
+        // applyPull của v3:
+        if (vcTensionHigh()) {
+          if (vcV3.pressHeld) { vcRelease(); log('Căng dây ≥90 — buông dây.'); }
+        } else {
+          var gk = vcGoi().kind;
+          if (gk !== lastKind) {
+            lastKind = gk;
+            if (gk === 'nhip' && vcV3.pressHeld) nhipRelAt = now + vcRandInt(150, 300); // v3: đang giữ mà vào Nhả nhịp thì buông sau 150–300ms
+          }
+          if (gk === 'tha') {           // Giãy → "Thả!": buông dây
+            if (vcV3.pressHeld) vcRelease();
+          } else if (gk === 'keo') {    // Mỏi → "Kéo!": giữ chặt
+            if (!vcV3.pressHeld) vcPress();
+          } else if (gk === 'nhip') {   // Lặn → "Nhả nhịp": giữ rồi buông
+            if (!vcV3.pressHeld) { vcPress(); nhipRelAt = now + vcRandInt(VC_V3_CFG.tapHoldMin, VC_V3_CFG.tapHoldMax); }
+            else if (now >= nhipRelAt && vcGoi().kind !== 'keo') vcRelease();
+          } else {                      // Bơi (không prompt): giữ để cuốn dây
+            if (!vcV3.pressHeld) vcPress();
+          }
+        }
+        await sleep(50);
+      }
+      vcRelease();
+      return { r: 'stopped', peakTen: peakTen, lastDist: lastDist };
+    })();
+  }
+  // Ghi thống kê + nhật ký kết quả một lượt câu (v1.21) — dùng chung 2 chế độ Hồ Tây.
+  function vcNoteResult(res) {
+    var st = S.vcStats; if (!st || !res) return;
+    if (res.cast) st.casts++;
+    if (res.r === 'caught') {
+      st.caught++;
+      if (res.fish && (!st.heaviest || res.fish.can > st.heaviest.can)) st.heaviest = res.fish;
+    } else if (res.r === 'con-done') {
+      st.conDone++;
+    } else if (res.r === 'miss') {
+      st.miss++;
+      log('Hụt cá' + (res.why ? ' — ' + res.why : '') + ' (đã bắt ' + st.caught + '/' + st.casts + ' lần quăng)');
+    }
+  }
+  // Một lượt câu trọn — vòng câu của tệp v3.0.0 (Bui lệnh 23:33 ngày 2026-11-26):
+  // dây còn trong nước thì thu cần trước → đảm bảo mồi theo mục tiêu (damBaoMoi) →
+  // quăng giữ nút cố định theo vùng (castHoldMs ±15ms) → chờ phao chìm hẳn ("Giật!")
+  // tối đa 60s (quá hạn thu cần + đếm không cắn để đổi vùng) → giật tap 60ms sau trễ
+  // 80–250ms → kéo theo nhịp applyPull. Pha conRanh (Côn trồi) → tap móc Côn 60ms →
+  // kéo Côn. Nhật ký chẩn đoán từng lần quăng giữ lại (lực đích/vùng/phao + height%
+  // quan sát lúc thả). Trả {r, fish, conChu, why, cast, castMoi, castVung}.
+  function vcFishOnce(runId, plan) {
+    return (async function () {
+      // Dây còn trong nước từ lượt trước (pha cho/can) → thu cần trước (v3: nút hiện
+      // tên vùng thay vì "Quăng" thì thu cần rồi mới quăng lại).
+      var pha0 = vcPhase();
+      if (pha0 === 'cho' || pha0 === 'can') {
+        log('Câu: dây còn trong nước (pha ' + pha0 + ') — thu cần trước khi quăng lại');
+        await vcRetrieveLine(runId);
+        if (!alive(runId)) return { r: 'stopped' };
+      }
+      var pha = await vcWaitPhase(runId, ['ranh', 'conRanh'], 20000);
+      if (!pha || pha === 'stopped' || !alive(runId)) return { r: 'stopped' };
+      if (pha === 'conRanh') {
+        // Chờ chữ "Côn" (sẵn sàng móc), "Nối N" là đang nối lại dây
+        var ready = await waitFor(function () {
+          if (!alive(runId)) return 'stopped';
+          if (vcPhase() !== 'conRanh') return 'gone';
+          return vcNutChu() === 'Côn' ? 'ready' : null;
+        }, 30000, 'Côn sẵn sàng móc', 80);
+        if (ready !== 'ready') return { r: ready === 'stopped' ? 'stopped' : 'miss' };
+        log('Côn Bằng đang trồi — nhấn móc Côn…');
+        await vcTap(runId, VC_V3_CFG.conTapMs); // v3: tap 60ms nối Côn
+        var ck = await vcWaitPhase(runId, ['conKeo'], 6000);
+        if (ck !== 'conKeo') { vcRelease(); return { r: 'miss' }; }
+        log('Đã móc Côn — kéo theo gợi ý (Thở/Quẫy/Lặn/Kiệt)…');
+        var rr = await vcReel(runId, true);
+        await sleep(800);
+        var chu = vcConChu(), bv = vcBvSo();
+        log('Kéo Côn xong: "' + chu + '"' + (bv ? ' — Bảo Vật ' + bv : ''));
+        return { r: rr.r === 'done' ? 'con-done' : rr.r, conChu: chu, cast: false };
+      }
+      // Đảm bảo đúng mồi cho mục tiêu trước khi quăng (damBaoMoi của v3)
+      await vcEnsureBait(runId);
+      if (!alive(runId)) return { r: 'stopped' };
+      // Mồi đang chọn thật (để ghi tỷ lệ cắn theo mồi)
+      var baitNow = vcBaitState(), castMoi = vcV3.moiDangDung || 'giun';
+      for (var bid in baitNow) if (baitNow[bid].selected) castMoi = bid;
+      // Quăng theo v3: giữ nút cố định holdMs của kế hoạch (vùng: 136/408/680ms; luồng
+      // Giao/Yêu: lực vào luồng ×800ms) ±15ms ngẫu nhiên rồi thả — không canh height%.
+      var holdMs = Math.max(60, (plan && plan.holdMs != null ? plan.holdMs : VC_CAST_HOLD_MS.xa) + vcRandInt(-15, 15));
+      var targetLuc = plan && plan.luc != null ? plan.luc : 0.85;
+      var vungTen = plan && plan.zoneKey && VC_ZONES[plan.zoneKey].vungTen ? VC_ZONES[plan.zoneKey].vungTen : vcVungOfLuc(targetLuc);
+      if (plan) log('Câu: quăng theo kế hoạch — ' + plan.why + (plan.zoneSrc ? ' [nguồn chọn vùng: ' + plan.zoneSrc + ']' : '') + '; giữ nút ' + holdMs + 'ms như v3 (lực đích ~' + Math.round(targetLuc * 100) + '%, vùng ' + vungTen + '), phao rơi cách bờ ~' + Math.round(vcTamQuang(targetLuc)) + 'px theo công thức client (điểm rơi cuối server quyết)');
+      if (vcV3.pressHeld && !vcHolding()) vcV3.pressHeld = false; // đồng bộ lại cờ giữ nếu game đã tự thả
+      var pressT = Date.now();
+      var pressed = vcPress();
+      if (!pressed) log('Câu: gửi sự kiện nhấn giữ thất bại (PointerEvent lỗi hoặc nút đang giữ) — vẫn chờ hết thời gian giữ rồi thả, xem chẩn đoán lúc thả');
+      // Giữ nút đúng holdMs (kiểm tra dừng mỗi 50ms)
+      while (alive(runId) && Date.now() - pressT < holdMs) await sleep(Math.min(50, holdMs - (Date.now() - pressT)));
+      if (!alive(runId)) { vcRelease(); return { r: 'stopped' }; }
+      var hRead = vcNutHeightPct(); // height% thanh lực game vẽ lúc thả — chỉ quan sát ghi nhật ký, không quyết thả (v3 thả theo giờ cố định)
+      var phaLuc = vcPhase();
+      vcRelease();
+      var heldMs = Date.now() - pressT;
+      log('Đã quăng cần (mục tiêu ' + VC_TARGETS[vcTargetGet()].ten + ', vùng ' + vungTen + ', giữ ' + heldMs + 'ms như v3 — lực đích ~' + Math.round(targetLuc * 100) + '%, height% thanh lực lúc thả ' + hRead + '%, pha lúc thả "' + phaLuc + '", phao rơi cách bờ ~' + Math.round(vcTamQuang(targetLuc)) + 'px theo công thức client; điểm rơi cuối server quyết)');
+      if (hRead <= 0 && phaLuc !== 'luc') log('Câu: CHẨN ĐOÁN — lúc thả thanh lực vẫn 0% và pha không vào "luc": handler giữ của game có thể không chạy với sự kiện tool gửi (hoặc chưa trong phiên câu) — xem pha sau thả');
+      vcRateRecord('quang', vungTen, castMoi); // v3 ghiNhanQuang: ghi tỷ lệ theo vùng + mồi của lượt này
+      var cho = await vcWaitPhase(runId, ['cho', 'can', 'conRanh'], 5000);
+      if (!cho || cho === 'stopped') {
+        if (cho !== 'stopped') log('Câu: thả xong 5s mà pha vẫn "' + vcPhase() + '" — game không nhận quăng (handler thả không tới game, lệnh quăng bị server từ chối, hoặc chưa sát mép nước)');
+        return { r: cho === 'stopped' ? 'stopped' : 'denied', cast: false };
+      }
+      if (cho === 'conRanh') return { r: 'con-next', cast: true }; // Côn trồi giữa lúc chờ — vòng sau móc Côn
+      // Chờ phao chìm hẳn ("Giật!" / pha can) tối đa 60s như v3 — phao rung là cá rỉa
+      // mồi, KHÔNG giật. Quá 60s không cắn → thu cần + đếm không cắn (đổi vùng sau 2 lần).
+      var bite = await waitFor(function () {
+        if (!alive(runId)) return 'stopped';
+        var p = vcPhase();
+        if (p === 'can' || vcNutChu() === 'Giật!') return 'bite';
+        if (p === 'conRanh') return 'con';
+        if (p === 'ranh') return 'gone';
+        return null;
+      }, VC_V3_CFG.waitBiteTimeoutMs, 'phao chìm (cá cắn)', 50);
+      if (bite === 'con') return { r: 'con-next', cast: true };
+      if (bite !== 'bite') {
+        if (bite !== 'stopped') {
+          if (vcThuCanBtn()) { log('Câu: chờ cắn quá 60s — thu cần, quăng lại'); await vcRetrieveLine(runId); }
+          vcV3KhongCan(); // v3: không cắn ở vùng này → đếm để đổi vùng tìm chỗ
+        }
+        return { r: bite === 'stopped' ? 'stopped' : 'miss', why: 'cá không cắn', cast: true, castMoi: castMoi, castVung: vungTen };
+      }
+      vcV3Can(vungTen, castMoi); // v3 ghiNhanCan: đã cắn ở vùng này → giữ vùng + ghi tỷ lệ + luồng suy từ cắn
+      // Giật như v3: trễ ngẫu nhiên 80–250ms rồi tap giữ 60ms
+      var jerkDelay = vcRandInt(VC_V3_CFG.jerkDelayMin, VC_V3_CFG.jerkDelayMax);
+      log('Phao chìm — giật sau ~' + jerkDelay + 'ms…');
+      await sleep(jerkDelay);
+      if (!alive(runId)) return { r: 'stopped' };
+      await vcTap(runId, VC_V3_CFG.jerkTapMs);
+      log('Đã giật!');
+      var keo = await waitFor(function () {
+        if (!alive(runId)) return 'stopped';
+        var p = vcPhase();
+        return (p === 'keo' || p === 'conKeo') ? p : null;
+      }, 2000, 'vào pha kéo sau giật', 30);
+      if (keo !== 'keo' && keo !== 'conKeo') { vcRelease(); if (keo !== 'stopped') log('Câu: giật xong 2s chưa vào pha kéo (pha hiện "' + vcPhase() + '", chữ nút "' + vcNutChu() + '") — cá nhả mồi hoặc game không nhận giật'); return { r: keo === 'stopped' ? 'stopped' : 'miss', why: 'giật hụt (cá nhả mồi)', cast: true }; }
+      var rr2 = await vcReel(runId, keo === 'conKeo');
+      await sleep(800);
+      var card = vcCatchCard();
+      if (card) log('Câu được: ' + card.name + (card.weight ? ' — ' + card.weight : ''));
+      var why = null;
+      if (!card && rr2.r === 'done') why = rr2.peakTen >= 2 ? 'có thể đứt dây (căng đỏ)' : (rr2.lastDist != null && rr2.lastDist >= 85) ? 'có thể sổng (cá chạy xa)' : 'hụt không rõ lý do';
+      if (card && rr2.r === 'done') vcRateRecord('cauDuoc', vungTen, castMoi); // kéo được cá (thẻ cá của game — tool chính đọc được, v3 chỉ suy từ kéo xong)
+      return { r: rr2.r === 'done' ? (card ? 'caught' : 'miss') : rr2.r, fish: card, why: why, cast: true, castMoi: castMoi, castVung: vungTen };
+    })();
+  }
+  // v1.33 (tích hợp từ tệp v3 của Bui): "luồng suy từ dữ liệu cắn" — khi KHÔNG có luồng
+  // server bậc cao (Giao/Yêu) mà 2 lần quăng liên tiếp ở ô bờ hiện tại không cắn, đổi sang
+  // ô bờ có tỷ lệ bắt tốt nhất trong phiên (thống kê ô bờ của phiên), chưa có dữ liệu thì
+  // ô kế trong danh sách 40 điểm câu. Luồng server bậc cao luôn được ưu tiên trước (v1.28).
+  function vcPickShoreBySession(curSpot) {
+    var st = S.vcStats, best = null, bestRate = -1;
+    if (st && st.shore) {
+      for (var k in st.shore) {
+        var v = st.shore[k];
+        if (v.casts >= 2 && (!curSpot || k !== curSpot[0] + ',' + curSpot[1])) {
+          var r = v.caught / v.casts;
+          if (r > bestRate) { bestRate = r; best = k; }
+        }
+      }
+    }
+    if (best) {
+      var p = best.split(',').map(Number);
+      return { shore: p, shoreIdx: CONBANG.shore.findIndex(function (s) { return s[0] === p[0] && s[1] === p[1]; }), why: 'ô bờ (' + best + ') tỷ lệ bắt phiên ' + Math.round(bestRate * 100) + '% (' + st.shore[best].caught + '/' + st.shore[best].casts + ')' };
+    }
+    return null;
+  }
+  function runConBang(runId, opts) {
+    opts = opts || {};
+    var schedStop = function (r) { if (opts.schedule) return r; stopTool(r); return r; };
+    return (async function () {
+      var ri = readRealmInfo();
+      if (ri && ri.tier < 7) { log('Hồ Tây cần Luyện Khí Tầng 7+ (CANH_TOI_THIEU) — nhân vật đang ' + ri.name + ' — dừng'); return schedStop('chưa đủ cảnh giới câu Hồ Tây'); }
+      var win = conBangNext(Date.now());
+      log('Câu Côn Bằng ở Hồ Tây: Côn ra 12:30 + 19:30 giờ VN, mỗi lần 6 phút. Khung kế: ' + fmtTime(win.start) + '–' + fmtTime(win.end) + ' (còn ' + Math.max(0, Math.round((win.start - Date.now()) / 60000)) + ' phút)');
+      await flyCheckAtStart(runId, 'Câu Côn Bằng', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      if (win.start - Date.now() > 120 * 60000) log('Khung Côn còn xa (>2 giờ) — tool vẫn vào hồ câu cá thường chờ Côn, anh bấm Dừng khi muốn');
+      await ensureAuto(runId, false); // đi đường tắt Auto như luật cũ
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, CONBANG.map);
+      await ensureZone(runId, CONBANG.map, CONBANG.zone);
+      log('Đã tự tới Hồ Tây (van_can, Khu 1) — tới điểm câu, chọn vị trí theo luồng cá xuất hiện trên map theo thời gian thực');
+      // Nút vào khu câu .vc-vao ("Về khu câu") — bấm nếu hiện và không bị khóa đếm ngược Côn
+      var vao = $('.vc-vao');
+      if (vao && !vao.classList.contains('hidden') && !vao.disabled && !vao.classList.contains('vc-bao')) {
+        log('Bấm nút vào khu câu ("' + (vao.textContent || '').trim() + '")…');
+        pressDom(vao);
+        await waitFor(function () { return vcHudOn() ? true : null; }, 6000, 'HUD câu cá hiện');
+      }
+      var shoreIdx = 0, spot = CONBANG.shore[0];
+      async function gotoShore(idx) {
+        var s = CONBANG.shore[idx % CONBANG.shore.length];
+        spot = s;
+        setStatus('Tới bờ hồ (' + s[0] + ',' + s[1] + ') câu Côn Bằng…');
+        await ensureFly(runId, true);
+        await goToPath(runId, s[0], s[1], 1, 180000, 'bờ hồ Hồ Tây');
+        await ensureFly(runId, false); // hạ cánh đứng bờ câu
+        await ensureAuto(runId, false);
+        return s;
+      }
+      await gotoShore(0);
+      if (!vcHudOn()) {
+        log('Chưa thấy HUD câu cá — chờ thêm 10s (phiên hồ mở cả ngày, cần đúng Khu 1)…');
+        await waitFor(function () { return vcHudOn() ? true : null; }, 10000, 'HUD câu cá hiện');
+      }
+      if (!vcHudOn()) { log('Không vào được phiên câu Hồ Tây (HUD không hiện) — dừng, caption: "' + readCaption() + '"'); return schedStop('không vào được hồ câu'); }
+      snapshotCtx('conbang', CONBANG.map, spot[0], spot[1], false, false, false);
+      vcLuongWatchStart(); // v1.29: ghi luồng ngay khi thông báo hiện (caption chỉ sống 2,8s)
+      setStatus('Đang câu ở Hồ Tây — chờ Côn Bằng ' + fmtTime(win.start));
+      log('Đã ở bờ hồ (' + spot[0] + ',' + spot[1] + ') — bắt đầu câu, chờ Côn lúc ' + fmtTime(win.start));
+      var t0 = Date.now(), timeouts = 0, lastBeat = 0, noBiteStreak = 0;
+      S.vcStats = { t0: t0, casts: 0, caught: 0, miss: 0, conDone: 0, heaviest: null, shore: {} };
+      log('Câu Côn Bằng: mục tiêu câu ' + VC_TARGETS[vcTargetGet()].ten + ' — tỷ lệ cắn đã lưu: ' + vcRatesText() + ' — vòng câu v3.0.0 (luồng Giao/Yêu → vùng Sâu vào luồng, không thì giữ nút 680ms vùng Sâu như v3; móc Côn tap 60ms)');
+      var targetWin = conBangNext(Date.now()); // khung Côn đích của phiên này (cố định)
+      while (alive(runId)) {
+        if (isDowned()) {
+          await handleDeath(runId);
+          if (!alive(runId)) return;
+          log('Câu Côn Bằng: đã hồi sinh — quay lại Hồ Tây');
+          await ensureAuto(runId, false);
+          await ensureRun(runId, true);
+          await ensureFly(runId, true);
+          await travelTo(runId, CONBANG.map);
+          await ensureZone(runId, CONBANG.map, CONBANG.zone);
+          await gotoShore(shoreIdx);
+          continue;
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% khi câu — dừng'); vcRelease(); return schedStop('Khí Huyết thấp'); }
+        var mm = readMapId();
+        if (mm && mm !== CONBANG.map) {
+          log('Đã rời Hồ Tây (map ' + (MAPS[mm] ? MAPS[mm].name : mm) + ') — quay lại');
+          await ensureAuto(runId, false);
+          await ensureRun(runId, true);
+          await ensureFly(runId, true);
+          await travelTo(runId, CONBANG.map);
+          await gotoShore(shoreIdx);
+          continue;
+        }
+        if (Date.now() > targetWin.end + 60000) break; // đã qua khung Côn đích + 1 phút đệm — kết thúc phiên
+        if (Date.now() - lastBeat >= 60000) {
+          lastBeat = Date.now();
+          var left = Math.round((targetWin.start - Date.now()) / 60000);
+          log('Đang câu ở Hồ Tây… (đã câu ' + Math.round((Date.now() - t0) / 60000) + ' phút, bắt ' + S.vcStats.caught + '/' + S.vcStats.casts + ' lần quăng' + (Date.now() < targetWin.start ? ', Côn ra sau ' + left + ' phút' : ', CÔN ĐANG TRỒI') + ')');
+        }
+                var plan = vcPlanCast(spot, { conBang: true }); // v1.35: Côn Bằng giữ cách quăng cũ, không áp chọn vùng
+        vcNotePlanBac(plan);
+        if (plan && plan.shore && (plan.shore[0] !== spot[0] || plan.shore[1] !== spot[1])) {
+          log('Câu: luồng cá ở hướng khác — chuyển ô bờ tới (' + plan.shore[0] + ',' + plan.shore[1] + ') vì ' + plan.why);
+          shoreIdx = plan.shoreIdx;
+          await gotoShore(shoreIdx);
+          if (!alive(runId)) return;
+        }
+        var res = await vcFishOnce(runId, plan);
+        vcNoteShore(spot, res);
+        if (!alive(runId)) return;
+        vcNoteResult(res);
+        // v1.33: luồng suy từ cắn — 2 lần liên tiếp không cắn ở ô này + không có luồng
+        // server bậc cao thì đổi ô bờ theo tỷ lệ bắt phiên (hoặc ô kế trong 40 điểm câu).
+        if (res.r === 'caught' || res.r === 'con-done') noBiteStreak = 0;
+        else if (res.r === 'miss' && res.why === 'cá không cắn') {
+          noBiteStreak++;
+          var luongCao = vcBestLuong();
+          if (noBiteStreak >= 2 && !(luongCao && (luongCao.bac === 'yeu' || luongCao.bac === 'giao'))) {
+            noBiteStreak = 0;
+            var pickShore = vcPickShoreBySession(spot);
+            if (pickShore && pickShore.shoreIdx >= 0) {
+              log('Câu: 2 lần liên tiếp không cắn ở ô (' + spot[0] + ',' + spot[1] + '), không có luồng Giao/Yêu — luồng suy từ cắn: chuyển sang ' + pickShore.why);
+              shoreIdx = pickShore.shoreIdx;
+            } else {
+              shoreIdx++;
+              log('Câu: 2 lần liên tiếp không cắn ở ô (' + spot[0] + ',' + spot[1] + '), không có luồng Giao/Yêu — luồng suy từ cắn: chuyển ô bờ kế (' + CONBANG.shore[shoreIdx % CONBANG.shore.length] + ') trong 40 điểm câu');
+            }
+            await gotoShore(shoreIdx);
+            if (!alive(runId)) return;
+          }
+        }
+        if (res.r === 'caught') {
+          timeouts = 0;
+        } else if (res.r === 'con-done') {
+          timeouts = 0;
+          log('Đã kéo Côn xong lượt này (' + (res.conChu || '') + ')');
+        } else if (res.r === 'denied') {
+          shoreIdx++;
+          log('Quăng bị từ chối ở ô bờ này (chưa sát mép nước?) — đổi ô bờ (' + CONBANG.shore[shoreIdx % CONBANG.shore.length] + ')');
+          await gotoShore(shoreIdx);
+        } else if (res.r === 'timeout') {
+          timeouts++;
+          log('Một lượt câu quá lâu không xong (' + timeouts + '/3)');
+          if (timeouts >= 3) { vcRelease(); return schedStop('câu kẹt 3 lượt'); }
+        } else if (res.r === 'stopped') {
+          return;
+        } else {
+          timeouts = 0;
+        }
+        await sleep(vcRandInt(VC_V3_CFG.recastDelayMin, VC_V3_CFG.recastDelayMax)); // nghỉ giữa 2 lần quăng như v3 (1–3s)
+      }
+      vcRelease();
+      vcLogStats('Hết khung Côn Bằng — tổng kết phiên');
+      log('Khung Côn kế: ' + fmtTime(conBangNext(Date.now()).start));
+      S.vcStats = null; // đã tổng kết — stopTool không tổng kết lại
+      return schedStop('hết khung Côn Bằng');
+    })();
+  }
+
+  // ============ Câu cá Hồ Tây thường (v1.21, lệnh Bui 19:35) ============
+  // Hồ mở cả ngày (MO_CA_NGAY) — câu liên tục vòng lặp tới khi Bui bấm Dừng (trần phiên
+  // 4 giờ ghi rõ). Dùng chung vòng câu vcFishOnce (vòng câu v3.0.0 từ v1.38);
+  // Côn Bằng trồi giữa phiên (12:30/19:30) thì vẫn móc Côn như chế độ Câu Côn Bằng.
+  // Dừng khi: Khí Huyết <35%, game báo đủ cá ngày (du_ca), kẹt 3 lượt timeout, đủ trần 4 giờ.
+  function runHoTay(runId, opts) {
+    opts = opts || {};
+    var htEnd = function (r) { if (opts.schedule) { log('Câu cá Hồ Tây (lịch trình): kết thúc khung — ' + r); return r; } stopTool(r); return r; };
+    return (async function () {
+      var ri = readRealmInfo();
+      if (ri && ri.tier < 7) { log('Hồ Tây cần Luyện Khí Tầng 7+ (CANH_TOI_THIEU) — nhân vật đang ' + ri.name + ' — dừng'); return htEnd('chưa đủ cảnh giới câu Hồ Tây'); }
+      log('Câu cá Hồ Tây: hồ mở cả ngày — câu liên tục tới khi anh bấm Dừng (trần phiên 4 giờ); vòng câu v3.0.0 (mồi theo mục tiêu, quăng giữ cố định theo vùng); Côn Bằng trồi (12:30/19:30) thì tool vẫn móc Côn');
+      await flyCheckAtStart(runId, 'Câu cá Hồ Tây', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      await ensureAuto(runId, false); // đi đường tắt Auto như luật cũ
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, CONBANG.map);
+      await ensureZone(runId, CONBANG.map, CONBANG.zone);
+      log('Đã tự tới Hồ Tây (van_can, Khu 1) — tới điểm câu, chọn vị trí theo luồng cá xuất hiện trên map theo thời gian thực');
+      // Nút vào khu câu .vc-vao ("Về khu câu") — bấm nếu hiện và không bị khóa đếm ngược Côn
+      var vao = $('.vc-vao');
+      if (vao && !vao.classList.contains('hidden') && !vao.disabled && !vao.classList.contains('vc-bao')) {
+        log('Bấm nút vào khu câu ("' + (vao.textContent || '').trim() + '")…');
+        pressDom(vao);
+        await waitFor(function () { return vcHudOn() ? true : null; }, 6000, 'HUD câu cá hiện');
+      }
+      var shoreIdx = 0, spot = CONBANG.shore[0];
+      async function gotoShore(idx) {
+        var s = CONBANG.shore[idx % CONBANG.shore.length];
+        spot = s;
+        setStatus('Tới bờ hồ (' + s[0] + ',' + s[1] + ') câu cá…');
+        await ensureFly(runId, true);
+        await goToPath(runId, s[0], s[1], 1, 180000, 'bờ hồ Hồ Tây');
+        await ensureFly(runId, false); // hạ cánh đứng bờ câu
+        await ensureAuto(runId, false);
+        return s;
+      }
+      await gotoShore(0);
+      if (!vcHudOn()) {
+        log('Chưa thấy HUD câu cá — chờ thêm 10s (phiên hồ mở cả ngày, cần đúng Khu 1)…');
+        await waitFor(function () { return vcHudOn() ? true : null; }, 10000, 'HUD câu cá hiện');
+      }
+      if (!vcHudOn()) { log('Không vào được phiên câu Hồ Tây (HUD không hiện) — dừng, caption: "' + readCaption() + '"'); return htEnd('không vào được hồ câu'); }
+      snapshotCtx('hotay', CONBANG.map, spot[0], spot[1], false, false, false);
+      vcLuongWatchStart(); // v1.29: ghi luồng ngay khi thông báo hiện (caption chỉ sống 2,8s)
+      setStatus('Đang câu cá ở Hồ Tây…');
+      log('Đã ở bờ hồ (' + spot[0] + ',' + spot[1] + ') — bắt đầu câu liên tục');
+      var t0 = Date.now(), timeouts = 0, lastBeat = 0, noBiteStreak = 0;
+      S.vcStats = { t0: t0, casts: 0, caught: 0, miss: 0, conDone: 0, heaviest: null, shore: {} };
+      log('Câu cá Hồ Tây: mục tiêu câu ' + VC_TARGETS[vcTargetGet()].ten + ' — vùng quăng ' + VC_ZONES[vcZoneGet()].ten + ' — vòng câu v3.0.0 — tỷ lệ cắn đã lưu: ' + vcRatesText());
+      while (alive(runId)) {
+        if (opts.deadlineMs && Date.now() >= opts.deadlineMs) { log('Câu cá Hồ Tây: hết khung giờ lịch trình — quay lại vòng lịch'); vcRelease(); return htEnd('deadline'); }
+        if (Date.now() - t0 > 4 * 3600000) { log('Câu cá Hồ Tây: đã câu đủ trần phiên 4 giờ — dừng'); vcRelease(); return htEnd('đủ trần phiên câu 4 giờ'); }
+        if (isDowned()) {
+          await handleDeath(runId);
+          if (!alive(runId)) return;
+          log('Câu cá Hồ Tây: đã hồi sinh — quay lại Hồ Tây');
+          await ensureAuto(runId, false);
+          await ensureRun(runId, true);
+          await ensureFly(runId, true);
+          await travelTo(runId, CONBANG.map);
+          await ensureZone(runId, CONBANG.map, CONBANG.zone);
+          await gotoShore(shoreIdx);
+          continue;
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% khi câu — dừng'); vcRelease(); return htEnd('Khí Huyết thấp'); }
+        var mm = readMapId();
+        if (mm && mm !== CONBANG.map) {
+          log('Đã rời Hồ Tây (map ' + (MAPS[mm] ? MAPS[mm].name : mm) + ') — quay lại');
+          await ensureAuto(runId, false);
+          await ensureRun(runId, true);
+          await ensureFly(runId, true);
+          await travelTo(runId, CONBANG.map);
+          await gotoShore(shoreIdx);
+          continue;
+        }
+        var cap = readCaption();
+        if (cap && /đủ cá/.test(cap)) { log('Câu cá Hồ Tây: game báo "' + cap + '" — dừng'); vcRelease(); return htEnd('hôm nay câu đủ cá'); }
+        if (Date.now() - lastBeat >= 60000) {
+          lastBeat = Date.now();
+          var st = S.vcStats;
+          var rate = st.casts > 0 ? Math.round(st.caught * 100 / st.casts) : 0;
+          log('Đang câu cá ở Hồ Tây… (đã câu ' + Math.round((Date.now() - t0) / 60000) + ' phút, bắt ' + st.caught + '/' + st.casts + ' lần quăng — tỷ lệ ' + rate + '%)');
+        }
+        // v1.38: bỏ luật "không quăng mới 60s trước giờ Côn" của v1.37 (v3.1) — tệp
+        // v3.0.0 không có luật này; Côn trồi giữa phiên thì vcFishOnce tự móc Côn.
+        var plan = vcPlanCast(spot);
+        vcNotePlanBac(plan);
+        if (plan && plan.shore && (plan.shore[0] !== spot[0] || plan.shore[1] !== spot[1])) {
+          log('Câu: luồng cá ở hướng khác — chuyển ô bờ tới (' + plan.shore[0] + ',' + plan.shore[1] + ') vì ' + plan.why);
+          shoreIdx = plan.shoreIdx;
+          await gotoShore(shoreIdx);
+          if (!alive(runId)) return;
+        }
+        var res = await vcFishOnce(runId, plan);
+        vcNoteShore(spot, res);
+        if (!alive(runId)) return;
+        vcNoteResult(res);
+        // v1.33: luồng suy từ cắn — 2 lần liên tiếp không cắn ở ô này + không có luồng
+        // server bậc cao thì đổi ô bờ theo tỷ lệ bắt phiên (hoặc ô kế trong 40 điểm câu).
+        if (res.r === 'caught' || res.r === 'con-done') noBiteStreak = 0;
+        else if (res.r === 'miss' && res.why === 'cá không cắn') {
+          noBiteStreak++;
+          var luongCao = vcBestLuong();
+          if (noBiteStreak >= 2 && !(luongCao && (luongCao.bac === 'yeu' || luongCao.bac === 'giao'))) {
+            noBiteStreak = 0;
+            var pickShore = vcPickShoreBySession(spot);
+            if (pickShore && pickShore.shoreIdx >= 0) {
+              log('Câu: 2 lần liên tiếp không cắn ở ô (' + spot[0] + ',' + spot[1] + '), không có luồng Giao/Yêu — luồng suy từ cắn: chuyển sang ' + pickShore.why);
+              shoreIdx = pickShore.shoreIdx;
+            } else {
+              shoreIdx++;
+              log('Câu: 2 lần liên tiếp không cắn ở ô (' + spot[0] + ',' + spot[1] + '), không có luồng Giao/Yêu — luồng suy từ cắn: chuyển ô bờ kế (' + CONBANG.shore[shoreIdx % CONBANG.shore.length] + ') trong 40 điểm câu');
+            }
+            await gotoShore(shoreIdx);
+            if (!alive(runId)) return;
+          }
+        }
+        if (res.r === 'caught' || res.r === 'con-done') {
+          timeouts = 0;
+          if (res.r === 'con-done') log('Đã kéo Côn xong lượt này (' + (res.conChu || '') + ')');
+        } else if (res.r === 'denied') {
+          var cap2 = readCaption();
+          if (cap2 && /đủ cá/.test(cap2)) { log('Câu cá Hồ Tây: game báo "' + cap2 + '" — dừng'); vcRelease(); return htEnd('hôm nay câu đủ cá'); }
+          shoreIdx++;
+          log('Quăng bị từ chối ở ô bờ này (chưa sát mép nước/chỗ có người câu?) — đổi ô bờ (' + CONBANG.shore[shoreIdx % CONBANG.shore.length] + ')');
+          await gotoShore(shoreIdx);
+        } else if (res.r === 'timeout') {
+          timeouts++;
+          log('Một lượt câu quá lâu không xong (' + timeouts + '/3)');
+          if (timeouts >= 3) { vcRelease(); return htEnd('câu kẹt 3 lượt'); }
+        } else if (res.r === 'stopped') {
+          return;
+        } else {
+          timeouts = 0;
+        }
+        await sleep(vcRandInt(VC_V3_CFG.recastDelayMin, VC_V3_CFG.recastDelayMax)); // nghỉ giữa 2 lần quăng như v3 (1–3s)
+      }
+    })();
+  }
+
+  // ============ Tổ đội farm rùa — 100 Thạch Quy biến dị (v1.37, lệnh Bui 22:53 ngày 2026-11-26) ============
+  // Cơ chế theo mã client: quái thach_quy "Thạch Quy Đội Bia" (Lv7, HP 612, hồi sinh
+  // 25s) ở dong_mach_ngam (Miếu Ông Trường Con, 30×26, PK tự do — PK_TU_DO_MAPS).
+  // Biến dị: mai đỏ than, HP ×20, đòn ×5, exp ×5, to ×1,3 (bienDi trong ENEMY_DEFS);
+  // tỷ lệ xuất biến dị nằm ở bảng tỉ lệ kín phía server (client không có số).
+  // Nhiệm vụ chính giai đoạn 36 (LAP_CONG_STAGE=36): "Hạ Thạch Quy biến dị (Miếu Ông
+  // Trường Con)" 100 con — game CHỈ đếm khi đang ở giai đoạn 36 (ghiHaThachQuy kiểm
+  // stage + type thach_quy + bienDi). Tiến độ đọc từ #quest-objectives (.q-so),
+  // dự phòng cờ ha_tq_bien_di trong pntt_progress_v1.flags.
+  // Tổ đội (DOM): #party-hud hiện khi có đội (bỏ class hidden), #party-count "N/6",
+  // #party-members; lời mời hiện ở #invite-hud với nút #invite-accept/#invite-decline.
+  // Mời người khác phải bấm vào nhân vật của họ trên canvas rồi chọn "Mời vào tổ đội"
+  // (≤180px, tối đa 6 người) — vị trí người chơi khác vẽ trên canvas, không đọc được
+  // từ DOM nên tool KHÔNG tự mời người lạ: tool tự chấp nhận lời mời + ghi rõ cần anh
+  // mời đồng đội. Tệp Tool Tổng của Bui ghi quy tắc: trong miếu (PK tự do) không lập
+  // đội được, chỉ mời/chấp nhận ở làng hoặc Bãi Đá — mã client không thấy chặn theo
+  // map (lỗi mời: full/in_dungeon) nên tool vẫn thử chấp nhận rồi kiểm chứng qua
+  // #party-hud, ghi rõ kết quả thật.
+  var TURTLE_MAP = 'dong_mach_ngam', TURTLE_ZONE = 12, TURTLE_NEED = 100;
+  var TURTLE_POINTS = [ // 13 điểm Thạch Quy tq_1..tq_13 trích nguyên văn mã client
+    [6, 3], [9, 5], [6, 7], [2, 9], [2, 12], [2, 20], [5, 22], // cụm Tây
+    [22, 3], [23, 6], [27, 9], [27, 12], [27, 16], [27, 19]    // cụm Đông
+  ];
+  function partyStatus() {
+    var hud = $('#party-hud');
+    var inParty = !!(hud && !hud.classList.contains('hidden'));
+    var cntEl = $('#party-count');
+    var cntTxt = cntEl ? (cntEl.textContent || '').trim() : '';
+    var m = cntTxt.match(/(\d+)\s*\/\s*(\d+)/);
+    var memEl = $('#party-members');
+    var memN = memEl ? memEl.children.length : 0;
+    return { inParty: inParty, count: m ? +m[1] : memN, max: m ? +m[2] : 6, members: memN, text: cntTxt };
+  }
+  function partyStatusText() {
+    var p = partyStatus();
+    return p.inParty ? 'đã vào đội (' + p.count + '/' + p.max + ' người)' : 'chưa vào đội';
+  }
+  function partyInviteVisible() {
+    var hud = $('#invite-hud');
+    if (!hud || hud.classList.contains('hidden')) return false;
+    var r = hud.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+  // Tự chấp nhận lời mời tổ đội nếu đang hiện — trả true nếu đã bấm.
+  function partyAcceptInvite() {
+    if (!partyInviteVisible()) return false;
+    var b = $('#invite-accept');
+    if (!b) { log('Tổ đội: thấy bảng lời mời nhưng không thấy nút Chấp nhận (#invite-accept)'); return false; }
+    if (readMapId() === TURTLE_MAP) log('Tổ đội: đang trong Miếu Ông Trường Con (PK tự do) — tệp Tool Tổng ghi trong miếu không lập đội được; tool vẫn bấm Chấp nhận rồi kiểm chứng, không được thì ra Bãi Đá lập đội rồi vào lại');
+    pressDom(b);
+    log('Tổ đội: đã bấm Chấp nhận lời mời vào đội');
+    return true;
+  }
+  // Tiến độ hạ Thạch Quy biến dị: ưu tiên #quest-objectives, dự phòng cờ bản lưu.
+  function turtleQuestProgress() {
+    try {
+      var qs = readQuestState();
+      for (var i = 0; i < qs.objs.length; i++) {
+        var o = qs.objs[i];
+        if (/Thạch Quy biến dị/.test(o.text) && o.cur != null) return { cur: o.cur, max: o.max || TURTLE_NEED, src: 'bảng nhiệm vụ', stage: qs.stage };
+      }
+      var loc = readLocal();
+      var f = loc && loc.flags ? loc.flags.ha_tq_bien_di : null;
+      if (f != null && !isNaN(+f)) return { cur: Math.min(+f, TURTLE_NEED), max: TURTLE_NEED, src: 'cờ ha_tq_bien_di trong bản lưu', stage: qs.stage };
+      return { cur: null, max: TURTLE_NEED, src: 'không đọc được', stage: qs.stage };
+    } catch (e) { return { cur: null, max: TURTLE_NEED, src: 'lỗi đọc', stage: '' }; }
+  }
+  function runTurtleFarm(runId) {
+    return (async function () {
+      log('Tổ đội farm rùa: farm Thạch Quy ở Miếu Ông Trường Con Khu ' + TURTLE_ZONE + ' tới khi đủ ' + TURTLE_NEED + ' Thạch Quy biến dị (nhiệm vụ chính giai đoạn 36)');
+      await flyCheckAtStart(runId, 'Tổ đội farm rùa', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      log('Tổ đội: trạng thái lúc bắt đầu — ' + partyStatusText());
+      var prog0 = turtleQuestProgress();
+      log('Tổ đội farm rùa: tiến độ Thạch Quy biến dị lúc bắt đầu: ' + (prog0.cur == null ? 'không đọc được (' + prog0.src + ')' : prog0.cur + '/' + prog0.max + ' (nguồn: ' + prog0.src + ')') + (prog0.stage ? ' — ' + prog0.stage : ''));
+      if (prog0.cur != null && prog0.cur >= TURTLE_NEED) { log('Tổ đội farm rùa: đã đủ ' + TURTLE_NEED + ' Thạch Quy biến dị — không cần farm nữa'); stopTool('đã đủ 100 rùa biến dị'); return; }
+      if (prog0.cur == null) log('Tổ đội farm rùa: chưa đọc được tiến độ nhiệm vụ — game chỉ đếm rùa biến dị khi đang ở giai đoạn 36; tool vẫn farm và đọc lại tiến độ mỗi 10s, đọc được sẽ ghi rõ');
+      if (!partyStatus().inParty) log('Tổ đội: chưa có đội — tool tự chấp nhận lời mời khi có người mời; muốn có đội thì anh mời đồng đội (đứng gần ≤180px, bấm vào người chơi → "Mời vào tổ đội") hoặc chờ lời mời; nên lập đội ở làng/Bãi Đá rồi vào miếu (trong miếu là đất PK tự do). Chưa có đội tool vẫn farm một mình');
+      var ptIdx = 0;
+      async function gotoTurtlePoint() {
+        var pt = TURTLE_POINTS[ptIdx % TURTLE_POINTS.length];
+        setStatus('Farm rùa tại điểm (' + pt[0] + ',' + pt[1] + ') — Miếu Ông Trường Con Khu ' + TURTLE_ZONE);
+        await goToPath(runId, pt[0], pt[1], 1, 180000, 'điểm rùa (' + pt[0] + ',' + pt[1] + ')');
+        return pt;
+      }
+      async function enterTurtleMap() {
+        await ensureAuto(runId, false); // đi đường tắt Auto như luật cũ
+        await ensureRun(runId, true);
+        await ensureFly(runId, true);
+        await travelTo(runId, TURTLE_MAP);
+        var zOk = await ensureZone(runId, TURTLE_MAP, TURTLE_ZONE);
+        if (!zOk) log('Tổ đội farm rùa: không đổi được Khu ' + TURTLE_ZONE + ' — farm ở khu hiện tại (ghi rõ theo luật v1.26)');
+        await ensureCombatTrio(runId, 'farm rùa Miếu Ông Trường Con Khu ' + TURTLE_ZONE);
+        await gotoTurtlePoint();
+      }
+      await enterTurtleMap();
+      if (!alive(runId)) return;
+      snapshotCtx('rua', TURTLE_MAP, TURTLE_POINTS[0][0], TURTLE_POINTS[0][1], true, true, true);
+      log('Tổ đội farm rùa: bắt đầu farm — ' + partyStatusText() + '; xoay 13 điểm rùa (hồi sinh 25s/con), biến dị mai đỏ than HP ×20 đòn ×5');
+      var t0 = Date.now(), lastProgAt = 0, lastBeat = 0, lastPtAt = Date.now(), lastProg = prog0.cur;
+      while (alive(runId)) {
+        await sleep(1500);
+        if (!alive(runId)) return;
+        // Tự chấp nhận lời mời tổ đội (kể cả khi đang farm)
+        if (partyInviteVisible()) {
+          if (partyAcceptInvite()) {
+            await sleep(1500);
+            log('Tổ đội: sau khi chấp nhận — ' + partyStatusText());
+          }
+        }
+        if (isDowned()) {
+          await handleDeath(runId);
+          if (!alive(runId)) return;
+          log('Tổ đội farm rùa: đã hồi sinh — quay lại Miếu Ông Trường Con Khu ' + TURTLE_ZONE);
+          await enterTurtleMap();
+          if (!alive(runId)) return;
+          lastPtAt = Date.now();
+          continue;
+        }
+        if (await pkCheck(runId, {})) {
+          if (!alive(runId)) return;
+          log('Tổ đội farm rùa: đã tránh PK — quay lại Khu ' + TURTLE_ZONE + ' farm tiếp');
+          await ensureZone(runId, TURTLE_MAP, TURTLE_ZONE);
+          await ensureCombatTrio(runId, 'quay lại farm rùa sau tránh PK');
+          try { await gotoTurtlePoint(); } catch (e) { if (!alive(runId)) throw e; }
+          lastPtAt = Date.now();
+          continue;
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Tổ đội farm rùa: Khí Huyết dưới 35% (' + Math.round(hp * 100) + '%) — tắt Auto, dừng'); await ensureAuto(runId, false); if (S.flyingBelief) await ensureFly(runId, false); stopTool('Khí Huyết thấp'); return; }
+        var mm = readMapId();
+        if (mm && mm !== TURTLE_MAP) {
+          log('Tổ đội farm rùa: đã rời Miếu Ông Trường Con (map ' + (MAPS[mm] ? MAPS[mm].name : mm) + ') — quay lại');
+          await enterTurtleMap();
+          if (!alive(runId)) return;
+          lastPtAt = Date.now();
+          continue;
+        }
+        // Đọc tiến độ nhiệm vụ mỗi 10s
+        if (Date.now() - lastProgAt >= 10000) {
+          lastProgAt = Date.now();
+          var prog = turtleQuestProgress();
+          if (prog.cur != null && prog.cur !== lastProg) {
+            log('Tổ đội farm rùa: Thạch Quy biến dị ' + prog.cur + '/' + prog.max + ' (nguồn: ' + prog.src + ') — ' + partyStatusText());
+            lastProg = prog.cur;
+          }
+          if (prog.cur != null && prog.cur >= TURTLE_NEED) {
+            log('Tổ đội farm rùa: ĐÃ ĐỦ ' + TURTLE_NEED + ' Thạch Quy biến dị (' + prog.cur + '/' + prog.max + ') — dừng farm. Tổng thời gian phiên: ' + Math.round((Date.now() - t0) / 60000) + ' phút');
+            await ensureAuto(runId, false);
+            stopTool('đã đủ 100 rùa biến dị');
+            return;
+          }
+        }
+        // Xoay điểm rùa mỗi 75s (rùa hồi sinh 25s — xoay điểm để Auto luôn có mục tiêu)
+        if (Date.now() - lastPtAt >= 75000) {
+          ptIdx++;
+          lastPtAt = Date.now();
+          var npt = TURTLE_POINTS[ptIdx % TURTLE_POINTS.length];
+          log('Tổ đội farm rùa: chuyển điểm rùa (' + npt[0] + ',' + npt[1] + ')');
+          try { await gotoTurtlePoint(); } catch (e) { if (!alive(runId)) throw e; }
+          if (!alive(runId)) return;
+        }
+        if (Date.now() - lastBeat >= 60000) {
+          lastBeat = Date.now();
+          var progB = turtleQuestProgress();
+          log('Tổ đội farm rùa: đang farm… (đã farm ' + Math.round((Date.now() - t0) / 60000) + ' phút, Thạch Quy biến dị ' + (progB.cur == null ? 'chưa đọc được' : progB.cur + '/' + progB.max) + ', ' + partyStatusText() + ')');
+        }
+      }
+    })();
+  }
+
+  // ============ Nhiệm vụ chính (v1.13, lệnh Bui 17:43) ============
+  // Nguồn đọc: bảng nhiệm vụ của game — #quest-stage-full ("Giai đoạn N"), #quest-objectives li
+  // (span.q-chu = chữ mục tiêu, b.q-so = "cur/max", aria-label bắt đầu "Xong: " khi đã xong,
+  // data-di="nv"|"tong"). Bấm vào li → game tự dẫn đường tới đích (SceneWorld.diToiNhiemVu,
+  // đích theo giai đoạn {mapId, ids}); game báo "Kẹt đường — dừng tự đi"/"Không tìm được đường —
+  // dừng tự đi"/"Đang bận — xong việc trước mắt rồi hãy tự đi" qua caption khi không đi được.
+  // Tool: bấm li cho game dẫn đường, hụt thì tự tìm đường theo tên NPC/quái/map trong chữ mục tiêu;
+  // tới nơi thì đánh (Auto+Chạy+Bay)/hái (Tương Tác)/nói chuyện (Tương Tác + thoại) theo loại bước.
+  // Bước không nhận diện được → ghi nguyên văn mục tiêu rồi dừng, không đoán mò.
+  function readQuestState() {
+    var tracker = $('#quest-tracker');
+    var stageEl = $('#quest-stage-full') || $('#quest-stage');
+    var stage = stageEl ? (stageEl.textContent || '').trim() : '';
+    var hintEl = $('#quest-hint');
+    var hint = hintEl ? (hintEl.textContent || '').trim() : '';
+    var objs = [];
+    var lis = document.querySelectorAll('#quest-objectives li');
+    for (var i = 0; i < lis.length; i++) {
+      var li = lis[i];
+      var chu = li.querySelector('.q-chu');
+      var text = (chu ? chu.textContent : li.textContent || '').replace(/\s+/g, ' ').trim();
+      var so = li.querySelector('.q-so');
+      var cur = null, max = null;
+      if (so) { var m = (so.textContent || '').match(/(\d+)\s*\/\s*(\d+)/); if (m) { cur = +m[1]; max = +m[2]; } }
+      var done = /^Xong:/.test(li.getAttribute('aria-label') || '');
+      objs.push({ text: text, cur: cur, max: max, done: done, el: li, di: li.getAttribute('data-di') || 'nv' });
+    }
+    var hidden = !tracker || tracker.classList.contains('hidden');
+    return { stage: stage, hint: hint, objs: objs, hidden: hidden };
+  }
+  // Phân loại bước theo chữ mục tiêu thật trong mã client (Quest.objectives, 38 giai đoạn).
+  // Trả 'kill'|'gather'|'talk'|'go'|'item'|'unknown'.
+  // v1.26 (Bui 20:35 ngày 2026-11-26): trình tự HƯỚNG DẪN TÂN THỦ trích từ phim hoạt cảnh
+  // NhiemVuHuongDan ("nhiem_vu_hd", HoatCanh — phim vẽ bằng mã trong client, không phải tệp
+  // video; mục "Tân Thủ · Nhiệm vụ chính" 0:58 + cảnh gd0–gd23 + cảnh kết). Mỗi dòng = phụ đề
+  // (un) + dòng mục tiêu (dong) của cảnh tương ứng, tên/số đã đối chiếu quest-stages.json.
+  // Chuỗi cày tân thủ + chế độ Nhiệm vụ chính bám trình tự này cho giai đoạn 0–23 (giai đoạn 1
+  // guide gộp chung cảnh gd01 với giai đoạn 0); sau giai đoạn 23 giữ cơ chế chuỗi hiện tại.
+  var GUIDE_TAN_THU = {
+    0: 'Đọc Bia Đá Cổ Tự (hoặc hỏi Thầy Ông Nội) — bấm vào dòng nhiệm vụ, nhân vật tự đi tới nơi theo mũi tên vàng',
+    1: 'Đọc Bia Đá Cổ Tự hoặc hỏi Thầy Ông Nội về Đạo Dẫn thuật (guide gộp chung cảnh với giai đoạn 0)',
+    2: 'Hái 3 Tẩy Uế Thảo — khóm cỏ phát sáng ven suối',
+    3: 'Sắc Tẩy Tuỷ Thang ở đan lô trong sân nhà tranh',
+    4: 'Uống thang, đả tọa ở đài đá bên suối — Phàm Nhân lên Luyện Khí Tầng 1',
+    5: 'Gặp Huấn Sư Huynh, nhận Trúc Kiếm → diệt 5 yêu thú (bấm Auto để tự đánh)',
+    6: 'Diệt thêm 5 yêu thú, tìm 3 manh mối phát sáng → hiện dấu ? là quay về báo công Huấn Sư Huynh',
+    7: 'Theo lối mòn xuống Thảo Dược Cốc gặp Đại Phu (nhận hạt giống)',
+    8: 'Gieo hạt vào luống → múc nước ao, tưới từng luống → chín thì hái (Linh Diệp + Huyết Thảo)',
+    9: 'Sắc Linh Dược ở đan lô ngay trong vườn',
+    10: 'Uống Linh Dược ở đài đá trong vườn — đầy Đạo Hạnh thì phá quan lên Luyện Khí Tầng 2',
+    11: 'Dược Linh Thú vào phá vườn — hạ 2 con lấy Linh Thúy',
+    12: 'Luyện Tụ Khí Đan ở đan lô trong vườn',
+    13: 'Nuốt Tụ Khí Đan, phá quan Luyện Khí Tầng 3 → về Đại Phu báo công',
+    14: 'Nhận binh khí ở Đại Phu, luyện thêm Tụ Khí Đan lên Luyện Khí Tầng 4 → gặp Tàng Kinh Lão Nhân, ghép bí tịch pháp quyết (2 mảnh bí tịch ở Miếu Hoang)',
+    15: 'Dùng pháp quyết hạ Yêu Quái ở Miếu Hoang, nhặt 10 Yêu Cốt Vụn → về báo Tàng Kinh Lão Nhân',
+    16: 'Hạ Độc Đằng Yêu lấy 10 Độc Dịch → câu 1 Linh Ngư ở hồ → giao Đại Phu',
+    17: 'Đáp 5 câu Bách Khoa của Thầy Ông Nội (+300 Linh Thạch) → rút ở tủ sách Tàng Kinh Lão Nhân tới khi được 1 bí tịch mới',
+    18: 'Làm Dược Công cho Đại Phu, đổi hạt, trồng, luyện đan — mỗi cửa quan cần 1 Luyện Khí Đan (Tầng 5, Tầng 6)',
+    19: 'Đấu 1 trận Tán Tu Chiến Bảng → hái 10 Phong Linh Thảo ở Bãi Đá Hang Gió → 5 Nấm Linh Chi quanh làng',
+    20: 'Lên Luyện Khí Tầng 7, theo Lão Đạo Hành Cước → vào Hang Động mở Linh Dược Rương → mang 2 Huyền Thiết Khoáng về Thợ Rèn rèn binh khí',
+    21: 'Gây sát thương lên U Minh Cự Mãng ở Huyết Xích Cấm Địa → thắng 1 trận Đại Hội Tu Tiên (hoặc dự 3 kỳ)',
+    22: 'Mỗi cửa 1 Phá Cảnh Đan — lên tới Luyện Khí Tầng 10 → thắng Đại Phu một trận ở Sân Đấu',
+    23: 'Hạ 3 Xích Nhãn Ngưu hộ thể ở Long Uyên → góp sức hạ Thần Thú Xích Long → về báo Thợ Rèn'
+  };
+  function guideLine(stageNum) {
+    if (stageNum == null || stageNum < 0 || stageNum > 23) return null;
+    return GUIDE_TAN_THU[stageNum] || null;
+  }
+  function classifyObjective(text) {
+    var t = String(text || '').replace(/^Hoặc\s+/, ''); // mục tiêu thay thế ("Hoặc hỏi Thầy Ông Nội…") — phân loại theo động từ sau "Hoặc"
+    if (t) t = t.charAt(0).toUpperCase() + t.slice(1); // sau "Hoặc" động từ viết thường ("hỏi…") → viết hoa để khớp mẫu
+    // v1.41: 3 hệ thống mới — Vận Tiêu (giai đoạn 25 + "Giao Tiêu Kỳ Đỏ" giai đoạn 36),
+    // Huyền Không Cổ Viện/Tam Ma (giai đoạn 31), Tán Tu Chiến Bảng (giai đoạn 19)
+    if (/Vận Tiêu|Giao Tiêu/.test(t)) return 'vantieu';
+    if (/Huyền Không Cổ Viện|Tam Ma/.test(t)) return 'tamma';
+    if (/Chiến Bảng/.test(t)) return 'chienbang';
+    if (/^(Diệt|Hạ|Góp sức hạ|Góp sức đánh|Đánh lui|Gây sát thương)/.test(t)) return 'kill';
+    if (/\(hạ /.test(t) || /^Thu .+\(/.test(t)) return 'kill';
+    // v1.25 (Bui 20:20): mục tiêu trang bị — "Trang bị Phi Diệp vào ô Phi Hành" (giai đoạn 14),
+    // "Cầm Trúc Kiếm lên (Hành Trang → Trang Bị)" (giai đoạn 5) → tự mở túi đeo đúng món.
+    if (/^(Trang bị|Đeo|Mặc|Cầm)\s/.test(t)) return 'equip';
+    if (/^(Hái|Thu hái|Tìm manh mối)/.test(t)) return 'gather';
+    if (/^Rèn /.test(t)) return 'forge'; // v1.23: rèn vũ khí ở Thợ Rèn (giai đoạn 20)
+    // v1.25: sắc/luyện đan ở đan lô (giai đoạn 3/4/9/12/24/35/37) → tới đan lô thao tác
+    if (/^(Sắc|Luyện)\s/.test(t)) return 'brew';
+    if (/^Câu\s/.test(t)) return 'fish'; // v1.25: câu cá theo nhiệm vụ (giai đoạn 16 Linh Ngư)
+    if (/^(Gặp|Hỏi|Đọc|Quay về gặp|Nhận việc|Nhận |Trả lời|Về nộp|Nộp|Đổi |Uống |Đả tọa|Mở Linh Dược Rương)/.test(t)) return 'talk';
+    // v1.25 (Bui 20:20): "Hoàn tất rồi gặp Tàng Kinh Lão Nhân" + mọi dạng "...gặp <NPC>" giữa câu
+    if (/gặp\s+\S/.test(t)) return 'talk';
+    // v1.25: việc qua thoại NPC — ráp/rút bí tịch ở Tàng Kinh Lão Nhân (giai đoạn 14/17),
+    // đấu trận qua thoại, giao hàng/giao tiêu, gia nhập tông môn/chọn đạo
+    if (/^(Ráp bí tịch|Rút \d+ bí tịch|Đấu |Thắng .+ ở Sân Đấu|Giao hàng|Giao Tiêu|Gia nhập|Chọn một đạo)/.test(t)) return 'talk';
+    if (/^(Tới|Ra |Về |Qua |Đưa |Dẫn )/.test(t)) return 'go';
+    if (/^Có /.test(t)) return 'item';
+    // v1.25: mục tiêu do chuỗi cày cấp tự xử lý (Đạo Hạnh/đan/phá quan) hoặc dạng vật phẩm thuần
+    // → bỏ qua khi chọn bước nhiệm vụ, không dừng ở "bước lạ"
+    if (/^Tích (đủ|lại) Đạo Hạnh/.test(t)) return 'item';
+    if (/^(Đã phá quan|Phá quan|Đột phá một chiêu|Đạt |Sở hữu|Dùng |Đóng |Gom nguyên liệu|Hoàn thành 1 trận|Thắng 1 trận Đại Hội)/.test(t)) return 'item';
+    if (/đã về tay/.test(t)) return 'item'; // "Cả tủ bí tịch đã về tay — không còn quyển mới"
+    if (itemNameSetV125()[t]) return 'item'; // tên vật phẩm trần (Xuyên Sơn Giáp Phiến, Tẩy Tâm Đan…)
+    if (t === 'Tẩy Tâm Đan' || t === 'Mảnh giấy ám hiệu' || t === 'Hắc Phiếu') return 'item'; // tên vật phẩm trần chưa có trong bảng tên
+    return 'unknown';
+  }
+  var _itemNameSetV125 = null;
+  function itemNameSetV125() {
+    if (!_itemNameSetV125) {
+      _itemNameSetV125 = {};
+      Object.keys(ITEM_NAMES_V123).forEach(function (id) { _itemNameSetV125[ITEM_NAMES_V123[id]] = id; });
+    }
+    return _itemNameSetV125;
+  }
+  function questKindLabel(kind) {
+    return kind === 'kill' ? 'đánh quái' : kind === 'gather' ? 'thu hái' : kind === 'talk' ? 'nói chuyện/tương tác' : kind === 'go' ? 'di chuyển tới nơi' : kind === 'forge' ? 'rèn đồ ở Thợ Rèn' : kind === 'equip' ? 'trang bị vật phẩm' : kind === 'brew' ? 'sắc/luyện đan ở đan lô' : kind === 'fish' ? 'câu cá' : kind === 'vantieu' ? 'Vận Tiêu (kéo xe giao hàng)' : kind === 'tamma' ? 'Huyền Không Cổ Viện (Tam Ma)' : kind === 'chienbang' ? 'Tán Tu Chiến Bảng' : kind;
+  }
+  // v1.45 (Bui bổ sung 06:39 ngày 2026-11-27 "nhiệm vụ chính phải logic tự suy diễn tự làm"):
+  // suy diễn từ nguyên văn mục tiêu (#quest-objectives): loại việc + đích (NPC/quái/vật/map)
+  // + số lượng — tra dữ liệu game đã nhúng (MAPS: npcs/monsterPoints/farmCluster; QUEST_STAGES:
+  // điểm làm việc p.m/p.i; ITEM_NAMES_V123/QUEST_ITEM_SOURCES: vật phẩm + nguồn quái rơi).
+  // Ưu tiên chữ mục tiêu hiện tại (mục tiêu động theo bước cũng suy diễn được); dữ liệu giai đoạn
+  // tĩnh chỉ dự phòng khi chữ thiếu đích. Chỉ trả kind 'unknown' khi không suy ra được đích.
+  function inferMonsterInText(text) {
+    var t = String(text || '');
+    var best = null;
+    Object.keys(MAPS).forEach(function (mid) {
+      var pts = (MAPS[mid].monsterPoints || []).slice();
+      if (MAPS[mid].farmCluster && MAPS[mid].farmCluster.name) pts.push({ name: MAPS[mid].farmCluster.name, tx: MAPS[mid].farmCluster.tx, ty: MAPS[mid].farmCluster.ty });
+      pts.forEach(function (p) {
+        var nm = String(p.name || '').split(' · ')[0];
+        if (nm.length >= 3 && t.indexOf(nm) >= 0 && (!best || nm.length > best.name.length)) best = { type: 'monster', name: nm, mapId: mid, tx: p.tx, ty: p.ty };
+      });
+    });
+    return best;
+  }
+  function inferItemInText(text) {
+    var t = String(text || '');
+    var best = null;
+    Object.keys(ITEM_NAMES_V123).forEach(function (id) {
+      var nm = ITEM_NAMES_V123[id];
+      if (nm.length >= 3 && t.indexOf(nm) >= 0 && (!best || nm.length > best.name.length)) best = { type: 'item', name: nm, itemId: id };
+    });
+    if (!best) {
+      for (var i = 0; i < QUEST_ITEM_SOURCES.length; i++) {
+        if (t.indexOf(QUEST_ITEM_SOURCES[i].key) >= 0) { best = { type: 'item', name: QUEST_ITEM_SOURCES[i].key, itemId: QUEST_ITEM_SOURCES[i].item, monster: QUEST_ITEM_SOURCES[i].monster }; break; }
+      }
+    }
+    return best;
+  }
+  function inferMapInText(text) {
+    var t = String(text || '');
+    var names = Object.keys(NAME2ID).sort(function (a, b) { return b.length - a.length; });
+    for (var i = 0; i < names.length; i++) if (t.indexOf(names[i]) >= 0) return { type: 'map', name: names[i], mapId: NAME2ID[names[i]] };
+    return null;
+  }
+  function inferObjective(obj, stageData) {
+    var text = String((obj && obj.text) || '');
+    var out = { kind: null, target: null, points: [], qtyCur: (obj && obj.cur != null) ? obj.cur : null, qtyMax: (obj && obj.max != null) ? obj.max : null, summary: '', missing: '' };
+    var qtyM = text.match(/(\d+)\s*(con|cái|tai|ngọn|cành|mảnh|quyển|câu|trận|chuyến|lượt|viên|lọ|bình|khóm|gói|bó)/);
+    if (out.qtyMax == null && qtyM) out.qtyMax = +qtyM[1];
+    var npc = questNpcForObjective(text, stageData);
+    var mon = inferMonsterInText(text);
+    var item = inferItemInText(text);
+    var mapT = inferMapInText(text);
+    if (stageData && stageData.p && stageData.p.i && stageData.p.i.length) {
+      out.points = stageData.p.i.map(function (p) { return { id: p[0], tx: p[1], ty: p[2], mapId: stageData.p.m }; });
+    }
+    var kind = classifyObjective(text);
+    if (kind === 'unknown') {
+      if (/(hạ|diệt|đánh|giết|gây sát thương)/i.test(text) && mon) kind = 'kill';
+      else if (/(hái|thu|nhặt|tìm|gom|chặt|đào)/i.test(text) && (item || out.points.length)) kind = 'gather';
+      else if (npc && /(gặp|hỏi|nộp|giao|báo|về|tới|ra|qua|đưa|dẫn|nhận|trả|đổi|uống|mở)/i.test(text)) kind = 'talk';
+      else if (item) kind = 'item';
+      else if (mapT) kind = 'go';
+      else if (mon) kind = 'kill';
+      else if (npc) kind = 'talk';
+    }
+    out.kind = kind;
+    if (kind === 'kill') out.target = mon || (item && item.monster ? inferMonsterInText(item.monster) : null);
+    else if (kind === 'talk' || kind === 'go') out.target = npc ? { type: 'npc', name: npc.npc.name, mapId: npc.mapId, tx: npc.npc.tx, ty: npc.npc.ty } : mapT;
+    else if (kind === 'gather') out.target = item || (out.points.length ? { type: 'point', name: out.points[0].id, mapId: out.points[0].mapId, tx: out.points[0].tx, ty: out.points[0].ty } : null);
+    else if (kind === 'item') out.target = item;
+    var tgtTxt = out.target ? (out.target.type === 'npc' ? 'NPC ' + out.target.name + ' (' + out.target.tx + ',' + out.target.ty + ') map ' + (MAPS[out.target.mapId] ? MAPS[out.target.mapId].name : out.target.mapId)
+      : out.target.type === 'monster' ? 'quái ' + out.target.name + ' (' + out.target.tx + ',' + out.target.ty + ') map ' + (MAPS[out.target.mapId] ? MAPS[out.target.mapId].name : out.target.mapId)
+      : out.target.type === 'item' ? 'vật phẩm ' + out.target.name
+      : out.target.type === 'map' ? 'map ' + out.target.name
+      : 'điểm ' + out.target.name + ' (' + out.target.tx + ',' + out.target.ty + ')') : '(chưa rõ đích)';
+    out.summary = questKindLabel(kind) + ', đích ' + tgtTxt + ', số lượng ' + (out.qtyCur != null ? out.qtyCur : '?') + '/' + (out.qtyMax != null ? out.qtyMax : '?') + (out.points.length > 1 ? ', ' + out.points.length + ' điểm làm việc của giai đoạn' : '');
+    if (kind === 'unknown' || !out.target) out.missing = 'đã suy diễn loại việc=' + kind + '; thiếu: ' + (!out.target ? 'không trích được NPC/quái/vật/map từ chữ mục tiêu và dữ liệu giai đoạn không có điểm làm việc' : 'không rõ loại việc');
+    return out;
+  }
+  // v1.43 (Bui báo 04:29 ngày 2026-11-27 "Nhân vật không tự đến chỗ npc làm nhiệm vụ chính"):
+  // caption game báo khi tự đi (diNV) không bắt đầu được / bị dừng giữa đường — tra từ mã
+  // client (diToiNhiemVu + Bt): "Đang bận — xong việc trước mắt rồi hãy tự đi", "Việc này
+  // không có chỗ cố định để tự đi tới", "Đã ở đúng nơi — việc này làm quanh đây", "Từ đây
+  // không có đường đi bộ tới nơi làm nhiệm vụ", "Kẹt đường — dừng tự đi", "Không tìm được
+  // đường — dừng tự đi", "Việc đã đổi — dừng tự đi", "Chưa qua được cửa này — dừng tự đi",
+  // "Chưa thấy chỗ làm — có thể đang mọc lại". Bản cũ chỉ nhận diện 2 mẫu nên chờ đủ 120s.
+  var QUEST_NAV_FAIL_RE = /dừng tự đi|Đang bận|không có chỗ cố định|Đã ở đúng nơi|không có đường đi bộ|Kẹt đường|Không tìm được đường|Việc đã đổi|Chưa qua được cửa|Chưa thấy chỗ làm/;
+  function questNavFailCaption(cap) { return !!cap && QUEST_NAV_FAIL_RE.test(cap); }
+  // Sau khi bấm mục tiêu: nhân vật có BẮT ĐẦU di chuyển trong ms không (đổi ô hoặc đổi map)?
+  // Caption từ chối của game hiện → coi như không bắt đầu được.
+  function waitQuestMoveStart(runId, ms) {
+    return (async function () {
+      var p0 = readPos(), m0 = readMapId(), t0 = Date.now();
+      while (alive(runId) && Date.now() - t0 < ms) {
+        if (questNavFailCaption(readCaption())) return false;
+        var p = readPos(), m = readMapId();
+        if (m && m0 && m !== m0) return true;
+        if (p && p0 && (p.x !== p0.x || p.y !== p0.y)) return true;
+        if (!p0 && p) p0 = p;
+        if (!m0 && m) m0 = m;
+        await sleep(300);
+      }
+      return false;
+    })();
+  }
+  // Tra NPC đích của một mục tiêu nhiệm vụ: (1) tên NPC xuất hiện trong chữ mục tiêu
+  // (khớp tên dài nhất trước, tránh khớp nhầm tên ngắn nằm trong tên dài); (2) điểm NPC
+  // của giai đoạn (stageData.p.i[0] có id trùng NPC trong MAPS của map giai đoạn).
+  function questNpcForObjective(text, stageData) {
+    var t = String(text || '');
+    var best = null;
+    Object.keys(MAPS).forEach(function (mid) {
+      (MAPS[mid].npcs || []).forEach(function (n) {
+        if (n.name && t.indexOf(n.name) >= 0 && (!best || n.name.length > best.npc.name.length)) best = { mapId: mid, npc: n };
+      });
+    });
+    if (best) return best;
+    if (stageData && stageData.p && stageData.p.m && stageData.p.i && stageData.p.i.length) {
+      var mid2 = stageData.p.m, pt = stageData.p.i[0];
+      var npcs = (MAPS[mid2] && MAPS[mid2].npcs) || [];
+      for (var i = 0; i < npcs.length; i++) if (npcs[i].id === pt[0]) return { mapId: mid2, npc: npcs[i] };
+    }
+    return null;
+  }
+  // Nhân vật có đang đứng kề ô NPC đích (cùng map, Chebyshev ≤ 1) không?
+  function atQuestNpc(target) {
+    if (!target || readMapId() !== target.mapId) return false;
+    var p = readPos();
+    return !!p && Math.max(Math.abs(target.npc.tx - p.x), Math.abs(target.npc.ty - p.y)) <= 1;
+  }
+  // Tự tới đúng chỗ NPC đứng: qua map → đứng ô kề NPC → hạ cánh → kiểm chứng kề ô +
+  // nút Tương Tác hiện; chưa hiện thì thử các ô kề trống khác quanh NPC.
+  function gotoQuestNpc(runId, target, objText) {
+    return (async function () {
+      var npc = target.npc, mapName = MAPS[target.mapId] ? MAPS[target.mapId].name : target.mapId;
+      log('Đang tới chỗ NPC ' + npc.name + ' (' + npc.tx + ',' + npc.ty + ') map ' + mapName + '…');
+      setStatus('Nhiệm vụ chính: đang tới chỗ NPC ' + npc.name + '…');
+      try {
+        if (readMapId() !== target.mapId) await travelTo(runId, target.mapId);
+        if (!alive(runId)) return false;
+        await standNextTo(runId, npc.tx, npc.ty, npc.name);
+        if (!alive(runId)) return false;
+        await ensureFly(runId, false); // hạ cánh, đứng cạnh NPC mới tương tác được
+        for (var tries = 0; tries < 4; tries++) {
+          if (!alive(runId)) return false;
+          var p = readPos();
+          if (atQuestNpc(target) && interactLabel() === 'Tương Tác') {
+            log('Đã tới chỗ NPC ' + npc.name + ' tại (' + (p ? p.x : '?') + ',' + (p ? p.y : '?') + ') — nút Tương Tác đã hiện');
+            return true;
+          }
+          if (tries === 0) await sleep(1200); // chờ nút đổi nhãn sau khi hạ cánh
+          else {
+            // thử ô kề trống khác quanh NPC
+            var moved = false;
+            var dirs = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+            for (var d = 0; d < dirs.length && !moved; d++) {
+              var ax = npc.tx + dirs[d][0], ay = npc.ty + dirs[d][1];
+              if (p && p.x === ax && p.y === ay) continue;
+              var grid = gridFor(target.mapId, false);
+              if (grid && gridBlocked(grid, ax, ay)) continue;
+              try { await goToPath(runId, ax, ay, 0, 60000, 'ô kề ' + npc.name); moved = true; } catch (e) { if (!alive(runId)) throw e; }
+            }
+            if (!moved) break;
+            await sleep(800);
+          }
+        }
+        var p2 = readPos(), m2 = readMapId();
+        log('Chưa tới được chỗ NPC ' + npc.name + ' — đang ở (' + (p2 ? p2.x : '?') + ',' + (p2 ? p2.y : '?') + ') map ' + (MAPS[m2] ? MAPS[m2].name : m2) + ', nút hiện tại: "' + interactLabel() + '" (mục tiêu: "' + objText + '")');
+        return false;
+      } catch (e2) {
+        if (!alive(runId)) throw e2;
+        log('Tới chỗ NPC ' + npc.name + ' lỗi: ' + e2.message);
+        return false;
+      }
+    })();
+  }
+  // Chờ game tự dẫn đường xong: đã di chuyển rồi đứng yên 2,5s → 'arrived';
+  // caption báo dừng/từ chối tự đi → 'caption:<chữ>'; đánh trả làm game hủy tự đi →
+  // 'interrupted'; không nhúc nhích quá 10s → 'nomove' (bỏ chờ sớm, không đốt đủ timeout).
+  function waitQuestArrival(runId, timeoutMs) {
+    return (async function () {
+      var t0 = Date.now(), lastPos = readPos(), lastMove = Date.now(), moved = false, lastMap = readMapId();
+      while (alive(runId) && Date.now() - t0 < timeoutMs) {
+        var cap = readCaption();
+        if (questNavFailCaption(cap)) return 'caption:' + cap;
+        // v1.24: bị quái đánh lúc game tự dẫn đường → đánh trả. v1.43: lái đánh trả làm
+        // game hủy tự đi (Input.tap/hasManualMove) nên coi như tự đi đã bị ngắt — nơi gọi
+        // sẽ tự tìm đường tiếp thay vì chờ trên một tự đi đã chết.
+        if (await fightBackCheck(runId, 'tự đi nhiệm vụ')) return 'interrupted';
+        var p = readPos(), mm = readMapId();
+        if (mm && lastMap && mm !== lastMap) { moved = true; lastMove = Date.now(); }
+        if (mm) lastMap = mm;
+        if (p && lastPos && (p.x !== lastPos.x || p.y !== lastPos.y)) { moved = true; lastMove = Date.now(); }
+        if (p) lastPos = p;
+        if (moved && Date.now() - lastMove > 2500) return 'arrived';
+        if (!moved && Date.now() - t0 > 10000) return 'nomove';
+        await sleep(500);
+      }
+      return moved ? 'arrived' : 'nomove';
+    })();
+  }
+  // Dự phòng khi game không tự dẫn được: tìm tên NPC/quái/map trong chữ mục tiêu theo dữ liệu nhúng.
+  function questFallbackNav(runId, text) {
+    return (async function () {
+      var t = String(text || '');
+      var mapIds = Object.keys(MAPS);
+      for (var i = 0; i < mapIds.length; i++) {
+        var npcs = MAPS[mapIds[i]].npcs || [];
+        for (var j = 0; j < npcs.length; j++) {
+          if (npcs[j].name && t.indexOf(npcs[j].name) >= 0) {
+            log('Dự phòng: mục tiêu nhắc NPC ' + npcs[j].name + ' ở ' + MAPS[mapIds[i]].name + ' — tự tới đó');
+            await travelTo(runId, mapIds[i]);
+            await standNextTo(runId, npcs[j].tx, npcs[j].ty, npcs[j].name);
+            return true;
+          }
+        }
+      }
+      for (var a = 0; a < mapIds.length; a++) {
+        var pts = MAPS[mapIds[a]].monsterPoints || [];
+        for (var b = 0; b < pts.length; b++) {
+          var shortName = String(pts[b].name || '').split(' · ')[0];
+          if (shortName && shortName.length >= 3 && t.indexOf(shortName) >= 0) {
+            log('Dự phòng: mục tiêu nhắc quái ' + shortName + ' ở ' + MAPS[mapIds[a]].name + ' — tự tới bãi');
+            await travelTo(runId, mapIds[a]);
+            await goToPath(runId, pts[b].tx, pts[b].ty, 1, 180000, shortName);
+            return true;
+          }
+        }
+      }
+      var names = Object.keys(NAME2ID).sort(function (x, y) { return y.length - x.length; });
+      for (var c = 0; c < names.length; c++) {
+        if (t.indexOf(names[c]) >= 0) {
+          log('Dự phòng: mục tiêu nhắc map ' + names[c] + ' — tự tới đó');
+          await travelTo(runId, NAME2ID[names[c]]);
+          return true;
+        }
+      }
+      return false;
+    })();
+  }
+  // Bước đánh quái: bật Auto+Chạy+Bay, chờ mục tiêu xong/đổi. Trả 'done'|'hp'|'timeout'.
+  function questFight(runId, obj) {
+    return (async function () {
+      await ensureCombatTrio(runId, 'nhiệm vụ chính: ' + obj.text);
+      var pos0 = readPos();
+      snapshotCtx('quest', readMapId(), pos0 ? pos0.x : null, pos0 ? pos0.y : null, true, true, true);
+      // Bước boss (v1.14): bấm kỹ năng theo nhịp song song Auto
+      var isBossStep = /Xích Long|Linh Hổ|Nhện Bạch Ngọc|Ma Báo|Thần Thú|boss/i.test(obj.text);
+      var rot = isBossStep ? skillRotation(runId, function () { return true; }) : null;
+      if (rot) log('Nhiệm vụ: bước boss — bật bấm kỹ năng theo nhịp song song Auto');
+      function finish(r) { if (rot) rot.stop(); return r; }
+      var t0 = Date.now(), lastLog = 0, LIMIT = 20 * 60 * 1000;
+      while (alive(runId)) {
+        if (isDowned()) { if (rot) rot.stop(); await handleDeath(runId); if (!alive(runId)) return finish('done'); if (isBossStep) rot = skillRotation(runId, function () { return true; }); }
+        var st = readQuestState();
+        var still = null;
+        for (var i = 0; i < st.objs.length; i++) if (st.objs[i].text === obj.text) { still = st.objs[i]; break; }
+        if (!still || still.done) { log('Nhiệm vụ: bước "' + obj.text + '" đã xong'); return finish('done'); }
+        if (still.max != null && still.cur != null && still.cur >= still.max) { log('Nhiệm vụ: bước "' + obj.text + '" đủ số (' + still.cur + '/' + still.max + ')'); return finish('done'); }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% khi làm nhiệm vụ — dừng'); return finish('hp'); }
+        if (Date.now() - lastLog > 60000) {
+          lastLog = Date.now();
+          log('Nhiệm vụ: đang đánh "' + obj.text + '"' + (still.max != null ? ' (' + still.cur + '/' + still.max + ')' : '') + ' — đã ' + Math.round((Date.now() - t0) / 60000) + ' phút');
+        }
+        if (Date.now() - t0 > LIMIT) { log('Nhiệm vụ: đánh 20 phút mà bước "' + obj.text + '" chưa xong (quái/boss có thể chưa xuất hiện) — dừng'); return finish('timeout'); }
+        await sleep(5000);
+      }
+      return finish('done');
+    })();
+  }
+  // Bước thu hái: bấm Tương Tác tại điểm, lặp tới khi đủ số/xong (tối đa 12 lần).
+  function questGather(runId, obj) {
+    return (async function () {
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      // v1.26 (hướng dẫn tân thủ giai đoạn 8): thu hái trong Vườn Cá Nhân phải gieo hạt →
+      // múc nước ao → tưới từng luống → chín thì hái — bấm Tương Tác lặp không gieo/tưới được,
+      // nên ở map vườn thì chạy trọn vòng vườn (gardenRound) rồi kiểm lại mục tiêu.
+      if (readMapId() === 'vuon_ca_nhan') {
+        log('Nhiệm vụ: bước thu hái trong vườn — theo hướng dẫn tân thủ giai đoạn 8: gieo hạt → múc nước → tưới → hái (vòng vườn trọn vẹn)');
+        // v1.46 (Bui lệnh 06:48 ngày 2026-11-27 "Nhiệm vụ cần đổi hạt thì phải chọn làm nhiệm
+        // vụ dược trước"): suy thảo cần hái từ chữ mục tiêu (tên dài nhất thắng, tránh "Huyết
+        // Thảo" khớp nhầm trong "Long Huyết Thảo") — túi hết hạt + vườn chưa có cây đang lớn
+        // thì đổi gói hạt chứa hạt đó trước (thiếu điểm Dược Công thì làm Dược Công trước),
+        // rồi mới vòng vườn gieo đúng hạt đó.
+        var herbNeed = null;
+        Object.keys(HERB_SEED).forEach(function (hid) {
+          var nm = itemNameV123(hid);
+          if (obj.text.indexOf(nm) >= 0 && (!herbNeed || nm.length > itemNameV123(herbNeed).length)) herbNeed = hid;
+        });
+        var wantSeedsQ = null;
+        if (herbNeed) {
+          wantSeedsQ = [HERB_SEED[herbNeed]];
+          var esr = await ensureSeedsForHerbs(runId, [herbNeed], obj.text);
+          if (!alive(runId)) return;
+          if (esr === 'noDC') log('Nhiệm vụ: chưa đổi được hạt cho "' + obj.text + '" (thiếu Dược Công/hết lượt hôm nay) — vòng vườn này chỉ hái/tưới cây sẵn có');
+          else if (esr === 'locked') log('Nhiệm vụ: gói hạt cho "' + obj.text + '" chưa mở theo cảnh giới — vòng vườn này chỉ hái/tưới cây sẵn có');
+          else if (esr !== 'ok') log('Nhiệm vụ: đổi hạt cho "' + obj.text + '" chưa xong (' + esr + ') — vòng vườn này chỉ hái/tưới cây sẵn có');
+        }
+        var gr = await gardenRound(runId, wantSeedsQ);
+        if (!alive(runId)) return;
+        var stG = readQuestState();
+        var stillG = null;
+        for (var gj = 0; gj < stG.objs.length; gj++) if (stG.objs[gj].text === obj.text) { stillG = stG.objs[gj]; break; }
+        if (!stillG || stillG.done || (stillG.max != null && stillG.cur != null && stillG.cur >= stillG.max)) { log('Nhiệm vụ: bước "' + obj.text + '" đã xong sau vòng vườn'); return; }
+        log('Nhiệm vụ: vòng vườn xong (hái ' + gr.harvested + ', gieo ' + gr.sown + ', tưới ' + gr.watered + ') — bước "' + obj.text + '" chưa đủ, vòng sau quay lại khi cây chín');
+        return;
+      }
+      for (var i = 0; i < 12; i++) {
+        if (!alive(runId)) return;
+        // v1.24: bị quái đánh lúc thu hái → đánh trả rồi hái tiếp
+        await fightBackCheck(runId, 'thu hái nhiệm vụ');
+        var st = readQuestState();
+        var still = null;
+        for (var j = 0; j < st.objs.length; j++) if (st.objs[j].text === obj.text) { still = st.objs[j]; break; }
+        if (!still || still.done || (still.max != null && still.cur != null && still.cur >= still.max)) { log('Nhiệm vụ: bước "' + obj.text + '" đã xong'); return; }
+        var pressed = await pressInteractBtn(runId, 6000, obj.text);
+        if (!pressed) { log('Nhiệm vụ: không thấy nút Tương Tác cho bước "' + obj.text + '"'); return; }
+        await sleep(2500);
+        var cap = readCaption();
+        if (cap) log('Nhiệm vụ: caption "' + cap + '"');
+      }
+      log('Nhiệm vụ: đã thử thu hái 12 lần cho bước "' + obj.text + '"');
+    })();
+  }
+  // v1.45: thu hái theo từng điểm làm việc của giai đoạn (suy diễn từ dữ liệu giai đoạn) —
+  // tới từng điểm, bấm Tương Tác, kiểm chứng tiến độ qua #quest-objectives sau từng điểm.
+  function questGatherPoints(runId, obj, points) {
+    return (async function () {
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      for (var i = 0; i < points.length; i++) {
+        if (!alive(runId)) return;
+        var st0 = readQuestState();
+        var cur0 = null;
+        for (var j = 0; j < st0.objs.length; j++) if (st0.objs[j].text === obj.text) { cur0 = st0.objs[j]; break; }
+        if (!cur0 || cur0.done || (cur0.max != null && cur0.cur != null && cur0.cur >= cur0.max)) { log('Nhiệm vụ: bước "' + obj.text + '" đã xong'); return; }
+        var pt = points[i];
+        log('Nhiệm vụ: thu hái tại điểm ' + pt.id + ' (' + pt.tx + ',' + pt.ty + ') map ' + (MAPS[pt.mapId] ? MAPS[pt.mapId].name : pt.mapId) + ' — tiến độ ' + (cur0.cur != null ? cur0.cur : '?') + '/' + (cur0.max != null ? cur0.max : '?'));
+        try { await travelTo(runId, pt.mapId); await standNextTo(runId, pt.tx, pt.ty, pt.id); } catch (e) { if (!alive(runId)) throw e; log('Tới điểm thu hái lỗi: ' + e.message); continue; }
+        await fightBackCheck(runId, 'thu hái nhiệm vụ');
+        for (var k = 0; k < 4; k++) {
+          if (!alive(runId)) return;
+          var pressed = await pressInteractBtn(runId, 6000, pt.id);
+          if (!pressed) { log('Nhiệm vụ: không thấy nút Tương Tác tại điểm ' + pt.id); break; }
+          await sleep(2500);
+          var st1 = readQuestState();
+          var cur1 = null;
+          for (var j2 = 0; j2 < st1.objs.length; j2++) if (st1.objs[j2].text === obj.text) { cur1 = st1.objs[j2]; break; }
+          if (cur1) log('Nhiệm vụ: tiến độ sau điểm ' + pt.id + ': ' + (cur1.cur != null ? cur1.cur : '?') + '/' + (cur1.max != null ? cur1.max : '?'));
+          if (!cur1 || cur1.done || (cur1.max != null && cur1.cur != null && cur1.cur >= cur1.max)) return;
+        }
+      }
+    })();
+  }
+  // Bước nói chuyện/trả nhiệm vụ (v1.24): bấm Tương Tác → handleQuestDialog xử lý trọn thoại
+  // (tự báo công/trả nhiệm vụ, tự chọn trang bị/bí tịch, thoại 1 nút thì bấm Lui Bước đi tiếp)
+  // → kiểm chứng giai đoạn/mục tiêu/cờ đã đổi.
+  function questTalk(runId, obj, interactTimeoutMs) {
+    return (async function () {
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      var before = readQuestState();
+      var beforeStage = questStageNum(before.stage);
+      var beforeFlags = readQuestFlags();
+      if (!dialogOpen()) {
+        var pressed = await pressInteractBtn(runId, interactTimeoutMs || 8000, obj.text);
+        if (!pressed) {
+          // v1.43: ghi rõ đang đứng đâu khi hụt Tương Tác (chưa tới chỗ NPC / chưa hạ cánh…)
+          var pq = readPos(), mq = readMapId();
+          log('Nhiệm vụ: chưa bấm được Tương Tác cho bước "' + obj.text + '" — đang ở (' + (pq ? pq.x : '?') + ',' + (pq ? pq.y : '?') + ') map ' + (MAPS[mq] ? MAPS[mq].name : mq) + ', nút hiện tại: "' + interactLabel() + '"');
+          return;
+        }
+      }
+      var res = await handleQuestDialog(runId, {});
+      if (!alive(runId)) return;
+      if (!res.clicked.length) { log('Nhiệm vụ: đã bấm Tương Tác (không mở thoại) cho bước "' + obj.text + '"'); return; }
+      await sleep(800);
+      var after = readQuestState();
+      var afterStage = questStageNum(after.stage);
+      var afterFlags = readQuestFlags();
+      var still = null;
+      for (var i = 0; i < after.objs.length; i++) if (after.objs[i].text === obj.text) { still = after.objs[i]; break; }
+      if (afterStage != null && beforeStage != null && afterStage > beforeStage) log('Nhiệm vụ: đã báo công/trả nhiệm vụ — giai đoạn ' + beforeStage + ' → ' + afterStage);
+      else if (!still || still.done) log('Nhiệm vụ: bước "' + obj.text + '" đã xong sau khi xử lý thoại');
+      else log('Nhiệm vụ: đã xử lý thoại (' + res.clicked.join(' → ') + ') — bước "' + obj.text + '" chưa đổi, vòng sau kiểm lại');
+      // v1.26 (hướng dẫn tân thủ giai đoạn 19/22): thoại đưa vào đài đấu (Tán Tu Chiến Bảng /
+      // Sân Đấu) thì đánh trong đài tới khi mục tiêu xong hoặc ra khỏi đài — nói chuyện xong
+      // không tự thắng được trận.
+      var arenaMap = readMapId();
+      if (arenaMap === 'chien_bang_dai' || arenaMap === 'san_dau_vip') {
+        log('Nhiệm vụ: đã vào đài đấu (' + (MAPS[arenaMap] ? MAPS[arenaMap].name : arenaMap) + ') — bật đủ Bay + Chạy + Auto đánh tới khi bước "' + obj.text + '" xong');
+        await ensureCombatTrio(runId, 'đài đấu nhiệm vụ: ' + obj.text);
+        var arenaT0 = Date.now();
+        while (alive(runId) && Date.now() - arenaT0 < 4 * 60000) {
+          if (isDowned()) { await handleDeath(runId); if (!alive(runId)) return; break; }
+          var stA = readQuestState();
+          var stillA = null;
+          for (var ai = 0; ai < stA.objs.length; ai++) if (stA.objs[ai].text === obj.text) { stillA = stA.objs[ai]; break; }
+          if (!stillA || stillA.done || (stillA.max != null && stillA.cur != null && stillA.cur >= stillA.max)) { log('Nhiệm vụ: bước đài đấu "' + obj.text + '" đã xong'); break; }
+          var mmA = readMapId();
+          if (mmA !== 'chien_bang_dai' && mmA !== 'san_dau_vip') { log('Nhiệm vụ: đã ra khỏi đài đấu (map ' + (mmA || '?') + ')'); break; }
+          var hpA = readHpPct();
+          if (hpA != null && hpA < 0.35) { log('Nhiệm vụ: Khí Huyết dưới 35% trong đài đấu — dừng đánh'); break; }
+          await sleep(3000);
+        }
+        await ensureAuto(runId, false);
+        if (!alive(runId)) return;
+      }
+      // Vừa nhận binh khí từ thoại (giai đoạn 14): kiểm mặc đồ ngay nếu đã đủ cảnh giới (v1.24)
+      if (res.pickedWeapon && afterFlags.dai_phu_binh_khi && afterFlags.dai_phu_binh_khi !== beforeFlags.dai_phu_binh_khi) {
+        log('Nhiệm vụ: đã nhận binh khí ' + itemNameV123(afterFlags.dai_phu_binh_khi) + ' — kiểm mặc đồ ngay');
+        var ri = readRealmInfo();
+        if (ri && ri.tier >= 3) {
+          try { await autoEquipBetter(runId); } catch (e) { if (!alive(runId)) throw e; log('Mặc đồ: lỗi (' + e.message + ') — bỏ qua'); }
+        }
+      }
+    })();
+  }
+  // Bước đáp Bách Khoa (v1.26, hướng dẫn tân thủ giai đoạn 17): thoại Thầy Ông Nội hỏi 5 câu
+  // về vật phẩm/nhiệm vụ/bản đồ/quái đã gặp — mã client ghi "sai không bị phạt", tiến độ lưu ở
+  // cờ bach_khoa_17_1_progress (BACH_KHOA_NEED=5, thưởng 300 Linh Thạch). Tool thử từng đáp án
+  // trong thoại (không lặp đáp án đã thử cho cùng một câu), đúng thì tiến độ tăng. Trả 'done'|'fail'.
+  // v1.44 (Bui báo 05:42 ngày 2026-11-27, kèm ảnh): nhân vật đứng ở Thảo Dược Cốc mà bấm
+  // Tương Tác tại chỗ — Thầy Ông Nội ở Tản Viên (9,10) nên thoại không mở → 'stuck'. Nay:
+  // (1) tới đúng chỗ Thầy Ông Nội bằng gotoQuestNpc trước khi bấm Tương Tác; (2) theo đúng
+  // cơ chế mã client (Pe): thoại mở đầu chọn "Bắt đầu Hỏi Đạo", sai thì game hiện
+  // "Gợi ý: <đáp án đúng>." + nút "Thử lại câu này" — tool đọc gợi ý rồi chọn đúng đáp án đó;
+  // không bao giờ chọn "Mở Bách Khoa Tu Tiên" làm đáp án; (3) đủ 5/5 xử lý thoại thưởng
+  // 300 Linh Thạch qua handleQuestDialog thay vì đóng ngang.
+  function questBachKhoa(runId, obj) {
+    return (async function () {
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      function prog() { return Number(readQuestFlags().bach_khoa_17_1_progress) || 0; }
+      function objDone() {
+        var st = readQuestState();
+        for (var i = 0; i < st.objs.length; i++) {
+          var o = st.objs[i];
+          if (o.text === obj.text) return o.done || (o.max != null && o.cur != null && o.cur >= o.max);
+        }
+        return true; // mục tiêu không còn trong bảng = đã xong/đổi giai đoạn
+      }
+      function bkFailWhy(why) {
+        var p = readPos(), m = readMapId();
+        log('Bách Khoa: ' + why + ' — đang ở (' + (p ? p.x : '?') + ',' + (p ? p.y : '?') + ') map ' + (MAPS[m] ? MAPS[m].name : m) + ', nút hiện tại: "' + interactLabel() + '", thoại: ' + (dialogOpen() ? 'đang mở ("' + readDialogText().slice(0, 120) + '")' : 'chưa mở') + ', tiến độ ' + prog() + '/5');
+      }
+      log('Bách Khoa: đáp 5 câu của Thầy Ông Nội — sai không bị phạt, thử đáp án tới khi tiến độ tăng (hiện ' + prog() + '/5)');
+      // v1.44: tới đúng chỗ Thầy Ông Nội (su_phu, Tản Viên 9,10) trước — bấm Tương Tác ở
+      // map khác là bấm nhầm vật/NPC khác, thoại Bách Khoa không bao giờ mở.
+      var npcT = questNpcForObjective(obj.text, null);
+      if (!npcT) {
+        var suPhu = null;
+        ((MAPS.tan_vien && MAPS.tan_vien.npcs) || []).forEach(function (n) { if (n.id === 'su_phu') suPhu = n; });
+        if (suPhu) npcT = { mapId: 'tan_vien', npc: suPhu };
+      }
+      if (npcT && !atQuestNpc(npcT)) {
+        if (!(await gotoQuestNpc(runId, npcT, obj.text))) { bkFailWhy('chưa tới được chỗ Thầy Ông Nội'); return 'fail'; }
+        if (!alive(runId)) return 'fail';
+      }
+      var tried = {}, tries = 0, hintAnswer = null, openFails = 0;
+      while (alive(runId) && tries < 60) {
+        if (prog() >= 5 || objDone()) {
+          log('Bách Khoa: đã đáp đủ 5 câu (tiến độ ' + prog() + '/5)');
+          if (dialogOpen()) { try { await handleQuestDialog(runId, {}); } catch (e) { if (!alive(runId)) throw e; } }
+          closeDialogIfOpen();
+          return 'done';
+        }
+        if (!dialogOpen()) {
+          if (!(await pressInteractBtn(runId, 8000, obj.text))) {
+            openFails++;
+            bkFailWhy('không bấm được Tương Tác ở Thầy Ông Nội (lần ' + openFails + ')');
+            if (openFails >= 2 || !npcT) return 'fail';
+            if (!(await gotoQuestNpc(runId, npcT, obj.text))) return 'fail';
+            continue;
+          }
+          await sleep(900);
+          if (!dialogOpen()) {
+            openFails++;
+            bkFailWhy('đã bấm Tương Tác mà thoại Bách Khoa chưa mở (lần ' + openFails + ')');
+            if (openFails >= 2) return 'fail';
+            continue;
+          }
+        }
+        await sleep(750); // qua chốt chống bấm nhầm 500ms
+        if (!alive(runId)) return 'fail';
+        var dText = readDialogText();
+        var hintM = dText.match(/Gợi ý:\s*([^.\n]+)/);
+        if (hintM) hintAnswer = hintM[1].replace(/\s+/g, ' ').trim();
+        var act = dialogActionBtn();
+        if (act) {
+          var al = (act.textContent || '').replace(/\s+/g, ' ').trim();
+          log('Bách Khoa: bấm nút "' + al + '"');
+          pressDom(act); tries++;
+          await sleep(1100);
+          continue;
+        }
+        var choices = dialogChoiceBtns();
+        if (!choices.length) { bkFailWhy('thoại không có đáp án để chọn — đóng thoại'); closeDialogIfOpen(); return 'fail'; }
+        // Thoại mở đầu của Thầy Ông Nội: chọn "Bắt đầu Hỏi Đạo" (không phải đáp án)
+        var startBtn = null, retryBtn = null, hintBtn = null;
+        for (var bi = 0; bi < choices.length; bi++) {
+          if (choices[bi].label === 'Bắt đầu Hỏi Đạo') startBtn = choices[bi];
+          if (choices[bi].label === 'Thử lại câu này') retryBtn = choices[bi];
+          if (hintAnswer && choices[bi].label === hintAnswer) hintBtn = choices[bi];
+        }
+        if (startBtn) {
+          log('Bách Khoa: chọn "Bắt đầu Hỏi Đạo"');
+          pressDom(startBtn.el); tries++;
+          await sleep(1100);
+          continue;
+        }
+        if (retryBtn) {
+          log('Bách Khoa: đáp sai — game gợi ý đáp án đúng là "' + (hintAnswer || '?') + '", bấm "Thử lại câu này"');
+          pressDom(retryBtn.el); tries++;
+          await sleep(1100);
+          continue;
+        }
+        var pick = hintBtn;
+        if (!pick) {
+          var qText = dText.slice(0, 200);
+          var seen = tried[qText] || (tried[qText] = {});
+          for (var ci = 0; ci < choices.length; ci++) {
+            if (choices[ci].label === 'Mở Bách Khoa Tu Tiên') continue; // nút tra sách, không phải đáp án
+            if (!seen[choices[ci].label]) { pick = choices[ci]; break; }
+          }
+          if (!pick) { bkFailWhy('đã thử hết đáp án của câu này mà tiến độ chưa tăng — đóng thoại, vòng sau thử lại'); closeDialogIfOpen(); return 'fail'; }
+          seen[pick.label] = true;
+        }
+        var before = prog();
+        log('Bách Khoa: thử đáp án "' + pick.label + '"' + (hintBtn ? ' (theo gợi ý của game)' : '') + ' (tiến độ ' + before + '/5)');
+        pressDom(pick.el); tries++;
+        await sleep(1200);
+        if (prog() > before) { log('Bách Khoa: ĐÚNG — tiến độ ' + before + ' → ' + prog() + '/5'); hintAnswer = null; }
+        else log('Bách Khoa: sai — tiến độ giữ ' + prog() + '/5 (game sẽ gợi ý đáp án đúng)');
+      }
+      log('Bách Khoa: đã thử ' + tries + ' lần, tiến độ ' + prog() + '/5 — vòng sau thử lại');
+      closeDialogIfOpen();
+      return (prog() >= 5 || objDone()) ? 'done' : 'fail';
+    })();
+  }
+  // Bước "Rút 1 bí tịch CHƯA CÓ ở tủ sách Tàng Kinh Lão Nhân" (gd17, v1.44): cờ
+  // rut_bi_tich_17_2 bật khi rút được quyển mới (recordBiTichGachaNew trong mã client).
+  // Tới Tàng Kinh Lão Nhân (tan_vien 11,12) → mở tủ Tàng Kinh Sơ Cấp → rút tới khi cờ
+  // bật/mục tiêu xong: lượt miễn phí hôm nay trước, sau đó 100 Linh Thạch/lượt (giá tủ
+  // Sơ Cấp theo mã), trần 20 lượt, ghi Linh Thạch từng lượt. Trả 'done'|'fail'.
+  function questRutBiTichMoi(runId, obj) {
+    return (async function () {
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      function flagDone() { return !!readQuestFlags().rut_bi_tich_17_2; }
+      function objDone() {
+        var st = readQuestState();
+        for (var i = 0; i < st.objs.length; i++) {
+          var o = st.objs[i];
+          if (o.text === obj.text) return o.done || (o.max != null && o.cur != null && o.cur >= o.max);
+        }
+        return true;
+      }
+      if (flagDone() || objDone()) { log('Rút bí tịch mới: mục tiêu đã xong (cờ rut_bi_tich_17_2 đã bật)'); return 'done'; }
+      log('Rút bí tịch mới: tới Tàng Kinh Lão Nhân ở Tản Viên (11,12) rút ở tủ Tàng Kinh Sơ Cấp tới khi được 1 quyển CHƯA CÓ (cờ rut_bi_tich_17_2)');
+      var npcT = questNpcForObjective(obj.text, null);
+      if (npcT && !atQuestNpc(npcT)) {
+        if (!(await gotoQuestNpc(runId, npcT, obj.text))) return 'fail';
+        if (!alive(runId)) return 'fail';
+      }
+      if (!dialogOpen() && !(await openNpcDialog(runId, 11, 12, 'Tàng Kinh Lão Nhân'))) {
+        var p0 = readPos(), m0 = readMapId();
+        log('Rút bí tịch mới: không mở được thoại Tàng Kinh Lão Nhân — đang ở (' + (p0 ? p0.x : '?') + ',' + (p0 ? p0.y : '?') + ') map ' + (MAPS[m0] ? MAPS[m0].name : m0) + ', nút hiện tại: "' + interactLabel() + '"');
+        return 'fail';
+      }
+      if (!clickDialogChoice(['Tàng Kinh Sơ Cấp'], 'Tàng Kinh Sơ Cấp')) {
+        log('Rút bí tịch mới: không thấy mục chọn tủ "Tàng Kinh Sơ Cấp" trong thoại — thoại hiện: "' + readDialogText().slice(0, 120) + '"');
+        closeDialogIfOpen();
+        return 'fail';
+      }
+      var t0 = Date.now(), opened = false;
+      while (alive(runId) && Date.now() - t0 < 8000) { if (gachaPanelOpen()) { opened = true; break; } await sleep(300); }
+      if (!alive(runId)) return 'fail';
+      if (!opened) { log('Rút bí tịch mới: bảng rút tủ Tàng Kinh Sơ Cấp không mở sau 8s'); return 'fail'; }
+      var draws = 0;
+      while (alive(runId) && draws < 20 && !flagDone() && !objDone()) {
+        var one = $('#gacha-one');
+        var oneText = one ? (one.textContent || '').replace(/\s+/g, ' ').trim() : '';
+        if (!one || one.disabled) { log('Rút bí tịch mới: nút rút không bấm được ("' + (oneText || 'không thấy nút') + '") — dừng'); break; }
+        var stonesBefore = readStones();
+        var isFree = /Miễn phí hôm nay/.test(oneText) && one.classList.contains('free');
+        if (!isFree && stonesBefore != null && stonesBefore < 100) {
+          log('Rút bí tịch mới: Linh Thạch còn ' + stonesBefore + ' — không đủ 100/lượt tủ Sơ Cấp, dừng (vòng sau có tiền rút tiếp)');
+          break;
+        }
+        log('Rút bí tịch mới: rút lượt ' + (draws + 1) + ' (' + (isFree ? 'MIỄN PHÍ hôm nay' : '100 Linh Thạch') + ', nút: "' + oneText + '")');
+        pressDom(one); draws++;
+        var t1 = Date.now(), haul = '', say = '';
+        while (alive(runId) && Date.now() - t1 < 30000) {
+          await sleep(500);
+          haul = (($('#gacha-haul') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+          say = (($('#gacha-say') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+          var oneNow = $('#gacha-one');
+          if (haul && oneNow && !oneNow.disabled) break;
+          if (!gachaPanelOpen()) break;
+        }
+        if (!alive(runId)) return 'fail';
+        var stonesAfter = readStones();
+        log('Rút bí tịch mới: lượt ' + draws + ' kết quả: ' + (haul || '(không đọc được #gacha-haul)') + (say ? ' | game báo: ' + say : '') +
+          (stonesBefore != null && stonesAfter != null ? ' | Linh Thạch ' + stonesBefore + ' → ' + stonesAfter : '') +
+          ' | cờ quyển mới: ' + (flagDone() ? 'ĐÃ BẬT' : 'chưa'));
+        if (!gachaPanelOpen()) break;
+      }
+      var close1 = $('#gacha-close'); if (close1) pressDom(close1);
+      await sleep(600);
+      closeDialogIfOpen();
+      if (flagDone() || objDone()) { log('Rút bí tịch mới: XONG sau ' + draws + ' lượt — đã được 1 quyển CHƯA CÓ'); return 'done'; }
+      log('Rút bí tịch mới: đã rút ' + draws + ' lượt mà chưa được quyển mới — vòng sau rút tiếp');
+      return 'fail';
+    })();
+  }
+  // Bước trang bị theo nhiệm vụ (v1.25, Bui 20:20): "Trang bị Phi Diệp vào ô Phi Hành",
+  // "Cầm Trúc Kiếm lên…" → mở Hành Trang → tab Trang Bị → chọn đúng món → bấm "Trang Bị"
+  // → kiểm chứng ô trang bị hiện tên món. Món chưa đủ cảnh giới → ghi rõ, không kẹt (chuỗi
+  // cày cấp đi làm việc khác lên tầng rồi vòng sau đeo lại). Trả 'done'|'noitem'|'locked'|'fail'.
+  function questEquipItemName(text) {
+    var t = String(text || '').replace(/^(Trang bị|Đeo|Mặc|Cầm)\s+/, '');
+    t = t.split(/\s+(vào|lên)\s+/)[0].split(' (')[0].trim();
+    return t;
+  }
+  function questEquip(runId, obj) {
+    return (async function () {
+      var wantName = questEquipItemName(obj.text);
+      var wantId = itemNameSetV125()[wantName] || (wantName === 'Phi Diệp' ? 'phi_diep' : null);
+      var wantSlot = wantId ? ITEM_SLOT[wantId] : null;
+      log('Nhiệm vụ: bước trang bị — đeo "' + wantName + '"' + (wantSlot ? ' vào ô ' + wantSlot : '') + ' theo mục tiêu "' + obj.text + '"');
+      await ensureAuto(runId, false);
+      try {
+        if (!bagIsOpen()) {
+          var btnBag = $('#btn-bag');
+          if (!btnBag) { log('Trang bị: không thấy nút Hành Trang (#btn-bag)'); return 'fail'; }
+          pressDom(btnBag);
+          if (!(await waitFor(function () { return bagIsOpen() ? true : null; }, 3000, 'mở Hành Trang (trang bị nhiệm vụ)', 150))) { log('Trang bị: không mở được Hành Trang'); return 'fail'; }
+        }
+        var tabBtn = $('#ht-rail [data-tab="trang-bi"]');
+        if (tabBtn) pressDom(tabBtn);
+        await sleep(600);
+        var items = document.querySelectorAll('#bag-list .bag-slot[data-item]');
+        var target = null, targetName = null;
+        for (var j = 0; j < items.length; j++) {
+          var id = items[j].getAttribute('data-item');
+          var nm = ((items[j].getAttribute('aria-label') || '').split(',')[0] || '').trim();
+          if ((wantId && id === wantId) || nm === wantName) { target = items[j]; targetName = nm || wantName; break; }
+        }
+        if (!target) {
+          log('Trang bị: không thấy "' + wantName + '" trong túi — chưa nhận được món này, làm bước khác trước');
+          return 'noitem';
+        }
+        var slot = ITEM_SLOT[target.getAttribute('data-item')] || wantSlot;
+        pressDom(target);
+        if (!(await waitFor(function () { return bagDetailOpen() ? true : null; }, 2000, 'chi tiết món cần trang bị', 150))) { log('Trang bị: không mở được chi tiết "' + targetName + '"'); return 'fail'; }
+        if (detailRequireFail()) {
+          var req = parseRequireTier(detailRequireText());
+          var riNow = readRealmInfo();
+          log('Trang bị: "' + targetName + '" chưa đủ cảnh giới' + (req ? ' — cần ' + req.name + (riNow ? ', đang ' + riNow.name : '') : ' (có ✕ trong yêu cầu)') + ' — để lên tầng rồi đeo lại, không kẹt ở bước này');
+          return 'locked';
+        }
+        var act = document.querySelector('#bag-detail .equip-action');
+        if (!act || (act.textContent || '').trim() !== 'Trang Bị') { log('Trang bị: không thấy nút "Trang Bị" cho "' + targetName + '"'); return 'fail'; }
+        pressDom(act);
+        await sleep(900);
+        var slotEl = slot ? document.querySelector('#equipment-slots .equip-' + slot) : null;
+        var label = slotEl ? (slotEl.getAttribute('aria-label') || '') : '';
+        if (label.indexOf(targetName) >= 0) {
+          log('Trang bị: đã đeo "' + targetName + '" vào ô ' + slot + ' — kiểm chứng mục tiêu "' + obj.text + '"');
+          return 'done';
+        }
+        log('Trang bị: bấm Trang Bị mà ô ' + slot + ' chưa hiện "' + targetName + '" (aria-label: "' + label + '")');
+        return 'fail';
+      } catch (e) {
+        if (!alive(runId)) throw e;
+        log('Trang bị: lỗi (' + e.message + ')');
+        return 'fail';
+      } finally {
+        closeBagDetail();
+        closeHoatDong();
+      }
+    })();
+  }
+  // Bước sắc/luyện đan theo nhiệm vụ (v1.25): tới đan lô (giai đoạn ghi "trong vườn" thì đan lô
+  // vườn, không thì đan lô Tản Viên 16,11) → bấm Tương Tác → xử lý thoại; đan có công thức trong
+  // PILL_RECIPES mà thoại chưa xong thì luyện bằng brewPill. Trả 'done'|'fail'.
+  function questBrew(runId, obj) {
+    return (async function () {
+      var inGarden = /trong vườn/.test(obj.text);
+      var pillId = null;
+      Object.keys(PILL_RECIPES).forEach(function (id) { if (obj.text.indexOf(itemNameV123(id)) >= 0) pillId = id; });
+      log('Nhiệm vụ: bước đan "' + obj.text + '" — tới đan lô' + (inGarden ? ' (mục tiêu ghi trong vườn; dữ liệu giai đoạn trỏ đan lô Tản Viên 16,11 — cùng đan lô)' : ' Tản Viên (16,11)'));
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      await travelTo(runId, DAN_LO.map, { label: DAN_LO.label, tx: DAN_LO.tx, ty: DAN_LO.ty });
+      await standNextTo(runId, DAN_LO.tx, DAN_LO.ty, DAN_LO.label);
+      if (!alive(runId)) return 'fail';
+      if (await pressInteractBtn(runId, 8000, obj.text)) {
+        await handleQuestDialog(runId, {});
+        if (!alive(runId)) return 'fail';
+        await sleep(800);
+        var st = readQuestState();
+        var still = null;
+        for (var i = 0; i < st.objs.length; i++) if (st.objs[i].text === obj.text) { still = st.objs[i]; break; }
+        if (!still || still.done) { log('Nhiệm vụ: bước "' + obj.text + '" đã xong ở đan lô'); return 'done'; }
+      }
+      if (pillId) {
+        // v1.46 (Bui lệnh 06:48 ngày 2026-11-27 "Nhiệm vụ cần đổi hạt thì phải chọn làm nhiệm
+        // vụ dược trước"): bước luyện đan theo nhiệm vụ mà thiếu nguyên liệu thảo thì lấy
+        // nguyên liệu trước — ensurePillIngredients tự làm Dược Công cho đủ điểm → đổi gói
+        // hạt → gieo vườn; cây đang lớn thì chờ chín rồi hái + luyện, không 'fail' ngay như cũ.
+        var ingQ = await ensurePillIngredients(runId, pillId, 1, {});
+        if (!alive(runId)) return 'fail';
+        if (ingQ.hp) return 'fail';
+        if (!ingQ.ready && ingQ.growingUntilSec != null) {
+          var waitSecQ = Math.min(ingQ.growingUntilSec + 10, 600);
+          log('Nhiệm vụ: nguyên liệu ' + itemNameV123(pillId) + ' đang lớn trong vườn (chín sau ~' + ingQ.growingUntilSec + 's) — chờ ' + waitSecQ + 's rồi hái + luyện');
+          await sleep(waitSecQ * 1000);
+          if (!alive(runId)) return 'fail';
+          await gardenRound(runId, null);
+          if (!alive(runId)) return 'fail';
+        }
+        log('Nhiệm vụ: thoại đan lô chưa xong bước — luyện ' + itemNameV123(pillId) + ' bằng đường luyện đan sẵn có');
+        var bw = await brewPill(runId, pillId, itemNameV123(pillId));
+        if (!alive(runId)) return 'fail';
+        if (bw.ok) { log('Nhiệm vụ: đã luyện ' + itemNameV123(pillId) + ' cho bước "' + obj.text + '"'); return 'done'; }
+        log('Nhiệm vụ: luyện ' + itemNameV123(pillId) + ' chưa được — ' + (bw.missing || []).join('; '));
+      }
+      return 'fail';
+    })();
+  }
+  // Bước câu cá theo nhiệm vụ (v1.25): tới đài câu Thảo Dược Cốc, bật "Tự động câu",
+  // chờ mục tiêu xong (tối đa 10 phút). Trả 'done'|'hp'|'timeout'.
+  function questFish(runId, obj) {
+    return (async function () {
+      log('Nhiệm vụ: bước câu cá "' + obj.text + '" — tới đài câu Thảo Dược Cốc');
+      await travelTo(runId, FISH_SPOT.map);
+      await ensureFly(runId, true);
+      await goToPath(runId, FISH_SPOT.tx, FISH_SPOT.ty, 1, 180000, 'đài câu cá');
+      await ensureFly(runId, false);
+      if (!(await startAutoFishing(runId))) { log('Nhiệm vụ: không bật được tự động câu'); return 'timeout'; }
+      var t0 = Date.now();
+      while (alive(runId)) {
+        var st = readQuestState();
+        var still = null;
+        for (var i = 0; i < st.objs.length; i++) if (st.objs[i].text === obj.text) { still = st.objs[i]; break; }
+        if (!still || still.done || (still.max != null && still.cur != null && still.cur >= still.max)) { log('Nhiệm vụ: bước "' + obj.text + '" đã xong'); stopFishingGame(); return 'done'; }
+        if (Date.now() - t0 > 600000) { log('Nhiệm vụ: câu 10 phút chưa xong bước "' + obj.text + '" — dừng'); stopFishingGame(); return 'timeout'; }
+        if (!fishingActive()) { log('Nhiệm vụ: câu bị ngắt — bật lại'); if (!(await startAutoFishing(runId))) return 'timeout'; }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% khi câu nhiệm vụ — dừng'); stopFishingGame(); return 'hp'; }
+        await sleep(3000);
+      }
+      stopFishingGame();
+      return 'done';
+    })();
+  }
+  function runMainQuest(runId, opts) {
+    opts = opts || {};
+    return (async function () {
+      // Trong chuỗi cày cấp (v1.17): trả lý do kết thúc thay vì dừng tool
+      function qEnd(reason, stopReason) { if (opts.chain) return reason; stopTool(stopReason || reason); return reason; }
+      log('Bắt đầu Nhiệm vụ chính…');
+      await flyCheckAtStart(runId, 'Nhiệm vụ chính', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      await ensureAuto(runId, false);
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      var lastKey = '', retries = 0, lastStageLogged = -1;
+      while (alive(runId)) {
+        if (isDowned()) { await handleDeath(runId); if (!alive(runId)) return; }
+        var st = readQuestState();
+        // v1.17: đối chiếu dữ liệu 39 giai đoạn trích từ mã — biết trước giai đoạn này phải làm gì ở đâu
+        var stageNum = questStageNum(st.stage);
+        var stageData = questStageData(stageNum);
+        if (stageData && stageData.s !== lastStageLogged) {
+          lastStageLogged = stageData.s;
+          log('Nhiệm vụ chính: ' + stageData.n + ' — ' + stageData.h + (stageData.o.length ? ' | Mục tiêu theo mã: ' + stageData.o.join('; ') : ''));
+          // v1.26 (Bui 20:35): giai đoạn 0–23 bám trình tự hướng dẫn tân thủ trong client
+          var gl = guideLine(stageData.s);
+          if (gl) log('Hướng dẫn tân thủ (giai đoạn ' + stageData.s + '): ' + gl);
+        }
+        var pending = st.objs.filter(function (o) { return !o.done; });
+        if (st.hidden || !pending.length) {
+          log('Nhiệm vụ chính: không còn mục tiêu nào trong bảng nhiệm vụ — dừng');
+          return qEnd('noquest', 'hết nhiệm vụ chính');
+        }
+        var obj = null, kind = null;
+        for (var i = 0; i < pending.length; i++) {
+          var k = classifyObjective(pending[i].text);
+          if (k === 'item') { log('Nhiệm vụ: mục tiêu "' + pending[i].text + '" là dạng vật phẩm/điều kiện — tiến theo bước chính + chuỗi cày cấp, tạm bỏ qua khi chọn bước (đúng thứ tự còn lại)'); continue; }
+          obj = pending[i]; kind = k; break;
+        }
+        if (!obj) {
+          // v1.23: chỉ còn mục tiêu vật phẩm → tự tới bãi quái farm đủ số cần (nguồn theo mã)
+          var farmedItem = false;
+          try { farmedItem = await questItemFarm(runId, pending[0]); } catch (e3) { if (!alive(runId)) throw e3; log('Nhiệm vụ: farm vật phẩm lỗi: ' + e3.message); }
+          if (!alive(runId)) return;
+          if (farmedItem) { await sleep(1200); continue; }
+          log('Nhiệm vụ chính: chỉ còn mục tiêu dạng vật phẩm (' + pending.map(function (o) { return o.text; }).join('; ') + ') — tool không tự quyết được, dừng');
+          return qEnd('item', 'mục tiêu vật phẩm');
+        }
+        var inf = inferObjective(obj, stageData);
+        if (kind === 'unknown' && inf.kind && inf.kind !== 'unknown') {
+          log('Mục tiêu: "' + obj.text + '" → suy diễn: ' + inf.summary + ' → đang làm theo suy diễn');
+          kind = inf.kind;
+        }
+        if (kind === 'unknown') {
+          log('Nhiệm vụ chính: bước chưa nhận diện được: "' + obj.text + '" (' + st.stage + ') — ghi nguyên văn, không đoán mò. Suy diễn: ' + inf.missing + (stageData ? '. Theo dữ liệu giai đoạn: ' + stageData.h + (stageData.o.length ? ' | Mục tiêu: ' + stageData.o.join('; ') : '') : ''));
+          // v1.25 (Bui 20:23): bước lạ vẫn thử tới đúng map/điểm làm việc của giai đoạn
+          // (theo tên trong mục tiêu hoặc nơi làm việc trích từ mã) thay vì đứng yên ở map cũ.
+          var navU = false;
+          try { navU = await questFallbackNav(runId, obj.text); } catch (eU) { if (!alive(runId)) throw eU; log('Dự phòng tìm đường (bước lạ) lỗi: ' + eU.message); }
+          if (!navU && stageData && stageData.p && stageData.p.m && MAPS[stageData.p.m]) {
+            log('Bước lạ: tới nơi làm việc của giai đoạn — ' + MAPS[stageData.p.m].name + (stageData.p.i && stageData.p.i.length ? ' điểm ' + stageData.p.i[0][0] + ' (' + stageData.p.i[0][1] + ',' + stageData.p.i[0][2] + ')' : ''));
+            try {
+              await travelTo(runId, stageData.p.m, stageData.p.i && stageData.p.i.length ? { label: stageData.p.i[0][0], tx: stageData.p.i[0][1], ty: stageData.p.i[0][2] } : null);
+              if (stageData.p.i && stageData.p.i.length) await standNextTo(runId, stageData.p.i[0][1], stageData.p.i[0][2], stageData.p.i[0][0]);
+            } catch (eU2) { if (!alive(runId)) throw eU2; log('Tới nơi làm việc (bước lạ) lỗi: ' + eU2.message); }
+          }
+          if (!alive(runId)) return;
+          log('Nhiệm vụ chính: đã tới nơi làm việc của bước lạ "' + obj.text + '" — bước này tool chưa tự làm được, dừng lượt nhiệm vụ (chuỗi cày cấp làm việc khác)');
+          return qEnd('unknown', 'bước nhiệm vụ lạ');
+        }
+        var key = st.stage + '|' + obj.text + '|' + (obj.cur == null ? '' : obj.cur);
+        if (key === lastKey) retries++; else { retries = 0; lastKey = key; }
+        if (retries >= 3) {
+          log('Nhiệm vụ chính: bước "' + obj.text + '" không tiến triển sau 3 lần thử — dừng');
+          return qEnd('stuck', 'bước không tiến triển');
+        }
+        if (kind === 'forge') {
+          // v1.23: rèn vũ khí ở Thợ Rèn — tự kiếm khoáng + rèn (không bấm mục tiêu cho game dẫn đường)
+          var fgw = await forgeQuestWeapon(runId);
+          if (!alive(runId)) return;
+          if (fgw === 'hp') { await ensureAuto(runId, false); return qEnd('hp', 'Khí Huyết thấp'); }
+          if (fgw !== 'ok') log('Nhiệm vụ chính: rèn vũ khí chưa xong (' + fgw + ') — vòng sau thử lại');
+          await sleep(1500);
+          continue;
+        }
+        if (kind === 'equip') {
+          // v1.25 (Bui 20:20): trang bị theo mục tiêu — mở túi đeo đúng món, không cần di chuyển
+          var eqr = await questEquip(runId, obj);
+          if (!alive(runId)) return;
+          if (eqr === 'locked') { log('Nhiệm vụ chính: món chưa đủ cảnh giới — chuỗi cày cấp làm việc khác lên tầng rồi đeo lại'); return qEnd('equip-locked', 'trang bị chưa đủ cảnh giới'); }
+          if (eqr === 'noitem') { log('Nhiệm vụ chính: chưa có món trong túi — làm bước khác trước'); return qEnd('equip-noitem', 'chưa có món cần trang bị'); }
+          if (eqr !== 'done') log('Nhiệm vụ chính: trang bị chưa xong (' + eqr + ') — vòng sau thử lại');
+          await sleep(1500);
+          continue;
+        }
+        if (kind === 'brew') {
+          // v1.25: sắc/luyện đan ở đan lô theo mục tiêu
+          var bwr = await questBrew(runId, obj);
+          if (!alive(runId)) return;
+          if (bwr !== 'done') log('Nhiệm vụ chính: bước đan chưa xong (' + bwr + ') — vòng sau thử lại');
+          await sleep(1500);
+          continue;
+        }
+        if (kind === 'fish') {
+          // v1.25: câu cá theo mục tiêu (đài câu Thảo Dược Cốc)
+          var fsr = await questFish(runId, obj);
+          if (!alive(runId)) return;
+          if (fsr === 'hp') { await ensureAuto(runId, false); return qEnd('hp', 'Khí Huyết thấp'); }
+          if (fsr === 'timeout') { await ensureAuto(runId, false); return qEnd('timeout', 'câu quá lâu chưa xong bước'); }
+          await sleep(1500);
+          continue;
+        }
+        // v1.41: Vận Tiêu (giai đoạn 25 — giao đủ 3 chuyến; giai đoạn 36 giao tiêu kỳ đỏ) —
+        // chạy chế độ Vận Tiêu đúng số chuyến còn thiếu (chỉ Trúc Cơ trở lên + khung 11:00–22:00)
+        if (kind === 'vantieu') {
+          var needTrips = (obj.max != null && obj.cur != null) ? Math.max(1, obj.max - obj.cur) : 1;
+          log('Nhiệm vụ: bước "' + obj.text + '" — chạy Vận Tiêu ' + needTrips + ' chuyến');
+          var vtr = await runVanTieu(runId, { chain: true, maxTrips: needTrips });
+          if (!alive(runId)) return;
+          if (vtr === 'hp') { await ensureAuto(runId, false); return qEnd('hp', 'Khí Huyết thấp'); }
+          if (vtr !== 'done') { log('Nhiệm vụ chính: Vận Tiêu chưa xong (' + vtr + ') — dừng lượt nhiệm vụ (chuỗi cày cấp làm việc khác)'); return qEnd('vantieu', 'Vận Tiêu chưa xong: ' + vtr); }
+          await sleep(1500);
+          continue;
+        }
+        // v1.41: Huyền Không Cổ Viện (giai đoạn 31) — ghép ngẫu nhiên 22:30–23:30 ở Chấp Sự Đại Hội;
+        // ngoài khung giờ thì ghi rõ + dừng lượt nhiệm vụ (lịch trình sẽ chạy đúng giờ)
+        if (kind === 'tamma') {
+          log('Nhiệm vụ: bước "' + obj.text + '" — chạy Huyền Không Cổ Viện (Tam Ma)');
+          var tmr = await runTamMa(runId, { chain: true });
+          if (!alive(runId)) return;
+          if (tmr !== 'done') { log('Nhiệm vụ chính: Huyền Không Cổ Viện chưa xong (' + tmr + ') — dừng lượt nhiệm vụ (chuỗi cày cấp làm việc khác; lịch trình chạy Tam Ma 22:30)'); return qEnd('tamma', 'Huyền Không Cổ Viện chưa xong: ' + tmr); }
+          await sleep(1500);
+          continue;
+        }
+        // v1.41: Tán Tu Chiến Bảng (giai đoạn 19 — thắng 1 trận) — chạy Chiến Bảng tới khi thắng
+        if (kind === 'chienbang') {
+          log('Nhiệm vụ: bước "' + obj.text + '" — chạy Tán Tu Chiến Bảng (cần thắng 1 trận)');
+          var cbr = await runChienBang(runId, { chain: true, needWin: 1 });
+          if (!alive(runId)) return;
+          if (cbr === 'hp') { await ensureAuto(runId, false); return qEnd('hp', 'Khí Huyết thấp'); }
+          if (cbr !== 'done') { log('Nhiệm vụ chính: Chiến Bảng chưa xong (' + cbr + ') — dừng lượt nhiệm vụ (chuỗi cày cấp làm việc khác)'); return qEnd('chienbang', 'Chiến Bảng chưa xong: ' + cbr); }
+          await sleep(1500);
+          continue;
+        }
+        // v1.26 (hướng dẫn tân thủ giai đoạn 21): "Gây sát thương lên U Minh Cự Mãng" phải vào
+        // Huyết Xích Cấm Địa mới đánh được — chạy lượt Huyết Xích (đăng ký ở Nữ Tu Trông Miếu,
+        // 100 Linh Thạch) thay vì đứng Auto tại chỗ.
+        if (/U Minh Cự Mãng/.test(obj.text)) {
+          log('Nhiệm vụ: bước "' + obj.text + '" — theo hướng dẫn tân thủ giai đoạn 21: vào Huyết Xích Cấm Địa gây sát thương lên U Minh Cự Mãng');
+          var hxr = await runHuyetXich(runId, { chain: true });
+          if (!alive(runId)) return;
+          log('Nhiệm vụ: lượt Huyết Xích kết thúc (' + hxr + ') — kiểm lại mục tiêu U Minh Cự Mãng');
+          await sleep(1500);
+          continue;
+        }
+        // v1.26 (hướng dẫn tân thủ giai đoạn 17): đáp 5 câu Bách Khoa — sai không bị phạt
+        // (theo mã), thử đáp án trong thoại tới khi tiến độ tăng.
+        if (/Bách Khoa/.test(obj.text)) {
+          var bkr = await questBachKhoa(runId, obj);
+          if (!alive(runId)) return;
+          if (bkr !== 'done') log('Nhiệm vụ chính: Bách Khoa chưa xong (' + bkr + ') — vòng sau thử lại');
+          await sleep(1500);
+          continue;
+        }
+        // v1.44 (gd17): "Rút 1 bí tịch CHƯA CÓ ở tủ sách Tàng Kinh Lão Nhân" — rút thật ở
+        // tủ Tàng Kinh Sơ Cấp tới khi cờ rut_bi_tich_17_2 bật (trước đây rơi vào thoại chung).
+        if (/Rút \d+ bí tịch CHƯA CÓ/.test(obj.text)) {
+          var rbr = await questRutBiTichMoi(runId, obj);
+          if (!alive(runId)) return;
+          if (rbr !== 'done') log('Nhiệm vụ chính: rút bí tịch mới chưa xong (' + rbr + ') — vòng sau rút tiếp');
+          await sleep(1500);
+          continue;
+        }
+        log('Mục tiêu: "' + obj.text + '" → suy diễn: ' + inf.summary + ' → đang làm: ' + questKindLabel(kind) + ' → tiến độ ' + (obj.cur != null ? obj.cur : '?') + '/' + (obj.max != null ? obj.max : '?'));
+        setStatus('Nhiệm vụ chính: ' + obj.text);
+        await ensureAuto(runId, false); // tắt Auto khi di chuyển theo dẫn đường của game
+        // v1.43 (Bui 04:29): bước gặp/nói chuyện NPC — đích là đúng chỗ NPC đứng. Bấm mục
+        // tiêu cho game tự dẫn trước, nhưng kiểm chứng nhân vật có BẮT ĐẦU di chuyển không;
+        // game từ chối/không di chuyển/dừng giữa đường mà chưa tới chỗ NPC thì tool tự tới
+        // ô kề NPC (tọa độ thật trong dữ liệu) + kiểm chứng nút Tương Tác rồi mới xử lý thoại.
+        var npcT = (kind === 'talk' || kind === 'go') ? questNpcForObjective(obj.text, stageData) : null;
+        var arr;
+        if (npcT) {
+          var npcMapName = MAPS[npcT.mapId] ? MAPS[npcT.mapId].name : npcT.mapId;
+          log('Nhiệm vụ: đích là chỗ NPC ' + npcT.npc.name + ' (' + npcT.npc.tx + ',' + npcT.npc.ty + ') map ' + npcMapName);
+          pressDom(obj.el); // thử để game tự dẫn đường trước
+          var started = await waitQuestMoveStart(runId, 4000);
+          if (!alive(runId)) return;
+          if (started) {
+            arr = await waitQuestArrival(runId, 120000);
+            if (!alive(runId)) return;
+            if (atQuestNpc(npcT)) {
+              log('Đã tới chỗ NPC ' + npcT.npc.name + ' (game tự dẫn đường) — kiểm chứng nút Tương Tác ở bước thoại');
+              arr = 'arrived';
+            } else {
+              log('Tự đi của game dừng (' + arr + ') mà chưa tới chỗ NPC ' + npcT.npc.name + ' — tool tự tới');
+              arr = (await gotoQuestNpc(runId, npcT, obj.text)) ? 'arrived' : 'npcfail';
+            }
+          } else {
+            log('Bấm mục tiêu mà nhân vật không di chuyển sau 4s — tool tự tới chỗ NPC ' + npcT.npc.name);
+            arr = (await gotoQuestNpc(runId, npcT, obj.text)) ? 'arrived' : 'npcfail';
+          }
+        } else {
+          pressDom(obj.el); // bấm mục tiêu — game tự dẫn đường tới nơi làm việc
+          arr = await waitQuestArrival(runId, 120000);
+        }
+        if (!alive(runId)) return;
+        if (arr !== 'arrived' && arr !== 'npcfail') {
+          log('Tự đi của game chưa tới nơi (' + arr + ') — tool tự tìm đường theo tên trong mục tiêu');
+          var nav = false;
+          try { nav = await questFallbackNav(runId, obj.text); } catch (e) { if (!alive(runId)) throw e; log('Dự phòng tìm đường lỗi: ' + e.message); }
+          if (!nav) log('Không tìm thấy tên map/NPC/quái trong mục tiêu để tự đi — thử thao tác tại chỗ');
+          if (!nav && stageData && stageData.p && stageData.p.m && MAPS[stageData.p.m]) {
+            // v1.17: dự phòng theo nơi làm việc của giai đoạn (trích từ hàm chọn nơi trong mã game)
+            log('Dự phòng theo giai đoạn: tới ' + MAPS[stageData.p.m].name + (stageData.p.i && stageData.p.i.length ? ' — điểm ' + stageData.p.i[0][0] + ' (' + stageData.p.i[0][1] + ',' + stageData.p.i[0][2] + ')' : ''));
+            try {
+              await travelTo(runId, stageData.p.m, stageData.p.i && stageData.p.i.length ? { label: stageData.p.i[0][0], tx: stageData.p.i[0][1], ty: stageData.p.i[0][2] } : null);
+              if (stageData.p.i && stageData.p.i.length) await standNextTo(runId, stageData.p.i[0][1], stageData.p.i[0][2], stageData.p.i[0][0]);
+            } catch (e2) { if (!alive(runId)) throw e2; log('Dự phòng theo giai đoạn lỗi: ' + e2.message); }
+          }
+        }
+        if (!alive(runId)) return;
+        if (kind === 'kill') {
+          if (inf.target && inf.target.type === 'monster' && arr !== 'arrived') {
+            log('Suy diễn đích quái: tới điểm ' + inf.target.name + ' (' + inf.target.tx + ',' + inf.target.ty + ') map ' + (MAPS[inf.target.mapId] ? MAPS[inf.target.mapId].name : inf.target.mapId));
+            try { await travelTo(runId, inf.target.mapId); await goToPath(runId, inf.target.tx, inf.target.ty, 2, 180000, 'điểm quái ' + inf.target.name); } catch (eK) { if (!alive(runId)) throw eK; log('Tới điểm quái theo suy diễn lỗi: ' + eK.message); }
+          }
+          var r = await questFight(runId, obj);
+          if (r === 'hp') { await ensureAuto(runId, false); return qEnd('hp', 'Khí Huyết thấp'); }
+          if (r === 'timeout') { await ensureAuto(runId, false); return qEnd('timeout', 'đánh quá lâu chưa xong bước'); }
+          // v1.23: đánh xong có thể nhặt đồ mới → mặc đồ tốt hơn ngay (sau khi tắt Auto)
+          if (!alive(runId)) return;
+          await ensureAuto(runId, false);
+          try { await autoEquipBetter(runId); } catch (e4) { if (!alive(runId)) throw e4; log('Mặc đồ: lỗi (' + e4.message + ') — bỏ qua'); }
+        } else if (kind === 'gather') {
+          if (inf.points && inf.points.length > 1 && readMapId() !== 'vuon_ca_nhan') await questGatherPoints(runId, obj, inf.points);
+          else await questGather(runId, obj);
+        } else if (kind === 'talk') {
+          await questTalk(runId, obj, 8000);
+        } else if (kind === 'go') {
+          await questTalk(runId, obj, 2500); // tới nơi rồi: có nút Tương Tác thì bấm, không thì thôi
+        }
+        await sleep(1500);
+      }
+    })();
+  }
+
+  // ============ Khe Nứt — Vết Nứt Không Gian (v1.13, lệnh Bui 17:43 "map sáng khe nứt") ============
+  // Cơ chế theo mã client (module VetNut + VetNutUI): mỗi tối 22:00 giờ VN vết nứt hiện ở
+  // Thạch Phong Thung Lũng hoặc Long Uyên (server chọn), cửa vào mở 10 phút; cần Hư Không Lệnh
+  // (vé 300 Linh Thạch, mua ở Hồng Tỷ) + Luyện Khí tầng 13 trở lên. Game hiện toast #vn-toast:
+  // #vn-toast-sub = "<tên map> · <số>/169 người", #vn-toast-clock = đếm ngược đóng cửa,
+  // #vn-toast-msg = trạng thái ("Tới <map> tìm vết nứt." / "Vết nứt ở quanh đây (xem tiểu đồ)." /
+  // "Đứng sát vết nứt — bước vào được." / lý do thiếu vé/cảnh giới), nút #vn-toast-act "Vào"
+  // chỉ bật khi đứng trong 72px của vết nứt. Vị trí vết nứt do server gửi (vẽ trên canvas/tiểu đồ,
+  // không có trong DOM) → tool quét map theo lưới 3 ô, đọc toast-msg để biết khi đứng sát.
+  // Trong phó bản (map vet_nut_1..5, mê cung 5 cổng + Hòm Hư Không): bật Auto+Chạy+Bay farm quái,
+  // chạm canvas đổi hướng định kỳ để di chuyển; #vn-hud tắt = lượt kết thúc.
+  var VETNUT = {
+    maps: ['thach_phong_thung_lung', 'long_uyen'],
+    openMinuteVN: 1320, // 22:00 giờ VN (VetNut.GIO_CO_DINH)
+    entryMs: 600000,    // cửa vào 10 phút (VetNut.MO_CUA_MS)
+    ticket: 'hu_khong_lenh',
+    ticketPrice: 300
+  };
+  function vnNextOpenMs(nowMs) {
+    var vn = new Date(nowMs + 7 * 3600 * 1000);
+    var target = Date.UTC(vn.getUTCFullYear(), vn.getUTCMonth(), vn.getUTCDate(), 22, 0, 0) - 7 * 3600 * 1000;
+    if (target <= nowMs) target += 24 * 3600 * 1000;
+    return target - nowMs;
+  }
+  function readVetNutToast() {
+    var toast = $('#vn-toast');
+    if (!toast) return null;
+    var sub = (($('#vn-toast-sub') || {}).textContent || '').trim();
+    var clock = (($('#vn-toast-clock') || {}).textContent || '').trim();
+    var pillClock = (($('#vn-toast-pill-clock') || {}).textContent || '').trim();
+    var msg = (($('#vn-toast-msg') || {}).textContent || '').trim();
+    var act = $('#vn-toast-act');
+    var mapId = null;
+    var ten = sub.split(' · ')[0].trim();
+    if (ten) {
+      if (NAME2ID[ten]) mapId = NAME2ID[ten];
+      else {
+        var names = Object.keys(NAME2ID).sort(function (x, y) { return y.length - x.length; });
+        for (var i = 0; i < names.length; i++) if (ten.indexOf(names[i]) >= 0) { mapId = NAME2ID[names[i]]; break; }
+      }
+    }
+    return {
+      visible: !toast.classList.contains('hidden'),
+      sub: sub, ten: ten, mapId: mapId,
+      clock: clock || pillClock, msg: msg,
+      actDisabled: act ? !!act.disabled : true, act: act
+    };
+  }
+  function vnAtRift(t) {
+    return !!t && (t.msg.indexOf('Đứng sát vết nứt') >= 0 || !t.actDisabled);
+  }
+  // Điểm quét tìm vết nứt: lưới 3 ô (96px) trên ô bay được — vòng nhận diện 72px nên không lọt khe.
+  // Điểm lưới rơi vào ô chặn thì dời sang ô trống gần nhất (bán kính 2) để không hở vùng quét.
+  function vnSweepPoints(mapId) {
+    var grid = gridFor(mapId, true);
+    if (!grid) return [];
+    var pts = [], seen = {};
+    for (var y = 2; y < grid.h - 1; y += 3) for (var x = 2; x < grid.w - 1; x += 3) {
+      var p = gridBlocked(grid, x, y) ? nearestGridFree(grid, x, y, 2) : { x: x, y: y };
+      if (!p) continue;
+      var k = p.x + ',' + p.y;
+      if (seen[k]) continue;
+      seen[k] = 1;
+      pts.push({ tx: p.x, ty: p.y });
+    }
+    return pts;
+  }
+  function runVetNut(runId, opts) {
+    opts = opts || {};
+    function vnStop(reason) { if (opts.schedule) return reason; stopTool(reason); return reason; }
+    return (async function () {
+      log('Bắt đầu Khe Nứt (Vết Nứt Không Gian)…');
+      await flyCheckAtStart(runId, 'Khe Nứt', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      await ensureAuto(runId, false);
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      // 1) Canh toast: chưa hiện thì chờ (mở 22:00 giờ VN mỗi tối)
+      var toast = readVetNutToast();
+      if ((!toast || !toast.visible) && opts.schedule) return 'notyet';
+      if (!toast || !toast.visible) {
+        var waitMs = vnNextOpenMs(Date.now());
+        log('Vết nứt chưa hiện — mở lúc 22:00 giờ VN, còn khoảng ' + Math.round(waitMs / 60000) + ' phút. Tool canh toast mỗi 20s…');
+        setStatus('Khe Nứt: chờ vết nứt hiện (22:00)');
+        var lastBeat = 0;
+        while (alive(runId)) {
+          toast = readVetNutToast();
+          if (toast && toast.visible) break;
+          if (Date.now() - lastBeat > 300000) {
+            lastBeat = Date.now();
+            log('Khe Nứt: vẫn chờ — còn khoảng ' + Math.round(vnNextOpenMs(Date.now()) / 60000) + ' phút tới 22:00');
+          }
+          await sleep(20000);
+        }
+        if (!alive(runId)) return;
+      }
+      log('Vết nứt đã hiện: ' + toast.sub + ' — đóng cửa sau ' + (toast.clock || '?') + ' — "' + toast.msg + '"');
+      // 2) Kiểm điều kiện vào theo chữ toast
+      if (/đã vào lượt này/.test(toast.msg)) { log('Hôm nay đã vào lượt Vết Nứt này rồi — dừng'); return vnStop('đã vào Vết Nứt'); }
+      if (/Hư Không Lệnh/.test(toast.msg)) { log('Chưa có Hư Không Lệnh — mua ở Hồng Tỷ (' + VETNUT.ticketPrice + ' Linh Thạch/vé) rồi bấm lại Khe Nứt'); return vnStop('thiếu Hư Không Lệnh'); }
+      if (/Luyện Khí tầng 13/.test(toast.msg)) { log('Chưa đủ cảnh giới vào Vết Nứt (cần Luyện Khí tầng 13 trở lên) — dừng'); return vnStop('chưa đủ cảnh giới'); }
+      if (!toast.mapId) { log('Không nhận diện được map vết nứt từ toast: "' + toast.sub + '" — dừng'); return vnStop('không rõ map vết nứt'); }
+      // 3) Tới map đang sáng
+      setStatus('Khe Nứt: tới ' + (MAPS[toast.mapId] ? MAPS[toast.mapId].name : toast.mapId) + '…');
+      await travelTo(runId, toast.mapId);
+      if (!alive(runId)) return;
+      // 4) Quét map tìm vết nứt (đọc toast-msg khi đứng sát)
+      toast = readVetNutToast();
+      if (!toast || !toast.visible) { log('Vết nứt đã khép trước khi tới nơi — dừng'); return vnStop('vết nứt đã khép'); }
+      var found = vnAtRift(toast);
+      if (!found) {
+        var pts = vnSweepPoints(toast.mapId);
+        var p0 = readPos();
+        if (p0) pts.sort(function (a, b) { return (Math.abs(a.tx - p0.x) + Math.abs(a.ty - p0.y)) - (Math.abs(b.tx - p0.x) + Math.abs(b.ty - p0.y)); });
+        log('Khe Nứt: quét ' + pts.length + ' điểm trên ' + (MAPS[toast.mapId] ? MAPS[toast.mapId].name : toast.mapId) + ' tìm vết nứt…');
+        for (var i = 0; i < pts.length && !found; i++) {
+          if (!alive(runId)) return;
+          toast = readVetNutToast();
+          if (!toast || !toast.visible) { log('Vết nứt đã khép trong lúc quét — dừng'); return vnStop('vết nứt đã khép'); }
+          try { await goToPath(runId, pts[i].tx, pts[i].ty, 1, 60000, 'điểm quét vết nứt'); }
+          catch (e) { if (!alive(runId)) throw e; continue; }
+          toast = readVetNutToast();
+          if (vnAtRift(toast)) found = true;
+        }
+      }
+      if (!found) { log('Khe Nứt: quét hết map mà chưa đứng sát vết nứt (toast: "' + (toast ? toast.msg : '') + '") — dừng'); return vnStop('không tìm thấy vết nứt'); }
+      // 5) Vào phó bản bằng nút "Vào" của toast
+      log('Đã đứng sát vết nứt — bấm Vào…');
+      setStatus('Khe Nứt: đang vào phó bản…');
+      toast = readVetNutToast();
+      if (toast && toast.act) pressDom(toast.act);
+      var entered = await waitFor(function () {
+        var h = $('#vn-hud');
+        return (h && !h.classList.contains('hidden')) ? true : null;
+      }, 30000, 'vào Vết Nứt');
+      if (!alive(runId)) return;
+      if (!entered) {
+        var t2 = readVetNutToast();
+        log('Chưa vào được Vết Nứt sau 30s — toast: "' + (t2 ? t2.msg : '(không thấy toast)') + '"');
+        return vnStop('chưa vào được Vết Nứt');
+      }
+      log('Đã vào Vết Nứt Không Gian — bật Bay + Chạy + Auto farm quái trong mê cung; bật Map sáng (mê cung tối tầm nhìn 192px — lọc sáng để nhìn thấy quái/hòm trong vùng tối)');
+      setMapBright(true);
+      setStatus('Khe Nứt: đang farm trong phó bản');
+      await ensureCombatTrio(runId, 'farm trong Vết Nứt Không Gian');
+      // 6) Trong phó bản: Auto đánh quái, chạm canvas đổi hướng mỗi 8s để di chuyển trong mê cung.
+      var dirs = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]];
+      var di = 0, tIn = Date.now(), lastBeatIn = 0;
+      // Hòm Hư Không (v1.14): trong mã game Hòm là quái đứng yên (vn_hom, 300.000 Khí Huyết,
+      // không gây sát thương) — giết bằng Auto thì nổ ra đồ, không phải vật bấm Tương Tác,
+      // không cần chìa khóa; vị trí hòm không có trong DOM. Tool giữ Auto + kỹ năng theo nhịp,
+      // khi đang giao chiến (Khí Huyết tụt) thì đứng yên lâu hơn để Auto hạ nốt (gồm Hòm),
+      // và ghi nhật ký thông báo #vn-bao/caption nếu đọc được đồ nhận.
+      var vnRot = skillRotation(runId, function () { return true; });
+      var vnHpLast = readHpPct(), vnBaoLast = '';
+      while (alive(runId)) {
+        var hud = $('#vn-hud');
+        if (!hud || hud.classList.contains('hidden')) break;
+        if (isDowned()) { await handleDeath(runId); if (!alive(runId)) break; vnHpLast = readHpPct(); continue; }
+        var bao = (($('#vn-bao') || {}).textContent || '').trim();
+        if (bao && bao !== vnBaoLast) { vnBaoLast = bao; log('Khe Nứt: thông báo "' + bao + '"'); }
+        var vnHp = readHpPct();
+        if (vnHp != null && vnHpLast != null && vnHpLast - vnHp >= 0.02) {
+          log('Khe Nứt: đang giao chiến — đứng yên 12s cho Auto + kỹ năng hạ nốt (gồm Hòm Hư Không nếu có)');
+          await sleep(12000);
+          vnHpLast = readHpPct();
+          continue;
+        }
+        if (vnHp != null) vnHpLast = vnHp;
+        if (Date.now() - tIn > 45 * 60 * 1000) { log('Khe Nứt: đã ở trong phó bản 45 phút — dừng'); break; }
+        if (Date.now() - lastBeatIn > 120000) {
+          lastBeatIn = Date.now();
+          var gio = (($('#vn-gio') || {}).textContent || '').trim();
+          var so = (($('#vn-so') || {}).textContent || '').trim();
+          log('Khe Nứt: đang trong phó bản (' + gio + (so ? ', ' + so : '') + ') — đã ' + Math.round((Date.now() - tIn) / 60000) + ' phút');
+        }
+        var d = dirs[di++ % dirs.length];
+        tapCanvas(d[0] * 3 * (S.pxX || 32), d[1] * 3 * (S.pxY || 32));
+        await sleep(8000);
+      }
+      vnRot.stop();
+      if (!alive(runId)) return;
+      await ensureAuto(runId, false);
+      var kq = $('#vn-kq');
+      var kqText = kq ? (kq.textContent || '').replace(/\s+/g, ' ').trim() : '';
+      log('Khe Nứt: lượt kết thúc' + (kqText ? ' — ' + kqText : ''));
+      return vnStop('xong lượt Khe Nứt');
+    })();
+  }
+
+  // ============ v1.14 (lệnh Bui 18:16 "Thêm hết" + 18:19 "Tự đăng kí đại hội") ============
+  // 9 chức năng mới, mỗi cái tra mã client lấy cơ chế thật (chi tiết: FIX-v1.14.md):
+  //  1 Lịch trình theo giờ · 2 Tự hồi sinh đi lại khi chết · 3 Thu thập khoáng/thảo ·
+  //  4 Hòm Hư Không trong Khe Nứt · 5 Tự mặc đồ tốt hơn · 6 Tự tránh PK ·
+  //  7 Kỹ năng theo nhịp khi đánh boss · 8 Tự nhận thưởng ngày (Điểm Danh) · 9 Tự đăng kí Đại Hội.
+
+  // ---- 2. Tự hồi sinh đi lại khi chết ----
+  // Cơ chế game (CONFIG.DOWNED + module Downed): chết → sau 1,2s hiện lớp #downed với 3 nút:
+  // #downed-spot "Hồi sinh / Tại chỗ" (tối đa 3 lần/khu — phí phía server không rõ trong client),
+  // #downed-home "Về làng / Miễn phí" (về tan_vien, Khí Huyết 60%), #downed-watch "Nằm xem".
+  // Không bấm gì thì game tự về làng sau 60s. Tool chọn #downed-home (miễn phí rõ ràng),
+  // KHÔNG tự chi Linh Thạch cho hồi sinh tại chỗ khi chưa rõ phí. Trong Vết Nứt chết hiện
+  // #vn-guc "Hồi sinh ở Sảnh sau Ns" — game tự hồi, tool chỉ chờ.
+  function downedPanelVisible() {
+    var d = $('#downed');
+    return !!(d && !d.classList.contains('hidden'));
+  }
+  function vnGucVisible() {
+    var g = $('#vn-guc');
+    return !!(g && !g.classList.contains('hidden'));
+  }
+  function isDowned() {
+    if (downedPanelVisible() || vnGucVisible()) return true;
+    var hp = readHpPct();
+    return hp != null && hp <= 0;
+  }
+  function snapshotCtx(mode, map, tx, ty, auto, fly, run) {
+    S.ctx = { mode: mode || S.mode, map: map || readMapId(), tx: tx, ty: ty, auto: !!auto, fly: !!fly, run: !!run, at: Date.now() };
+  }
+  // Hồi sinh + quay lại đúng map/điểm đang làm (S.ctx). Trả true nếu đã sống lại.
+  function handleDeath(runId) {
+    return (async function () {
+      if (S.deathBusy) return false;
+      S.deathBusy = true;
+      try {
+        releaseAllInputs();
+        var ctx = S.ctx || {};
+        log('Phát hiện nhân vật đã gục (Khí Huyết 0 / màn hình Trọng Thương) — xử lý hồi sinh' + (ctx.map ? ', sẽ quay lại ' + (MAPS[ctx.map] ? MAPS[ctx.map].name : ctx.map) + (ctx.tx != null ? ' (' + ctx.tx + ',' + ctx.ty + ')' : '') : ''));
+        setStatus('Đã gục — đang hồi sinh…');
+        if (vnGucVisible()) {
+          log('Đang trong Vết Nứt: game tự hồi sinh ở Sảnh — chờ…');
+          var g0 = Date.now();
+          while (alive(runId) && vnGucVisible() && Date.now() - g0 < 180000) await sleep(1000);
+          if (!alive(runId)) return false;
+          log('Đã hồi sinh trong Vết Nứt (game tự hồi ở Sảnh)');
+          return true;
+        }
+        // Chờ bảng hồi sinh hiện (game hiện sau 1,2s)
+        var shown = await waitFor(function () { return downedPanelVisible() ? true : null; }, 6000, 'bảng hồi sinh');
+        if (!alive(runId)) return false;
+        if (shown) {
+          var home = $('#downed-home');
+          var spotNote = (($('#downed-spot-note') || {}).textContent || '').trim();
+          if (home) {
+            log('Bấm "Về làng / Miễn phí" (#downed-home) — hồi sinh tại chỗ còn: ' + (spotNote || 'không rõ') + ' (phí server không rõ nên không dùng)');
+            pressDom(home);
+          } else {
+            log('Không thấy nút Về làng (#downed-home) — chờ game tự đưa về làng (tối đa 60s)');
+          }
+        } else {
+          log('Không thấy bảng hồi sinh sau 6s — chờ Khí Huyết hồi lại (game tự về làng sau 60s)');
+        }
+        var aliveOk = await waitFor(function () {
+          var hp = readHpPct();
+          return (!downedPanelVisible() && hp != null && hp > 0) ? true : null;
+        }, 90000, 'hồi sinh xong');
+        if (!alive(runId)) return false;
+        if (!aliveOk) { log('Chờ 90s mà chưa thấy hồi sinh xong — dừng xử lý chết'); return false; }
+        S.flyingBelief = false; S.autoBelief = false; S.autoByTool = false;
+        var hpNow = readHpPct();
+        log('Đã hồi sinh ở ' + (MAPS[readMapId()] ? MAPS[readMapId()].name : readMapId()) + ' (Khí Huyết ' + (hpNow != null ? Math.round(hpNow * 100) + '%' : '?') + ')');
+        // Quay lại map + điểm đang làm trước khi chết
+        if (ctx.map) {
+          try {
+            if (readMapId() !== ctx.map) {
+              log('Quay lại map đang làm: ' + (MAPS[ctx.map] ? MAPS[ctx.map].name : ctx.map));
+              await ensureRun(runId, true);
+              await ensureFly(runId, true);
+              await travelTo(runId, ctx.map);
+            }
+            if (ctx.tx != null && ctx.ty != null) {
+              await goToPath(runId, ctx.tx, ctx.ty, 1, 180000, 'điểm đang làm trước khi chết');
+            }
+          } catch (e) {
+            if (!alive(runId)) throw e;
+            log('Chưa quay lại được điểm cũ (' + e.message + ') — tiếp tục từ vị trí hiện tại');
+          }
+        }
+        if (ctx.run) await ensureRun(runId, true);
+        if (ctx.fly) await ensureFly(runId, true);
+        if (ctx.auto) await ensureAuto(runId, true);
+        log('Đã quay lại việc đang làm sau hồi sinh');
+        return true;
+      } finally {
+        S.deathBusy = false;
+      }
+    })();
+  }
+
+  // ---- 6. Tự tránh PK ----
+  // Cơ chế game: PK tự do ở dong_mach_ngam (CONFIG.DO_SAT.PK_TU_DO_MAPS) + HuThien/HacThi/VetNut;
+  // người mang dấu Đồ Sát đánh được ở mọi map trừ SAFE_MAPS. Mã client KHÔNG có caption/thông báo
+  // riêng khi bị người chơi đánh → tool dùng heuristic: Khí Huyết tụt ≥6% trong ≤4s khi Auto đang
+  // TẮT (đang di chuyển/chờ — không lẫn sát thương quái), hoặc caption khớp /đồ sát|tấn công|PK/i.
+  // Khi Auto đang BẬT (farm) chỉ caption mới kích (không phân biệt được sát thương quái).
+  var PK_SAFE_MAPS = ['dai_hoi_cho', 'dai_hoi_dau', 'dai_hoi_doi', 'chien_bang_dai', 'san_dau_vip', 'tmc_cho', 'chien_truong', 'chien_truong_cho', 'hac_thi', 'tam_canh', 'lam_lang', 'van_can'];
+
+  // ---- 6b. Đánh trả quái khi bị đánh (v1.24, lệnh Bui 20:09 ngày 2026-11-26) ----
+  // Nhận diện: Khí Huyết tụt ≥3% trong ≤4s khi Auto đang TẮT (đi đường/thu hoạch/gieo trồng/
+  // đả tọa/câu cá) và KHÔNG có caption Đồ Sát/PK (caption đó = nghi người chơi → pkCheck lo).
+  // Mã client không có tín hiệu "đang bị quái nhắm" đọc được từ DOM/bản lưu đáng tin hơn
+  // Khí Huyết (quái vẽ trên canvas, không có phần tử DOM riêng) → dùng tụt Khí Huyết làm tín hiệu.
+  // Bị đánh → bật đủ Bay+Chạy+Auto + kỹ năng theo nhịp, đánh tới khi Khí Huyết yên 4s (quái chết/
+  // hết đánh) → tắt Auto lại theo luật đi đường, việc đang làm dở tự nối tiếp.
+  // HP<35% → dừng đánh trả (luật dừng/hồi sinh hiện có). Đánh ≥12s mà vẫn tụt ≥6%/4s → nghi
+  // người chơi tấn công → chuyển pkCheck chạy trốn như cũ.
+  function fightBack(runId, where) {
+    return (async function () {
+      if (S.fbBusy) return 'skip';
+      S.fbBusy = true;
+      var rot = null;
+      try {
+        log('Bị quái đánh — đánh trả (' + where + ')');
+        setStatus('Bị quái đánh — đang đánh trả…');
+        await ensureCombatTrio(runId, 'đánh trả khi bị quái đánh (' + where + ')');
+        if (!alive(runId)) return 'skip';
+        rot = skillRotation(runId, function () { return true; });
+        var t0 = Date.now(), lastHp = readHpPct(), calmSince = null, burstHp = lastHp, burstAt = Date.now();
+        while (alive(runId)) {
+          await sleep(1000);
+          if (isDowned()) { await handleDeath(runId); return 'done'; }
+          var hp = readHpPct();
+          if (hp == null) continue;
+          if (hp < 0.35) { log('Đánh trả: Khí Huyết dưới 35% — dừng đánh trả, giữ luật dừng/hồi sinh hiện có'); return 'hp'; }
+          var now = Date.now();
+          if (now - t0 >= 12000 && burstHp != null && now - burstAt <= 4000 && burstHp - hp >= 0.06) {
+            log('Đánh trả: đã đánh 12s mà Khí Huyết vẫn tụt nhanh (≥6%/4s) — nghi người chơi tấn công, chuyển tránh PK');
+            return 'escalate';
+          }
+          if (now - burstAt > 4000) { burstHp = hp; burstAt = now; }
+          if (lastHp != null && lastHp - hp >= 0.01) calmSince = null;
+          else if (calmSince == null) calmSince = now;
+          lastHp = hp;
+          if (calmSince != null && now - calmSince >= 4000) { log('Đánh trả: quái đã chết/hết đánh (Khí Huyết yên 4s) — quay lại việc đang làm'); return 'done'; }
+          if (now - t0 > 90000) { log('Đánh trả: quá 90s chưa yên — dừng đánh trả, quay lại việc đang làm'); return 'done'; }
+        }
+        return 'skip';
+      } finally {
+        if (rot) rot.stop();
+        S.fbBusy = false;
+        if (alive(runId)) { try { await ensureAuto(runId, false); } catch (e) { } }
+        S.fbLastHp = readHpPct(); S.fbLastAt = Date.now();
+        S.pkLastHp = S.fbLastHp; S.pkLastAt = S.fbLastAt;
+        S.fbCooldownUntil = Date.now() + 5000;
+      }
+    })();
+  }
+  // Kiểm tra bị quái đánh tại các điểm vòng lặp (đi đường/thu hoạch/vườn/đả tọa/câu cá).
+  // Trả true nếu đã đánh trả (việc đang làm dở tự nối tiếp ở vòng gọi).
+  function fightBackCheck(runId, where, opts) {
+    return (async function () {
+      opts = opts || {};
+      if (S.fbBusy || !alive(runId)) return false;
+      if (Date.now() < (S.fbCooldownUntil || 0)) return false;
+      if (dialogOpen()) return false;
+      if (isDowned()) return false;
+      var autoOn = readAutoState();
+      if (autoOn == null) autoOn = S.autoBelief;
+      if (autoOn) { S.fbLastHp = readHpPct(); S.fbLastAt = Date.now(); return false; }
+      var mapId = readMapId();
+      if (mapId && PK_SAFE_MAPS.indexOf(mapId) >= 0) { S.fbLastHp = null; return false; }
+      var hp = readHpPct();
+      if (hp == null) return false;
+      var cap = readCaption();
+      if (/đồ sát|tấn công|PK/i.test(cap)) return false; // nghi người chơi → để pkCheck xử lý
+      var maxGap = opts.maxGapMs || 4000;
+      var attacked = S.fbLastHp != null && Date.now() - (S.fbLastAt || 0) <= maxGap && (S.fbLastHp - hp) >= 0.03;
+      S.fbLastHp = hp; S.fbLastAt = Date.now();
+      if (!attacked) return false;
+      var r = await fightBack(runId, where);
+      if (r === 'escalate') await pkCheck(runId, { aggressive: true, fromFightBack: true });
+      return r !== 'skip';
+    })();
+  }
+  function pkCheck(runId, opts) {
+    return (async function () {
+      opts = opts || {};
+      if (Date.now() < (S.pkCooldownUntil || 0)) return false;
+      var mapId = readMapId();
+      if (!mapId || PK_SAFE_MAPS.indexOf(mapId) >= 0) { S.pkLastHp = null; return false; }
+      var hp = readHpPct();
+      var cap = readCaption();
+      var capHit = /đồ sát|tấn công|PK/i.test(cap);
+      var burst = false;
+      if (hp != null && S.pkLastHp != null && Date.now() - (S.pkLastAt || 0) <= 4000) {
+        var autoOn = readAutoState();
+        if (autoOn == null) autoOn = S.autoBelief;
+        if (S.pkLastHp - hp >= 0.06 && (!autoOn || opts.aggressive)) burst = true;
+      }
+      if (hp != null) { S.pkLastHp = hp; S.pkLastAt = Date.now(); }
+      if (!capHit && !burst) return false;
+      // v1.24: tụt nhanh KHÔNG có caption Đồ Sát/PK → coi như quái đánh, đánh trả trước;
+      // đánh không yên (HP<35% hoặc vẫn tụt nhanh) mới chạy trốn như cũ.
+      if (burst && !capHit && !opts.fromFightBack) {
+        var fb = await fightBack(runId, 'nghi bị đánh — đánh trả trước');
+        if (fb === 'done') { S.pkLastHp = readHpPct(); S.pkLastAt = Date.now(); return false; }
+      }
+      S.pkCooldownUntil = Date.now() + 60000;
+      log('Nghi bị người chơi tấn công (PK): ' + (capHit ? 'caption "' + cap + '"' : 'Khí Huyết tụt nhanh khi Auto tắt') + ' — tắt Auto, chạy về điểm neo của ' + (MAPS[mapId] ? MAPS[mapId].name : mapId));
+      setStatus('Nghi PK — chạy về điểm neo…');
+      await ensureAuto(runId, false);
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      try { await goToAnchor(runId, mapId); } catch (e) { if (!alive(runId)) throw e; }
+      if (!alive(runId)) return true;
+      // Theo dõi 8s ở điểm neo: vẫn tụt thì đổi khu
+      var hpA = readHpPct(), still = false, t0 = Date.now();
+      while (alive(runId) && Date.now() - t0 < 8000) {
+        await sleep(1000);
+        var hpB = readHpPct();
+        if (hpA != null && hpB != null && hpA - hpB >= 0.03) { still = true; break; }
+        if (hpB != null) hpA = hpB;
+      }
+      if (still && alive(runId)) {
+        var cur = readCurrentZone() || 1;
+        var next = (cur % 20) + 1;
+        log('Vẫn bị đánh ở điểm neo — tự đổi sang Khu ' + next + ' qua bảng khu');
+        await ensureZone(runId, mapId, next);
+      } else {
+        log('Đã yên ở điểm neo (Khí Huyết không tụt nữa)');
+      }
+      S.pkLastHp = readHpPct(); S.pkLastAt = Date.now();
+      return true;
+    })();
+  }
+
+  // ---- 7. Tự dùng kỹ năng theo nhịp khi đánh boss ----
+  // Nút kỹ năng #qs-0..3 (phím H/J/K/L), handler pointerdown; .skill-name = "Trống" khi ô trống;
+  // .skill-cooldown hiện số giây hồi khi đang hồi (ẩn/rỗng = sẵn sàng); game còn set biến CSS
+  // --cd qua skillState. Đọc sẵn sàng: tên ≠ "Trống" + không disabled + cooldown ẩn/rỗng.
+  function readSkillSlots() {
+    var out = [];
+    for (var i = 0; i < 4; i++) {
+      var el = $('#qs-' + i);
+      if (!el) { out.push({ i: i, el: null, name: '', ready: false, cdText: '' }); continue; }
+      var name = ((el.querySelector('.skill-name') || {}).textContent || '').trim();
+      var cdEl = el.querySelector('.skill-cooldown');
+      var cdText = cdEl ? (cdEl.textContent || '').trim() : '';
+      var cdHidden = !cdEl || cdEl.classList.contains('hidden') || cdText === '';
+      var cdVar = '';
+      try { cdVar = el.style.getPropertyValue('--cd') || ''; } catch (e) {}
+      var ready = !!name && name !== 'Trống' && !el.disabled && cdHidden;
+      out.push({ i: i, el: el, name: name, ready: ready, cdText: cdText, cdVar: cdVar });
+    }
+    return out;
+  }
+  // Vòng bấm kỹ năng chạy song song với Auto: bấm ô sẵn sàng theo thứ tự 0→3.
+  // Nếu sau 6 lần bấm mà ô không hề chuyển sang trạng thái hồi (không đọc được hồi chiêu)
+  // thì chuyển sang bấm luân phiên cách nhau 2s và ghi rõ. Trả {stop()}.
+  function skillRotation(runId, activeFn) {
+    var stopped = false, cdReadable = null, presses = 0, idx = 0, noSkillLogged = false, fixedLogged = false;
+    (async function () {
+      while (!stopped && alive(runId) && activeFn()) {
+        var slots = readSkillSlots();
+        var assigned = slots.filter(function (s) { return s.el && s.name && s.name !== 'Trống'; });
+        if (!assigned.length) {
+          if (!noSkillLogged) { noSkillLogged = true; log('Kỹ năng: cả 4 ô kỹ năng đều trống — không bấm được chiêu nào (gán kỹ năng vào ô trước)'); }
+          break;
+        }
+        if (cdReadable === false) {
+          var s = assigned[idx++ % assigned.length];
+          pressDom(s.el); presses++;
+          await sleep(2000);
+          continue;
+        }
+        var ready = assigned.filter(function (x) { return x.ready; });
+        if (!ready.length) { await sleep(400); continue; }
+        for (var i = 0; i < ready.length; i++) {
+          if (stopped || !alive(runId) || !activeFn()) break;
+          pressDom(ready[i].el); presses++;
+          await sleep(350);
+          if (cdReadable == null && presses >= 2) {
+            var after = readSkillSlots()[ready[i].i];
+            if (after && !after.ready) { cdReadable = true; log('Kỹ năng: đọc được hồi chiêu qua ô kỹ năng — bấm mỗi khi ô sáng'); }
+            else if (presses >= 6) {
+              cdReadable = false;
+              if (!fixedLogged) { fixedLogged = true; log('Kỹ năng: không đọc được hồi chiêu (ô không đổi trạng thái sau khi bấm) — bấm luân phiên cách nhau 2s'); }
+            }
+          }
+        }
+      }
+    })();
+    return { stop: function () { stopped = true; } };
+  }
+
+  // ---- 8. Tự nhận thưởng ngày (Điểm Danh) ----
+  // Cơ chế game (module DiemDanh + SuKienUI): cần cảnh giới luyen_khi_7 trở lên VÀ đã dự
+  // Đại Hội Tu Tiên hôm nay (duDaiHoi). Nút #btn-su-kien có class "co-qua" khi nhận được →
+  // mở Sự Kiện (HUD.openDialog) → nút button.dd-nut "Điểm Danh" (disabled khi chưa đủ điều
+  // kiện; chữ lý do ở .sk-moc: "Hôm nay chưa dự Đại Hội Tu Tiên" / "Cần đạt ...").
+  // v1.19 (Bui báo 19:09 "Chậm tools hiện bảng sự kiện"): chỉ kiểm 1 lần/phiên (S.dailyChecked
+  // nhớ kết quả — lần bấm chế độ sau bỏ qua ngay, không mở lại bảng); mở/đọc/đóng bằng poll
+  // ngắn 100–120ms thoát sớm khi có dữ liệu; trần đọc 5s — quá 5s chưa đọc được thì đóng bảng,
+  // ghi "kiểm Sự Kiện quá lâu — bỏ qua lần này" rồi vào việc chính ngay.
+  // v1.21 (lệnh Bui 19:38): hàm này KHÔNG còn chạy ở đầu mỗi chế độ — chỉ được gọi sau
+  // Đại Hội khi nhân vật thắng ít nhất 1 trận (daiHoiFightAndFarm).
+  function claimDailyReward(runId) {
+    return (async function () {
+      if (S.dailyChecked) { log('Điểm Danh: đã kiểm phiên này (' + S.dailyChecked + ') — bỏ qua'); return 'session-skip'; }
+      var btn = $('#btn-su-kien');
+      if (!btn) { S.dailyChecked = 'no-button'; log('Điểm danh: không thấy nút Sự Kiện (#btn-su-kien) — bỏ qua'); return 'no-button'; }
+      var hasGift = btn.classList.contains('co-qua');
+      pressDom(btn);
+      var nut = await waitFor(function () {
+        var n = document.querySelector('button.dd-nut');
+        return n ? n : null;
+      }, 5000, 'nút Điểm Danh', 120);
+      if (!alive(runId)) return 'stopped';
+      if (!nut) {
+        log('Điểm danh: kiểm Sự Kiện quá lâu — bỏ qua lần này');
+        closeDialogIfOpen();
+        S.dailyChecked = 'timeout';
+        return 'timeout';
+      }
+      var txt = (nut.textContent || '').trim();
+      var moc = ((document.querySelector('.sk-moc') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+      if (nut.disabled) {
+        log('Điểm danh: chưa nhận được — nút "' + txt + '"' + (moc ? ' — ' + moc : '') + (hasGift ? '' : ' (nút Sự Kiện cũng chưa có dấu quà)'));
+        closeDialogIfOpen();
+        await waitFor(function () { return !dialogOpen() ? true : null; }, 600, 'đóng Sự Kiện', 100);
+        S.dailyChecked = 'not-ready';
+        return 'not-ready';
+      }
+      log('Điểm danh: có quà chờ (nút "' + txt + '") — bấm nhận');
+      pressDom(nut);
+      // Chờ nút đổi chữ/trạng thái hoặc caption hiện (poll ngắn, trần 1,5s) thay vì chờ cố định 1,5s
+      await waitFor(function () {
+        var n2 = document.querySelector('button.dd-nut');
+        var t2 = n2 ? (n2.textContent || '').trim() : '';
+        return ((n2 && (t2 !== txt || n2.disabled)) || readCaption()) ? true : null;
+      }, 1500, 'kết quả Điểm Danh', 120);
+      if (!alive(runId)) return 'stopped';
+      var nut2 = document.querySelector('button.dd-nut');
+      var txt2 = nut2 ? (nut2.textContent || '').trim() : '';
+      var cap = readCaption();
+      log('Điểm danh: đã bấm nhận — nút giờ: "' + txt2 + '"' + (cap ? ' — caption: "' + cap + '"' : ''));
+      closeDialogIfOpen();
+      await waitFor(function () { return !dialogOpen() ? true : null; }, 600, 'đóng Sự Kiện', 100);
+      S.dailyChecked = 'claimed';
+      return 'claimed';
+    })();
+  }
+
+  // ---- 5. Tự mặc đồ tốt hơn ----
+  // Cơ chế game: #btn-bag → tab #ht-rail [data-tab="trang-bi"] → #equipment-slots
+  // (button.equip-slot.equip-<slotId>, aria-label "<Tên ô>: <Tên món>" / ": đang trống") +
+  // #bag-list (button.bag-slot[data-item=id]). Bấm món → #bag-detail: .item-bonuses chứa
+  // dòng chỉ số "Công +N · Khí Huyết +N · ...", .item-require có ✓/✕ điều kiện,
+  // nút button.equip-action "Trang Bị". Ô của món trong túi không hiện trong DOM →
+  // nhúng bảng ITEM_SLOT trích từ định nghĩa ITEMS của client (241 món).
+  function parseItemStats(text) {
+    var t = String(text || '');
+    var re = /([^\d·+]{2,30}?)\+(\d+(?:[.,]\d+)?)(%?)/g;
+    var m, stats = {}, score = 0, found = 0;
+    while ((m = re.exec(t)) !== null) {
+      var key = m[1].replace(/\s+/g, ' ').trim();
+      var val = parseFloat(m[2].replace(',', '.'));
+      if (isNaN(val)) continue;
+      stats[key] = val; score += val; found++;
+    }
+    return found ? { score: score, stats: stats } : null;
+  }
+  function bagDetailOpen() {
+    var d = $('#bag-detail');
+    return !!(d && !d.classList.contains('hidden'));
+  }
+  function closeBagDetail() {
+    var x = document.querySelector('#bag-detail .panel-x');
+    if (x) pressDom(x);
+  }
+  function readDetailScore() {
+    var b = document.querySelector('#bag-detail .item-bonuses');
+    return b ? parseItemStats(b.textContent || '') : null;
+  }
+  function detailRequireFail() {
+    var r = document.querySelector('#bag-detail .item-require');
+    return r ? (r.textContent || '').indexOf('✕') >= 0 : false;
+  }
+  // Chữ yêu cầu của món trong chi tiết túi (để ghi rõ món chờ cảnh giới nào — v1.24)
+  function detailRequireText() {
+    var r = document.querySelector('#bag-detail .item-require');
+    return r ? (r.textContent || '').replace(/\s+/g, ' ').trim() : '';
+  }
+  // Đọc cảnh giới yêu cầu từ chữ yêu cầu món: "Luyện Khí Tầng N" / Trúc Cơ / Giả Đan / Kết Đan
+  function parseRequireTier(text) {
+    var t = String(text || '');
+    var m = t.match(/Luyện Khí Tầng\s*(\d+)/);
+    if (m) return { tier: +m[1], name: 'Luyện Khí Tầng ' + m[1] };
+    if (/Trúc Cơ/.test(t)) return { tier: REALM_ORDER.indexOf('truc_co_1'), name: 'Trúc Cơ' };
+    if (/Giả Đan/.test(t)) return { tier: REALM_ORDER.indexOf('gia_dan'), name: 'Giả Đan' };
+    if (/Kết Đan/.test(t)) return { tier: REALM_ORDER.indexOf('ket_dan_1'), name: 'Kết Đan' };
+    return null;
+  }
+  function autoEquipBetter(runId) {
+    return (async function () {
+      var changed = 0;
+      var waiting = []; // v1.24: món chưa đủ cảnh giới — ghi rõ chờ tầng mấy
+      try {
+        if (!bagIsOpen()) {
+          var btnBag = $('#btn-bag');
+          if (!btnBag) { log('Mặc đồ: không thấy nút Hành Trang (#btn-bag) — bỏ qua'); return 0; }
+          pressDom(btnBag);
+          if (!(await waitFor(function () { return bagIsOpen() ? true : null; }, 3000, 'mở Hành Trang (mặc đồ)', 150))) { log('Mặc đồ: không mở được Hành Trang — bỏ qua'); return 0; }
+        }
+        var tabBtn = $('#ht-rail [data-tab="trang-bi"]');
+        if (tabBtn) pressDom(tabBtn);
+        await sleep(600);
+        // Đọc ô đang mặc + điểm chỉ số từng ô
+        var slotEls = document.querySelectorAll('#equipment-slots .equip-slot');
+        var equipped = {}; // slotId -> {name, score|null, el}
+        for (var i = 0; i < slotEls.length; i++) {
+          var el = slotEls[i];
+          var mm = (el.className || '').match(/equip-([a-z_]+)/);
+          if (!mm) continue;
+          var slotId = mm[1];
+          var label = el.getAttribute('aria-label') || '';
+          var itemName = label.indexOf(':') >= 0 ? label.split(':').slice(1).join(':').trim() : '';
+          var filled = el.classList.contains('filled') || (itemName && itemName !== 'đang trống');
+          equipped[slotId] = { name: filled ? itemName : '', score: null, el: el };
+          if (filled && alive(runId)) {
+            pressDom(el);
+            if (await waitFor(function () { return bagDetailOpen() ? true : null; }, 2000, 'chi tiết món đang mặc', 150)) {
+              var sc = readDetailScore();
+              equipped[slotId].score = sc ? sc.score : null;
+              closeBagDetail();
+              await sleep(300);
+            }
+          }
+        }
+        // Duyệt món trong túi
+        var items = document.querySelectorAll('#bag-list .bag-slot[data-item]');
+        for (var j = 0; j < items.length; j++) {
+          if (!alive(runId)) break;
+          var it = items[j];
+          var id = it.getAttribute('data-item');
+          var slot = ITEM_SLOT[id];
+          if (!slot) continue;
+          var al = it.getAttribute('aria-label') || '';
+          var nm = al.split(',')[0].trim() || id;
+          pressDom(it);
+          if (!(await waitFor(function () { return bagDetailOpen() ? true : null; }, 2000, 'chi tiết món trong túi', 150))) continue;
+          if (detailRequireFail()) {
+            var req = parseRequireTier(detailRequireText());
+            var riNow = readRealmInfo();
+            waiting.push(nm + (req ? ' (chờ ' + req.name + ')' : ''));
+            log('Mặc đồ: "' + nm + '" chưa đủ cảnh giới' + (req ? ' — cần ' + req.name + (riNow ? ', đang ' + riNow.name : '') : ' (có ✕ trong yêu cầu)') + ' — giữ trong túi');
+            closeBagDetail(); await sleep(250); continue;
+          }
+          var cand = readDetailScore();
+          var cur0 = equipped[slot];
+          // v1.25 (Bui 20:20): ô Phi Hành trống mà túi có món phi hành (Phi Diệp…) không đọc
+          // được điểm "+" (món bay không cộng chỉ số) → vẫn đeo, vì Phi Hành cần món ở ô này.
+          var flyFill = !cand && slot === 'phi_hanh' && (!cur0 || !cur0.name);
+          if (!cand && !flyFill) { log('Mặc đồ: không đọc được chỉ số của "' + nm + '" — không tự mặc'); closeBagDetail(); await sleep(250); continue; }
+          if (flyFill) { cand = { score: 0 }; log('Mặc đồ: "' + nm + '" là món Phi Hành, ô đang trống — đeo để dùng Phi Hành (không đọc được điểm chỉ số)'); }
+          var cur = equipped[slot];
+          var curScore = cur ? cur.score : null;
+          var better = !cur || !cur.name || (curScore != null && cand.score > curScore);
+          if (!better) { closeBagDetail(); await sleep(250); continue; }
+          var act = document.querySelector('#bag-detail .equip-action');
+          if (!act || (act.textContent || '').trim() !== 'Trang Bị') { log('Mặc đồ: "' + nm + '" tốt hơn nhưng không thấy nút "Trang Bị" — bỏ qua'); closeBagDetail(); await sleep(250); continue; }
+          log('Mặc đồ: "' + nm + '" (điểm ' + Math.round(cand.score) + ') tốt hơn món đang mặc ở ô ' + slot + (cur && cur.name ? ' "' + cur.name + '" (điểm ' + (curScore != null ? Math.round(curScore) : '?') + ')' : ' (ô đang trống)') + ' — bấm Trang Bị');
+          pressDom(act);
+          await sleep(900);
+          var slotEl2 = document.querySelector('#equipment-slots .equip-' + slot);
+          var label2 = slotEl2 ? (slotEl2.getAttribute('aria-label') || '') : '';
+          if (label2.indexOf(nm) >= 0) {
+            changed++;
+            log('Mặc đồ: đã mặc "' + nm + '" thay ' + (cur && cur.name ? '"' + cur.name + '"' : 'ô trống') + ' (ô ' + slot + ')');
+            equipped[slot] = { name: nm, score: cand.score, el: slotEl2 };
+          } else {
+            log('Mặc đồ: bấm Trang Bị mà ô ' + slot + ' chưa hiện "' + nm + '" (aria-label: "' + label2 + '")');
+          }
+          closeBagDetail();
+          await sleep(300);
+        }
+      } catch (e) {
+        if (!alive(runId)) throw e;
+        log('Mặc đồ: lỗi giữa chừng (' + e.message + ') — bỏ qua phần còn lại');
+      } finally {
+        closeBagDetail();
+        closeHoatDong(); // đóng Hành Trang (#bag-close)
+      }
+      log('Mặc đồ: xong — đã thay ' + changed + ' món tốt hơn' + (waiting.length ? '; còn chờ cảnh giới: ' + waiting.join(', ') : ''));
+      return changed;
+    })();
+  }
+
+  // ---- 3. Thu thập khoáng + linh thảo ----
+  // Điểm thu thập từ runtime-maps (prop tương tác bằng nút Tương Tác khi đứng kề):
+  // tan_vien: Nấm Linh Chi Núi ×10 (mỗi ngày chỉ mọc 7–10 điểm theo map data linhChi)
+  // + Tẩy Uế Thảo ×10; bai_da_hang_gio: Mạch Phong Tinh ×7 + Khóm Phong Linh Thảo ×6
+  // (gợi ý game: "hái xong mọc lại sau ít giây"); mo_linh_thach: Mạch Hàn Tinh ×9 +
+  // Mạch Tử Tinh ×8 + Mạch Lục Tinh ×1. Mã client không có thời gian hồi cố định →
+  // hết vòng chờ 60s rồi quét lại. Không gồm: vườn cá nhân (cơ chế trồng/tưới riêng),
+  // điểm nhiệm vụ (măng tre...), điểm Huyết Xích (chức năng riêng).
+  var GATHER_MAP_ORDER = ['tan_vien', 'bai_da_hang_gio', 'mo_linh_thach'];
+  function runGather(runId) {
+    return (async function () {
+      var total = 0;
+      GATHER_MAP_ORDER.forEach(function (id) { total += (GATHER_POINTS[id] || []).length; });
+      log('Thu thập: ' + total + ' điểm khoáng/thảo trên ' + GATHER_MAP_ORDER.length + ' map (' + GATHER_MAP_ORDER.map(function (id) { return (MAPS[id] ? MAPS[id].name : id) + ' ' + (GATHER_POINTS[id] || []).length + ' điểm'; }).join(', ') + ') — hết vòng chờ 60s quét lại');
+      await flyCheckAtStart(runId, 'Thu thập', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      await ensureAuto(runId, false);
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      var round = 0;
+      while (alive(runId)) {
+        round++;
+        var got = 0, tried = 0;
+        for (var mi = 0; mi < GATHER_MAP_ORDER.length; mi++) {
+          var mapId = GATHER_MAP_ORDER[mi];
+          var pts = GATHER_POINTS[mapId] || [];
+          if (!pts.length) continue;
+          setStatus('Thu thập: tới ' + (MAPS[mapId] ? MAPS[mapId].name : mapId) + '…');
+          await travelTo(runId, mapId);
+          if (!alive(runId)) return;
+          for (var pi = 0; pi < pts.length; pi++) {
+            if (!alive(runId)) return;
+            if (isDowned()) { await handleDeath(runId); if (!alive(runId)) return; }
+            var hp = readHpPct();
+            if (hp != null && hp < 0.35) { log('Khí Huyết dưới 35% khi thu thập — dừng'); stopTool('Khí Huyết thấp'); return; }
+            if (await pkCheck(runId, { aggressive: true })) { if (!alive(runId)) return; }
+            var pt = pts[pi];
+            snapshotCtx('gather', mapId, pt.tx, pt.ty, false, true, true);
+            tried++;
+            setStatus('Thu thập ' + pt.name + ' (' + pt.tx + ',' + pt.ty + ') — vòng ' + round);
+            try { await standNextTo(runId, pt.tx, pt.ty, pt.name); }
+            catch (e) { if (!alive(runId)) throw e; log('Chưa tới được điểm ' + pt.name + ': ' + e.message + ' — sang điểm kế'); continue; }
+            await ensureFly(runId, false);
+            var pressed = await pressInteractBtn(runId, 4000, pt.name);
+            if (!pressed) { log('Điểm ' + pt.name + ' (' + pt.tx + ',' + pt.ty + '): chưa mọc/không tương tác được — sang điểm kế'); continue; }
+            await sleep(2500);
+            var cap = readCaption();
+            got++;
+            log('Đã thu ' + pt.name + ' (' + pt.tx + ',' + pt.ty + ')' + (cap ? ' — caption: "' + cap + '"' : ''));
+            await ensureFly(runId, true);
+          }
+        }
+        log('Thu thập vòng ' + round + ' xong: thu được ' + got + '/' + tried + ' điểm — chờ 60s cho mọc lại rồi quét vòng kế');
+        var w0 = Date.now();
+        while (alive(runId) && Date.now() - w0 < 60000) {
+          if (isDowned()) { await handleDeath(runId); if (!alive(runId)) return; }
+          await sleep(3000);
+        }
+      }
+    })();
+  }
+
+  // ---- 1. Lịch trình tự động theo giờ ----
+  // Khung mặc định: Dược Công (tới khi hết lượt ngày) → vòng lặp [farm ở map/điểm đang chọn
+  // trên bảng → boss sắp ra (đọc mục Hoạt Động, có mặt trước 5 phút) → 22:00 Khe Nứt nếu đủ
+  // điều kiện → quay lại farm]. Nhật ký ghi rõ đang ở khung nào, vì sao chuyển khung.
+  function readHoatDongAllBosses(runId) {
+    return (async function () {
+      var out = {};
+      if (!(await openHoatDong(runId))) return out;
+      var t0 = Date.now();
+      while (alive(runId) && Date.now() - t0 < 8000) {
+        var allKnown = true;
+        BOSSES.forEach(function (b) {
+          var e = readHoatDongBoss(b);
+          if (e) out[b.id] = e;
+          if (!e || e.parsed.kind === 'unknown') allKnown = false;
+        });
+        if (allKnown) break;
+        await sleep(250); // v1.19: poll ngắn — đủ dữ liệu là thoát + đóng túi ngay (giữ trần 8s)
+      }
+      closeHoatDong();
+      BOSSES.forEach(function (b) {
+        var e = out[b.id];
+        if (e) log('Hoạt động: ' + e.name + ' — "' + e.statusText + '"');
+      });
+      return out;
+    })();
+  }
+  // Một lượt boss trọn vẹn: tới vị trí boss → chờ/đánh (bossWaitFight) → cập nhật mốc chu kỳ.
+  // Trả 'dead'|'none'|'hp'|'pk'.
+  function bossCycleOnce(runId, boss, plan) {
+    return (async function () {
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, boss.map);
+      setStatus('Tới vị trí boss ' + boss.name + ' (' + boss.tx + ',' + boss.ty + ')…');
+      await goToPath(runId, boss.tx, boss.ty, 1, 180000, 'vị trí boss');
+      var arriveAt = Date.now();
+      if (plan && plan.spawnAt != null) {
+        var earlyMin = Math.round((plan.spawnAt - arriveAt) / 60000);
+        log('Đã có mặt tại vị trí boss ' + boss.name + ' lúc ' + fmtTime(arriveAt) + (earlyMin > 0 ? ' — trước giờ xuất hiện ' + earlyMin + ' phút' : earlyMin === 0 ? ' — đúng giờ xuất hiện' : ' — sau giờ xuất hiện ' + (-earlyMin) + ' phút'));
+      } else {
+        log('Đã có mặt tại vị trí boss ' + boss.name + ' lúc ' + fmtTime(arriveAt) + ' — chờ tại chỗ với Auto sẵn sàng');
+      }
+      await ensureCombatTrio(runId, 'vị trí boss ' + boss.name + ' (lịch trình)');
+      snapshotCtx('boss', boss.map, boss.tx, boss.ty, true, true, true);
+      var fought = await bossWaitFight(runId, boss, plan || { spawnAt: null });
+      if (fought === 'hp') return 'hp';
+      S.bossAnchor[boss.id] = Date.now();
+      await ensureAuto(runId, false);
+      return fought;
+    })();
+  }
+  // Khung farm có hạn giờ: tới điểm farm, bật Auto, chờ tới deadline. Trả 'deadline'|'hp'|'map'.
+  function farmPhase(runId, targetMap, dest, zone, deadlineMs, opts) {
+    opts = opts || {};
+    return (async function () {
+      await ensureAuto(runId, false);
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, targetMap);
+      // v1.26 (Bui 20:44 ngày 2026-11-26): tới map + đổi khu xong là bật ngay
+      // Chạy + Phi Hành + Auto đánh luôn, không chờ thêm nhịp nào.
+      var zoneOk = true, pdFarmable = false;
+      // v1.30 (Bui 21:53 ngày 2026-11-26): Phong Địa tự kiểm tra khu đất phong như runFarm.
+      if (targetMap === 'phong_dia') {
+        var pdZone = await phongDiaEnsureFarmZone(runId, zone);
+        if (pdZone) { zone = pdZone; pdFarmable = true; } else zoneOk = false;
+        if (!alive(runId)) return 'deadline';
+      } else if (targetMap === DUOC_MAP && opts.emptyZone) {
+        // v1.34 (Bui chốt 22:34 ngày 2026-11-26): Luyện Khí farm khu dược — tự chọn
+        // khu vắng người nhất của Thảo Dược Cốc trước khi bật trio farm.
+        var duocZone = await duocEnsureEmptyZone(runId);
+        if (duocZone) { zone = duocZone; zoneOk = true; } else zoneOk = false;
+        if (!alive(runId)) return 'deadline';
+      } else if (zone) zoneOk = await ensureZone(runId, targetMap, zone);
+      var dests = destinationsFor(targetMap);
+      var d = dest || dests[0] || { label: 'điểm farm', tx: 20, ty: 15 };
+      var noAuto = (targetMap === 'phong_dia' && !pdFarmable) || (MAPS[targetMap] && MAPS[targetMap].enemies === 0);
+      if (!noAuto) {
+        log('Đã tới map ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap) + (zone ? (zoneOk ? ' + đổi khu xong' : ' + đổi khu không được — farm ở khu hiện tại') : '') + ' → bật Chạy+Phi Hành+Auto đánh luôn');
+        await ensureCombatTrio(runId, 'khung farm lịch trình ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap));
+      } else { await ensureFly(runId, true); await ensureRun(runId, true); }
+      setStatus('Lịch trình — farm tại ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap) + ' tới ' + fmtTime(deadlineMs));
+      await goToPath(runId, d.tx, d.ty, 1, 180000, d.label);
+      snapshotCtx('farm', targetMap, d.tx, d.ty, !noAuto, true, true);
+      log('Lịch trình: đang farm tại ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap) + ' — ' + d.label + ' (tới ' + fmtTime(deadlineMs) + ')');
+      var lastCrowdCheck = Date.now();
+      while (alive(runId)) {
+        if (Date.now() >= deadlineMs) return 'deadline';
+        await sleep(1500);
+        // v1.34: farm khu dược — mỗi 10 phút kiểm lại mức đông/vắng (giờ cao điểm
+        // khu đang farm có thể đông lên); khu hiện tại không còn vắng thì đổi khu.
+        if (opts.emptyZone && targetMap === DUOC_MAP && Date.now() - lastCrowdCheck > 600000 && Date.now() < deadlineMs - 120000) {
+          lastCrowdCheck = Date.now();
+          log('Lịch trình: kiểm lại mức đông/vắng khu dược sau 10 phút farm…');
+          await ensureAuto(runId, false);
+          var reZone = await duocEnsureEmptyZone(runId);
+          if (!alive(runId)) return 'deadline';
+          if (reZone) zone = reZone;
+          if (!noAuto) await ensureCombatTrio(runId, 'khung farm khu dược sau kiểm lại khu');
+          try { await goToPath(runId, d.tx, d.ty, 1, 120000, d.label); } catch (e) { if (!alive(runId)) throw e; }
+          continue;
+        }
+        if (isDowned()) {
+          await handleDeath(runId);
+          if (!alive(runId)) return 'deadline';
+          continue;
+        }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) return 'hp';
+        var m = readMapId();
+        if (m && m !== targetMap) return 'map';
+        if (await pkCheck(runId, {})) {
+          if (!alive(runId)) return 'deadline';
+          log('Lịch trình: đã tránh PK — bật lại Chạy+Phi Hành+Auto rồi quay lại điểm farm');
+          if (!noAuto) await ensureCombatTrio(runId, 'khung farm lịch trình sau tránh PK');
+          try { await goToPath(runId, d.tx, d.ty, 1, 120000, d.label); } catch (e) { if (!alive(runId)) throw e; }
+        }
+      }
+      return 'deadline';
+    })();
+  }
+    // ---- v1.27 (Bui 20:52 + 20:53): lịch trình sự kiện tuần Thứ 2→Chủ Nhật + nút sự kiện ----
+  // Toàn bộ giờ trích từ mã client (ghi rõ nguồn từng giờ):
+  //  - Đại Hội: 09:16/13:16/17:16/20:16 mỗi ngày, ghi danh trước 16 phút, suất 20:16
+  //    nghỉ Thứ Ba/Năm/Bảy (DAIHoi hours/rest trong tool, theo Tournament/DaiHoiUI).
+  //  - Côn Bằng Hồ Tây: 12:30 + 19:30 mỗi ngày, 6 phút/lần (CON_GIO/CON_DAI_MS VanCan).
+  //  - Cổ Vật Đáy Hồ: 10:00–22:00 mỗi ngày cả hồ 1 món (CO_VAT_GIO VanCan) — chỉ ghi nhắc.
+  //  - Vết Nứt Không Gian: 22:00 mỗi tối, cửa vào 10 phút (VetNut GIO_CO_DINH/MO_CUA_MS).
+  //  - Sỹ Sách Điện: 20:16 Thứ Năm, 20:00 chốt danh sách, đóng nhận 20:36 (HuThien
+  //    THU_KHAI=[4] GIO_KHAI=20 PHUT_KHAI=16 + thoại Thủ Điện Sỹ Sách).
+  //  - Vạn Hoang Chiến Trường: 21:16 Thứ Hai + Thứ Sáu, ghi danh 21:00, trận 14 phút
+  //    (ChienTruong THU_MO=[1,5] GIO_KHAI=[21] PHUT_THA=16 TRAN_KEO_DAI=84e4).
+  //  - Tam Lộ Tranh Phong: 21:00 Thứ Tư + Chủ Nhật, đăng ký trước 16 phút (LICH_MO +
+  //    MO_DANG_KY_TRUOC=96e4) — tool chưa có chế độ tự làm, chỉ ghi nhắc.
+  //  - Tranh Bia Phong Địa: 21:00–21:30 Thứ Năm (LICH_DOC) — chưa có chế độ, chỉ ghi nhắc.
+  //  - Vận Tiêu: nhận tiêu 11:00–22:00 mỗi ngày (GIO_MO=11 GIO_DONG=22) — chưa có chế độ.
+  //  - Boss: theo giờ hồi đọc mục Hoạt Động; Dược Công: tối đa 15 lượt/ngày.
+  var WEEK_EVENTS = [
+    { id: 'daihoi', ten: 'Đại Hội Tu Tiên', lich: '09:16/13:16/17:16/20:16 mỗi ngày (20:16 nghỉ Thứ Ba/Năm/Bảy), ghi danh trước 16 phút', hasReg: true },
+    { id: 'conbang', ten: 'Côn Bằng Hồ Tây', lich: '12:30 + 19:30 mỗi ngày, 6 phút/lần', hasReg: false },
+    { id: 'vetnut', ten: 'Vết Nứt Không Gian', lich: '22:00 mỗi tối, cửa vào 10 phút', hasReg: false },
+    { id: 'sysach', ten: 'Sỹ Sách Điện', lich: '20:16 Thứ Năm (20:00 chốt danh sách, đóng nhận 20:36)', hasReg: false },
+    { id: 'chientruong', ten: 'Vạn Hoang Chiến Trường', lich: '21:16 Thứ Hai + Thứ Sáu, ghi danh từ 21:00', hasReg: true },
+    { id: 'boss', ten: 'Boss theo giờ hồi', lich: 'theo giờ hồi trong mục Hoạt Động — có mặt trước giờ ra 5 phút', hasReg: false },
+    { id: 'duoccong', ten: 'Việc Dược Công', lich: 'tối đa 15 lượt/ngày — qua 00:00 làm trước mọi việc khác', hasReg: false },
+    { id: 'huyetxich', ten: 'Huyết Xích Cấm Địa', lich: '5 lượt/ngày (Luyện Khí), mỗi lượt 15 phút — lịch trình chạy 1 lượt sau khung Dược Công', hasReg: false },
+    { id: 'cauhotay', ten: 'Câu cá Hồ Tây qua đêm', lich: 'khung đêm 23:00–05:00 trong lịch treo Luyện Khí — câu thay farm (cần Luyện Khí Tầng 7+)', hasReg: false },
+    { id: 'covat', ten: 'Cổ Vật Đáy Hồ', lich: '10:00–22:00 mỗi ngày — câu ở Hồ Tây trong khung này có cơ hội (cả hồ 1 món/ngày)', noteOnly: true },
+    { id: 'tamlo', ten: 'Tam Lộ Tranh Phong', lich: '21:00 Thứ Tư + Chủ Nhật, đăng ký trước 16 phút — tool chưa có chế độ tự làm', noteOnly: true },
+    { id: 'tranhbia', ten: 'Tranh Bia Phong Địa', lich: '21:00–21:30 Thứ Năm — tool chưa có chế độ tự làm', noteOnly: true },
+    { id: 'vantieu', ten: 'Vận Tiêu', lich: 'nhận tiêu 11:00–22:00 mỗi ngày, 6 chuyến/ngày — chỉ Trúc Cơ trở lên', hasReg: false },
+    { id: 'chienbang', ten: 'Tán Tu Chiến Bảng', lich: 'khiêu chiến mỗi ngày ở Chấp Sự Đại Hội (lượt hồi 22:00) — thắng +50 Linh Thạch', hasReg: false },
+    { id: 'tamma', ten: 'Huyền Không Cổ Viện (Tam Ma)', lich: 'ghép ngẫu nhiên 22:30–23:30 mỗi ngày, đủ 10 người', hasReg: false }
+  ];
+  var EV_KEY = 'ttpx_events_v1';
+  function evLoad() {
+    try {
+      var raw = localStorage.getItem(EV_KEY);
+      if (raw) return JSON.parse(raw) || {};
+    } catch (e) {}
+    return {};
+  }
+  function evSave(map) { try { localStorage.setItem(EV_KEY, JSON.stringify(map)); } catch (e) {} }
+  function evOn(id, kind) {
+    var m = evLoad();
+    if (m[id] && m[id][kind] != null) return !!m[id][kind];
+    return true; // chưa có lựa chọn lưu thì bật hết (mặc định v1.27)
+  }
+  function evSet(id, kind, on) {
+    var m = evLoad();
+    if (!m[id]) m[id] = {};
+    m[id][kind] = !!on;
+    evSave(m);
+  }
+  function evSetAll(on) {
+    var m = {};
+    WEEK_EVENTS.forEach(function (e) { if (!e.noteOnly) m[e.id] = { reg: !!on, play: !!on }; });
+    evSave(m);
+  }
+  function evToggleText() {
+    var parts = [];
+    WEEK_EVENTS.forEach(function (e) {
+      if (e.noteOnly) return;
+      parts.push(e.ten + ': ' + (e.hasReg ? ('đăng kí ' + (evOn(e.id, 'reg') ? 'BẬT' : 'TẮT') + ', làm/đánh ' + (evOn(e.id, 'play') ? 'BẬT' : 'TẮT')) : ('tự làm ' + (evOn(e.id, 'play') ? 'BẬT' : 'TẮT'))));
+    });
+    return parts.join('; ');
+  }
+  function vnDayStartMs(nowMs, addDays) {
+    var vn = new Date(nowMs + 7 * 3600 * 1000);
+    return Date.UTC(vn.getUTCFullYear(), vn.getUTCMonth(), vn.getUTCDate() + (addDays || 0), 0, 0, 0) - 7 * 3600 * 1000;
+  }
+  function msAtVN(dayStartMs, h, mi) { return dayStartMs + h * 3600000 + (mi || 0) * 60000; }
+  function vnDow(dayStartMs) { return new Date(dayStartMs + 7 * 3600 * 1000).getUTCDay(); }
+  // Các suất sự kiện của hôm nay + ngày mai (giờ VN), đã sắp theo giờ bắt đầu.
+  function weekEventsAround(nowMs) {
+    var out = [];
+    for (var add = 0; add < 2; add++) {
+      var day = vnDayStartMs(nowMs, add), dow = vnDow(day);
+      [9, 13, 17, 20].forEach(function (h) {
+        if (DAIHOI.rest[dow] && DAIHOI.rest[dow].indexOf(h) >= 0) return;
+        var st = msAtVN(day, h, 16);
+        out.push({ id: 'daihoi', ten: 'Đại Hội Tu Tiên', startMs: st, regMs: st - 16 * 60000, closeMs: st, leadMs: 0 });
+      });
+      [[12, 30], [19, 30]].forEach(function (g) {
+        var st = msAtVN(day, g[0], g[1]);
+        out.push({ id: 'conbang', ten: 'Côn Bằng Hồ Tây', startMs: st, regMs: st, closeMs: st + 6 * 60000, leadMs: 15 * 60000 });
+      });
+      var vnSt = msAtVN(day, 22, 0);
+      out.push({ id: 'vetnut', ten: 'Vết Nứt Không Gian', startMs: vnSt, regMs: vnSt, closeMs: vnSt + 10 * 60000, leadMs: 0 });
+      if (dow === 4) {
+        var ssSt = msAtVN(day, 20, 16);
+        out.push({ id: 'sysach', ten: 'Sỹ Sách Điện', startMs: ssSt, regMs: ssSt - 16 * 60000, closeMs: ssSt + 20 * 60000, leadMs: 12 * 60000 });
+      }
+      if (dow === 1 || dow === 5) {
+        var ctSt = msAtVN(day, 21, 16);
+        out.push({ id: 'chientruong', ten: 'Vạn Hoang Chiến Trường', startMs: ctSt, regMs: ctSt - 16 * 60000, closeMs: ctSt + 14 * 60000, leadMs: 0 });
+      }
+      if (dow === 3 || dow === 0) {
+        var tlSt = msAtVN(day, 21, 0);
+        out.push({ id: 'tamlo', ten: 'Tam Lộ Tranh Phong', startMs: tlSt, regMs: tlSt - 16 * 60000, closeMs: tlSt, leadMs: 0, noteOnly: true });
+      }
+      if (dow === 4) {
+        var tbSt = msAtVN(day, 21, 0);
+        out.push({ id: 'tranhbia', ten: 'Tranh Bia Phong Địa', startMs: tbSt, regMs: tbSt, closeMs: tbSt + 30 * 60000, leadMs: 0, noteOnly: true });
+      }
+      out.push({ id: 'covat', ten: 'Cổ Vật Đáy Hồ', startMs: msAtVN(day, 10, 0), regMs: msAtVN(day, 10, 0), closeMs: msAtVN(day, 22, 0), leadMs: 0, noteOnly: true });
+      // v1.41: Vận Tiêu khung nhận tiêu 11:00–22:00 (VanTieu.GIO_MO/GIO_DONG) — chạy 1 khung/ngày đủ 6 chuyến
+      out.push({ id: 'vantieu', ten: 'Vận Tiêu', startMs: msAtVN(day, 11, 0), regMs: msAtVN(day, 11, 0), closeMs: msAtVN(day, 22, 0), leadMs: 0 });
+      // v1.41: Chiến Bảng không có giờ cố định (lượt hồi 22:00) — khung 08:00–22:00 chạy 1 lượt/ngày
+      out.push({ id: 'chienbang', ten: 'Tán Tu Chiến Bảng', startMs: msAtVN(day, 8, 0), regMs: msAtVN(day, 8, 0), closeMs: msAtVN(day, 22, 0), leadMs: 0 });
+      // v1.41: Tam Ma ghép ngẫu nhiên 22:30–23:30 (TamMa.GHEP tu:22.5 den:23.5)
+      out.push({ id: 'tamma', ten: 'Huyền Không Cổ Viện (Tam Ma)', startMs: msAtVN(day, 22, 30), regMs: msAtVN(day, 22, 30), closeMs: msAtVN(day, 23, 30), leadMs: 10 * 60000 });
+    }
+    out.sort(function (a, b) { return a.startMs - b.startMs; });
+    return out;
+  }
+  function weekEventsTodayText(nowMs) {
+    var day = vnDayStartMs(nowMs, 0);
+    var list = weekEventsAround(nowMs).filter(function (e) { return e.startMs >= day && e.startMs < day + 86400000 && e.closeMs > nowMs; });
+    if (!list.length) return 'hôm nay không còn sự kiện có giờ nào';
+    return list.map(function (e) {
+      var t = fmtTime(e.startMs).slice(-5);
+      return t + ' ' + e.ten + (e.noteOnly ? ' (chỉ ghi nhắc)' : '');
+    }).join('; ');
+  }
+  // Sự kiện đang tới lượt làm (đã bật nút, chưa chạy suất này) — ưu tiên cửa vào sắp đóng trước.
+  function evDueList(nowMs) {
+    var due = [];
+    weekEventsAround(nowMs).forEach(function (e) {
+      if (e.noteOnly || e.id === 'vetnut') return; // Vết Nứt đi theo toast riêng
+      var key = e.id + '@' + e.startMs;
+      if (S.evDone[key]) return;
+      var from = (e.regMs != null ? e.regMs : e.startMs) - (e.leadMs || 0);
+      if (nowMs >= from && nowMs < e.closeMs) due.push(e);
+    });
+    due.sort(function (a, b) { return a.closeMs - b.closeMs; });
+    return due;
+  }
+  function evNextLeadMs(nowMs) {
+    var best = null;
+    weekEventsAround(nowMs).forEach(function (e) {
+      if (e.noteOnly || e.id === 'vetnut') return;
+      var from = (e.regMs != null ? e.regMs : e.startMs) - (e.leadMs || 0);
+      if (from > nowMs && (best == null || from < best)) best = from;
+    });
+    return best;
+  }
+  function evRunnerFor(id) {
+    if (id === 'daihoi') return runDaiHoi;
+    if (id === 'conbang') return runConBang;
+    if (id === 'chientruong') return runChienTruong;
+    if (id === 'sysach') return runSySachDien;
+    if (id === 'vantieu') return runVanTieu; // v1.41
+    if (id === 'chienbang') return runChienBang; // v1.41
+    if (id === 'tamma') return runTamMa; // v1.41
+    return null;
+  }
+
+  // ============ v1.41 (Bui 04:05 + 04:06 ngày 2026-11-27): Vận Tiêu + Chiến Bảng + Tam Ma ============
+  // Dòng "Đang làm: ..." trên panel (#ttpx-doing) — hiện rõ việc hiện tại + việc kế kèm giờ,
+  // cập nhật theo từng bước của Lịch trình và 3 chế độ mới, không chỉ nằm trong nhật ký cuộn.
+  function setDoing(nowText, nextText) {
+    S.doingNow = nowText || '';
+    if (nextText != null) S.doingNext = nextText;
+    var el = $('#ttpx-doing');
+    if (el) el.textContent = 'Đang làm: ' + (S.doingNow || '—') + (S.doingNext ? ' · Việc kế: ' + S.doingNext : '');
+  }
+  function scheduleNextText(nowMs) {
+    var now = nowMs || Date.now();
+    var list = weekEventsAround(now);
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i];
+      if (e.noteOnly) continue;
+      var from = (e.regMs != null ? e.regMs : e.startMs) - (e.leadMs || 0);
+      if (from > now) return e.ten + ' ' + fmtTime(e.startMs).slice(0,5) + (e.regMs && e.regMs < e.startMs ? ' (ghi danh ' + fmtTime(e.regMs).slice(0,5) + ')' : '');
+    }
+    return 'farm tới sự kiện kế';
+  }
+  // Mở bảng Chọn Nơi Tranh Tài ở Chấp Sự Đại Hội rồi bấm thẻ theo data-k (client: #chiensanh
+  // > .sanh-card[data-k]; thẻ Chiến Bảng = "tantu", Huyền Không = "huyenkhong"). Nếu game mở
+  // thoại chọn thay vì bảng thẻ thì bấm mục thoại theo tên.
+  function openChienSanh(runId, cardKey, cardLabel, label) {
+    return (async function () {
+      var cardSel = '#chiensanh .sanh-card[data-k="' + cardKey + '"]';
+      var ov = $('#chiensanh');
+      var card = $(cardSel);
+      if (!card || !ov || ov.classList.contains('hidden')) {
+        await travelTo(runId, 'tan_vien');
+        if (!alive(runId)) return false;
+        await standNextTo(runId, 20, 11, 'Chấp Sự Đại Hội');
+        await ensureFly(runId, false);
+        await ensureAuto(runId, false);
+        if (!(await pressInteractBtn(runId, 8000, 'Chấp Sự Đại Hội'))) { log(label + ': không bấm được Tương Tác ở Chấp Sự Đại Hội'); return false; }
+        var shown = await waitFor(function () {
+          var c = $(cardSel), o2 = $('#chiensanh');
+          if (c && o2 && !o2.classList.contains('hidden')) return { card: c };
+          if (dialogOpen()) return { dialog: true };
+          return null;
+        }, 8000, 'bảng Chọn Nơi Tranh Tài / thoại Chấp Sự');
+        if (!shown) { log(label + ': bấm Tương Tác mà bảng Chọn Nơi Tranh Tài chưa hiện — caption: "' + (readCaption() || '(trống)') + '"'); return false; }
+        if (shown.dialog) {
+          log(label + ': game mở thoại thay vì bảng thẻ — bấm mục "' + cardLabel + '"');
+          return clickDialogChoice([cardLabel], cardLabel);
+        }
+        card = shown.card;
+      }
+      var stEl = card.querySelector('.sanh-st b');
+      log(label + ': bấm thẻ "' + cardLabel + '" trong bảng Chọn Nơi Tranh Tài' + (stEl ? ' (trạng thái thẻ: "' + (stEl.textContent || '').trim() + '")' : ''));
+      pressDom(card);
+      await sleep(1200);
+      return true;
+    })();
+  }
+
+  // ---- Vận Tiêu (module VanTieu + VanTieuUI) ----
+  // REALM_MIN="truc_co_1"; nhận ở Huấn Sư Huynh ly_thanh (thanh_truc_lam 10,14), giao ở
+  // Bảnh Tiên Sinh huyet_anh_khach (bat_quai_thach_phan 10,29); tuyến 6 map; GIO_MO=11
+  // GIO_DONG=22; PHI=400 (LUOT_RE=3 chuyến đầu) PHI_THEM=1000; LUOT_VAN=6/ngày, LUOT_CUOP=2.
+  // moTuChay: chuyến đầu hôm nay phải tự kéo — xong chuyến ấy game mới mở tự chạy tiêu.
+  // Nhận tiêu bắt hạ cánh (checkNhan dangBay); nhận xong game đặt flying=false; tuChayBat
+  // cũng hạ cánh — nên khi áp tải KHÔNG bay được (Phi Hành bật lại sau khi giao xong).
+  // Thoại Huấn Sư Huynh: "Nhận Tiêu" (note phí + lượt còn, disabled khi không đủ điều kiện)
+  // + "Tự Chạy Tiêu" (disabled kèm lý do). Thoại Bảnh: "Giao Hàng" + "Bỏ Hàng".
+  // HUD #van-tieu-hud: .vt-hang/.vt-han/.vt-mau/.vt-dong + button.vt-tu.
+  var VANTIEU = {
+    gioMo: 11, gioDong: 22, phi: 400, phiThem: 1000, luotRe: 3, luotVan: 6,
+    mapNhan: 'thanh_truc_lam', npcNhan: { id: 'ly_thanh', name: 'Huấn Sư Huynh', tx: 10, ty: 14 },
+    mapGiao: 'bat_quai_thach_phan', npcGiao: { id: 'huyet_anh_khach', name: 'Bảnh Tiên Sinh', tx: 10, ty: 29 },
+    route: ['thanh_truc_lam', 'tan_vien', 'bai_da_hang_gio', 'mo_linh_thach', 'thach_phong_thung_lung', 'bat_quai_thach_phan']
+  };
+  function vtVnHour(nowMs) { return new Date((nowMs || Date.now()) + 7 * 3600000).getUTCHours(); }
+  function vtHud() {
+    var h = $('#van-tieu-hud');
+    if (!h) return null;
+    return {
+      visible: !h.hidden,
+      hang: ((h.querySelector('.vt-hang') || {}).textContent || '').trim(),
+      dong: ((h.querySelector('.vt-dong') || {}).textContent || '').trim(),
+      tuBtn: h.querySelector('.vt-tu')
+    };
+  }
+  function vtAutoState() {
+    var h = vtHud();
+    if (!h || !h.tuBtn) return 'none';
+    if (h.tuBtn.hidden) return 'locked';
+    return /Dừng tự chạy/.test((h.tuBtn.textContent || '').trim()) ? 'running' : 'available';
+  }
+  function vtChoiceInfo(label) {
+    var root = $('#dialog-choices');
+    if (!root) return null;
+    var els = root.querySelectorAll('button.btn-choice');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var labelEl = el.querySelector('span:not(.c-stats):not(.c-note)');
+      var lab = (labelEl ? labelEl.textContent : el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (lab.indexOf(label) >= 0) {
+        var nt = el.querySelector('.c-note:not(.c-desc)');
+        return { el: el, label: lab, disabled: !!el.disabled, note: nt ? (nt.textContent || '').trim() : '' };
+      }
+    }
+    return null;
+  }
+  function vtMonitorAuto(runId, tripNo) {
+    return (async function () {
+      var t0 = Date.now(), lastBeat = 0;
+      while (alive(runId)) {
+        var hud = vtHud();
+        if (!hud || !hud.visible) return 'done'; // giao xong (hoặc xe tan) — HUD ẩn
+        if (vtAutoState() !== 'running') return 'autostopped'; // game dừng tự chạy (bị đánh/kẹt cửa) — chuyến còn dở
+        if (isDowned()) { log('Vận Tiêu: nhân vật gục khi tự chạy tiêu — hồi sinh rồi kéo tiếp'); await handleDeath(runId); if (!alive(runId)) return 'stopped'; return 'autostopped'; }
+        if (Date.now() - t0 > 40 * 60000) { log('Vận Tiêu: tự chạy quá 40 phút chưa xong — dừng theo dõi'); return 'timeout'; }
+        if (Date.now() - lastBeat > 60000) {
+          lastBeat = Date.now();
+          var m = readMapId();
+          setDoing('Vận Tiêu: tự chạy tiêu chuyến ' + tripNo + ' — đang ở ' + (MAPS[m] ? MAPS[m].name : m || '?'), null);
+          log('Vận Tiêu: tự chạy đang kéo xe ở ' + (MAPS[m] ? MAPS[m].name : m || '?') + ' (' + (hud.dong || hud.hang || '') + ')');
+        }
+        await sleep(5000);
+      }
+      return 'stopped';
+    })();
+  }
+  function vtEscortManual(runId, tripNo) {
+    return (async function () {
+      await ensureFly(runId, false); // áp tải không bay được (game đặt flying=false)
+      await ensureAuto(runId, false);
+      await ensureRun(runId, false); // đi bộ thường — chạy nhanh dễ bỏ xa xe (xe đứng im khi người quá xa)
+      var cur = readMapId();
+      var idx = VANTIEU.route.indexOf(cur);
+      if (idx < 0) { log('Vận Tiêu: đang ở map ngoài tuyến (' + (MAPS[cur] ? MAPS[cur].name : cur) + ') — về đầu tuyến Rừng Trúc'); await travelTo(runId, VANTIEU.route[0]); idx = 0; }
+      for (var i = idx + 1; i < VANTIEU.route.length; i++) {
+        if (!alive(runId)) return 'stopped';
+        var nextMap = VANTIEU.route[i];
+        setDoing('Vận Tiêu: tự kéo xe chuyến ' + tripNo + ' — chặng tới ' + (MAPS[nextMap] ? MAPS[nextMap].name : nextMap), null);
+        log('Vận Tiêu: kéo xe chặng ' + (i) + '/' + (VANTIEU.route.length - 1) + ' tới ' + (MAPS[nextMap] ? MAPS[nextMap].name : nextMap));
+        await travelTo(runId, nextMap);
+        if (!alive(runId)) return 'stopped';
+        var hud = vtHud();
+        if (!hud || !hud.visible) { log('Vận Tiêu: xe không còn trên HUD giữa đường (xe vỡ/bị cướp mất?) — dừng chuyến này'); return 'xe mất giữa đường'; }
+        if (isDowned()) { log('Vận Tiêu: nhân vật gục khi kéo xe — hồi sinh'); await handleDeath(runId); if (!alive(runId)) return 'stopped'; }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Vận Tiêu: Khí Huyết dưới 35% khi kéo xe — dừng'); return 'hp'; }
+        await fightBackCheck(runId, 'Vận Tiêu kéo xe');
+        if (!alive(runId)) return 'stopped';
+      }
+      // giao hàng ở Bảnh Tiên Sinh
+      setDoing('Vận Tiêu: giao hàng cho Bảnh Tiên Sinh (chuyến ' + tripNo + ')', null);
+      await standNextTo(runId, VANTIEU.npcGiao.tx, VANTIEU.npcGiao.ty, 'Bảnh Tiên Sinh');
+      await ensureFly(runId, false);
+      if (!(await openNpcDialog(runId, VANTIEU.npcGiao.tx, VANTIEU.npcGiao.ty, 'Bảnh Tiên Sinh'))) return 'không mở được thoại Bảnh Tiên Sinh';
+      if (!clickDialogChoice(['Giao Hàng'], 'Giao Hàng')) { closeDialogIfOpen(); return 'không thấy mục Giao Hàng'; }
+      var delivered = await waitFor(function () { var h = vtHud(); return !h || !h.visible ? true : null; }, 10000, 'giao hàng xong (HUD xe ẩn)');
+      closeDialogIfOpen();
+      if (!delivered) { log('Vận Tiêu: bấm Giao Hàng mà xe chưa giao xong — caption: "' + (readCaption() || '(trống)') + '" (người và xe đều phải đứng sát Bảnh Tiên Sinh)'); return 'giao hàng chưa thành'; }
+      return 'done';
+    })();
+  }
+  function vtOneTrip(runId, tripNo) {
+    return (async function () {
+      var stonesBefore = readStones();
+      var hud = vtHud();
+      if (!hud || !hud.visible) {
+        setDoing('Vận Tiêu: tới Huấn Sư Huynh nhận tiêu (chuyến ' + tripNo + ')', null);
+        await travelTo(runId, VANTIEU.mapNhan);
+        if (!alive(runId)) return 'stopped';
+        await ensureFly(runId, false); // game bắt hạ cánh mới nhận tiêu được
+        await ensureAuto(runId, false);
+        if (!(await openNpcDialog(runId, VANTIEU.npcNhan.tx, VANTIEU.npcNhan.ty, 'Huấn Sư Huynh'))) return 'không mở được thoại Huấn Sư Huynh';
+        var choice = vtChoiceInfo('Nhận Tiêu');
+        if (choice && choice.disabled) {
+          log('Vận Tiêu: mục Nhận Tiêu bị khóa — ' + (choice.note || 'game không cho nhận'));
+          closeDialogIfOpen();
+          if (/lượt|chuyến/.test(choice.note || '')) return 'hetluot';
+          if (/Linh Thạch/.test(choice.note || '')) return 'thieuphi';
+          return 'game không cho nhận tiêu: ' + (choice.note || '');
+        }
+        if (!clickDialogChoice(['Nhận Tiêu'], 'Nhận Tiêu')) { closeDialogIfOpen(); return 'không thấy mục Nhận Tiêu'; }
+        var got = await waitFor(function () { var h = vtHud(); return h && h.visible ? h : null; }, 8000, 'xe tiêu hiện (HUD Vận Tiêu)');
+        closeDialogIfOpen();
+        if (!got) { log('Vận Tiêu: bấm Nhận Tiêu mà xe chưa hiện — caption: "' + (readCaption() || '(trống)') + '"'); return 'nhận tiêu chưa thành'; }
+        log('Vận Tiêu: đã nhận chuyến ' + tripNo + ' — xe ' + (got.hang || '?') + (stonesBefore != null ? ', Linh Thạch ' + stonesBefore + ' → ' + readStones() + ' (phí đã trừ)' : ''));
+      } else {
+        log('Vận Tiêu: đang có xe dở (' + (hud.hang || '?') + ' — ' + (hud.dong || '') + ') — kéo tiếp chuyến này');
+      }
+      var auto = vtAutoState();
+      if (auto === 'available') {
+        log('Vận Tiêu: game đã mở tự chạy tiêu — bấm "Tự chạy tiêu" (game tự kéo/giao, bị đánh thì dừng tự chạy)');
+        setDoing('Vận Tiêu: tự chạy tiêu chuyến ' + tripNo, null);
+        pressDom(vtHud().tuBtn);
+        await sleep(1500);
+        var mon = await vtMonitorAuto(runId, tripNo);
+        if (mon === 'autostopped') { log('Vận Tiêu: tự chạy đã dừng giữa chuyến — tool tự kéo nốt'); var man1 = await vtEscortManual(runId, tripNo); if (man1 !== 'done') return man1; }
+        else if (mon !== 'done') return mon;
+      } else if (auto === 'running') {
+        log('Vận Tiêu: tự chạy tiêu đang bật sẵn — theo dõi tới khi giao xong');
+        var mon2 = await vtMonitorAuto(runId, tripNo);
+        if (mon2 === 'autostopped') { log('Vận Tiêu: tự chạy đã dừng giữa chuyến — tool tự kéo nốt'); var man2 = await vtEscortManual(runId, tripNo); if (man2 !== 'done') return man2; }
+        else if (mon2 !== 'done') return mon2;
+      } else {
+        log('Vận Tiêu: tự chạy tiêu chưa mở (chuyến đầu hôm nay phải tự kéo — luật của game) — tool tự kéo xe theo tuyến, đi bộ không bay');
+        var man3 = await vtEscortManual(runId, tripNo);
+        if (man3 !== 'done') return man3;
+      }
+      var stonesAfter = readStones();
+      log('Vận Tiêu: giao xong chuyến ' + tripNo + (stonesBefore != null && stonesAfter != null ? ' — Linh Thạch ' + stonesBefore + ' → ' + stonesAfter + ' (' + (stonesAfter >= stonesBefore ? '+' : '') + (stonesAfter - stonesBefore) + ')' : ''));
+      await ensureFly(runId, true); // giao xong bật lại Phi Hành (đọc trạng thái thật trước khi nhấn)
+      return 'done';
+    })();
+  }
+  function runVanTieu(runId, opts) {
+    opts = opts || {};
+    var end = function (r) { if (opts.schedule || opts.chain) { log('Vận Tiêu (' + (opts.chain ? 'trong chuỗi nhiệm vụ' : 'lịch trình') + '): kết thúc — ' + r); return r; } stopTool(r); return r; };
+    return (async function () {
+      await flyCheckAtStart(runId, 'Vận Tiêu', null);
+      var realm = await readRealmInfoRetry(runId);
+      if (!isTrucCoUpRealm(realm)) {
+        log('Vận Tiêu: cần Trúc Cơ trở lên (VanTieu.REALM_MIN="truc_co_1") — nhân vật đang ' + (realm ? realm.name : 'không đọc được cảnh giới') + ', chưa nhận tiêu được');
+        setDoing('Vận Tiêu: chưa đủ Trúc Cơ', null);
+        return end('chưa đủ Trúc Cơ Vận Tiêu');
+      }
+      var hour = vtVnHour();
+      if (hour < VANTIEU.gioMo || hour >= VANTIEU.gioDong) {
+        log('Vận Tiêu: chỉ nhận tiêu 11:00–22:00 giờ VN — đang ' + hour + ' giờ, ngoài khung');
+        setDoing('Vận Tiêu: ngoài giờ nhận tiêu (11:00–22:00)', null);
+        return end('ngoài giờ Vận Tiêu');
+      }
+      var maxTrips = opts.maxTrips || VANTIEU.luotVan;
+      var stones0 = readStones();
+      log('Vận Tiêu: cảnh giới ' + realm.name + ' đủ điều kiện — chạy tối đa ' + maxTrips + ' chuyến (game cho ' + VANTIEU.luotVan + '/ngày; phí ' + VANTIEU.phi + ' Linh Thạch ' + VANTIEU.luotRe + ' chuyến đầu, sau ' + VANTIEU.phiThem + '); tuyến Rừng Trúc → Tản Viên → Bãi Đá → Mỏ Linh Thạch → Thung Lũng → Thành Thăng Long; chuyến đầu hôm nay phải tự kéo, xong game mới mở tự chạy');
+      var done = 0;
+      for (var trip = 1; trip <= maxTrips; trip++) {
+        if (!alive(runId)) return;
+        setDoing('Vận Tiêu chuyến ' + trip + '/' + maxTrips, null);
+        var r = await vtOneTrip(runId, trip);
+        if (!alive(runId)) return;
+        if (r === 'hp') return end('hp');
+        if (r === 'hetluot') { log('Vận Tiêu: hôm nay đã hết lượt nhận tiêu — dừng'); break; }
+        if (r === 'thieuphi') { log('Vận Tiêu: không đủ Linh Thạch đóng phí nhận tiêu — dừng'); break; }
+        if (r !== 'done') { log('Vận Tiêu: chuyến ' + trip + ' chưa xong (' + r + ') — dừng'); break; }
+        done++;
+        if (vtVnHour() >= VANTIEU.gioDong) { log('Vận Tiêu: đã qua 22:00 — không nhận chuyến mới'); break; }
+      }
+      setDoing('Vận Tiêu xong ' + done + ' chuyến', null);
+      log('Vận Tiêu: tổng giao ' + done + ' chuyến' + (stones0 != null ? ' — Linh Thạch ' + stones0 + ' → ' + readStones() : ''));
+      return end(done > 0 ? 'done' : 'không giao được chuyến nào');
+    })();
+  }
+
+  // ---- Tán Tu Chiến Bảng (module ChienBang + ChienBangUI) ----
+  // Mở ở Chấp Sự Đại Hội qua bảng Chọn Nơi Tranh Tài (thẻ data-k="tantu") → dialog .cbx:
+  // .cbx-so "Hạng của bạn", .cbx-luot strong = lượt còn, .cbx-dong(.danh-duoc/.la-toi) >
+  // .cbx-hang + .cbx-ten + small cảnh giới + .cbx-danh "Khiêu chiến". Thắng +50 Linh Thạch
+  // (THUONG_THANG), trận 90s (TRAN_KEO_DAI_MS), lượt hồi 22:00; mua lượt qua chienbang.mua
+  // — tool KHÔNG mua. Đài: chien_bang_dai.
+  var CHIENBANG = { mapDai: 'chien_bang_dai', tranMs: 90000, thuongThang: 50 };
+  function cbBoardOpen() { var c = $('.cbx'); return !!(c && dialogOpen()); }
+  function cbReadBoard() {
+    var box = $('.cbx');
+    if (!box) return null;
+    var luotEl = box.querySelector('.cbx-luot strong');
+    var luot = luotEl ? parseInt((luotEl.textContent || '').replace(/\D/g, ''), 10) : null;
+    var hangToi = null;
+    box.querySelectorAll('.cbx-so').forEach(function (s) {
+      var sm = s.querySelector('small');
+      if (sm && /Hạng của bạn/.test(sm.textContent || '')) {
+        var st = s.querySelector('strong');
+        var mm = st ? (st.textContent || '').match(/#(\d+)/) : null;
+        if (mm) hangToi = +mm[1];
+      }
+    });
+    var rows = [];
+    box.querySelectorAll('.cbx-dong').forEach(function (r) {
+      var hangEl = r.querySelector('.cbx-hang');
+      var tenEl = r.querySelector('.cbx-ten b');
+      var cgEl = r.querySelector('.cbx-ten small');
+      var btn = r.querySelector('.cbx-danh');
+      rows.push({
+        hang: hangEl ? parseInt(hangEl.textContent, 10) : null,
+        ten: tenEl ? (tenEl.textContent || '').trim() : '',
+        canhGioi: cgEl ? (cgEl.textContent || '').trim() : '',
+        laToi: r.classList.contains('la-toi'),
+        danhDuoc: r.classList.contains('danh-duoc'),
+        btn: btn, btnDisabled: btn ? !!btn.disabled : true
+      });
+    });
+    return { luotCon: isNaN(luot) ? null : luot, hangToi: hangToi, rows: rows };
+  }
+  function cbTierOfText(t) {
+    if (!t) return null;
+    var m = t.match(/Luyện Khí tầng (\d+)/);
+    if (m) return REALM_ORDER.indexOf('luyen_khi_' + m[1]);
+    if (/Trúc Cơ/.test(t)) return REALM_ORDER.indexOf('truc_co_1');
+    if (/Phàm Nhân/.test(t)) return 0;
+    return null;
+  }
+  function cbOpenBoard(runId) {
+    return (async function () {
+      if (cbBoardOpen()) return cbReadBoard();
+      if (!(await openChienSanh(runId, 'tantu', 'Tán Tu Chiến Bảng', 'Chiến Bảng'))) return null;
+      var board = await waitFor(function () { return cbBoardOpen() ? cbReadBoard() : null; }, 10000, 'bảng Tán Tu Chiến Bảng hiện');
+      return board;
+    })();
+  }
+  function runChienBang(runId, opts) {
+    opts = opts || {};
+    var end = function (r) { if (opts.schedule || opts.chain) { log('Chiến Bảng (' + (opts.chain ? 'trong chuỗi nhiệm vụ' : 'lịch trình') + '): kết thúc — ' + r); return r; } stopTool(r); return r; };
+    return (async function () {
+      await flyCheckAtStart(runId, 'Tán Tu Chiến Bảng', null);
+      var stones0 = readStones();
+      var wins = 0, fights = 0;
+      log('Tán Tu Chiến Bảng: khiêu chiến ở Chấp Sự Đại Hội (Tản Viên), thắng +' + CHIENBANG.thuongThang + ' Linh Thạch, lượt hồi 22:00 — tool không mua thêm lượt');
+      while (alive(runId)) {
+        var board = await cbOpenBoard(runId);
+        if (!alive(runId)) return;
+        if (!board) return end('không mở được bảng Chiến Bảng');
+        if (board.luotCon != null && board.luotCon <= 0) { log('Chiến Bảng: hôm nay hết lượt khiêu chiến (lượt hồi 22:00) — dừng, không mua thêm lượt'); break; }
+        var cands = board.rows.filter(function (r) { return r.danhDuoc && !r.laToi && r.btn && !r.btnDisabled; });
+        if (!cands.length) { log('Chiến Bảng: không có đối thủ khiêu chiến được lúc này (bảng có ' + board.rows.length + ' dòng, lượt còn ' + board.luotCon + ') — dừng'); break; }
+        cands.sort(function (a, b) {
+          var ta = cbTierOfText(a.canhGioi), tb = cbTierOfText(b.canhGioi);
+          var da = ta == null ? 99 : ta, db = tb == null ? 99 : tb;
+          if (da !== db) return da - db;
+          return (b.hang || 0) - (a.hang || 0);
+        });
+        var pick = cands[0];
+        fights++;
+        setDoing('Chiến Bảng: trận ' + fights + ' — khiêu chiến hạng ' + pick.hang + ' ' + pick.ten, null);
+        log('Chiến Bảng: trận ' + fights + ' — khiêu chiến hạng ' + pick.hang + ' "' + pick.ten + '" (' + (pick.canhGioi || 'không rõ cảnh giới') + '), lượt còn ' + board.luotCon + ', hạng của mình ' + (board.hangToi ? '#' + board.hangToi : 'chưa có tên'));
+        var stonesBefore = readStones();
+        pressDom(pick.btn);
+        var inDai = await waitFor(function () { return readMapId() === CHIENBANG.mapDai ? true : null; }, 20000, 'vào Chiến Bảng Đài');
+        if (!inDai) { log('Chiến Bảng: bấm Khiêu chiến mà chưa vào đài — caption: "' + (readCaption() || '(trống)') + '"'); closeDialogIfOpen(); break; }
+        await ensureCombatTrio(runId, 'Chiến Bảng Đài');
+        var rot = skillRotation(runId, function () { return readMapId() === CHIENBANG.mapDai; });
+        var tFight = Date.now();
+        await waitFor(function () { return readMapId() !== CHIENBANG.mapDai ? true : null; }, CHIENBANG.tranMs + 60000, 'trận Chiến Bảng kết thúc', 1000);
+        if (rot) rot.stop();
+        if (!alive(runId)) return;
+        await ensureAuto(runId, false);
+        var stonesAfter = readStones();
+        var won = stonesBefore != null && stonesAfter != null && stonesAfter > stonesBefore;
+        if (won) wins++;
+        log('Chiến Bảng: trận ' + fights + ' xong sau ' + Math.round((Date.now() - tFight) / 1000) + 's' + (stonesBefore != null && stonesAfter != null ? ' — Linh Thạch ' + stonesBefore + ' → ' + stonesAfter + ' (' + (stonesAfter >= stonesBefore ? '+' : '') + (stonesAfter - stonesBefore) + ')' : '') + (won ? ' — THẮNG' : ' — không thấy thưởng (thua hoặc chưa ghi)'));
+        if (opts.needWin && wins >= opts.needWin) { log('Chiến Bảng: đã thắng ' + wins + ' trận — đủ yêu cầu nhiệm vụ'); break; }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35) { log('Chiến Bảng: Khí Huyết dưới 35% — dừng'); return end('hp'); }
+        await sleep(2000);
+      }
+      setDoing('Chiến Bảng xong: ' + fights + ' trận, thắng ' + wins, null);
+      log('Chiến Bảng: tổng ' + fights + ' trận, thắng ' + wins + (stones0 != null ? ' — Linh Thạch ' + stones0 + ' → ' + readStones() : ''));
+      return end(fights > 0 ? 'done' : 'chưa đánh được trận nào');
+    })();
+  }
+
+  // ---- Huyền Không Cổ Viện / Tam Ma (module TamMa + TamMaUI) ----
+  // Ghép ngẫu nhiên 22:30–23:30 hằng ngày (GHEP tu:22.5 den:23.5), đủ 10 người, qua thẻ
+  // data-k="huyenkhong" ở Chấp Sự Đại Hội (TamMaUI.ghep → tamma.tim). Trận là suy luận tìm
+  // Tâm Ma (vai Đệ Tử/Tâm Ma/Tẩu Hỏa), không phải đánh quái — tool vào trận, ở tới khi kết
+  // thúc, bấm Đóng các bảng phụ (.tmk-nut) để không kẹt màn hình. Map tam_ma có lớp tối
+  // (DARK_MAP_PREFIXES đã có "tam_ma" — Map sáng tự bật qua brightAutoCheck).
+  var TAMMA = { map: 'tam_ma', ghepTu: 22.5, ghepDen: 23.5, du: 10 };
+  function tmGhepOpen(nowMs) {
+    var d = new Date((nowMs || Date.now()) + 7 * 3600000);
+    var h = d.getUTCHours() + d.getUTCMinutes() / 60;
+    return h >= TAMMA.ghepTu && h < TAMMA.ghepDen;
+  }
+  function tmNextGhepMs(nowMs) {
+    var day = vnDayStartMs(nowMs, 0);
+    var st = msAtVN(day, 22, 30);
+    return st > nowMs ? st : st + 86400000;
+  }
+  function runTamMa(runId, opts) {
+    opts = opts || {};
+    var end = function (r) { if (opts.schedule || opts.chain) { log('Tam Ma (' + (opts.chain ? 'trong chuỗi nhiệm vụ' : 'lịch trình') + '): kết thúc — ' + r); return r; } stopTool(r); return r; };
+    return (async function () {
+      await flyCheckAtStart(runId, 'Huyền Không Cổ Viện (Tam Ma)', null);
+      if (readMapId() !== TAMMA.map) {
+        if (!tmGhepOpen()) {
+          var nextMs = tmNextGhepMs(Date.now());
+          if (opts.schedule || opts.chain) {
+            log('Tam Ma: chưa tới giờ ghép (22:30–23:30 hằng ngày) — suất kế ' + fmtTime(nextMs));
+            setDoing('Chờ Tam Ma ghép 22:30', null);
+            return end('chưa tới giờ Tam Ma');
+          }
+          log('Tam Ma: chờ tới giờ ghép 22:30 (còn ' + fmtCountdown(nextMs - Date.now()) + ')');
+          while (alive(runId) && !tmGhepOpen()) {
+            setDoing('Chờ Tam Ma ghép 22:30 (còn ' + fmtCountdown(tmNextGhepMs(Date.now()) - Date.now()) + ')', null);
+            await sleep(15000);
+          }
+          if (!alive(runId)) return;
+        }
+        setDoing('Tam Ma: tới Chấp Sự Đại Hội ghép trận', null);
+        log('Tam Ma: giờ ghép đang mở (22:30–23:30, đủ ' + TAMMA.du + ' người) — tới Chấp Sự Đại Hội bấm ghép');
+        var opened = await openChienSanh(runId, 'huyenkhong', 'Huyền Không Cổ Viện', 'Tam Ma');
+        if (!alive(runId)) return;
+        if (!opened) return end('không bấm được ghép Tam Ma');
+        log('Tam Ma: đã bấm ghép — chờ đủ người vào trận');
+        var entered = await waitFor(function () { return readMapId() === TAMMA.map ? true : null; }, 600000, 'vào Huyền Không Cổ Viện', 3000);
+        if (!entered) { log('Tam Ma: chờ 10 phút chưa vào được trận (chưa đủ người hoặc ghép đã đóng) — dừng'); return end('chưa vào được trận Tam Ma'); }
+      }
+      log('Tam Ma: đã vào Huyền Không Cổ Viện — trận suy luận tìm Tâm Ma giữa ' + TAMMA.du + ' người; tool ở trong trận tới khi kết thúc, bấm Đóng các bảng phụ của trận');
+      brightAutoCheck();
+      var tIn = Date.now(), lastBeat = 0;
+      while (alive(runId) && readMapId() === TAMMA.map) {
+        if (Date.now() - tIn > 35 * 60000) { log('Tam Ma: đã ở trong trận 35 phút — dừng theo dõi'); break; }
+        var closeBtns = document.querySelectorAll('.tmk-nut');
+        for (var i = 0; i < closeBtns.length; i++) {
+          var tx = (closeBtns[i].textContent || '').trim();
+          if (tx === 'Đóng' || tx === 'Bỏ dở') pressDom(closeBtns[i]);
+        }
+        if (Date.now() - lastBeat > 60000) {
+          lastBeat = Date.now();
+          setDoing('Tam Ma: đang trong trận (' + Math.round((Date.now() - tIn) / 60000) + ' phút)', null);
+          log('Tam Ma: đang trong trận ' + Math.round((Date.now() - tIn) / 60000) + ' phút — caption: "' + (readCaption() || '(trống)') + '"');
+        }
+        await sleep(3000);
+      }
+      if (!alive(runId)) return;
+      log('Tam Ma: trận kết thúc sau ' + Math.round((Date.now() - tIn) / 60000) + ' phút — đã ra map ' + (readMapId() || '?'));
+      setDoing('Tam Ma xong 1 trận', null);
+      return end('done');
+    })();
+  }
+
+  // ============ v1.42 (Bui 04:23 ngày 2026-11-27): rút bí tịch MIỄN PHÍ ở Tàng Kinh Các ============
+  // Cơ chế theo mã client (Gacha + GachaUI trong game.531628916167.js):
+  // - 4 tủ: so_cap "Tàng Kinh Sơ Cấp" (100 LT/lượt, free), trung_cap (1.000, không free),
+  //   thuong_pham (5.000, không free), bi_dong "Tàng Kinh Bị Động" (500 LT/lượt, free).
+  // - Tủ free:!0 có 1 lượt miễn phí/ngày: Gacha.freeToday kiểm Quest.flags["gacha_mien_phi"]
+  //   [poolId] !== ngayVN(now) — ngayVN = ngày theo giờ VN nên lượt reset 00:00 VN.
+  // - Mở qua thoại Tàng Kinh Lão Nhân (tan_vien 11,12): mục chọn mang tên tủ → GachaUI.show(poolId).
+  // - Nút #gacha-one: khi còn lượt miễn phí chữ là "Rút 1 · Miễn phí hôm nay" + class "free";
+  //   hết lượt chữ đổi "Rút 1 · <giá>" (tốn Linh Thạch). Tool CHỈ bấm khi chữ đúng miễn phí —
+  //   tuyệt đối không rút lượt tốn Linh Thạch (chưa có ngân sách Bui chốt).
+  // - Kết quả hiện ở #gacha-haul (+ lời thoại #gacha-say); đóng bằng #gacha-close.
+  // - Không thấy điều kiện cảnh giới trong mã cho việc rút (freeToday chỉ xét tủ + cờ ngày).
+  var GACHA_FREE_POOLS = [
+    { id: 'so_cap', label: 'Tàng Kinh Sơ Cấp' },
+    { id: 'bi_dong', label: 'Tàng Kinh Bị Động' }
+  ];
+  function gachaNgayVN(nowMs) { return Math.floor(((nowMs == null ? Date.now() : nowMs) + 252e5) / 864e5); }
+  function gachaFreeUsedToday(poolId) {
+    var loc = readLocal();
+    var f = loc && loc.flags ? loc.flags.gacha_mien_phi : null;
+    return !!(f && f[poolId] === gachaNgayVN());
+  }
+  function gachaPanelOpen() {
+    var el = $('#gacha');
+    if (!el || el.classList.contains('hidden')) return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+  function runGachaFree(runId, opts) {
+    opts = opts || {};
+    return (async function () {
+      var todo = GACHA_FREE_POOLS.filter(function (p) { return !gachaFreeUsedToday(p.id); });
+      if (!todo.length) {
+        log('Rút bí tịch: cả 2 tủ miễn phí (Tàng Kinh Sơ Cấp + Tàng Kinh Bị Động) đã hết lượt miễn phí hôm nay (cờ gacha_mien_phi) — bỏ qua, không rút lượt tốn Linh Thạch');
+        return 'done';
+      }
+      log('Rút bí tịch miễn phí: còn lượt hôm nay ở tủ ' + todo.map(function (p) { return p.label; }).join(', ') + ' — tới Tàng Kinh Lão Nhân ở Tản Viên (11,12)');
+      await flyCheckAtStart(runId, 'Rút bí tịch miễn phí', null);
+      await ensureAuto(runId, false);
+      var drawn = 0;
+      for (var pi = 0; pi < todo.length && alive(runId); pi++) {
+        var pool = todo[pi];
+        try { await travelTo(runId, 'tan_vien'); } catch (eT) { if (!alive(runId)) throw eT; log('Rút bí tịch: không tới được Tản Viên (' + eT.message + ') — bỏ qua tủ ' + pool.label); continue; }
+        if (!alive(runId)) return;
+        if (!(await openNpcDialog(runId, 11, 12, 'Tàng Kinh Lão Nhân'))) { log('Rút bí tịch: không mở được thoại Tàng Kinh Lão Nhân — bỏ qua tủ ' + pool.label); continue; }
+        if (!alive(runId)) return;
+        if (!clickDialogChoice([pool.label], pool.label)) { log('Rút bí tịch: không thấy mục chọn tủ "' + pool.label + '" trong thoại — bỏ qua'); continue; }
+        // Chờ bảng rút mở
+        var t0 = Date.now(), opened = false;
+        while (alive(runId) && Date.now() - t0 < 8000) { if (gachaPanelOpen()) { opened = true; break; } await sleep(300); }
+        if (!alive(runId)) return;
+        if (!opened) { log('Rút bí tịch: bảng rút tủ ' + pool.label + ' không mở sau 8s — bỏ qua'); continue; }
+        var title = (($('#gacha-title') || {}).textContent || '').trim();
+        var one = $('#gacha-one');
+        var oneText = one ? (one.textContent || '').replace(/\s+/g, ' ').trim() : '';
+        var isFree = !!(one && /Miễn phí hôm nay/.test(oneText) && one.classList.contains('free'));
+        if (!one || one.disabled || !isFree) {
+          log('Rút bí tịch: tủ ' + pool.label + ' — nút rút hiện "' + (oneText || '(không thấy nút)') + '"' + (title ? ' (bảng: ' + title + ')' : '') + ' — không phải lượt miễn phí, KHÔNG bấm (tránh tốn Linh Thạch)');
+          var say0 = (($('#gacha-say') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+          if (say0) log('Rút bí tịch: game báo: ' + say0);
+          var close0 = $('#gacha-close'); if (close0) pressDom(close0);
+          await sleep(600);
+          continue;
+        }
+        var stonesBefore = readStones();
+        log('Rút bí tịch: tủ ' + pool.label + ' còn lượt miễn phí ("' + oneText + '") — bấm rút 1 lượt miễn phí');
+        setDoing('Rút bí tịch miễn phí — tủ ' + pool.label, null);
+        pressDom(one);
+        // Chờ quay xong: nút hết disabled hoặc #gacha-haul có chữ
+        var t1 = Date.now(), haul = '', say = '';
+        while (alive(runId) && Date.now() - t1 < 30000) {
+          await sleep(500);
+          haul = (($('#gacha-haul') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+          say = (($('#gacha-say') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+          var oneNow = $('#gacha-one');
+          if (haul && oneNow && !oneNow.disabled) break;
+          if (!gachaPanelOpen()) break;
+        }
+        if (!alive(runId)) return;
+        var stonesAfter = readStones();
+        drawn++;
+        log('Rút bí tịch: đã rút tủ ' + pool.label + ' — kết quả: ' + (haul || '(không đọc được #gacha-haul)') + (say ? ' | game báo: ' + say : '') +
+          (stonesBefore != null && stonesAfter != null ? ' | Linh Thạch ' + stonesBefore + ' → ' + stonesAfter : ''));
+        if (stonesBefore != null && stonesAfter != null && stonesAfter < stonesBefore) {
+          log('Rút bí tịch: CẢNH BÁO Linh Thạch giảm ' + (stonesBefore - stonesAfter) + ' sau lượt rút tưởng miễn phí — kiểm tra lại, các tủ sau sẽ dừng');
+          var closeW = $('#gacha-close'); if (closeW) pressDom(closeW);
+          break;
+        }
+        var close1 = $('#gacha-close'); if (close1) pressDom(close1);
+        await sleep(800);
+      }
+      log('Rút bí tịch miễn phí: xong ' + drawn + '/' + todo.length + ' tủ còn lượt hôm nay — không rút lượt tốn Linh Thạch');
+      return 'done';
+    })();
+  }
+function runSchedule(runId) {
+    return (async function () {
+      log('Lịch trình tuần (Thứ 2→Chủ Nhật): Dược Công → farm (map/điểm đang chọn) → boss sắp ra (có mặt trước 5 phút) → tới giờ sự kiện nào tự ghi danh/làm sự kiện đó (trùng giờ ưu tiên cửa vào sắp đóng trước). Bấm Dừng để dừng bất cứ lúc nào.');
+      await flyCheckAtStart(runId, 'Lịch trình', null); // v1.36: ghi trạng thái Phi Hành lúc bắt đầu (từng khung việc tự kiểm tra riêng)
+      log('Nút Sự kiện hiện tại — ' + evToggleText() + (Object.keys(evLoad()).length ? ' (đã lưu lựa chọn)' : ' (chưa có lựa chọn lưu — mặc định bật hết)'));
+      log('Sự kiện còn lại hôm nay: ' + weekEventsTodayText(Date.now()));
+      // v1.34 (Bui chốt 22:34 + 22:36/22:37 ngày 2026-11-26): lịch treo 1 ngày —
+      // cảnh giới Luyện Khí (dưới Trúc Cơ) farm mặc định ở khu dược Thảo Dược Cốc,
+      // tự chọn khu vắng người nhất; Trúc Cơ trở lên giữ nguyên lựa chọn trên bảng.
+      // Qua 00:00 mỗi ngày làm Dược Công TRƯỚC mọi việc khác (15 lượt/ngày reset 00:00).
+      var riSched = await readRealmInfoRetry(runId);
+      var lkMode = isLuyenKhiRealm(riSched);
+      if (lkMode) {
+        log('Lịch trình treo 1 ngày cho Luyện Khí: cảnh giới ' + riSched.name + ' (dưới Trúc Cơ) — farm mặc định ở khu dược Thảo Dược Cốc, tự chọn khu vắng người nhất (kiểm lại mỗi 10 phút); qua 00:00 rút bí tịch miễn phí trước rồi Dược Công (tool tự làm vòng tay); khung đêm 23:00–05:00 câu cá Hồ Tây thay farm');
+      } else {
+        log('Lịch trình: cảnh giới ' + (riSched ? riSched.name : 'không đọc được') + (riSched && isTrucCoUpRealm(riSched) ? ' (Trúc Cơ trở lên) — farm mặc định Phong Địa khu trống hạng cao nhất (anh đổi tay trên bảng thì dùng lựa chọn tay); Dược Công dùng tự động của game' : ' — giữ nguyên map/điểm/khu đang chọn trên bảng'));
+      }
+      var lastDcDay = null, lastHxDay = null, lastGachaDay = null, htNightOff = false;
+      // v1.42 (Bui 04:23 ngày 2026-11-27): qua 00:00 rút bí tịch MIỄN PHÍ TRƯỚC Dược Công
+      // (lượt miễn phí reset 00:00 VN theo Gacha.freeToday/ngayVN) — chỉ lượt miễn phí,
+      // không rút lượt tốn Linh Thạch. Mỗi ngày chạy 1 lần trong lịch trình.
+      async function gachaFrame(reason) {
+        var today = vnDayStartMs(Date.now(), 0);
+        if (lastGachaDay === today) return;
+        lastGachaDay = today;
+        setStatus('Lịch trình: rút bí tịch miễn phí');
+        setDoing('Rút bí tịch miễn phí (' + reason + ')', scheduleNextText());
+        log('Lịch trình: vào khung rút bí tịch miễn phí (' + reason + ') — làm TRƯỚC Dược Công');
+        var gRes = await runGachaFree(runId, { schedule: true });
+        if (!alive(runId)) return;
+        log('Lịch trình: xong rút bí tịch miễn phí (' + gRes + ') — chuyển sang Dược Công');
+      }
+      async function dcFrame(reason) {
+        if (!evOn('duoccong', 'play')) { log('Lịch trình: sự kiện Việc Dược Công đang TẮT — bỏ qua khung Dược Công (' + reason + ')'); return; }
+        setStatus('Lịch trình: khung Dược Công');
+        setDoing('Dược Công (' + reason + ')', scheduleNextText());
+        log('Lịch trình: vào khung Dược Công (' + reason + ')');
+        var jobs = await runDuocCong(runId, { schedule: true });
+        if (!alive(runId)) return;
+        log('Lịch trình: xong khung Dược Công (' + jobs + ' lượt) — chuyển sang vòng farm/sự kiện/boss');
+        lastDcDay = vnDayStartMs(Date.now(), 0);
+      }
+      async function hxFrame() {
+        if (!evOn('huyetxich', 'play')) return;
+        var today = vnDayStartMs(Date.now(), 0);
+        if (lastHxDay === today) return;
+        lastHxDay = today;
+        setStatus('Lịch trình: khung Huyết Xích');
+        setDoing('Huyết Xích (1 lượt/ngày)', scheduleNextText());
+        log('Lịch trình: vào khung Huyết Xích (1 lượt/ngày trong lịch treo; game cho Luyện Khí 5 lượt/ngày, mỗi lượt 15 phút, phí 100 Linh Thạch)');
+        var hxRes = await runHuyetXich(runId, { schedule: true });
+        if (!alive(runId)) return;
+        log('Lịch trình: xong khung Huyết Xích (' + hxRes + ') — quay lại vòng farm/sự kiện/boss');
+      }
+      // Khung 0 (v1.42): rút bí tịch miễn phí TRƯỚC Dược Công (lượt reset 00:00 VN)
+      await gachaFrame('đầu phiên — rút bí tịch miễn phí trước Dược Công');
+      if (!alive(runId)) return;
+      // Khung 1: Dược Công tới khi hết lượt ngày (nếu đang bật) — qua 00:00 làm sau rút bí tịch
+      await dcFrame('đầu phiên — Dược Công làm sau rút bí tịch miễn phí');
+      if (!alive(runId)) return;
+      await hxFrame();
+      if (!alive(runId)) return;
+      // Lựa chọn farm trên bảng
+      var targetMap = ($('#ttpx-map') || {}).value || 'thanh_truc_lam';
+      var dests = destinationsFor(targetMap);
+      var destIdx = parseInt((($('#ttpx-dest') || {}).value || '0'), 10);
+      var dest = dests[isNaN(destIdx) ? 0 : destIdx] || dests[0] || null;
+      var zoneVal = ($('#ttpx-zone') || {}).value || '';
+      var zone = zoneVal ? parseInt(zoneVal, 10) : null;
+      if (zone != null && isNaN(zone)) zone = null;
+      // v1.34 (Bui chốt 22:38 ngày 2026-11-26): farm theo cảnh giới — dưới Trúc Cơ
+      // (Luyện Khí) farm khu dược vắng người; Trúc Cơ trở lên farm Phong Địa khu trống
+      // hạng cao nhất (cơ chế v1.30 trong farmPhase). Anh đổi tay trên bảng thì
+      // lựa chọn tay thắng mặc định theo cảnh giới.
+      var manualTouched = false;
+      try { manualTouched = localStorage.getItem('ttpx_farm_manual_v1') === '1'; } catch (e) {}
+      var tcMode = isTrucCoUpRealm(riSched);
+      if (manualTouched) {
+        log('Lịch trình: anh đã đổi tay map/điểm/khu trên bảng — dùng lựa chọn tay: ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap) + ' — ' + (dest ? dest.label : 'điểm mặc định') + (zone ? ' — Khu ' + zone : '') + ' (thắng mặc định theo cảnh giới)');
+      } else if (lkMode) {
+        targetMap = DUOC_MAP;
+        dests = destinationsFor(DUOC_MAP);
+        dest = dests[0] || null;
+        zone = null;
+        log('Lịch trình: cảnh giới ' + riSched.name + ' (dưới Trúc Cơ) — farm mặc định ở khu dược Thảo Dược Cốc, điểm farm: ' + (dest ? dest.label : 'mặc định') + ', khu do tool tự chọn vắng người nhất');
+      } else if (tcMode) {
+        targetMap = 'phong_dia';
+        dests = destinationsFor('phong_dia');
+        dest = dests[0] || null;
+        zone = null;
+        log('Lịch trình: cảnh giới ' + riSched.name + ' (Trúc Cơ trở lên) — farm mặc định ở Phong Địa, điểm farm: ' + (dest ? dest.label : 'mặc định') + ', khu do tool tự kiểm tra 40 khu chọn khu trống hạng cao nhất (Thượng ×2, Trung ×1,5, Hạ ×1)');
+      }
+      var lastVnOffLog = 0;
+      while (alive(runId)) {
+        // v1.34: qua 00:00 (sang ngày mới) → làm Dược Công TRƯỚC mọi việc khác
+        // v1.42 (Bui 04:23): rút bí tịch miễn phí còn TRƯỚC cả Dược Công (reset 00:00 VN)
+        if (lastDcDay !== null && vnDayStartMs(Date.now(), 0) !== lastDcDay) {
+          log('Lịch trình: đã qua 00:00 (ngày mới, lượt Dược Công + lượt rút bí tịch miễn phí reset) — rút bí tịch miễn phí trước, rồi Dược Công');
+          await gachaFrame('qua 00:00 — rút bí tịch miễn phí trước Dược Công');
+          if (!alive(runId)) return;
+          await dcFrame('qua 00:00 — làm Dược Công sau rút bí tịch miễn phí');
+          if (!alive(runId)) return;
+          await hxFrame();
+          if (!alive(runId)) return;
+          continue;
+        }
+        // Khe Nứt: toast đang hiện → vào ngay (cửa 10 phút, ưu tiên cao nhất)
+        var vn = readVetNutToast();
+        if (vn && vn.visible) {
+          if (evOn('vetnut', 'play')) {
+            log('Lịch trình: vết nứt đang hiện (' + vn.sub + ') — chuyển khung Khe Nứt');
+            setDoing('Vết Nứt Không Gian (cửa 10 phút)', scheduleNextText());
+            var vnRes = await runVetNut(runId, { schedule: true });
+            if (!alive(runId)) return;
+            log('Lịch trình: khung Khe Nứt kết thúc (' + vnRes + ') — quay lại vòng farm/sự kiện/boss');
+            continue;
+          }
+          if (Date.now() - lastVnOffLog > 300000) {
+            lastVnOffLog = Date.now();
+            log('Lịch trình: vết nứt đang hiện nhưng sự kiện Vết Nứt đang TẮT — bỏ qua suất này');
+          }
+        }
+        // Sự kiện có giờ tới lượt (Đại Hội/Côn Bằng/Chiến Trường/Sỹ Sách) — cửa sắp đóng trước
+        var due = evDueList(Date.now());
+        var ranEvent = false;
+        for (var di = 0; di < due.length && alive(runId); di++) {
+          var ev = due[di];
+          var key = ev.id + '@' + ev.startMs;
+          S.evDone[key] = true;
+          var meta = null;
+          WEEK_EVENTS.forEach(function (w) { if (w.id === ev.id) meta = w; });
+          var regOn = !meta || !meta.hasReg || evOn(ev.id, 'reg');
+          var playOn = evOn(ev.id, 'play');
+          if (!playOn && !regOn) { log('Lịch trình: sự kiện ' + ev.ten + ' suất ' + fmtTime(ev.startMs) + ' đang TẮT cả đăng kí lẫn làm/đánh — bỏ qua'); continue; }
+          if (!regOn && meta && meta.hasReg) { log('Lịch trình: sự kiện ' + ev.ten + ' — nút Tự đăng kí đang TẮT nên không tự làm được (phải ghi danh trước) — bỏ qua suất ' + fmtTime(ev.startMs)); continue; }
+          var runner = evRunnerFor(ev.id);
+          if (!runner) { log('Lịch trình: sự kiện ' + ev.ten + ' chưa có chế độ tự làm — bỏ qua'); continue; }
+          if (due.length > 1) log('Lịch trình: có ' + due.length + ' sự kiện trùng giờ — chọn ' + ev.ten + ' trước vì cửa vào đóng sớm nhất (' + fmtTime(ev.closeMs) + ')');
+          log('Lịch trình: tới giờ sự kiện ' + ev.ten + ' suất ' + fmtTime(ev.startMs) + (playOn ? ' — tự ghi danh + tự làm/đánh' : ' — chỉ tự đăng kí (nút Tự làm/đánh đang TẮT)'));
+          setDoing(ev.ten + ' suất ' + fmtTime(ev.startMs).slice(0,5), scheduleNextText());
+          var evRes = await runner(runId, { schedule: true, regOnly: !playOn });
+          if (!alive(runId)) return;
+          log('Lịch trình: xong sự kiện ' + ev.ten + ' (' + evRes + ') — quay lại vòng farm/boss');
+          if (evRes === 'hp') { log('Lịch trình: Khí Huyết dưới 35% khi làm sự kiện — dừng lịch trình'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
+          ranEvent = true;
+          break;
+        }
+        if (ranEvent) continue;
+        // Boss sắp ra: đọc mục Hoạt Động cả 4 boss, chọn boss ra sớm nhất
+        var nextBoss = null, nextPlan = null;
+        if (evOn('boss', 'play')) {
+          var hdAll = await readHoatDongAllBosses(runId);
+          if (!alive(runId)) return;
+          var now0 = Date.now();
+          BOSSES.forEach(function (b) {
+            var plan = bossPlan(b, now0, readBossToast(), S.bossAnchor[b.id] || null, readMapId(), hdAll[b.id] || null);
+            if (plan.spawnAt != null && (!nextPlan || plan.spawnAt < nextPlan.spawnAt)) { nextBoss = b; nextPlan = plan; }
+          });
+          if (nextBoss) log('Lịch trình: boss ra sớm nhất là ' + nextBoss.name + ' lúc ' + fmtTime(nextPlan.spawnAt) + ' (' + nextPlan.source + ') — xuất phát ' + fmtTime(nextPlan.departAt));
+          if (nextBoss && now0 >= nextPlan.departAt) {
+            log('Lịch trình: tới giờ xuất phát đi boss ' + nextBoss.name + ' — chuyển khung boss');
+            setDoing('Boss ' + nextBoss.name + ' (ra ' + fmtTime(nextPlan.spawnAt).slice(0,5) + ')', scheduleNextText());
+            var br = await bossCycleOnce(runId, nextBoss, nextPlan);
+            if (!alive(runId)) return;
+            if (br === 'hp') { log('Lịch trình: Khí Huyết dưới 35% khi đánh boss — dừng lịch trình'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
+            log('Lịch trình: xong khung boss ' + nextBoss.name + ' (' + br + ') — quay lại farm');
+            continue;
+          }
+        }
+        // Farm tới mốc gần nhất: giờ xuất phát boss / giờ sự kiện kế / 15 phút trước 22:00 / tối đa 30 phút
+        var now = Date.now();
+        var deadline = now + 30 * 60000;
+        var why = 'đọc lại giờ boss/sự kiện sau 30 phút';
+        if (nextPlan && nextPlan.departAt < deadline) { deadline = nextPlan.departAt; why = 'tới giờ xuất phát đi boss ' + nextBoss.name; }
+        var evLead = evNextLeadMs(now);
+        if (evLead != null && evLead < deadline) { deadline = evLead; why = 'tới giờ sự kiện kế tiếp trong lịch tuần'; }
+        if (evOn('vetnut', 'play')) {
+          var vnWait = vnNextOpenMs(now);
+          if (vnWait - 15 * 60000 > 0 && now + vnWait - 15 * 60000 < deadline) { deadline = now + vnWait - 15 * 60000; why = 'chuẩn bị Khe Nứt 22:00'; }
+        }
+        // v1.34: chặn khung farm ở mốc 00:00 để qua ngày mới là làm Dược Công trước
+        var nextMidnight = vnDayStartMs(now, 1);
+        if (nextMidnight < deadline) { deadline = nextMidnight; why = 'tới 00:00 — qua ngày mới làm Dược Công trước'; }
+        // v1.34: khung đêm 23:00–05:00 của lịch treo Luyện Khí — câu cá Hồ Tây thay farm
+        var vnNow = new Date(now + 7 * 3600000);
+        var vnHour = vnNow.getUTCHours();
+        var isNight = vnHour >= 23 || vnHour < 5;
+        if (lkMode && isNight && !htNightOff && evOn('cauhotay', 'play') && deadline - now > 10 * 60000) {
+          var nightEnd = vnHour >= 23 ? vnDayStartMs(now, 1) + 5 * 3600000 : vnDayStartMs(now, 0) + 5 * 3600000;
+          var fishDeadline = Math.min(deadline, nightEnd);
+          log('Lịch trình: khung đêm 23:00–05:00 — câu cá Hồ Tây tới ' + fmtTime(fishDeadline) + ' thay farm khu dược');
+          setDoing('Câu cá Hồ Tây (đêm) tới ' + fmtTime(fishDeadline).slice(0,5), scheduleNextText());
+          var htRes = await runHoTay(runId, { schedule: true, deadlineMs: fishDeadline });
+          if (!alive(runId)) return;
+          log('Lịch trình: xong khung câu đêm (' + htRes + ') — tính lại vòng');
+          if (htRes === 'Khí Huyết thấp') { log('Lịch trình: Khí Huyết dưới 35% khi câu đêm — dừng lịch trình'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
+          if (htRes === 'chưa đủ cảnh giới câu Hồ Tây' || htRes === 'không vào được hồ câu') {
+            htNightOff = true;
+            log('Lịch trình: không câu đêm được (' + htRes + ') — tắt khung câu đêm phiên này, farm khu dược thay thế');
+          }
+          continue;
+        }
+        log('Lịch trình: vào khung farm tới ' + fmtTime(deadline) + ' (' + why + ')');
+        setDoing('Farm ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap) + (dest ? ' — ' + dest.label : '') + (zone ? ' — Khu ' + zone : '') + ' tới ' + fmtTime(deadline).slice(0,5), scheduleNextText());
+        var fr = await farmPhase(runId, targetMap, dest, zone, deadline, { emptyZone: lkMode && !manualTouched });
+        if (!alive(runId)) return;
+        if (fr === 'hp') { log('Lịch trình: Khí Huyết dưới 35% khi farm — dừng lịch trình'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
+        if (fr === 'map') { log('Lịch trình: bị văng sang map khác khi farm — tính lại vòng'); continue; }
+        log('Lịch trình: hết khung farm (' + why + ') — tính lại vòng');
+      }
+    })();
+  }
+
+  // ---- 9. Tự đăng kí Đại Hội Tu Tiên ----
+  // Cơ chế game (Tournament + DaiHoiUI): suất khai hội 09:16/13:16/17:16/20:16 giờ VN,
+  // mở ghi danh trước 16 phút (09:00/13:00/17:00/20:00); suất 20:16 nghỉ Thứ Ba/Năm/Bảy
+  // (SUAT_NGHI={2:[20],4:[20],6:[20]} theo thứ VN). Điều kiện: Luyện Khí tầng 7–13 hoặc
+  // Trúc Cơ. Không thấy phí Linh Thạch trong mã client. NPC Chấp Sự Đại Hội ở tan_vien
+  // (20,11): Tương Tác → bảng #daihoi; nút #dh-act dataset.act="ghi_danh" (chữ "Ghi Danh"),
+  // ghi danh xong đổi thành "huy" ("Rút tên khỏi sổ"). Toast #dh-toast cũng có nút
+  // #dh-toast-act cùng dataset.act. Giai đoạn ở #dh-phase, lý do ở #dh-info/#dh-msg.
+  var DAIHOI = {
+    hours: [9, 13, 17, 20], minute: 16, regBeforeMs: 960000, // 16 phút
+    rest: { 2: [20], 4: [20], 6: [20] }, // thứ VN (0=CN): suất 20:16 nghỉ T3/T5/T7
+    npcMap: 'tan_vien', npc: { id: 'chap_su_dai_hoi', name: 'Chấp Sự Đại Hội', tx: 20, ty: 11 }
+  };
+  function daiHoiSessions(nowMs) {
+    var out = [];
+    var vn = new Date(nowMs + 7 * 3600 * 1000);
+    for (var dayOff = 0; dayOff <= 1; dayOff++) {
+      var base = Date.UTC(vn.getUTCFullYear(), vn.getUTCMonth(), vn.getUTCDate() + dayOff) - 7 * 3600 * 1000;
+      var dow = new Date(base + 7 * 3600 * 1000).getUTCDay();
+      DAIHOI.hours.forEach(function (h) {
+        if (DAIHOI.rest[dow] && DAIHOI.rest[dow].indexOf(h) >= 0) return;
+        var start = base + (h * 60 + DAIHOI.minute) * 60000;
+        out.push({ startMs: start, regMs: start - DAIHOI.regBeforeMs });
+      });
+    }
+    out.sort(function (a, b) { return a.startMs - b.startMs; });
+    return out;
+  }
+  function daiHoiNextSession(nowMs) {
+    var ss = daiHoiSessions(nowMs);
+    for (var i = 0; i < ss.length; i++) {
+      if (nowMs < ss[i].startMs) return { startMs: ss[i].startMs, regMs: ss[i].regMs, inWindow: nowMs >= ss[i].regMs };
+    }
+    return null;
+  }
+  function readDaiHoiToast() {
+    var toast = $('#dh-toast');
+    if (!toast) return null;
+    var act = $('#dh-toast-act');
+    return {
+      visible: !toast.classList.contains('hidden'),
+      label: (($('#dh-toast-label') || {}).textContent || '').trim(),
+      sub: (($('#dh-toast-sub') || {}).textContent || '').trim(),
+      clock: (($('#dh-toast-clock') || {}).textContent || '').trim(),
+      msg: (($('#dh-toast-msg') || {}).textContent || '').trim(),
+      act: act ? (act.dataset.act || '') : '',
+      actText: act ? (act.textContent || '').trim() : '',
+      actDisabled: act ? !!act.disabled : true,
+      actEl: act
+    };
+  }
+  function readDaiHoiPanel() {
+    var root = $('#daihoi');
+    var act = $('#dh-act');
+    return {
+      open: !!(root && !root.classList.contains('hidden')),
+      phase: (($('#dh-phase') || {}).textContent || '').trim(),
+      info: (($('#dh-info') || {}).textContent || '').replace(/\s+/g, ' ').trim().slice(0, 240),
+      msg: (($('#dh-msg') || {}).textContent || '').trim(),
+      act: act ? (act.dataset.act || '') : '',
+      actText: act ? (act.textContent || '').trim() : '',
+      actDisabled: act ? !!act.disabled : true,
+      actEl: act
+    };
+  }
+  function closeDaiHoiPanel() {
+    var x = $('#dh-close');
+    if (x) pressDom(x);
+  }
+  function runDaiHoi(runId, opts) {
+    opts = opts || {};
+    var schedStop = function (r) { if (opts.schedule) return r; stopTool(r); return r; };
+    return (async function () {
+      log('Đại Hội: suất khai hội 09:16/13:16/17:16/20:16 giờ VN (suất 20:16 nghỉ Thứ Ba/Năm/Bảy), mở ghi danh trước 16 phút; điều kiện Luyện Khí tầng 7–13 hoặc Trúc Cơ; mã client không thấy phí Linh Thạch (tool ghi số Linh Thạch trước/sau để kiểm chứng)');
+      await flyCheckAtStart(runId, 'Đại Hội', true); // v1.36: kiểm tra Phi Hành lúc bắt đầu việc
+      await ensureAuto(runId, false);
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      // Canh tới lúc mở ghi danh (hoặc toast đã bật nút Ghi Danh)
+      var lastBeat = 0, sess = null;
+      while (alive(runId)) {
+        var t = readDaiHoiToast();
+        sess = daiHoiNextSession(Date.now());
+        if (t && t.act === 'ghi_danh' && !t.actDisabled) { log('Đại Hội: toast đã bật nút Ghi Danh — đi ghi danh ngay'); break; }
+        if (sess && sess.inWindow) { log('Đại Hội: đã tới giờ ghi danh suất ' + fmtTime(sess.startMs) + ' — đi ghi danh'); break; }
+        if (Date.now() - lastBeat > 300000) {
+          lastBeat = Date.now();
+          log('Đại Hội: chờ mở ghi danh' + (sess ? ' suất ' + fmtTime(sess.startMs) + ' (mở ghi danh ' + fmtTime(sess.regMs) + ', còn ' + fmtCountdown(sess.regMs - Date.now()) + ')' : ''));
+        }
+        setStatus('Đại Hội: chờ mở ghi danh' + (sess ? ' (' + fmtTime(sess.regMs) + ')' : ''));
+        await sleep(15000);
+      }
+      if (!alive(runId)) return;
+      // Tới NPC Chấp Sự Đại Hội, bấm Tương Tác mở bảng
+      setStatus('Đại Hội: tới Chấp Sự Đại Hội ghi danh…');
+      await travelTo(runId, DAIHOI.npcMap);
+      if (!alive(runId)) return;
+      await standNextTo(runId, DAIHOI.npc.tx, DAIHOI.npc.ty, DAIHOI.npc.name);
+      await ensureFly(runId, false);
+      var pressed = await pressInteractBtn(runId, 8000, DAIHOI.npc.name);
+      var panel = null;
+      if (pressed) {
+        panel = await waitFor(function () { var p = readDaiHoiPanel(); return p.open ? p : null; }, 6000, 'bảng Đại Hội');
+      }
+      if (!alive(runId)) return;
+      if (!panel) {
+        log('Đại Hội: chưa mở được bảng qua NPC (có thể game mở sảnh khác) — thử nút Ghi Danh trên toast');
+        var t2 = readDaiHoiToast();
+        if (t2 && t2.act === 'ghi_danh' && !t2.actDisabled && t2.actEl) {
+          var st0 = readStones();
+          log('Đại Hội: bấm "Ghi Danh" trên toast' + (st0 != null ? ' (Linh Thạch hiện có: ' + st0 + ')' : ''));
+          pressDom(t2.actEl);
+          await sleep(2000);
+          var t3 = readDaiHoiToast();
+          var st1 = readStones();
+          log('Đại Hội: sau khi bấm — nút toast: "' + (t3 ? t3.actText : '?') + '" (act=' + (t3 ? t3.act : '?') + ')' + (t3 && t3.msg ? ' — "' + t3.msg + '"' : '') + (st0 != null && st1 != null ? ' — Linh Thạch ' + st0 + ' → ' + st1 : ''));
+          if (t3 && t3.act === 'huy') { if (opts.regOnly) { log('Đại Hội: chỉ đăng kí theo nút Sự kiện — ghi danh xong, không tự đánh giải (lưu ý: vắng mặt lúc khai hội bị gạch tên)'); return 'registered'; } return await daiHoiFightAndFarm(runId, sess, opts); }
+          return schedStop('đã bấm Ghi Danh (chưa kiểm chứng được)');
+          return;
+        }
+        log('Đại Hội: không thấy nút Ghi Danh khả dụng (toast: "' + (t2 ? t2.label + ' ' + t2.clock + ' ' + t2.msg : 'không có toast') + '") — dừng');
+        return schedStop('chưa ghi danh được Đại Hội');
+        return;
+      }
+      panel = readDaiHoiPanel();
+      log('Đại Hội: bảng đã mở — giai đoạn: "' + panel.phase + '"' + (panel.info ? ' — ' + panel.info : '') + (panel.msg ? ' — "' + panel.msg + '"' : ''));
+      if (panel.act === 'huy') {
+        log('Đại Hội: đã ghi danh từ trước (nút đang là "Rút tên khỏi sổ") — đóng bảng, vào đánh giải');
+        closeDaiHoiPanel();
+        await sleep(500);
+        if (opts.regOnly) { log('Đại Hội: chỉ đăng kí theo nút Sự kiện — đã ghi danh từ trước, không tự đánh giải'); return 'registered'; }
+        return await daiHoiFightAndFarm(runId, sess, opts);
+      }
+      if (panel.act !== 'ghi_danh' || panel.actDisabled) {
+        log('Đại Hội: chưa ghi danh được — nút "' + panel.actText + '"' + (panel.actDisabled ? ' (đang khóa)' : '') + (panel.msg ? ' — "' + panel.msg + '"' : '') + (panel.info ? ' — ' + panel.info : ''));
+        closeDaiHoiPanel();
+        return schedStop('chưa đủ điều kiện ghi danh Đại Hội');
+        return;
+      }
+      var stones0 = readStones();
+      log('Đại Hội: bấm "Ghi Danh" suất ' + fmtTime((daiHoiNextSession(Date.now()) || {}).startMs || Date.now()) + (stones0 != null ? ' (Linh Thạch hiện có: ' + stones0 + ')' : ''));
+      pressDom(panel.actEl);
+      var ok = await waitFor(function () {
+        var p = readDaiHoiPanel();
+        return (p.act === 'huy' || /Rút tên|Đã ghi danh/.test(p.actText + ' ' + p.phase)) ? p : null;
+      }, 6000, 'kiểm chứng ghi danh');
+      var stones1 = readStones();
+      var pEnd = readDaiHoiPanel();
+      if (ok) log('Đại Hội: GHI DANH THÀNH CÔNG — nút đã đổi thành "' + pEnd.actText + '", giai đoạn: "' + pEnd.phase + '"' + (stones0 != null && stones1 != null ? ' — Linh Thạch ' + stones0 + ' → ' + stones1 : ''));
+      else log('Đại Hội: đã bấm Ghi Danh nhưng chưa thấy nút đổi (nút: "' + pEnd.actText + '", giai đoạn: "' + pEnd.phase + '"' + (pEnd.msg ? ', "' + pEnd.msg + '"' : '') + ') — kiểm tra tay');
+      closeDaiHoiPanel();
+      await sleep(500);
+      if (ok) { if (opts.regOnly) { log('Đại Hội: chỉ đăng kí theo nút Sự kiện — ghi danh xong, không tự đánh giải (lưu ý: vắng mặt lúc khai hội bị gạch tên)'); return 'registered'; } return await daiHoiFightAndFarm(runId, sess, opts); }
+      return schedStop('đã bấm Ghi Danh (chưa kiểm chứng được)');
+    })();
+  }
+
+  // ---- 10. Tự đánh giải Đại Hội + thua xong quay lại farm (v1.15) ----
+  // Cơ chế game (Tournament + DaiHoiUI + hướng dẫn DaiHoiHuongDan trong mã client):
+  //  - Chốt sổ (moPhongChoLuc = khai hội − 1 phút): trọng tài (server) TỰ đưa người đã ghi
+  //    danh vào Phòng Chờ (dai_hoi_cho "Đài Luận Võ — Phòng Chờ"); vắng mặt lúc khai hội bị gạch tên.
+  //  - Tới lượt trận, server TỰ đưa lên đài (dai_hoi_dau "Đài Luận Võ" 16×12, đấu 1v1;
+  //    dai_hoi_doi "Phù Vân Đài" 3v3 chỉ bảng Trúc Cơ) — "không cần bấm gì". Hạn vào đài 60s
+  //    (HAN_VAO_DAU), đếm 3s (DEM_NGUOC_MS, #dh-dem-nguoc hiện số rồi "Khai Chiến!"), trận 90s
+  //    (TRAN_KEO_DAI, thanh #dh-sat: sát thương mình/đối thủ + giờ còn lại), nghỉ giữa vòng 12s
+  //    (NGHI_GIUA_VONG). Suất kéo dài 30 phút (DAI_HOI_KEO_DAI).
+  //  - Thắng: hạ gục đối thủ, hoặc hết giờ ai gây nhiều sát thương hơn; bằng nhau người ghi
+  //    danh sớm hơn đi tiếp. Đấu loại trực tiếp — thua một trận là bị loại (BI_LOAI). Thắng
+  //    về Phòng Chờ hồi đầy chờ vòng sau. Đứng im 30s trong trận (TREO_MS) bị xử thua + cấm
+  //    ghi danh — Auto luôn đánh nên không treo.
+  //  - Thưởng tự cộng: thắng 1 trận +50 Linh Thạch (Luyện Khí) + 1 Điểm Đại Hội; vô địch/hạng
+  //    nhận thêm quà. Không có nút nhận thưởng riêng (quầy đổi điểm là việc tay tại Chấp Sự).
+  //  - Xong kỳ (bị loại/vô địch/dự bị): toast nút act="roi" chữ "Về Làng" → bấm để ra.
+  //  - Chết trong đài: game tự đóng bảng hồi sinh ở map trận → tool KHÔNG gọi handleDeath ở đây.
+  // Tool: chờ được đưa vào Phòng Chờ → vào đài bật Auto+Chạy+Bay + kỹ năng theo nhịp, đánh
+  // tới hết trận (Khí Huyết thấp vẫn đánh, không tự rút lui/xin thua) → đọc kết quả từng trận
+  // từ toast (số vòng đã thắng) → hết giải bấm Về Làng → quay lại farm (lệnh Bui 18:28:
+  // "Sau khi thua tự quay lại farm" — thua hay hết giải đều không dừng).
+  var DAIHOI_MAPS = ['dai_hoi_cho', 'dai_hoi_dau', 'dai_hoi_doi'];
+  var DAIHOI_ARENA = ['dai_hoi_dau', 'dai_hoi_doi'];
+  function inDaiHoiMap(m) { return DAIHOI_MAPS.indexOf(m) >= 0; }
+  function inDaiHoiArena(m) { return DAIHOI_ARENA.indexOf(m) >= 0; }
+  function daiHoiMapName(m) {
+    return m === 'dai_hoi_cho' ? 'Đài Luận Võ — Phòng Chờ' : m === 'dai_hoi_dau' ? 'Đài Luận Võ' : m === 'dai_hoi_doi' ? 'Phù Vân Đài' : (MAPS[m] ? MAPS[m].name : (m || '?'));
+  }
+  function parseDaiHoiWins(text) {
+    var m = String(text || '').match(/thắng\s*(\d+)\s*vòng/);
+    return m ? +m[1] : null;
+  }
+  function parseDaiHoiRound(text) {
+    var m = String(text || '').match(/Vòng\s*(\d+)/);
+    return m ? +m[1] : null;
+  }
+  function parseDaiHoiOpponent(text) {
+    var m = String(text || '').match(/Đối thủ:\s*(.+)$/);
+    return m ? m[1].trim() : null;
+  }
+  // Trạng thái xong kỳ từ toast: 'champion' | 'reserve' | 'done' | null (hàm thuần, test được).
+  // Chỉ nhận khi nút toast đang là act="roi" ("Về Làng") — tránh nhầm nút "Thôi Xem" khi xem trận.
+  function daiHoiFinishedState(t) {
+    if (!t || t.act !== 'roi') return null;
+    var label = t.label || '';
+    if (/Vô địch kỳ này/.test(label)) return 'champion';
+    if (/Dự bị kỳ này/.test(label)) return 'reserve';
+    if (/Đã xong kỳ này/.test(label)) return 'done';
+    return null;
+  }
+  function readDaiHoiSat() {
+    var el = $('#dh-sat');
+    if (!el) return null;
+    var me = el.querySelector('.dh-sat-so.me'), foe = el.querySelector('.dh-sat-so.foe'), gio = el.querySelector('.dh-sat-gio');
+    return {
+      visible: !el.classList.contains('hidden'),
+      me: me ? (me.textContent || '').trim() : '',
+      foe: foe ? (foe.textContent || '').trim() : '',
+      clock: gio ? (gio.textContent || '').trim() : ''
+    };
+  }
+  function daiHoiLeave(runId) {
+    return (async function () {
+      var t = readDaiHoiToast();
+      if (t && t.act === 'roi' && !t.actDisabled && t.actEl) {
+        log('Đại Hội: bấm "Về Làng" trên toast để rời khu Đại Hội');
+        pressDom(t.actEl);
+      } else {
+        // Dự phòng: mở bảng Đại Hội qua nút "…" trên toast rồi bấm nút act=roi trong bảng
+        var more = $('#dh-toast-more');
+        if (more) {
+          pressDom(more);
+          var p = await waitFor(function () { var pp = readDaiHoiPanel(); return pp.open ? pp : null; }, 4000, 'bảng Đại Hội (rời)');
+          if (p && p.act === 'roi' && !p.actDisabled && p.actEl) {
+            log('Đại Hội: bấm "Về Làng" trong bảng Đại Hội để rời khu Đại Hội');
+            pressDom(p.actEl);
+          }
+        }
+      }
+      var out = await waitFor(function () {
+        var m = readMapId();
+        return (m && !inDaiHoiMap(m)) ? m : null;
+      }, 20000, 'ra khỏi khu Đại Hội');
+      if (out) log('Đại Hội: đã ra khỏi khu Đại Hội — đang ở ' + daiHoiMapName(out));
+      return !!out;
+    })();
+  }
+  function daiHoiReturnToFarm(runId, reason) {
+    return (async function () {
+      var targetMap = ($('#ttpx-map') || {}).value || 'thanh_truc_lam';
+      var dests = destinationsFor(targetMap);
+      var destIdx = parseInt((($('#ttpx-dest') || {}).value || '0'), 10);
+      var dest = dests[isNaN(destIdx) ? 0 : destIdx] || dests[0] || null;
+      var zoneVal = ($('#ttpx-zone') || {}).value || '';
+      var zone = zoneVal ? parseInt(zoneVal, 10) : null;
+      if (zone != null && isNaN(zone)) zone = null;
+      var mapName = MAPS[targetMap] ? MAPS[targetMap].name : targetMap;
+      log('Đại Hội: ' + reason + ' — quay lại farm ' + mapName + (dest ? ' — ' + dest.label : '') + (zone ? ' (khu ' + zone + ')' : ''));
+      setStatus('Quay lại farm: ' + mapName);
+      return await runFarm(runId, targetMap, dest, zone);
+    })();
+  }
+  function daiHoiFightAndFarm(runId, sess, opts) {
+    opts = opts || {};
+    var schedStop = function (r) { if (opts.schedule) return r; stopTool(r); return r; };
+    return (async function () {
+      var startMs = sess && sess.startMs ? sess.startMs : Date.now();
+      var deadline = startMs + 1800000 + 300000; // suất 30 phút + 5 phút dự phòng
+      log('Đại Hội: đã ghi danh suất ' + fmtTime(startMs) + ' — chờ trọng tài đưa vào Phòng Chờ (phòng chờ mở trước khai hội 1 phút, server tự đưa, không cần bấm gì)');
+      setStatus('Đại Hội: chờ vào Phòng Chờ…');
+      await ensureAuto(runId, false);
+      var entered = await waitFor(function () {
+        var m = readMapId();
+        return inDaiHoiMap(m) ? m : null;
+      }, Math.max(60000, startMs + 180000 - Date.now()), 'vào Phòng Chờ Đại Hội');
+      if (!alive(runId)) return;
+      if (!entered) {
+        log('Đại Hội: quá giờ khai hội mà chưa được đưa vào Phòng Chờ — có thể ghi danh chưa thật hoặc vắng mặt bị gạch tên khỏi kỳ này');
+        if (opts.schedule) { log('Đại Hội: không vào được giải — lịch trình tính lại vòng'); return 'done'; }
+        return await daiHoiReturnToFarm(runId, 'không vào được giải');
+      }
+      log('Đại Hội: đã vào ' + daiHoiMapName(entered) + ' — chờ trọng tài gọi trận (đấu loại trực tiếp, thua một trận là dừng)');
+      var wins = 0, matches = 0, lastLabel = '', finished = null, rot = null;
+      while (alive(runId)) {
+        var m = readMapId();
+        var t = readDaiHoiToast();
+        finished = daiHoiFinishedState(t);
+        if (finished) break;
+        if (m && !inDaiHoiMap(m)) { log('Đại Hội: đã ra khỏi khu Đại Hội (map ' + daiHoiMapName(m) + ') — giải kết thúc với mình'); break; }
+        if (Date.now() > deadline) { log('Đại Hội: quá thời gian suất (30 phút + 5 phút dự phòng) — coi như hết giải'); break; }
+        if (inDaiHoiArena(m)) {
+          matches++;
+          var round = parseDaiHoiRound(t && t.label);
+          var opp = parseDaiHoiOpponent(t && t.sub);
+          log('Đại Hội: vào đài' + (round ? ' vòng ' + round : '') + (opp ? ' — đối thủ: ' + opp : '') + ' — bật Bay + Chạy + Auto + kỹ năng theo nhịp (đánh tới hết trận, không tự rút lui)');
+          setStatus('Đại Hội: đang thi đấu' + (round ? ' vòng ' + round : '') + (opp ? ' — ' + opp : ''));
+          await ensureCombatTrio(runId, 'đài Đại Hội' + (round ? ' vòng ' + round : ''));
+          if (!alive(runId)) break;
+          if (rot) rot.stop();
+          rot = skillRotation(runId, function () { return inDaiHoiArena(readMapId()); });
+          var winsBefore = wins;
+          var matchEnd = await waitFor(function () {
+            var mm = readMapId();
+            var tt = readDaiHoiToast();
+            if (daiHoiFinishedState(tt)) return 'finished';
+            if (mm && !inDaiHoiArena(mm)) return 'map';
+            return null;
+          }, 150000, 'hết trận Đại Hội');
+          if (rot) { rot.stop(); rot = null; }
+          await ensureAuto(runId, false);
+          var sat = readDaiHoiSat();
+          var t2 = readDaiHoiToast();
+          var w2 = parseDaiHoiWins(t2 && t2.sub);
+          if (w2 == null) w2 = parseDaiHoiWins(t2 && t2.label);
+          if (w2 != null) wins = w2;
+          var resTxt = wins > winsBefore ? 'THẮNG' : (matchEnd === 'finished' ? 'hết kỳ' : 'chưa rõ (chờ toast cập nhật số vòng)');
+          log('Đại Hội: hết trận ' + matches + ' — ' + resTxt + (sat && sat.me !== '' ? ' — sát thương mình ' + sat.me + ' / đối thủ ' + sat.foe : '') + ' — đã thắng ' + wins + ' vòng');
+          if (matchEnd === 'finished') { finished = daiHoiFinishedState(t2); break; }
+          continue;
+        }
+        // Phòng chờ: cập nhật số vòng thắng + ghi nhật ký khi toast đổi trạng thái
+        var w = parseDaiHoiWins(t && t.sub);
+        if (w != null) wins = w;
+        if (t && t.label && t.label !== lastLabel) {
+          lastLabel = t.label;
+          log('Đại Hội: ' + t.label + (t.sub ? ' — ' + t.sub : '') + (t.clock ? ' (' + t.clock + ')' : ''));
+        }
+        setStatus('Đại Hội: phòng chờ — đã thắng ' + wins + ' vòng');
+        await sleep(2000);
+      }
+      if (rot) rot.stop();
+      if (!alive(runId)) return;
+      var resultTxt = finished === 'champion' ? 'VÔ ĐỊCH kỳ này' : finished === 'reserve' ? 'dự bị kỳ này (không có trận)' : finished === 'done' ? 'thua bị loại' : 'hết giải';
+      log('Đại Hội: kết thúc — ' + resultTxt + ', thắng ' + wins + ' vòng, đánh ' + matches + ' trận. Thưởng mỗi trận thắng (50 Linh Thạch + 1 Điểm Đại Hội) game tự cộng, không có nút nhận riêng.');
+      var mEnd = readMapId();
+      if (inDaiHoiMap(mEnd)) {
+        var left = await daiHoiLeave(runId);
+        if (!alive(runId)) return;
+        if (!left) { log('Đại Hội: chưa ra được khỏi khu Đại Hội — dừng, anh bấm "Về Làng" tay giúp em'); return schedStop('kẹt trong khu Đại Hội'); }
+      }
+      // v1.21 (lệnh Bui 19:38): Điểm Danh chỉ mở Sự Kiện khi thắng ít nhất 1 trận Đại Hội kỳ này
+      if (wins >= 1) {
+        log('Thắng Đại Hội (' + wins + ' vòng) — mở Sự Kiện điểm danh');
+        try { await claimDailyReward(runId); } catch (e) { if (!alive(runId)) return; log('Điểm danh: lỗi (' + e.message + ') — bỏ qua'); }
+        if (!alive(runId)) return;
+      } else {
+        log('Đại Hội: không thắng trận nào kỳ này — không mở Sự Kiện điểm danh (lệnh Bui 19:38)');
+      }
+      if (opts.schedule) { log('Đại Hội: xong giải — lịch trình tính lại vòng'); return 'done'; }
+      return await daiHoiReturnToFarm(runId, finished === 'done' ? 'Thua giải' : 'Hết giải');
+    })();
+  }
+
+  // Chuẩn bị đầu mỗi chế độ (v1.14): mặc đồ tốt hơn trong túi.
+  // v1.21 (lệnh Bui 19:38 "Tắt cái mục sự kiện đi"): KHÔNG còn mở Sự Kiện kiểm Điểm Danh
+  // ở đầu chế độ nữa — Điểm Danh chỉ chạy sau Đại Hội có trận thắng (xem daiHoiFightAndFarm).
+  function preflight(runId, mode) {
+    return (async function () {
+      // v1.42 (Bui 04:22): chuỗi cày cấp bỏ mặc đồ ở preflight — nhiệm vụ chính phải là
+      // việc đầu tiên (mặc đồ vẫn chạy sau trận nhiệm vụ + sau farm gỡ chặn trong chuỗi).
+      if (mode === 'caycap') { log('Cày cấp: bỏ mặc đồ đầu phiên — nhiệm vụ chính trước'); return; }
+      try { await autoEquipBetter(runId); } catch (e) { if (!alive(runId)) throw e; log('Mặc đồ: lỗi (' + e.message + ') — bỏ qua'); }
+    })();
+  }
+
+
+  // ============ v1.26 (Bui 20:38 + 20:39 ngày 2026-11-26): Sỹ Sách Điện + Vạn Hoang Chiến Trường ============
+  // Hai sự kiện KHÁC NHAU trong mã client (tra rõ, không gộp):
+  // (1) Sỹ Sách Điện (module HuThien): phó bản TÔNG MÔN 3 ải + Mật Thất (hu_thien_1 Dược Viên →
+  //     hu_thien_2 Băng Hỏa Trận → hu_thien_3 Nội Điện → hu_thien_4 Mật Thất), PK tự do. Mở
+  //     20:16 Thứ Năm (THU_KHAI=[4], GIO_KHAI=20, PHUT_KHAI=16), kéo dài 30 phút (KEO_DAI=18e5),
+  //     đóng cửa nhận người sau 20 phút (DONG_CUA_SAU=12e5); 20:00 chốt danh sách tông. Điều kiện
+  //     (LOI): thuộc tông môn, tông ≥3 giờ tuổi, vào tông ≥3 giờ, Luyện Khí tầng 7+, tông có 3
+  //     người đủ tư cách lúc 20:00, tối đa 20 người/tông. Vào qua NPC "Thủ Điện Sỹ Sách"
+  //     (hu_thien_cuc_lac) ở Miếu Ông Trường Con (dong_mach_ngam 20,14). Ải 1: hạ Thủ Vệ, tông
+  //     gom đủ 3 Sỹ Sách Ngọc Phù mở Trận Pháp Dịch Chuyển sang Ải 2; Ải 2: đánh sập Trụ Băng +
+  //     Trụ Hoả mở hàng rào sang Ải 3; Ải 3: Sỹ Sách Đỉnh/Tàng Thư Các. Thưởng: kho bảo vật
+  //     (bí pháp thượng phẩm rơi ở đây), điểm Phong Vân "sy_sach" theo hạ sát.
+  // (2) Vạn Hoang Chiến Trường (module ChienTruong): trận PvP theo suất — Thứ Hai + Thứ Sáu
+  //     (THU_MO=[1,5]) thả xuống 21:16 (GIO_KHAI=[21], PHUT_THA=16), mở ghi danh trước 16 phút
+  //     (21:00), phòng chờ trước 1 phút (chien_truong_cho), trận 14 phút (TRAN_KEO_DAI=84e4).
+  //     Bảng Luyện Khí (tầng 7–13) + Trúc Cơ. Ghi danh bằng nút "Ghi Danh" trên toast
+  //     #ct-toast-act (không cần NPC). Trong trận: HUD #ct-hud (còn sống/hạ sát/vòng bo).
+  //     Đây là "map sáng" theo nghĩa toast sự kiện hiện + map chien_truong mở theo suất —
+  //     KHÔNG phải map sáng ngẫu nhiên như Vết Nứt (map cố định chien_truong).
+  // Nhân vật chưa vào tông môn (trước giai đoạn 26) thì Sỹ Sách Điện sẽ bị game từ chối —
+  // tool ghi rõ lý do game trả, không bịa cách vào.
+  function nextWeeklySessionMs(nowMs, daysVN, hourVN, minVN) {
+    var vn = new Date(nowMs + 7 * 3600 * 1000);
+    for (var add = 0; add < 9; add++) {
+      var d = new Date(Date.UTC(vn.getUTCFullYear(), vn.getUTCMonth(), vn.getUTCDate() + add, hourVN, minVN, 0) - 7 * 3600 * 1000);
+      var dow = new Date(d.getTime() + 7 * 3600 * 1000).getUTCDay();
+      if (daysVN.indexOf(dow) >= 0 && d.getTime() > nowMs - 30 * 60000) return d.getTime();
+    }
+    return null;
+  }
+  function ctReadToast() {
+    var t = $('#ct-toast');
+    if (!t) return null;
+    var act = $('#ct-toast-act');
+    return {
+      visible: !t.classList.contains('hidden'),
+      label: (($('#ct-toast-label') || {}).textContent || '').trim(),
+      msg: (($('#ct-toast-msg') || {}).textContent || '').trim(),
+      clock: (($('#ct-toast-clock') || {}).textContent || '').trim(),
+      actText: act ? (act.textContent || '').replace(/\s+/g, ' ').trim() : '',
+      act: act ? (act.dataset.act || '') : '',
+      actDisabled: act ? !!act.disabled : true,
+      actEl: act
+    };
+  }
+  function ctReadHud() {
+    var h = $('#ct-hud');
+    if (!h) return null;
+    return {
+      visible: !h.classList.contains('hidden'),
+      con: (($('#ct-con') || {}).textContent || '').trim(),
+      mang: (($('#ct-mang') || {}).textContent || '').trim(),
+      hasat: (($('#ct-hasat') || {}).textContent || '').trim(),
+      bo: (($('#ct-bo') || {}).textContent || '').trim(),
+      dem: (($('#ct-dem') || {}).textContent || '').trim(),
+      banner: (($('#ct-banner') || {}).textContent || '').replace(/\s+/g, ' ').trim()
+    };
+  }
+  function runChienTruong(runId, opts) {
+    opts = opts || {};
+    var schedStop = function (r) { if (opts.schedule) return r; stopTool(r); return r; };
+    return (async function () {
+      await flyCheckAtStart(runId, 'Vạn Hoang Chiến Trường', null); // v1.36: ghi trạng thái Phi Hành lúc bắt đầu
+      var realm = readRealmInfo();
+      if (!realm || realm.tier < 7) {
+        log('Chiến Trường: cần Luyện Khí tầng 7–13 hoặc Trúc Cơ (theo mã TANG_TOI_THIEU=7) — nhân vật đang ' + (realm ? realm.name : 'không đọc được cảnh giới') + ', chưa vào được');
+        return schedStop('chưa đủ cảnh giới Chiến Trường');
+        return;
+      }
+      var startMs = nextWeeklySessionMs(Date.now(), [1, 5], 21, 16);
+      var regMs = startMs != null ? startMs - 16 * 60000 : null;
+      log('Vạn Hoang Chiến Trường: suất Thứ Hai + Thứ Sáu 21:16 giờ VN (ghi danh từ 21:00, phòng chờ 21:15, trận 14 phút; bảng ' + (realm.tier >= 14 ? 'Trúc Cơ' : 'Luyện Khí') + ') — suất kế ' + (startMs ? fmtTime(startMs) : '?'));
+      await ensureAuto(runId, false);
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      var inMatch = function () { var m = readMapId(); return m === 'chien_truong' || m === 'chien_truong_cho'; };
+      // Canh tới giờ ghi danh (toast bật nút Ghi Danh)
+      var lastBeat = 0, registered = false;
+      while (alive(runId) && !inMatch()) {
+        var t = ctReadToast();
+        if (t && t.visible && !t.actDisabled && /Ghi Danh/i.test(t.actText)) { log('Chiến Trường: toast đã bật nút Ghi Danh — ghi danh ngay'); break; }
+        if (regMs != null && Date.now() >= regMs && Date.now() < startMs + 14 * 60000) { log('Chiến Trường: đã tới giờ ghi danh suất ' + fmtTime(startMs)); break; }
+        if (startMs != null && Date.now() > startMs + 15 * 60000) { log('Chiến Trường: đã qua suất ' + fmtTime(startMs) + ' — dừng, suất sau Thứ Hai/Thứ Sáu 21:16'); return schedStop('đã qua suất Chiến Trường'); }
+        if (Date.now() - lastBeat > 300000) {
+          lastBeat = Date.now();
+          log('Chiến Trường: chờ mở ghi danh' + (regMs ? ' lúc ' + fmtTime(regMs) + ' (còn ' + fmtCountdown(regMs - Date.now()) + ')' : ''));
+        }
+        setStatus('Chiến Trường: chờ ghi danh' + (regMs ? ' (' + fmtTime(regMs) + ')' : ''));
+        await sleep(15000);
+      }
+      if (!alive(runId)) return;
+      if (!inMatch()) {
+        // Ghi danh qua nút toast (thử tối đa 5 lần, kiểm chứng nút đổi/đã ghi danh)
+        for (var tryN = 1; tryN <= 5 && alive(runId) && !registered; tryN++) {
+          var t2 = ctReadToast();
+          if (t2 && t2.actEl && !t2.actDisabled) {
+            log('Chiến Trường: bấm "' + t2.actText + '" (lần ' + tryN + ')');
+            pressDom(t2.actEl);
+            await sleep(1500);
+            var t3 = ctReadToast();
+            if (t3 && (/đã ghi danh|hủy|huỷ/i.test(t3.actText + ' ' + t3.msg) || t3.act === 'huy')) { registered = true; log('Chiến Trường: đã ghi danh — toast: "' + t3.msg + '"'); break; }
+            if (t3 && t3.msg) log('Chiến Trường: toast sau khi bấm: "' + t3.msg + '"');
+          } else {
+            log('Chiến Trường: chưa thấy nút Ghi Danh trên toast (lần ' + tryN + ') — chờ tiếp');
+            await sleep(10000);
+          }
+        }
+        if (!registered && !inMatch()) log('Chiến Trường: chưa kiểm chứng được đã ghi danh — vẫn chờ vào phòng chờ/trận');
+        if (opts.regOnly && registered) { log('Chiến Trường: chỉ đăng kí theo nút Sự kiện — ghi danh xong, không tự đánh'); return 'registered'; }
+      }
+      // Chờ vào phòng chờ → chiến trường
+      var waitT0 = Date.now();
+      while (alive(runId) && !inMatch()) {
+        if (Date.now() - waitT0 > 25 * 60000) { log('Chiến Trường: chờ 25 phút chưa vào được phòng chờ/trận — dừng'); return schedStop('không vào được Chiến Trường'); }
+        setStatus('Chiến Trường: chờ vào trận…');
+        await sleep(10000);
+      }
+      if (!alive(runId)) return;
+      log('Chiến Trường: đã vào ' + (MAPS[readMapId()] ? MAPS[readMapId()].name : readMapId()) + ' — bật đủ Bay + Chạy + Auto + kỹ năng theo nhịp; bật Map sáng + canh hái Vạn Hoang Huyết Lan (10 khóm/kỳ trên đảo, vị trí server quyết — di chuyển quét, đứng kề khóm game hiện nút "Hái Huyết Lan" thì bấm hái ngay)');
+      setMapBright(true);
+      setStatus('Chiến Trường: đang trong trận');
+      await ensureCombatTrio(runId, 'Vạn Hoang Chiến Trường');
+      var ctRot = skillRotation(runId, function () { return true; });
+      var dirs = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]];
+      var di = 0, tIn = Date.now(), lastBeatIn = 0, lowHpLogged = false, lastHasat = '', hlCount = 0, hlLastBao = '';
+      while (alive(runId)) {
+        if (!inMatch()) break;
+        if (Date.now() - tIn > 30 * 60000) { log('Chiến Trường: đã ở trong trận 30 phút — dừng'); break; }
+        var hud = ctReadHud();
+        if (hud && hud.hasat && hud.hasat !== lastHasat) { lastHasat = hud.hasat; log('Chiến Trường: ' + hud.hasat + (hud.con ? ' · ' + hud.con : '') + (hud.bo ? ' · ' + hud.bo : '')); }
+        if (isDowned()) { log('Chiến Trường: đang gục — chờ game xử lý (hồi sinh/loại)'); await sleep(5000); continue; }
+        var hp = readHpPct();
+        if (hp != null && hp < 0.35 && !lowHpLogged) {
+          lowHpLogged = true;
+          log('Chiến Trường: Khí Huyết dưới 35% — tắt Auto theo luật dừng (giữa trận không rời được, anh tự lái tiếp nếu muốn)');
+          await ensureAuto(runId, false);
+        }
+        if (Date.now() - lastBeatIn > 120000) {
+          lastBeatIn = Date.now();
+          log('Chiến Trường: đang trong trận ' + Math.round((Date.now() - tIn) / 60000) + ' phút' + (hud ? ' (' + [hud.con, hud.mang, hud.hasat, hud.bo, hud.dem].filter(Boolean).join(' · ') + ')' : '') + ' — đã hái ' + hlCount + ' Vạn Hoang Huyết Lan');
+        }
+        var hlBtn = ctHuyetLanBtn();
+        if (hlBtn) {
+          log('Chiến Trường: thấy khóm Vạn Hoang Huyết Lan kề bên — bấm Hái Huyết Lan');
+          pressDom(hlBtn);
+          await sleep(2000);
+          var bao = (($('#ct-bao') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+          var cap = readCaption();
+          if ((bao && bao !== hlLastBao && /Huyết Lan/i.test(bao)) || /Huyết Lan/i.test(cap || '')) {
+            hlCount++;
+            hlLastBao = bao;
+            log('Chiến Trường: đã hái Vạn Hoang Huyết Lan (tổng ' + hlCount + ' khóm kỳ này)' + (bao ? ' — "' + bao + '"' : ''));
+          } else {
+            log('Chiến Trường: đã bấm Hái Huyết Lan (chưa đọc được xác nhận vào túi qua #ct-bao/caption — kiểm túi sau trận)');
+          }
+          continue;
+        }
+        var d = dirs[di++ % dirs.length];
+        tapCanvas(d[0] * 3 * (S.pxX || 32), d[1] * 3 * (S.pxY || 32));
+        await sleep(4000);
+        if (ctHuyetLanBtn()) continue;
+        await sleep(4000);
+      }
+      ctRot.stop();
+      if (!alive(runId)) return;
+      await ensureAuto(runId, false);
+      var hudEnd = ctReadHud();
+      log('Chiến Trường: trận kết thúc' + (hudEnd && (hudEnd.hasat || hudEnd.banner) ? ' — ' + [hudEnd.hasat, hudEnd.banner].filter(Boolean).join(' · ') : '') + ' — đã hái ' + hlCount + ' Vạn Hoang Huyết Lan');
+      return schedStop('xong Chiến Trường');
+    })();
+  }
+  function runSySachDien(runId, opts) {
+    opts = opts || {};
+    var schedStop = function (r) { if (opts.schedule) return r; stopTool(r); return r; };
+    return (async function () {
+      await flyCheckAtStart(runId, 'Sỹ Sách Điện', null); // v1.36: ghi trạng thái Phi Hành lúc bắt đầu
+      var realm = readRealmInfo();
+      if (!realm || realm.tier < 7) {
+        log('Sỹ Sách Điện: cần Luyện Khí tầng 7 trở lên (theo mã) — nhân vật đang ' + (realm ? realm.name : 'không đọc được cảnh giới') + ', chưa vào được');
+        return schedStop('chưa đủ cảnh giới Sỹ Sách Điện');
+        return;
+      }
+      var startMs = nextWeeklySessionMs(Date.now(), [4], 20, 16);
+      log('Sỹ Sách Điện: mở 20:16 Thứ Năm (20:00 chốt danh sách tông, kéo dài 30 phút, đóng cửa nhận người 20:36) — phó bản TÔNG MÔN, cần thuộc tông môn + tông đủ 3 người đủ tư cách lúc 20:00. Suất kế ' + (startMs ? fmtTime(startMs) : '?'));
+      await ensureAuto(runId, false);
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      var inDien = function () { return /^hu_thien_/.test(readMapId() || ''); };
+      if (!inDien()) {
+        // Tới NPC trước giờ mở 10 phút (hoặc ngay nếu đã tới giờ)
+        var goMs = startMs != null ? startMs - 10 * 60000 : Date.now();
+        var lastBeat = 0;
+        while (alive(runId) && Date.now() < goMs) {
+          if (Date.now() - lastBeat > 300000) {
+            lastBeat = Date.now();
+            log('Sỹ Sách Điện: chờ tới giờ — xuất phát ' + fmtTime(goMs) + ' (còn ' + fmtCountdown(goMs - Date.now()) + ')');
+          }
+          setStatus('Sỹ Sách Điện: chờ giờ mở (' + fmtTime(startMs) + ')');
+          await sleep(15000);
+        }
+        if (!alive(runId)) return;
+        if (startMs != null && Date.now() > startMs + 20 * 60000) { log('Sỹ Sách Điện: đã qua giờ nhận người (đóng cửa 20:36) — dừng, suất sau Thứ Năm 20:16'); return schedStop('đã qua giờ Sỹ Sách Điện'); }
+        log('Sỹ Sách Điện: tới Miếu Ông Trường Con gặp Thủ Điện Sỹ Sách (20,14)');
+        await travelTo(runId, 'dong_mach_ngam');
+        if (!alive(runId)) return;
+        await standNextTo(runId, 20, 14, 'Thủ Điện Sỹ Sách');
+        await ensureFly(runId, false);
+        if (!(await pressInteractBtn(runId, 8000, 'Thủ Điện Sỹ Sách'))) { log('Sỹ Sách Điện: không bấm được Tương Tác ở Thủ Điện Sỹ Sách'); return schedStop('không mở được thoại Thủ Điện Sỹ Sách'); }
+        await sleep(1200);
+        var dlgText = readDialogText();
+        if (dlgText) log('Sỹ Sách Điện: thoại Thủ Điện: "' + dlgText.slice(0, 240) + '"');
+        await handleQuestDialog(runId, {});
+        if (!alive(runId)) return;
+        await sleep(1500);
+        if (!inDien()) {
+          var cap = readCaption();
+          log('Sỹ Sách Điện: chưa vào được điện — thoại/caption: "' + (readDialogText().slice(0, 200) || cap || '(trống)') + '". Điều kiện theo mã: thuộc tông môn (vào tông ≥3 giờ, tông ≥3 giờ tuổi, đủ 3 người đủ tư cách lúc 20:00 Thứ Năm), Luyện Khí 7+, tối đa 20 người/tông. Chưa đủ điều kiện nào thì game từ chối ở bước này.');
+          closeDialogIfOpen();
+          return schedStop('chưa vào được Sỹ Sách Điện');
+          return;
+        }
+      }
+      log('Sỹ Sách Điện: đã vào ' + (MAPS[readMapId()] ? MAPS[readMapId()].name : readMapId()) + ' — farm quái theo ải (Ải 1: hạ Thủ Vệ gom 3 Sỹ Sách Ngọc Phù; Ải 2: đánh sập Trụ Băng/Trụ Hoả; Ải 3: Nội Điện)');
+      brightAutoCheck(); // v1.27: Sỹ Sách Điện có lớp tối (HuThienUI.drawSuong) — tự bật Map sáng
+      setStatus('Sỹ Sách Điện: đang trong điện');
+      var tIn = Date.now(), aiOrder = ['hu_thien_1', 'hu_thien_2', 'hu_thien_3', 'hu_thien_4'];
+      while (alive(runId) && inDien()) {
+        if (Date.now() - tIn > 35 * 60000) { log('Sỹ Sách Điện: đã ở trong điện 35 phút — dừng'); break; }
+        var hp0 = readHpPct();
+        if (hp0 != null && hp0 < 0.35) { log('Sỹ Sách Điện: Khí Huyết dưới 35% — dừng Auto, anh tự lái tiếp'); await ensureAuto(runId, false); break; }
+        var cur = readMapId();
+        var anchor = (MAPS[cur] && MAPS[cur].anchor) || [10, 10];
+        var fr = await farmPhase(runId, cur, { tx: anchor[0], ty: anchor[1], label: MAPS[cur] ? MAPS[cur].name : cur }, null, Date.now() + 3 * 60000);
+        if (!alive(runId)) return;
+        if (fr === 'hp') { log('Sỹ Sách Điện: Khí Huyết thấp khi farm — dừng'); break; }
+        if (!inDien()) break;
+        // Thử sang ải kế (cổng mở khi đủ Ngọc Phù/đánh sập trụ — chưa mở thì ở lại farm tiếp)
+        var idx = aiOrder.indexOf(readMapId());
+        if (idx >= 0 && idx < aiOrder.length - 1) {
+          var nextAi = aiOrder[idx + 1];
+          log('Sỹ Sách Điện: thử sang ' + (MAPS[nextAi] ? MAPS[nextAi].name : nextAi) + ' (cổng chưa mở thì ở lại ải này farm tiếp)');
+          await ensureAuto(runId, false);
+          await travelTo(runId, nextAi);
+          if (!alive(runId)) return;
+          if (readMapId() === nextAi) log('Sỹ Sách Điện: đã sang ' + (MAPS[nextAi] ? MAPS[nextAi].name : nextAi));
+        }
+      }
+      if (!alive(runId)) return;
+      await ensureAuto(runId, false);
+      log('Sỹ Sách Điện: lượt kết thúc (đã ' + Math.round((Date.now() - tIn) / 60000) + ' phút trong điện)');
+      return schedStop('xong Sỹ Sách Điện');
+    })();
+  }
+
+  // ============ Chuỗi cày cấp tân thủ Luyện Khí 1→13 + Trúc Cơ (v1.17, lệnh Bui 18:33 + 18:38 ngày 2026-11-26) ============
+  // Cơ chế theo mã client: cảnh giới đọc từ localStorage pntt_progress_v1 (khóa "realm" + exp — v1.22 sửa:
+  // tool cũ đọc "realmId" nên luôn hụt); điều kiện đột phá
+  // đọc từ bảng Đột Phá của game (#btn-breakthrough → #breakthrough-panel, các dòng .breakthrough-requirement);
+  // phá quan tại đài đá Tản Viên (22,18) — bấm Tương Tác mở thoại "Đột Phá Cảnh Giới", nút "Bắt Đầu Phá Quan";
+  // luyện đan tại Đan Lô Tản Viên (16,11) qua giao diện DanLoUI (.forge-slot → .forge-detail → nút Luyện);
+  // Trúc Cơ (tầng 13→Trúc Cơ): thoại riêng 2 lựa chọn "Dùng Trúc Cơ Đan · 70%" / "Kèm 5 Bảo Mệnh Phù · 100%" —
+  // tool chọn 100% nếu đủ phù, không thì 70% và ghi rõ tỉ lệ trước khi bấm. Đan phá quan KHÔNG bán ở tiệm
+  // (tra mã: chỉ luyện ở Đan Lô; nguyên liệu thảo gieo từ hạt đổi bằng Dược Công ở Đại Phu, Trúc Cơ Thảo/
+  // Địa Linh Quả thu ở Huyết Xích, Yêu Đan Cấp 3 từ Yêu Thú Cấp 3+ hoặc ghép mảnh ở Đan Lô).
+  // Dữ liệu 39 giai đoạn nhiệm vụ chính (quest-stages.json, trích từ mã) nhúng ở QUEST_STAGES để biết trước
+  // từng giai đoạn phải làm gì ở đâu — dùng cho chế độ Nhiệm vụ chính và chuỗi cày cấp.
+  // Thứ tự cảnh giới theo mảng REALMS trong mã client (v1.22 bổ sung truc_co_2/3, gia_dan, ket_dan_1 —
+  // chỉ số cũ giữ nguyên: Phàm Nhân 0, Luyện Khí 1–13, Trúc Cơ Sơ Kỳ 14).
+  var REALM_ORDER = ['pham_nhan', 'luyen_khi_1', 'luyen_khi_2', 'luyen_khi_3', 'luyen_khi_4', 'luyen_khi_5', 'luyen_khi_6', 'luyen_khi_7', 'luyen_khi_8', 'luyen_khi_9', 'luyen_khi_10', 'luyen_khi_11', 'luyen_khi_12', 'luyen_khi_13', 'truc_co_1', 'truc_co_2', 'truc_co_3', 'gia_dan', 'ket_dan_1'];
+  var REALM_NAMES = {
+    pham_nhan: 'Phàm Nhân', luyen_khi_1: 'Luyện Khí Tầng 1', luyen_khi_2: 'Luyện Khí Tầng 2', luyen_khi_3: 'Luyện Khí Tầng 3',
+    luyen_khi_4: 'Luyện Khí Tầng 4', luyen_khi_5: 'Luyện Khí Tầng 5', luyen_khi_6: 'Luyện Khí Tầng 6', luyen_khi_7: 'Luyện Khí Tầng 7',
+    luyen_khi_8: 'Luyện Khí Tầng 8', luyen_khi_9: 'Luyện Khí Tầng 9', luyen_khi_10: 'Luyện Khí Tầng 10', luyen_khi_11: 'Luyện Khí Tầng 11',
+    luyen_khi_12: 'Luyện Khí Tầng 12', luyen_khi_13: 'Luyện Khí Tầng 13', truc_co_1: 'Trúc Cơ Sơ Kỳ',
+    truc_co_2: 'Trúc Cơ Trung Kỳ', truc_co_3: 'Trúc Cơ Hậu Kỳ', gia_dan: 'Giả Đan', ket_dan_1: 'Kết Đan Sơ Kỳ'
+  };
+  // Luật đột phá theo mã (n.BREAKTHROUGH, khóa = cảnh giới hiện tại): mọi tầng đều cần Đạo Hạnh viên mãn;
+  // tầng 1→2 không cần đan; tầng 2→3 cần nhiệm vụ chính giai đoạn 12 + Tụ Khí Đan; tầng 5→6 cần giai đoạn 14.
+  var BREAK_RULES = {
+    luyen_khi_2: { questStage: 12, item: 'tu_khi_dan', itemName: 'Tụ Khí Đan', qty: 1 },
+    luyen_khi_3: { item: 'tu_khi_dan', itemName: 'Tụ Khí Đan', qty: 1 },
+    luyen_khi_4: { item: 'luyen_khi_dan', itemName: 'Luyện Khí Đan', qty: 1 },
+    luyen_khi_5: { questStage: 14, item: 'luyen_khi_dan', itemName: 'Luyện Khí Đan', qty: 1 },
+    luyen_khi_6: { item: 'luyen_khi_dan', itemName: 'Luyện Khí Đan', qty: 1 },
+    luyen_khi_7: { item: 'pha_canh_dan', itemName: 'Phá Cảnh Đan', qty: 1 },
+    luyen_khi_8: { item: 'pha_canh_dan', itemName: 'Phá Cảnh Đan', qty: 1 },
+    luyen_khi_9: { item: 'pha_canh_dan', itemName: 'Phá Cảnh Đan', qty: 1 },
+    luyen_khi_10: { item: 'pha_canh_dan', itemName: 'Phá Cảnh Đan', qty: 2 },
+    luyen_khi_11: { item: 'pha_canh_dan', itemName: 'Phá Cảnh Đan', qty: 2 },
+    luyen_khi_12: { item: 'pha_canh_dan', itemName: 'Phá Cảnh Đan', qty: 3 },
+    luyen_khi_13: { item: 'truc_co_dan', itemName: 'Trúc Cơ Đan', qty: 1 }
+  };
+  var PILL_RECIPES = {
+    tu_khi_dan: [{ id: 'linh_diep', name: 'Linh Diệp', qty: 3 }, { id: 'huyet_thao', name: 'Huyết Thảo', qty: 3 }, { id: 'linh_thuy', name: 'Linh Thúy', qty: 2 }],
+    luyen_khi_dan: [{ id: 'linh_ngoc_diep', name: 'Linh Ngọc Diệp', qty: 3 }, { id: 'xich_duong_thao', name: 'Xích Dương Thảo', qty: 3 }, { id: 'linh_thuy', name: 'Linh Thúy', qty: 4 }],
+    pha_canh_dan: [{ id: 'bich_van_diep', name: 'Bích Vân Diệp', qty: 3 }, { id: 'long_huyet_thao', name: 'Long Huyết Thảo', qty: 3 }, { id: 'linh_thuy', name: 'Linh Thúy', qty: 5 }],
+    truc_co_dan: [{ id: 'truc_co_thao', name: 'Trúc Cơ Thảo', qty: 50 }, { id: 'dia_linh_qua', name: 'Địa Linh Hóa Quả', qty: 30 }, { id: 'yeu_dan_cap_3', name: 'Yêu Đan Cấp 3 trở lên', qty: 1 }],
+    // v1.23: công thức phụ ở Đan Lô (HuyetSac.recipes + ô ghép Yêu Đan trong mã client)
+    bao_menh_phu: [{ id: 'co_bich_moc', name: 'Cổ Bích Mộc', qty: 12 }, { id: 'tran_than_thach', name: 'Trấn Thần Thạch', qty: 12 }],
+    ghep_yeu_dan: [{ id: 'manh_yeu_dan_cap_3', name: 'Mảnh Yêu Đan Cấp 3', qty: 3 }],
+    ghep_yeu_dan_phu: [{ id: 'manh_yeu_dan_cap_3', name: 'Mảnh Yêu Đan Cấp 3', qty: 3 }, { id: 'bao_menh_phu', name: 'Bảo Mệnh Phù', qty: 3 }]
+  };
+  var PILL_SOURCES = {
+    linh_diep: 'gieo hạt (Gói Hạt Tụ Khí Đan đổi 2 Dược Công ở Đại Phu) ở Vườn Cá Nhân',
+    huyet_thao: 'gieo hạt (Gói Hạt Tụ Khí Đan) ở Vườn Cá Nhân',
+    linh_ngoc_diep: 'gieo hạt (Gói Hạt Luyện Khí Đan đổi 5 Dược Công ở Đại Phu) ở Vườn Cá Nhân',
+    xich_duong_thao: 'gieo hạt (Gói Hạt Luyện Khí Đan) ở Vườn Cá Nhân',
+    bich_van_diep: 'gieo hạt (Gói Hạt Phá Cảnh Đan đổi 10 Dược Công ở Đại Phu) ở Vườn Cá Nhân',
+    long_huyet_thao: 'gieo hạt (Gói Hạt Phá Cảnh Đan) ở Vườn Cá Nhân',
+    linh_thuy: 'hạ Dược Linh Thú trong Vườn Cá Nhân (giai đoạn 11+) — mã client: rollKill duoc_linh_thu rơi linh_thuy; Mạch Linh Tuyền không cho Linh Thúy',
+    truc_co_thao: 'thu hoạch ở Huyết Xích Cấm Địa (Đầm Lầy) hoặc gieo hạt Gói Hạt Trúc Cơ Đan',
+    dia_linh_qua: 'thu hoạch ở Huyết Xích Cấm Địa (Lòng Đất) hoặc gieo hạt Gói Hạt Trúc Cơ Đan',
+    yeu_dan_cap_3: 'rơi từ Yêu Thú Cấp 3+ (Thần Thú Xích Long) hoặc ghép 3 Mảnh Yêu Đan + 3 Bảo Mệnh Phù ở Đan Lô',
+    co_bich_moc: 'thu hoạch ở Huyết Xích Cấm Địa (Rừng Mãng Xà)',
+    tran_than_thach: 'thu hoạch ở Huyết Xích Cấm Địa (Lòng Đất)',
+    manh_yeu_dan_cap_3: 'quà Điểm Danh/hộp quà (tool không tự mở hộp) — ghép ở Đan Lô khi đủ 3 mảnh',
+    bao_menh_phu: 'luyện ở Đan Lô: 12 Cổ Bích Mộc + 12 Trấn Thần Thạch (Huyết Xích)'
+  };
+  // Bãi farm theo tầng — trích từ dữ liệu quái (monsters.json): quái thường (không boss) cấp gần tầng nhất,
+  // map tới được bằng cổng. Mã không có quái thường cấp 7–11 ngoài Huyết Xích nên tầng 7–11 farm quái cấp 6
+  // ở Bãi Đá Hang Gió + nhiệm vụ chính + đả tọa bù Đạo Hạnh.
+  var FARM_BY_TIER = {
+    1: { map: 'thanh_truc_lam', tx: 5, ty: 6, label: 'Bọ Ngựa (cấp 1)' },
+    2: { map: 'thanh_truc_lam', tx: 16, ty: 3, label: 'Sơn Chuột (cấp 3)' },
+    3: { map: 'hang_dong_co', tx: 10, ty: 6, label: 'Thạch Yêu (cấp 3)' },
+    4: { map: 'duoc_vien', tx: 20, ty: 5, label: 'Độc Đằng Yêu (cấp 4)' },
+    5: { map: 'duoc_vien', tx: 11, ty: 15, label: 'Tiêu Sư (cấp 5)' },
+    6: { map: 'bai_da_hang_gio', tx: 5, ty: 22, label: 'Xuyên Sơn Giáp (cấp 6)' },
+    7: { map: 'bai_da_hang_gio', tx: 5, ty: 22, label: 'Xuyên Sơn Giáp (cấp 6)' },
+    8: { map: 'bai_da_hang_gio', tx: 5, ty: 22, label: 'Xuyên Sơn Giáp (cấp 6)' },
+    9: { map: 'bai_da_hang_gio', tx: 5, ty: 22, label: 'Xuyên Sơn Giáp (cấp 6)' },
+    10: { map: 'bai_da_hang_gio', tx: 5, ty: 22, label: 'Xuyên Sơn Giáp (cấp 6)' },
+    11: { map: 'bai_da_hang_gio', tx: 5, ty: 22, label: 'Xuyên Sơn Giáp (cấp 6)' },
+    12: { map: 'thach_phong_thung_lung', tx: 29, ty: 4, label: 'Bạch Hổ Tuyết (cấp 12)' },
+    13: { map: 'thach_phong_thung_lung', tx: 29, ty: 4, label: 'Bạch Hổ Tuyết (cấp 12)' }
+  };
+  var DAI_DA = { map: 'tan_vien', tx: 22, ty: 18, label: 'Đài Đá Bên Suối' };
+  // v1.24 (lệnh Bui 20:14): trong Vườn Cá Nhân cũng có đài phá quan — mã client prop
+  // {id:"dai_da_duoc",type:"meditate_stone",tx:8,ty:7,name:"Đài Đá Trong Linh Điền"} cùng loại
+  // meditate_stone với đài đá Tản Viên nên tương tác y hệt (Tương Tác → đả tọa/thoại Đột Phá),
+  // không điều kiện riêng; chính hàm chỉ đường nhiệm vụ của game cũng coi hai đài tương đương
+  // (ở Tản Viên chỉ dai_da, nơi khác chỉ dai_da_duoc) và giai đoạn 10 chỉ thẳng đài trong vườn.
+  var DAI_DA_VUON = { map: 'vuon_ca_nhan', tx: 8, ty: 7, label: 'Đài Đá Trong Linh Điền (Vườn Cá Nhân)' };
+  // Đài gần nhất: đang ở vườn thì phá quan/đả tọa ngay đài vườn, khỏi chạy về Tản Viên.
+  function pickAltar(mapId) {
+    var m = mapId || readMapId();
+    return m === 'vuon_ca_nhan' ? DAI_DA_VUON : DAI_DA;
+  }
+  var DAN_LO = { map: 'tan_vien', tx: 16, ty: 11, label: 'Đan Lô Cũ' };
+  var QUEST_STAGES = [{"s": 0, "n": "Nhập Môn — Chưa Có Duyên Pháp", "h": "Đọc Bia Đá bên lối mòn phía nam, hoặc hỏi Thầy Ông Nội ở sân đá xóm nhà tranh — chỗ nào cũng được.", "o": ["Đọc Bia Đá Khắc Cổ Tự bên lối mòn phía nam", "Hoặc hỏi Thầy Ông Nội ở sân đá xóm nhà tranh"], "p": {"m": "tan_vien", "i": []}, "a": "partial"}, {"s": 1, "n": "Giai đoạn 1 — Lĩnh Ngộ Cổ Pháp", "h": "Đọc Bia Đá Cổ Tự hoặc hỏi Thầy Ông Nội về Đạo Dẫn thuật.", "o": ["Đọc Bia Đá hoặc hỏi Thầy Ông Nội"], "p": {"m": "tan_vien", "i": [["su_phu", 9, 10]]}, "a": "full"}, {"s": 2, "n": "Giai đoạn 2 — Hái Tẩy Uế Thảo", "h": "Hái 3 ngọn Tẩy Uế Thảo — khóm cỏ phát sáng ven suối.", "o": ["Hái Tẩy Uế Thảo ven suối"], "p": {"m": "tan_vien", "i": [["thao_1", 14, 20], ["thao_2", 20, 21], ["thao_3", 22, 26], ["thao_4", 26, 17], ["thao_5", 26, 11], ["thao_6", 23, 9], ["thao_7", 27, 10], ["thao_8", 21, 19], ["thao_9", 26, 20], ["thao_10", 22, 25]]}, "a": "full"}, {"s": 3, "n": "Giai đoạn 3 — Sắc Tẩy Tuỷ Thang", "h": "Tới đan lô cũ trong sân nhà tranh, chọn Tẩy Tuỷ Thang để sắc.", "o": ["Sắc thuốc ở đan lô trong sân nhà tranh"], "p": {"m": "tan_vien", "i": [["dan_lo", 16, 11]]}, "a": "partial"}, {"s": 4, "n": "Giai đoạn 4 — Tẩy Uế Thể Xác", "h": "Ra đài đá bên suối, uống thang rồi đả tọa để bước vào Luyện Khí Tầng 1.", "o": ["Sắc lại Tẩy Tuỷ Thang ở đan lô"], "p": {"m": "tan_vien", "i": [["dai_da", 22, 18]]}, "a": "partial"}, {"s": 5, "n": "Giai đoạn 5 — Dọn Yêu Thú Rừng Trúc", "h": "Gặp Huấn Sư Huynh ở Rừng Trúc, cầm Trúc Kiếm lên rồi diệt 5 Bọ Ngựa hoặc Sơn Chuột. Bấm Auto để tự tìm quái mà đánh.", "o": ["Gặp Huấn Sư Huynh ở Rừng Trúc", "Cầm Trúc Kiếm lên (Hành Trang → Trang Bị)", "Diệt Bọ Ngựa / Sơn Chuột", "Gặp Huấn Sư Huynh ở Rừng Trúc"], "p": {"m": "thanh_truc_lam", "i": []}, "a": "partial"}, {"s": 6, "n": "Giai đoạn 6 — Tuần Tra Rừng Trúc", "h": "Diệt thêm 5 con, tìm 3 manh mối phát sáng quanh rừng, rồi về báo Huấn Sư Huynh.", "o": ["Diệt thêm Bọ Ngựa / Sơn Chuột", "Tìm manh mối phát sáng quanh rừng trúc"], "p": {"m": "thanh_truc_lam", "i": []}, "a": "partial"}, {"s": 7, "n": "Giai đoạn 7 — Bái Kiến Đại Phu", "h": "Theo lối mòn phía nam Rừng Trúc xuống Thảo Dược Cốc, gặp Đại Phu.", "o": ["Gặp Đại Phu ở Thảo Dược Cốc"], "p": {"m": "duoc_vien", "i": [["dai_phu", 14, 8]]}, "a": "full"}, {"s": 8, "n": "Giai đoạn 8 — Trồng Linh Thảo", "h": "Vào Vườn Cá Nhân: chạm luống để gieo hết hạt, chạm ao múc nước một lần rồi tưới từng luống, chín thì hái.", "o": ["Thu hái Linh Diệp", "Thu hái Huyết Thảo"], "p": {"m": "vuon_ca_nhan", "i": []}, "a": "special"}, {"s": 9, "n": "Giai đoạn 9 — Sắc Linh Dược", "h": "Sắc Linh Dược ở đan lô ngay trong Vườn Cá Nhân.", "o": ["Sắc Linh Dược ở đan lô trong vườn"], "p": {"m": "tan_vien", "i": [["dan_lo", 16, 11]]}, "a": "partial"}, {"s": 10, "n": "Giai đoạn 10 — Dùng Dược Luyện Khí", "h": "Ngồi lên đài đá trong vườn, uống Linh Dược cho Đạo Hạnh đầy, rồi phá quan lên Luyện Khí Tầng 2 ngay tại đó.", "o": ["Uống Linh Dược ở đài đá trong vườn", "Phá quan lên Luyện Khí Tầng 2 ngay tại đài đá"], "p": {"m": "tan_vien", "i": [["dai_da", 22, 18]]}, "a": "partial"}, {"s": 11, "n": "Giai đoạn 11 — Dược Viên Có Khách Lạ", "h": "Dược Linh Thú đang phá vườn. Hạ 2 con ngay trong Vườn Cá Nhân để lấy Linh Thúy.", "o": ["Hạ Dược Linh Thú trong vườn, thu Linh Thúy"], "p": {"m": "vuon_ca_nhan", "i": []}, "a": "full"}, {"s": 12, "n": "Giai đoạn 12 — Luyện Tụ Khí Đan", "h": "Luyện Tụ Khí Đan ở đan lô trong vườn: 3 Linh Diệp, 3 Huyết Thảo, 2 Linh Thúy.", "o": ["Luyện Tụ Khí Đan ở đan lô trong vườn"], "p": {"m": "tan_vien", "i": [["dan_lo", 16, 11]]}, "a": "partial"}, {"s": 13, "n": "Giai đoạn 13 — Đột Phá Luyện Khí Tầng 3", "h": "Tích đủ Đạo Hạnh (đả tọa ở đài đá hoặc săn quái), rồi ra đài đá nuốt Tụ Khí Đan phá quan lên Luyện Khí Tầng 3.", "o": ["Có Tụ Khí Đan trong túi", "Đã phá quan lên Luyện Khí Tầng 3", "Tích đủ Đạo Hạnh cho cửa quan Tầng 3", "Ra đài đá nuốt đan phá quan lên Luyện Khí Tầng 3", "Tích đủ Đạo Hạnh ở Tầng 1", "Ra đài đá phá quan lên Luyện Khí Tầng 2 (cửa này chưa tốn đan)", "Tích lại Đạo Hạnh ở Tầng 2, nuốt đan phá quan lên Tầng 3"], "p": {"m": "tan_vien", "i": [["dai_da", 22, 18]]}, "a": "partial"}, {"s": 14, "n": "Giai đoạn 14 — Duyên Pháp Bí Tịch", "h": "Nhận binh khí ở Đại Phu, luyện thêm 1 Tụ Khí Đan phá quan lên Tầng 4, rồi theo Tàng Kinh Lão Nhân tìm hai mảnh bí tịch ở Miếu Hoang.", "o": ["Gặp Đại Phu ở Thảo Dược Cốc, chọn một binh khí", "Ráp bí tịch, chọn lấy một quyển pháp quyết", "Tích đủ Đạo Hạnh cho cửa quan Tầng 4", "Có Tụ Khí Đan cho cửa Tầng 3 → 4 (luyện ở đan lô trong vườn)", "Ra đài đá phá quan lên Luyện Khí Tầng 4"], "p": {"m": "duoc_vien", "i": [["dai_phu", 14, 8]]}, "a": "special"}, {"s": 15, "n": "Giai đoạn 15 — Yêu Cốt Miếu Hoang", "h": "Dùng pháp quyết vừa học hạ Yêu Quái ở Miếu Hoang (phía tây làng), nhặt 10 Yêu Cốt Vụn rồi về báo Tàng Kinh Lão Nhân.", "o": ["Nhặt Yêu Cốt Vụn (hạ Yêu Quái ở Miếu Hoang)"], "p": {"m": "mieu_hoang", "i": []}, "a": "full"}, {"s": 16, "n": "Giai đoạn 16 — Độc Đằng và Linh Ngư", "h": "Ở Thảo Dược Cốc: hạ Độc Đằng Yêu lấy 10 Độc Dịch, câu 1 Linh Ngư ở hồ hoặc suối, rồi giao Đại Phu.", "o": ["Nhặt Độc Đằng Độc Dịch (hạ Độc Đằng Yêu)", "Câu 1 Linh Ngư ở hồ hoặc suối Dược Cốc"], "p": {"m": "duoc_vien", "i": []}, "a": "partial"}, {"s": 17, "n": "Giai đoạn 17 — Hỏi Đạo và Tàng Kinh Các", "h": "Trả lời 5 câu Bách Khoa của Thầy Ông Nội (thưởng 300 Linh Thạch), rồi rút ở tủ sách Tàng Kinh Lão Nhân tới khi được 1 bí tịch mới.", "o": ["Trả lời đúng 5 câu Bách Khoa (Thầy Ông Nội)", "Cả tủ bí tịch đã về tay — không còn quyển mới", "Rút 1 bí tịch CHƯA CÓ ở tủ sách Tàng Kinh Lão Nhân"], "p": {"m": "tan_vien", "i": [["tang_kinh_lao_nhan", 11, 12]]}, "a": "special"}, {"s": 18, "n": "Giai đoạn 18 — Cửa Quan Tầng 5 và 6", "h": "Mỗi cửa cần 1 Luyện Khí Đan: làm việc Dược Công cho Đại Phu, đổi Gói Hạt Luyện Khí Đan, trồng ở Vườn Cá Nhân, săn Linh Thúy, luyện đan rồi phá quan ở đài đá.", "o": [], "p": {"m": "duoc_vien", "i": [["dai_phu", 14, 8]]}, "a": "partial"}, {"s": 19, "n": "Giai đoạn 19 — Chiến Bảng và Phong Linh Thảo", "h": "Đấu 1 trận Tán Tu Chiến Bảng ở Chấp Sự Đại Hội, hái 10 Phong Linh Thảo ở Bãi Đá Hang Gió (cửa đông làng) và 5 Nấm Linh Chi quanh làng.", "o": ["Đấu 1 trận Tán Tu Chiến Bảng (thắng thua đều tính)", "Hái Phong Linh Thảo ở Bãi Đá Hang Gió", "Hái Nấm Linh Chi quanh làng Tản Viên"], "p": {"m": "tan_vien", "i": []}, "a": "partial"}, {"s": 20, "n": "Giai đoạn 20 — Hang Động và Rèn Binh Khí", "h": "Lên Luyện Khí Tầng 7, theo Lão Đạo Hành Cước vào Hang Động mở Linh Dược Rương, rồi mang 2 Huyền Thiết Khoáng về Thợ Rèn rèn một vũ khí.", "o": ["Rèn 1 vũ khí ở Thợ Rèn làng Tản Viên", "Mở Linh Dược Rương cuối Hang Động", "Nhận việc của Lão Đạo Hành Cước ở cửa hang"], "p": {"m": "tan_vien", "i": [["tho_ren", 15, 18]]}, "a": "special"}, {"s": 21, "n": "Giai đoạn 21 — Thử Lửa Đạo Tâm", "h": "Gây sát thương lên U Minh Cự Mãng ở Huyết Xích Cấm Địa và thắng 1 trận (hoặc dự 3 kỳ) Đại Hội Tu Tiên — việc nào trước cũng được.", "o": ["Gây sát thương lên U Minh Cự Mãng ở Huyết Xích Cấm Địa", "Thắng 1 trận Đại Hội hoặc dự 3 kỳ", "Thắng 1 trận Đại Hội hoặc dự 3 kỳ"], "p": {"m": "tan_vien", "i": [["chap_su_dai_hoi", 20, 11]]}, "a": "partial"}, {"s": 22, "n": "Giai đoạn 22 — Tầng 10 và Thỉnh Giáo", "h": "Phá quan tới Luyện Khí Tầng 10 (mỗi cửa 1 Phá Cảnh Đan), rồi xuống Thảo Dược Cốc thắng Đại Phu một trận ở Sân Đấu.", "o": ["Thắng Đại Phu một trận ở Sân Đấu"], "p": {"m": "duoc_vien", "i": []}, "a": "partial"}, {"s": 23, "n": "Giai đoạn 23 — Hạ Thần Thú Xích Long", "h": "Vào Long Uyên (rìa đông Rừng Trúc), hạ 3 Xích Nhãn Ngưu hộ thể rồi góp sức hạ Xích Long — bảng gỗ trước cửa báo giờ rồng hiện. Xong về báo Thợ Rèn.", "o": ["Góp sức hạ Thần Thú Xích Long ở Long Uyên"], "p": {"m": "long_uyen", "i": []}, "a": "partial"}, {"s": 24, "n": "Giai đoạn 24 — Trúc Cơ và Đan Ngũ Hành", "h": "Phá quan lên Trúc Cơ. Đổi Hạt Ngũ Hành Thảo ở Đại Phu, trồng, luyện Đan Ngũ Hành ở đan lô (thêm 5 Yêu Đan Cấp 1, 2 Yêu Đan Cấp 2) rồi dùng. Mua một Trận Bàn bất kỳ ở Trận Pháp Sư Mặc Huyền (Thành Thăng Long).", "o": ["Luyện Đan Ngũ Hành ở đan lô", "Dùng Đan Ngũ Hành", "Sở hữu một Trận Bàn (Trận Pháp Sư Mặc Huyền)", "Đạt Trúc Cơ Sơ Kỳ"], "p": {"m": "tan_vien", "i": [["dan_lo", 16, 11]]}, "a": "partial"}, {"s": 25, "n": "Giai đoạn 25 — Vận Tiêu", "h": "Nhận tiêu ở Huấn Sư Huynh (Rừng Trúc), kéo xe tới Bảnh Tiên Sinh ở Thành Thăng Long, giao đủ 3 chuyến. Nhận được từ 11 đến 22 giờ.", "o": ["Giao hàng Vận Tiêu (Bảnh Tiên Sinh)"], "p": {"m": "bat_quai_thach_phan", "i": []}, "a": "special"}, {"s": 26, "n": "Giai đoạn 26 — Gia Nhập Tông Môn, Chọn Đạo", "h": "Gia nhập hoặc tự lập tông ở Tông Môn Quản Sự (Thành Thăng Long), rồi chọn một đạo — thỉnh tín vật ở sứ giả của đạo ấy.", "o": ["Gia nhập hoặc lập một tông môn", "Chọn một đạo: "], "p": {"m": "bat_quai_thach_phan", "i": []}, "a": "special"}, {"s": 27, "n": "Giai đoạn 27 — Lễ Nhập Môn, Đột Phá Kỹ Năng", "h": "Đứng ở đài đá (Tân Viên), mở Bí Tịch, đột phá một chiêu lên Tầng 1. Rồi nộp 3 Ngưu Sừng (Xích Nhãn Ngưu, Long Uyên) và 3 Nanh Hổ (Bạch Hổ Tuyết, Thung Lũng) cho Tông Môn Quản Sự.", "o": ["Thu Ngưu Sừng (Xích Nhãn Ngưu)", "Thu Nanh Hổ (Bạch Hổ Tuyết)", "Đột phá một chiêu lên Tầng 1 (đài đá → Bí Tịch → Đột Phá)"], "p": {"m": "long_uyen", "i": []}, "a": "partial"}, {"s": 28, "n": "Giai đoạn 28 — Xuyên Sơn Giáp", "h": "Hạ 5 Xuyên Sơn Giáp biến dị ở Bãi Đá Hang Gió, gom 10 Xuyên Sơn Giáp Phiến nộp Tông Môn Quản Sự.", "o": ["Hạ Xuyên Sơn Giáp biến dị (Bãi Đá Hang Gió)", "Xuyên Sơn Giáp Phiến"], "p": {"m": "bai_da_hang_gio", "i": []}, "a": "full"}, {"s": 29, "n": "Giai đoạn 29 — Tẩy Tâm Đan", "h": "Luyện 3 Tẩy Tâm Đan ở đan lô, câu một con trên 1 vạn cân ở Hồ Tây, rồi nộp đan cho Tông Môn Quản Sự.", "o": ["Tẩy Tâm Đan", "Câu một con trên 1 vạn cân ở Hồ Tây"], "p": {"m": "van_can", "i": []}, "a": "partial"}, {"s": 30, "n": "Giai đoạn 30 — Hạ Tộc Trưởng", "h": "Lập tổ đội 2–6 người vào Yên Lãng Sơn (Nữ Tu Miếu Hoang), cùng hạ Tộc Trưởng.", "o": ["Hạ Tộc Trưởng ở Yên Lãng Sơn"], "p": {"m": "mieu_hoang", "i": [["nu_tu_mieu_hoang", 12, 6]]}, "a": "special"}, {"s": 31, "n": "Giai đoạn 31 — Hoàng Cửu Bảo, Huyền Không", "h": "Cùng tông môn vào Bí Cảnh Lãm Làng (Tông Môn Quản Sự), góp sức đánh Tà Soái Hoàng Cửu Bảo — không cần hạ. Hoàn thành 1 trận Huyền Không Cổ Viện (Ghép ngẫu nhiên ở Chấp Sự Đại Hội hoặc phòng tông).", "o": ["Góp sức đánh Tà Soái Hoàng Cửu Bảo ở Lãm Làng", "Hoàn thành 1 trận Huyền Không Cổ Viện"], "p": {"m": "tan_vien", "i": [["chap_su_dai_hoi", 20, 11]]}, "a": "special"}, {"s": 32, "n": "Giai đoạn 32 — Tìm Hắc Thị", "h": "Hỏi Đại Phu, rồi gặp Lão Ăn Mày Gù ở Ma Động đổi ám hiệu lấy Quỷ Diện.", "o": ["Hỏi Đại Phu", "Gặp Lão Ăn Mày Gù (Ma Động)", "Mảnh giấy ám hiệu", "Nhận Quỷ Diện"], "p": {"m": "bai_da_hang_gio", "i": []}, "a": "special"}, {"s": 33, "n": "Giai đoạn 33 — Chuyến Hàng Đầu", "h": "Đóng 5 Yêu Đan Cấp 1 vào Tay Nải, qua Hắc Phong Lĩnh, giao cho Quỷ Nha.", "o": ["Đóng Yêu Đan Cấp 1 vào Tay Nải", "Đánh lui phục kích", "Giao hàng cho Quỷ Nha"], "p": {"m": "tan_vien", "i": [["van_bao_phuong", 12, 22]]}, "a": "special"}, {"s": 34, "n": "Giai đoạn 34 — Huyết Ngọc Chi", "h": "Bán hàng cho Quỷ Nha lấy 150 Hắc Phiếu, đổi Huyết Ngọc Chi. Góp sức hạ Linh Hổ Trấn Sơn (Yêu Thú Cấp 4) ở Thung Lũng.", "o": ["Hắc Phiếu", "Đổi Huyết Ngọc Chi", "Góp sức hạ Linh Hổ Trấn Sơn (Thung Lũng)"], "p": {"m": "thach_phong_thung_lung", "i": []}, "a": "special"}, {"s": 35, "n": "Giai đoạn 35 — Phá Quan Trung Kỳ", "h": "Luyện Ngưng Nguyên Đan, đột phá một chiêu lên Tầng 3, gom đủ vật phẩm, phá quan ở đài đá.", "o": ["Luyện Ngưng Nguyên Đan (Đan Lô)", "Đột phá một chiêu lên Tầng 3 (đài đá → Bí Tịch → Đột Phá)", "Phá quan · thắng Tâm Kiếp"], "p": {"m": "tan_vien", "i": [["dai_da", 22, 18]]}, "a": "special"}, {"s": 36, "n": "Giai đoạn 36 — Lập Công", "h": "Giao 3 chuyến Tiêu Kỳ Đỏ trở lên (vận hay cướp), hạ 100 Thạch Quy biến dị ở Miếu Ông Trường Con, rồi nộp 50 Trừ Ma Lệnh hoặc 50 Tu Sĩ Hồn cùng 5 Mảnh Bia Thủy Mạch và 2 Xích Diễm Quy Đan cho Tông Môn Quản Sự.", "o": ["Giao Tiêu Kỳ Đỏ trở lên", "Hạ Thạch Quy biến dị (Miếu Ông Trường Con)"], "p": {"m": "bat_quai_thach_phan", "i": []}, "a": "partial"}, {"s": 37, "n": "Giai đoạn 37 — Định Cơ Đan", "h": "Gom Toái Không Linh Chi (Vết Nứt), Vạn Hoang Huyết Lan (Chiến Trường), Định Cơ Đan Phương (Tam Lộ), rồi luyện Định Cơ Đan ở Đan Lô.", "o": ["Gom nguyên liệu Định Cơ Đan (Toái Không Linh Chi ở Vết Nứt, Vạn Hoang Huyết Lan ở Chiến Trường, Định Cơ Đan Phương ở Tam Lộ, Huyết Ngọc Chi ở Hắc Thị)", "Luyện Định Cơ Đan (Đan Lô)"], "p": {"m": "tan_vien", "i": [["dan_lo", 16, 11]]}, "a": "special"}, {"s": 38, "n": "Giai đoạn 38 — Phá Quan Hậu Kỳ", "h": "Đầy Đạo Hạnh, ra đài đá vào Tâm Kiếp. Thắng rồi mới gieo: kèm 10 Bảo Mệnh Phù chắc thành, không kèm 70%.", "o": ["Giao Tiêu Kỳ Đỏ trở lên", "Hạ Thạch Quy biến dị (Miếu Ông Trường Con)"], "p": {"m": "tan_vien", "i": [["dai_da", 22, 18]]}, "a": "special"}];
+  function questStageData(stageNum) {
+    if (stageNum == null) return null;
+    for (var i = 0; i < QUEST_STAGES.length; i++) if (QUEST_STAGES[i].s === stageNum) return QUEST_STAGES[i];
+    return null;
+  }
+  function questStageNum(stageText) {
+    var t = String(stageText || '');
+    var m = t.match(/Giai đoạn\s*(\d+)/);
+    if (m) return +m[1];
+    if (/Nhập Môn/.test(t)) return 0;
+    return null;
+  }
+  // v1.22 (lệnh Bui 19:48 ngày 2026-11-26): bản lưu pntt_progress_v1 của client ghi khóa "realm"
+  // (hàm save của Quest: realm: n.Progress.realmId; load đọc t.realm) — KHÔNG phải "realmId".
+  // Tool cũ đọc p.realmId nên luôn hụt → chuỗi cày cấp dừng "không đọc được cảnh giới" ở mọi tầng.
+  // Nay đọc p.realm (dự phòng p.realmId nếu bản lưu đổi dạng), hụt nữa thì đọc tên cảnh giới
+  // trên HUD (#hud-realm — client gán textContent = tên cảnh giới) rồi suy ngược ra id.
+  function realmTierOf(id) {
+    var idx = REALM_ORDER.indexOf(id);
+    if (idx >= 0) return idx;
+    var m = String(id || '').match(/^luyen_khi_(\d+)$/);
+    if (m) return +m[1];
+    if (/^(truc_co|gia_dan|ket_dan)/.test(String(id || ''))) return REALM_ORDER.indexOf('truc_co_1');
+    return 0;
+  }
+  // v1.25 (lệnh Bui 20:17 ngày 2026-11-26): điều kiện đả tọa theo mã client — REALMS ghi
+  // canMeditate:!1 CHỈ ở pham_nhan ("chưa cảm ứng được linh khí trời đất"); Luyện Khí Tầng 1–13,
+  // Trúc Cơ, Giả Đan, Kết Đan đều canMeditate:!0. Ngồi ở đài đá (prop meditate_stone: đài đá
+  // Tản Viên + đài trong vườn) được meditateBonusExp — cộng Đạo Hạnh theo MEDITATE.EXP_PER_SEC,
+  // trần 60 Đạo Hạnh/phút (expMinuteGained>=60 thì ngừng cộng trong phút đó).
+  function canMeditateRealm(id) {
+    if (!id || id === 'pham_nhan') return false;
+    if (/^luyen_khi_\d+$/.test(id)) return true;
+    if (/^(truc_co|gia_dan|ket_dan)/.test(id)) return true;
+    return REALM_ORDER.indexOf(id) > 0;
+  }
+  function readRealmFromHud() {
+    var el = $('#hud-realm');
+    var txt = el ? (el.textContent || '').replace(/\s+/g, ' ').trim() : '';
+    if (!txt) return null;
+    if (REALM_NAMES[txt]) return { realmId: txt, name: REALM_NAMES[txt], tier: realmTierOf(txt), exp: null, source: 'hud' };
+    for (var id in REALM_NAMES) if (REALM_NAMES[id] === txt) return { realmId: id, name: txt, tier: realmTierOf(id), exp: null, source: 'hud' };
+    var m = txt.match(/Luyện Khí Tầng\s*(\d+)/);
+    if (m) { var lid = 'luyen_khi_' + m[1]; return { realmId: lid, name: txt, tier: +m[1], exp: null, source: 'hud' }; }
+    if (/Phàm Nhân/.test(txt)) return { realmId: 'pham_nhan', name: txt, tier: 0, exp: null, source: 'hud' };
+    if (/Trúc Cơ|Giả Đan|Kết Đan/.test(txt)) return { realmId: 'truc_co_1', name: txt, tier: REALM_ORDER.indexOf('truc_co_1'), exp: null, source: 'hud' };
+    return null;
+  }
+  function readRealmInfo() {
+    var p = readLocal();
+    var rawId = p ? (p.realm || p.realmId) : null;
+    if (rawId) {
+      return { realmId: rawId, name: REALM_NAMES[rawId] || rawId, tier: realmTierOf(rawId), exp: (p && typeof p.exp === 'number') ? p.exp : null, source: 'localStorage' };
+    }
+    return readRealmFromHud();
+  }
+  // Dữ liệu thô để ghi nhật ký khi không đọc được cảnh giới (v1.22: không dừng im lặng nữa).
+  function realmDiag() {
+    var raw = null, keys = '—', realmRaw = '—', realmIdRaw = '—', expRaw = '—';
+    try { raw = localStorage.getItem('pntt_progress_v1'); } catch (e) { }
+    if (raw) {
+      try {
+        var p = JSON.parse(raw);
+        keys = Object.keys(p).join(',');
+        realmRaw = p.realm != null ? String(p.realm) : '(không có)';
+        realmIdRaw = p.realmId != null ? String(p.realmId) : '(không có)';
+        expRaw = p.exp != null ? String(p.exp) : '(không có)';
+      } catch (e) { keys = '(JSON lỗi: ' + e.message + ')'; }
+    }
+    var hud = $('#hud-realm');
+    var hudTxt = hud ? (hud.textContent || '').replace(/\s+/g, ' ').trim() : '(không có phần tử)';
+    return 'pntt_progress_v1 ' + (raw ? 'có dữ liệu' : 'TRỐNG') + ' | khóa: ' + keys + ' | realm thô: ' + realmRaw + ' | realmId thô: ' + realmIdRaw + ' | exp thô: ' + expRaw + ' | #hud-realm: "' + hudTxt + '"';
+  }
+  // Thử đọc cảnh giới vài lần (bản lưu có thể ghi chậm ngay sau đăng nhập) — dùng ở đầu chuỗi + trong vòng.
+  function readRealmInfoRetry(runId) {
+    return (async function () {
+      for (var i = 0; i < 5 && alive(runId); i++) {
+        var r = readRealmInfo();
+        if (r) return r;
+        if (i < 4) await sleep(1000);
+      }
+      return null;
+    })();
+  }
+  function pickFarmByTier(tier) {
+    var t = Math.max(1, Math.min(13, tier || 1));
+    return FARM_BY_TIER[t];
+  }
+  // Đọc bảng Đột Phá của game: mở #btn-breakthrough, đọc các dòng điều kiện + trạng thái, rồi đóng.
+  function readBreakPanel(runId) {
+    return (async function () {
+      var btn = $('#btn-breakthrough');
+      if (!btn) return null;
+      var panel = $('#breakthrough-panel');
+      var wasOpen = panel && !panel.classList.contains('hidden');
+      if (!wasOpen) pressDom(btn);
+      var ok = await waitFor(function () {
+        var p2 = $('#breakthrough-panel');
+        return (p2 && !p2.classList.contains('hidden')) ? true : null;
+      }, 5000, 'mở bảng Đột Phá');
+      if (!ok) return null;
+      await sleep(600);
+      var route = (($('#breakthrough-route') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+      var statusEl = $('#breakthrough-status');
+      var status = statusEl ? (statusEl.textContent || '').replace(/\s+/g, ' ').trim() : '';
+      var lines = [];
+      var reqs = document.querySelectorAll('#breakthrough-requirements .breakthrough-requirement');
+      for (var i = 0; i < reqs.length; i++) {
+        var top = reqs[i].querySelector('.requirement-top');
+        var label = '', nums = '';
+        if (top) {
+          var sp = top.querySelector('span'), b = top.querySelector('b');
+          label = sp ? (sp.textContent || '').replace(/[✓○]/g, '').trim() : '';
+          nums = b ? (b.textContent || '').trim() : '';
+        }
+        var mm = nums.match(/(\d+)\s*\/\s*(\d+)/);
+        lines.push({ label: label, cur: mm ? +mm[1] : null, target: mm ? +mm[2] : null, done: reqs[i].classList.contains('done') });
+      }
+      if (!wasOpen) { var closeBtn = $('#breakthrough-close'); if (closeBtn) pressDom(closeBtn); }
+      return { route: route, status: status, blocked: statusEl ? statusEl.className.indexOf('blocked') >= 0 : false, ready: status.indexOf('ĐÃ ĐỦ') >= 0, lines: lines };
+    })();
+  }
+  function breakLine(panel, keyword) {
+    if (!panel) return null;
+    for (var i = 0; i < panel.lines.length; i++) if (panel.lines[i].label.indexOf(keyword) >= 0) return panel.lines[i];
+    return null;
+  }
+  // Luyện 1 viên đan phá quan ở Đan Lô (giao diện DanLoUI): tới Đan Lô → Tương Tác → chọn ô đan → bấm Luyện.
+  // v1.23: opts.exact=true → khớp tên ô chính xác (phân biệt "Ghép Yêu Đan" với "Ghép Yêu Đan · Bảo Mệnh").
+  function brewPill(runId, pillId, pillName, opts) {
+    opts = opts || {};
+    return (async function () {
+      var recipe = PILL_RECIPES[pillId] || [];
+      log('Luyện đan: tới Đan Lô luyện ' + pillName + ' (công thức: ' + recipe.map(function (r) { return r.name + ' ×' + r.qty; }).join(', ') + ')');
+      await travelTo(runId, DAN_LO.map, { label: DAN_LO.label, tx: DAN_LO.tx, ty: DAN_LO.ty });
+      if (!alive(runId)) return { ok: false, missing: [] };
+      await standNextTo(runId, DAN_LO.tx, DAN_LO.ty, DAN_LO.label);
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      var pressed = await pressInteractBtn(runId, 6000, 'mở Đan Lô');
+      if (!pressed) { log('Luyện đan: không bấm được Tương Tác ở Đan Lô'); return { ok: false, missing: [] }; }
+      function slotMatches(al) {
+        if (!al) return false;
+        if (opts.exact) return al === pillName || (al.indexOf(pillName) === 0 && al.indexOf('·') < 0);
+        return al.indexOf(pillName) === 0;
+      }
+      var slot = await waitFor(function () {
+        var slots = document.querySelectorAll('.forge-slot');
+        for (var i = 0; i < slots.length; i++) {
+          if (slotMatches(slots[i].getAttribute('aria-label') || '')) return slots[i];
+        }
+        return null;
+      }, 8000, 'thấy ô ' + pillName + ' trong Đan Lô');
+      if (!slot) {
+        // thử bấm tab Phá Cảnh rồi tìm lại
+        var tabs = document.querySelectorAll('.bag-filter');
+        for (var ti = 0; ti < tabs.length; ti++) if ((tabs[ti].textContent || '').indexOf('Phá Cảnh') >= 0) { pressDom(tabs[ti]); break; }
+        await sleep(800);
+        var slots2 = document.querySelectorAll('.forge-slot');
+        for (var si = 0; si < slots2.length; si++) if (slotMatches(slots2[si].getAttribute('aria-label') || '')) { slot = slots2[si]; break; }
+      }
+      if (!slot) { log('Luyện đan: không thấy ô ' + pillName + ' trong Đan Lô (công thức chưa mở ở tầng này?)'); closeDialogIfOpen(); return { ok: false, missing: [] }; }
+      pressDom(slot);
+      await sleep(900);
+      var mats = document.querySelectorAll('.forge-detail .forge-mats li');
+      var missing = [];
+      for (var mi = 0; mi < mats.length; mi++) {
+        var txt = (mats[mi].textContent || '').trim();
+        if (!mats[mi].classList.contains('met')) missing.push(txt.replace(/^✕\s*/, ''));
+      }
+      var actBtn = null;
+      var btns = document.querySelectorAll('.forge-detail .equip-action');
+      for (var bi = 0; bi < btns.length; bi++) {
+        var bt = (btns[bi].textContent || '').trim();
+        if (!btns[bi].disabled && btns[bi].className.indexOf('secondary') < 0 && /^(Luyện|Chế|Ghép)/.test(bt)) { actBtn = btns[bi]; break; }
+      }
+      if (!actBtn) {
+        log('Luyện đan: chưa luyện được ' + pillName + ' — còn thiếu: ' + (missing.join('; ') || 'không rõ (nút luyện bị khóa)'));
+        closeDialogIfOpen();
+        return { ok: false, missing: missing };
+      }
+      pressDom(actBtn);
+      log('Đã bấm Luyện ' + pillName + ' — chờ lò xong…');
+      await sleep(5000);
+      closeDialogIfOpen();
+      log('Luyện đan xong: ' + pillName + ' (kiểm lại qua bảng Đột Phá ở vòng sau)');
+      return { ok: true, missing: [] };
+    })();
+  }
+  // Phá quan ở đài đá: tới đài đá → Tương Tác → thoại Đột Phá Cảnh Giới → Bắt Đầu Phá Quan
+  // (Trúc Cơ: chọn kèm 5 Bảo Mệnh Phù 100% nếu đủ, không thì 70% — ghi rõ tỉ lệ trước khi bấm).
+  function doBreakthrough(runId) {
+    return (async function () {
+      var before = readRealmInfo();
+      if (!before) return 'notready';
+      var altar = pickAltar();
+      log('Phá quan: tới ' + altar.label + ' (' + before.name + ' → tầng kế)');
+      await travelTo(runId, altar.map, { label: altar.label, tx: altar.tx, ty: altar.ty });
+      if (!alive(runId)) return 'notready';
+      await standNextTo(runId, altar.tx, altar.ty, altar.label);
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      var pressed = await pressInteractBtn(runId, 6000, 'mở thoại Đột Phá ở đài đá');
+      if (!pressed) { log('Phá quan: không bấm được Tương Tác ở đài đá'); return 'notready'; }
+      var opened = await waitFor(function () { return dialogOpen() ? true : null; }, 8000, 'thoại Đột Phá mở');
+      if (!opened) { log('Phá quan: thoại Đột Phá chưa mở (có thể nhân vật đang ngồi đả tọa)'); return 'notready'; }
+      await sleep(800);
+      if (before.realmId === 'luyen_khi_13') {
+        var choices = document.querySelectorAll('#dialog-choices button, #dialog-choices .btn-choice, #dialog-choices [role="button"]');
+        var btn100 = null, btn70 = null;
+        for (var ci = 0; ci < choices.length; ci++) {
+          var ct = (choices[ci].textContent || '');
+          if (ct.indexOf('100%') >= 0 && !choices[ci].disabled) btn100 = choices[ci];
+          if (ct.indexOf('70%') >= 0 && !choices[ci].disabled) btn70 = choices[ci];
+        }
+        if (btn100) { log('Phá quan Trúc Cơ: đủ 5 Bảo Mệnh Phù — chọn kèm phù, tỉ lệ thành công 100%'); pressDom(btn100); }
+        else if (btn70) { log('Phá quan Trúc Cơ: chưa đủ 5 Bảo Mệnh Phù — chọn dùng Trúc Cơ Đan, tỉ lệ thành công 70% (thất bại mất 1 đan, giữ nguyên cảnh giới)'); pressDom(btn70); }
+        else { log('Phá quan Trúc Cơ: không thấy lựa chọn dùng đan trong thoại: ' + readDialogText()); closeDialogIfOpen(); return 'notready'; }
+      } else {
+        var act = dialogActionBtn();
+        if (!act || (act.textContent || '').indexOf('Phá Quan') < 0) {
+          log('Phá quan: chưa đủ điều kiện — thoại ghi: ' + readDialogText());
+          closeDialogIfOpen();
+          return 'notready';
+        }
+        pressDom(act);
+        log('Đã bấm Bắt Đầu Phá Quan — chờ hoạt cảnh…');
+      }
+      var changed = await waitFor(function () {
+        var r = readRealmInfo();
+        return (r && r.realmId !== before.realmId) ? r : null;
+      }, 60000, 'cảnh giới thay đổi sau phá quan');
+      closeDialogIfOpen();
+      if (changed) {
+        log('Phá quan THÀNH CÔNG: ' + before.name + ' → ' + changed.name);
+        // v1.24 (lệnh Bui 20:11): từ Luyện Khí tầng 3, lên tầng mới là kiểm mặc trang bị ngay —
+        // món trước đây chưa đủ cảnh giới mà nay đã đủ thì đeo luôn nếu tốt hơn.
+        if (changed.tier >= 3) {
+          log('Phá quan: kiểm mặc trang bị đủ cảnh giới mới (từ Luyện Khí tầng 3)');
+          try { await autoEquipBetter(runId); } catch (e) { if (!alive(runId)) throw e; log('Mặc đồ: lỗi (' + e.message + ') — bỏ qua'); }
+        }
+        return 'ascended';
+      }
+      log('Phá quan chưa thành (cảnh giới vẫn ' + before.name + ') — có thể thất bại hoặc hoạt cảnh chưa xong, vòng sau kiểm lại');
+      return 'failed';
+    })();
+  }
+  // Đả tọa ở đài đá tới khi Đạo Hạnh đầy (tương tác đài đá khi chưa đầy = ngồi đả tọa theo mã game).
+  // v1.25: theo dõi tiến triển bằng CẢ Đạo Hạnh trong bản lưu LẪN dòng Đạo Hạnh trên bảng Đột Phá
+  // (bản lưu có thể ghi chậm khi đang ngồi — chỉ nhìn bản lưu dễ tưởng "không tăng" rồi dừng sớm
+  // ở tầng thấp); ghi rõ Đạo Hạnh trước/sau + tổng tăng của lượt đả tọa.
+  function meditateUntilFull(runId) {
+    return (async function () {
+      var altar = pickAltar();
+      var realmBefore = readRealmInfo();
+      var startExp = realmBefore ? realmBefore.exp : null;
+      log('Đả tọa: tới ' + altar.label + ' ngồi tích Đạo Hạnh' + (startExp != null ? ' (Đạo Hạnh hiện ' + startExp + ')' : ''));
+      await travelTo(runId, altar.map, { label: altar.label, tx: altar.tx, ty: altar.ty });
+      if (!alive(runId)) return 'timeout';
+      await goToPath(runId, altar.tx, altar.ty, 1);
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      var pressed = await pressInteractBtn(runId, 6000, 'ngồi đả tọa ở đài đá');
+      if (!pressed) { log('Đả tọa: không bấm được Tương Tác ở đài đá'); return 'timeout'; }
+      await sleep(1500);
+      if (dialogOpen()) { log('Đả tọa: đài đá mở thoại Đột Phá — Đạo Hạnh đã đầy'); closeDialogIfOpen(); return 'full'; }
+      var lastExp = startExp, lastPanelCur = null, noGain = 0, polls = 0;
+      var deadline = Date.now() + 12 * 60000;
+      function medLogGain(endExp) {
+        if (startExp != null && endExp != null) log('Đả tọa: Đạo Hạnh ' + startExp + ' → ' + endExp + ' (tăng ' + (endExp - startExp) + ')');
+      }
+      while (alive(runId) && Date.now() < deadline) {
+        await sleep(15000);
+        polls++;
+        if (isDowned()) { await handleDeath(runId); medLogGain((readRealmInfo() || {}).exp); return 'timeout'; }
+        // v1.24: bị quái đánh lúc đả tọa → đánh trả rồi ngồi lại
+        var foughtM = await fightBackCheck(runId, 'đả tọa', { maxGapMs: 25000 });
+        if (foughtM && alive(runId)) {
+          log('Đả tọa: bị quái đánh — đã đánh trả, ngồi lại đả tọa');
+          await pressInteractBtn(runId, 4000, 'ngồi lại đả tọa');
+          await sleep(1000);
+          noGain = 0;
+        }
+        var gained = false;
+        var now = readRealmInfo();
+        if (now && now.exp != null && lastExp != null) {
+          if (now.exp > lastExp) { gained = true; log('Đả tọa: Đạo Hạnh ' + lastExp + ' → ' + now.exp); }
+          lastExp = now.exp;
+        }
+        if (polls % 3 === 0) {
+          var panel = await readBreakPanel(runId);
+          var dh = breakLine(panel, 'Đạo Hạnh');
+          if (dh && dh.done) { log('Đả tọa: Đạo Hạnh đã viên mãn'); break; }
+          if (panel && panel.ready) break;
+          if (dh && dh.cur != null) {
+            if (lastPanelCur != null && dh.cur > lastPanelCur) gained = true;
+            lastPanelCur = dh.cur;
+          }
+        }
+        if (gained) noGain = 0; else noGain++;
+        if (noGain >= 4) { log('Đả tọa: Đạo Hạnh không tăng sau 4 lần kiểm — dừng đả tọa'); break; }
+      }
+      var mb = $('#btn-meditate-touch');
+      if (mb) pressDom(mb); else pressKey('KeyQ', 'q');
+      await sleep(800);
+      var endRealm = readRealmInfo();
+      medLogGain(endRealm ? endRealm.exp : null);
+      var panel2 = await readBreakPanel(runId);
+      var dh2 = breakLine(panel2, 'Đạo Hạnh');
+      return (dh2 && dh2.done) || (panel2 && panel2.ready) ? 'full' : 'timeout';
+    })();
+  }
+  // ============ Tự làm đủ điều kiện đột phá (v1.23, lệnh Bui 19:53 + 19:54 + 19:55 ngày 2026-11-26) ============
+  // Cơ chế theo mã client: túi đồ đọc từ pntt_progress_v1.bag (+bound); vườn: Farm.PLOT_COUNT=10,
+  // luống herb_plot plot_1..10 ở Vườn Cá Nhân (3–7,4)+(3–7,6), trạng thái ở pntt_progress_v1.farm,
+  // gieo bằng thoại "Gieo <hạt> ×N", tưới/hái bằng Tương Tác tại luống, múc nước ở Ao Bích Thuỷ (12,4)
+  // mở nguồn nước vĩnh viễn (flag ho_bich_thuy_da_muc, cần giai đoạn ≥8); đổi hạt: Đại Phu →
+  // "Mở Quầy Đổi Hạt" → "Đổi <gói>" tốn Dược Công (SEED_PACKS); Linh Thúy rơi từ Dược Linh Thú
+  // trong vườn (giai đoạn 11+), KHÔNG phải từ Mạch Linh Tuyền; ghép Yêu Đan ở Đan Lô
+  // ("Ghép Yêu Đan" 3 mảnh 70% / "Ghép Yêu Đan · Bảo Mệnh" +3 Bảo Mệnh Phù 100%);
+  // rèn vũ khí ở Thợ Rèn Tản Viên (15,18) qua ForgeUI (.forge-slot/.forge-detail, nút "Rèn"),
+  // Thiết Kiếm/Đao/Thương = 2 Huyền Thiết Khoáng + 50 Linh Thạch, khoáng rơi từ Thạch Giáp Yêu
+  // ở Hang Động. Mọi việc đều tự đi bằng hệ điều hướng sẵn có (travelTo/standNextTo/goToPath,
+  // đi đường tắt Auto, đánh nhau bật đủ Bay+Chạy+Auto qua farmPhase/ensureCombatTrio).
+  var ITEM_NAMES_V123 = {
+    linh_diep: 'Linh Diệp', huyet_thao: 'Huyết Thảo', linh_ngoc_diep: 'Linh Ngọc Diệp', xich_duong_thao: 'Xích Dương Thảo',
+    bich_van_diep: 'Bích Vân Diệp', long_huyet_thao: 'Long Huyết Thảo', linh_thuy: 'Linh Thúy',
+    truc_co_thao: 'Trúc Cơ Thảo', dia_linh_qua: 'Địa Linh Hóa Quả', yeu_dan_cap_3: 'Yêu Đan Cấp 3',
+    manh_yeu_dan_cap_3: 'Mảnh Yêu Đan Cấp 3', bao_menh_phu: 'Bảo Mệnh Phù', co_bich_moc: 'Cổ Bích Mộc',
+    tran_than_thach: 'Trấn Thần Thạch', huyen_thiet_khoang: 'Huyền Thiết Khoáng',
+    hat_linh_diep: 'Hạt Linh Diệp', hat_huyet_thao: 'Hạt Huyết Thảo', hat_linh_ngoc: 'Hạt Linh Ngọc Diệp',
+    hat_xich_duong: 'Hạt Xích Dương Thảo', hat_bich_van: 'Hạt Bích Vân Diệp', hat_long_huyet: 'Hạt Long Huyết Thảo',
+    hat_truc_co_thao: 'Hạt Trúc Cơ Thảo', hat_dia_linh_qua: 'Hạt Địa Linh Hóa Quả',
+    tu_khi_dan: 'Tụ Khí Đan', luyen_khi_dan: 'Luyện Khí Đan', pha_canh_dan: 'Phá Cảnh Đan', truc_co_dan: 'Trúc Cơ Đan',
+    thiet_kiem: 'Thiết Kiếm', thiet_dao: 'Thiết Đao', thiet_thuong: 'Thiết Thương',
+    yeu_cot: 'Yêu Cốt Vụn', doc_dang_doc_dich: 'Độc Đằng Độc Dịch', nguu_sung: 'Ngưu Sừng', nanh_ho: 'Nanh Hổ',
+    xuyen_son_giap_phien: 'Xuyên Sơn Giáp Phiến'
+  };
+  function itemNameV123(id) { return ITEM_NAMES_V123[id] || id; }
+  // Đếm vật phẩm trong túi qua bản lưu (bag + bound) — null nếu không đọc được bản lưu.
+  function countItem(id) {
+    var p = readLocal();
+    if (!p) return null;
+    var bag = p.bag || {}, bound = p.bound || {};
+    var n = (bag[id] || 0) + (bound[id] || 0);
+    return n;
+  }
+  function countYeuDanCap3Plus() {
+    var total = 0, any = false;
+    ['yeu_dan_cap_3', 'yeu_dan_cap_4', 'yeu_dan_cap_5', 'yeu_dan_cap_6'].forEach(function (id) {
+      var n = countItem(id);
+      if (n != null) { total += n; any = true; }
+    });
+    return any ? total : null;
+  }
+  // Gói hạt theo SEED_PACKS của client (id, tên, phí Dược Công, cảnh giới mở, hạt nhận).
+  var SEED_PACKS_V123 = [
+    { id: 'pham', name: 'Gói Hạt Tụ Khí Đan', cost: 2, realm: null, give: [['hat_linh_diep', 4], ['hat_huyet_thao', 4]] },
+    { id: 'linh', name: 'Gói Hạt Luyện Khí Đan', cost: 5, realm: 'luyen_khi_4', give: [['hat_linh_ngoc', 3], ['hat_xich_duong', 3]] },
+    { id: 'huyen', name: 'Gói Hạt Phá Cảnh Đan', cost: 10, realm: 'luyen_khi_7', give: [['hat_bich_van', 3], ['hat_long_huyet', 3]] },
+    { id: 'dia', name: 'Gói Hạt Trúc Cơ Đan', cost: 20, realm: 'luyen_khi_10', give: [['hat_truc_co_thao', 2], ['hat_dia_linh_qua', 1]] }
+  ];
+  function seedPackById(id) {
+    for (var i = 0; i < SEED_PACKS_V123.length; i++) if (SEED_PACKS_V123[i].id === id) return SEED_PACKS_V123[i];
+    return null;
+  }
+  // v1.46 (Bui lệnh 06:48 ngày 2026-11-27 "Nhiệm vụ cần đổi hạt thì phải chọn làm nhiệm vụ
+  // dược trước"): gói hạt chứa hạt seedId (theo SEED_PACKS.give của client).
+  function packForSeed(seedId) {
+    for (var i = 0; i < SEED_PACKS_V123.length; i++) {
+      var give = SEED_PACKS_V123[i].give || [];
+      for (var j = 0; j < give.length; j++) if (give[j][0] === seedId) return SEED_PACKS_V123[i];
+    }
+    return null;
+  }
+  // Quyết định đổi hạt (hàm thuần, kiểm offline được): 'locked' chưa đủ cảnh giới mở gói,
+  // 'dc-first' đủ cảnh giới nhưng thiếu điểm Dược Công → phải làm việc Dược Công trước,
+  // 'exchange' đủ điểm → đổi ngay. Khóa tầng theo SEED_PACKS.realm của client:
+  // Tụ Khí 2 DC không khóa; Luyện Khí 5 DC từ tầng 4; Phá Cảnh 10 DC từ tầng 7; Trúc Cơ 20 DC từ tầng 10.
+  function seedExchangeDecision(pack, dc, curTier) {
+    if (!pack) return 'nopack';
+    if (pack.realm && curTier != null && curTier < realmTierOf(pack.realm)) return 'locked';
+    if (typeof dc === 'number' && dc < pack.cost) return 'dc-first';
+    return 'exchange';
+  }
+  // Hạt → cây + thời gian lớn (Farm.SEEDS: grow khô / wet khi tưới, giây).
+  var SEED_DEFS_V123 = {
+    hat_linh_diep: { crop: 'linh_diep', grow: 300, wet: 60 },
+    hat_huyet_thao: { crop: 'huyet_thao', grow: 300, wet: 60 },
+    hat_linh_ngoc: { crop: 'linh_ngoc_diep', grow: 600, wet: 300 },
+    hat_xich_duong: { crop: 'xich_duong_thao', grow: 600, wet: 300 },
+    hat_bich_van: { crop: 'bich_van_diep', grow: 900, wet: 480 },
+    hat_long_huyet: { crop: 'long_huyet_thao', grow: 900, wet: 480 },
+    hat_truc_co_thao: { crop: 'truc_co_thao', grow: 3600, wet: 1800 },
+    hat_dia_linh_qua: { crop: 'dia_linh_qua', grow: 3600, wet: 1800 }
+  };
+  var HERB_SEED = {};
+  Object.keys(SEED_DEFS_V123).forEach(function (s) { HERB_SEED[SEED_DEFS_V123[s].crop] = s; });
+  var PILL_PACK = { tu_khi_dan: 'pham', luyen_khi_dan: 'linh', pha_canh_dan: 'huyen', truc_co_dan: 'dia' };
+  var GARDEN = {
+    map: 'vuon_ca_nhan',
+    pond: { tx: 12, ty: 4, label: 'Ao Bích Thuỷ' },
+    plots: [
+      { id: 'plot_1', tx: 3, ty: 4 }, { id: 'plot_2', tx: 4, ty: 4 }, { id: 'plot_3', tx: 5, ty: 4 },
+      { id: 'plot_4', tx: 6, ty: 4 }, { id: 'plot_5', tx: 7, ty: 4 }, { id: 'plot_6', tx: 3, ty: 6 },
+      { id: 'plot_7', tx: 4, ty: 6 }, { id: 'plot_8', tx: 5, ty: 6 }, { id: 'plot_9', tx: 6, ty: 6 },
+      { id: 'plot_10', tx: 7, ty: 6 }
+    ],
+    linhThu: { tx: 9, ty: 2, label: 'Dược Linh Thú' }
+  };
+  // Trạng thái 1 luống từ dữ liệu farm thô (hàm thuần, kiểm offline được):
+  // empty (trống) / growing (đang lớn, đã tưới) / dry (đang lớn, chưa tưới) / ready (chín).
+  function plotStatusFromState(state, plotId, nowMs) {
+    var st = state ? state[plotId] : null;
+    if (!st || !st.seed) return { status: 'empty', remainSec: 0, seed: null };
+    var remainMs = (st.at || 0) + (st.dur || 0) - nowMs;
+    if (remainMs <= 0) return { status: 'ready', remainSec: 0, seed: st.seed };
+    return { status: st.wet ? 'growing' : 'dry', remainSec: Math.ceil(remainMs / 1000), seed: st.seed };
+  }
+  function readFarmState() {
+    var p = readLocal();
+    return (p && p.farm) || {};
+  }
+  function gardenSummary(nowMs) {
+    var state = readFarmState();
+    var sum = { empty: 0, growing: 0, dry: 0, ready: 0, nextReadySec: null, growingSeeds: {} };
+    GARDEN.plots.forEach(function (pl) {
+      var s = plotStatusFromState(state, pl.id, nowMs);
+      sum[s.status]++;
+      if (s.seed && (s.status === 'growing' || s.status === 'dry')) {
+        sum.growingSeeds[s.seed] = (sum.growingSeeds[s.seed] || 0) + 1;
+        if (sum.nextReadySec == null || s.remainSec < sum.nextReadySec) sum.nextReadySec = s.remainSec;
+      }
+    });
+    return sum;
+  }
+  // Nguyên liệu còn thiếu cho `needPills` viên đan (hàm thuần theo số đếm truyền vào).
+  function missingIngredients(pillId, needPills, counts) {
+    var recipe = PILL_RECIPES[pillId] || [];
+    var out = [];
+    recipe.forEach(function (r) {
+      var have;
+      if (r.id === 'yeu_dan_cap_3') {
+        have = ['yeu_dan_cap_3', 'yeu_dan_cap_4', 'yeu_dan_cap_5', 'yeu_dan_cap_6'].reduce(function (a, id) { return a + (counts[id] || 0); }, 0);
+      } else have = counts[r.id] || 0;
+      var need = r.qty * needPills;
+      if (have < need) out.push({ id: r.id, name: r.name, have: have, need: need, short: need - have });
+    });
+    return out;
+  }
+  function countsForRecipe(pillId) {
+    var counts = {};
+    (PILL_RECIPES[pillId] || []).forEach(function (r) {
+      if (r.id === 'yeu_dan_cap_3') ['yeu_dan_cap_3', 'yeu_dan_cap_4', 'yeu_dan_cap_5', 'yeu_dan_cap_6'].forEach(function (id) { counts[id] = countItem(id) || 0; });
+      else counts[r.id] = countItem(r.id) || 0;
+    });
+    return counts;
+  }
+  // Liệt kê điều kiện đột phá còn thiếu từ bảng Đột Phá + luật mã (hàm thuần theo tham số).
+  function listMissingConditions(realm, panel, curStage) {
+    var out = [];
+    if (!realm) return out;
+    if (panel && panel.blocked) { out.push({ kind: 'blocked', text: 'bảng Đột Phá báo khóa: ' + panel.status }); return out; }
+    var rule = BREAK_RULES[realm.realmId] || null;
+    var dh = breakLine(panel, 'Đạo Hạnh');
+    if (dh && !dh.done) out.push({ kind: 'daoHanh', text: 'Đạo Hạnh chưa đầy (' + dh.cur + '/' + dh.target + ')' });
+    else if (!panel && realm.realmId !== 'pham_nhan') out.push({ kind: 'daoHanh', text: 'không đọc được bảng Đột Phá — coi như Đạo Hạnh chưa đầy' });
+    if (rule && rule.questStage != null && curStage != null && curStage < rule.questStage) {
+      out.push({ kind: 'quest', needStage: rule.questStage, text: 'thiếu giai đoạn nhiệm vụ chính ' + rule.questStage + ' (đang ở giai đoạn ' + curStage + ')' });
+    }
+    if (rule) {
+      var itemLine = breakLine(panel, rule.itemName);
+      if (itemLine && !itemLine.done) out.push({ kind: 'pill', item: rule.item, itemName: rule.itemName, text: 'thiếu ' + (rule.qty - (itemLine.cur || 0)) + ' ' + rule.itemName + ' (' + (itemLine.cur || 0) + '/' + rule.qty + ')' });
+      else if (!itemLine) {
+        var have = countItem(rule.item);
+        if (have != null && have < rule.qty) out.push({ kind: 'pill', item: rule.item, itemName: rule.itemName, text: 'thiếu ' + (rule.qty - have) + ' ' + rule.itemName + ' trong túi (' + have + '/' + rule.qty + ')' });
+      }
+    }
+    if (realm.realmId === 'pham_nhan') out.push({ kind: 'quest', needStage: 4, text: 'Phàm Nhân phải qua nghi thức Tẩy Tuỷ (nhiệm vụ chính giai đoạn 0–4)' });
+    return out;
+  }
+  // Đổi 1 gói hạt ở Đại Phu (tự đi + mở thoại + chọn quầy + chọn gói). v1.26 (Bui 20:33):
+  // muốn có hạt phải làm nhiệm vụ Dược Công để đổi — thiếu điểm Dược Công thì tự làm việc
+  // Dược Công hợp cấp (nhận việc ở Đại Phu → thu hoạch → trả việc, kiểm chứng qua seedQuest,
+  // mỗi việc +1 Dược Công theo DUOC_CONG_PER_TASK trong mã) cho đủ điểm rồi mới đổi; hết lượt
+  // Dược Công trong ngày (SEED_TASK_DAILY_LIMIT=3/việc × 5 việc = tối đa 15 lượt/ngày) thì ghi
+  // rõ và trả 'noDC' để vòng sau tính tiếp. Trả 'ok'|'noDC'|'locked'|'fail'.
+  // v1.46 (Bui lệnh 06:48 ngày 2026-11-27 "Nhiệm vụ cần đổi hạt thì phải chọn làm nhiệm vụ
+  // dược trước"): ctxText = mục tiêu nhiệm vụ đang cần hạt (ghi vào nhật ký); thiếu điểm thì
+  // chọn làm việc Dược Công TRƯỚC (vòng nhận–làm–trả v1.45, dừng sớm khi đủ điểm cần qua
+  // targetDc), đủ điểm mới đổi gói hạt, kiểm chứng hạt vào túi rồi quay lại nhiệm vụ.
+  function exchangeSeedPack(runId, pack, allowDuocCong, ctxText) {
+    return (async function () {
+      var realm = readRealmInfo();
+      var decision = seedExchangeDecision(pack, (readLocal() || {}).duocCong, realm ? realmTierOf(realm.realmId) : null);
+      if (decision === 'locked') {
+        log('Đổi hạt: gói ' + pack.name + ' cần cảnh giới ' + (REALM_NAMES[pack.realm] || pack.realm) + ' — nhân vật đang ' + realm.name + ', chưa đổi được');
+        return 'locked';
+      }
+      var dc = (readLocal() || {}).duocCong;
+      if (typeof dc === 'number' && dc < pack.cost) {
+        log('Mục tiêu cần gói hạt ' + pack.name + ' (cần ' + pack.cost + ' điểm Dược Công, hiện có ' + dc + ')' + (ctxText ? ' — mục tiêu: "' + ctxText + '"' : '') + (allowDuocCong ? ' → làm Dược Công trước' : ' — thiếu điểm, chưa đổi được'));
+        if (!allowDuocCong) return 'noDC';
+        var stageDc = questStageNum(readQuestState().stage);
+        if (stageDc != null && stageDc < 8) {
+          log('Đổi hạt: giai đoạn ' + stageDc + ' chưa mở việc Dược Công (cần giai đoạn 8+ theo mã) — chưa đổi hạt được, làm nhiệm vụ chính trước');
+          return 'noDC';
+        }
+        var dailyPre = readSeedDaily();
+        if (dailyPre.left15 <= 0) {
+          log('Đổi hạt: đã hết 15 lượt Dược Công hôm nay (đã dùng ' + dailyPre.total15 + '/15) mà vẫn thiếu điểm (' + dc + '/' + pack.cost + ') — chờ 00:00 reset ngày mới rồi đổi hạt tiếp');
+          return 'noDC';
+        }
+        var dcBefore = dc;
+        var jobs = await runDuocCong(runId, { schedule: true, targetDc: pack.cost });
+        if (!alive(runId)) return 'fail';
+        dc = (readLocal() || {}).duocCong;
+        log('Đổi hạt: đã làm ' + jobs + ' việc Dược Công — Dược Công ' + dcBefore + ' → ' + (typeof dc === 'number' ? dc : '?') + (typeof dc === 'number' ? ' (+' + (dc - dcBefore) + ')' : '') + ' (cần ' + pack.cost + ' cho ' + pack.name + ')');
+        if (typeof dc === 'number' && dc < pack.cost) {
+          var dailyPost = readSeedDaily();
+          log('Đổi hạt: vẫn thiếu Dược Công (' + dc + '/' + pack.cost + ') — ' + (dailyPost.left15 <= 0 ? 'đã hết 15 lượt Dược Công hôm nay (đã dùng ' + dailyPost.total15 + '/15) — chờ 00:00 reset ngày mới rồi đổi hạt tiếp' : (jobs === 0 ? 'không nhận được việc nào (Khí Huyết thấp hoặc việc bị khóa)' : 'chưa đủ điểm sau vòng Dược Công — vòng sau làm tiếp')) + ' — chuyển việc khác, vòng sau tính tiếp');
+          return 'noDC';
+        }
+        log('Đổi hạt: đủ điểm (' + dc + '/' + pack.cost + ') → đổi gói hạt');
+      }
+      var seedsBefore = {};
+      pack.give.forEach(function (g) { seedsBefore[g[0]] = countItem(g[0]) || 0; });
+      log('Đổi hạt: tới Đại Phu đổi ' + pack.name + ' (phí ' + pack.cost + ' Dược Công, đang có ' + (dc != null ? dc : '?') + ')');
+      await travelTo(runId, DAI_PHU.map);
+      if (!alive(runId)) return 'fail';
+      if (!(await openNpcDialog(runId, DAI_PHU.tx, DAI_PHU.ty, 'Đại Phu'))) { log('Đổi hạt: không mở được thoại Đại Phu'); return 'fail'; }
+      if (!clickDialogChoice(['Mở Quầy Đổi Hạt'], 'Mở Quầy Đổi Hạt')) { closeDialogIfOpen(); return 'fail'; }
+      await sleep(1200);
+      var el = findByText('#dialog-choices', ['Đổi ' + pack.name]) || findByText('#dialog', ['Đổi ' + pack.name]);
+      if (!el) { log('Đổi hạt: không thấy mục "Đổi ' + pack.name + '" trong quầy — thoại ghi: ' + readDialogText()); closeDialogIfOpen(); return 'fail'; }
+      if (el.classList.contains('disabled') || el.getAttribute('aria-disabled') === 'true' || el.disabled) {
+        log('Đổi hạt: mục "Đổi ' + pack.name + '" đang khóa (thiếu Dược Công hoặc chưa đủ cảnh giới)');
+        closeDialogIfOpen();
+        return 'locked';
+      }
+      pressDom(el);
+      log('Đã bấm đổi ' + pack.name);
+      await sleep(1200);
+      // Gói bậc thấp hơn cảnh giới: game hỏi xác nhận "Vẫn đổi <tên>"
+      if (dialogOpen()) {
+        var confirm = findByText('#dialog-choices', ['Vẫn đổi']) || findByText('#dialog', ['Vẫn đổi']);
+        if (confirm) { pressDom(confirm); log('Đã xác nhận "Vẫn đổi ' + pack.name + '"'); await sleep(1200); }
+      }
+      closeDialogIfOpen();
+      var gained = pack.give.some(function (g) { return (countItem(g[0]) || 0) > seedsBefore[g[0]]; });
+      var dcAfter = (readLocal() || {}).duocCong;
+      if (gained || (typeof dc === 'number' && typeof dcAfter === 'number' && dcAfter < dc)) {
+        log('Đổi hạt xong: đã đổi gói hạt ' + pack.name + ' (Dược Công ' + dc + ' → ' + dcAfter + '; hạt: ' + pack.give.map(function (g) { return itemNameV123(g[0]) + ' ×' + (countItem(g[0]) || 0); }).join(', ') + ') → quay lại nhiệm vụ');
+        return 'ok';
+      }
+      log('Đổi hạt: bấm xong mà chưa thấy hạt tăng/Dược Công giảm — vòng sau kiểm lại');
+      return 'fail';
+    })();
+  }
+  // v1.46 (Bui lệnh 06:48 ngày 2026-11-27): mục tiêu cần hạt của các thảo herbIds (gieo trồng
+  // theo nhiệm vụ / nguyên liệu đan) mà túi không có hạt và vườn không có cây đang lớn của
+  // hạt đó → đổi gói hạt chứa hạt đó ở Đại Phu; thiếu điểm Dược Công thì exchangeSeedPack tự
+  // chọn làm việc Dược Công trước cho đủ điểm rồi mới đổi. ctxText = chữ mục tiêu đang dở.
+  // Trả 'ok' (đã có hạt/cây đang lớn/đổi xong) | 'noDC' | 'locked' | 'fail'.
+  function ensureSeedsForHerbs(runId, herbIds, ctxText) {
+    return (async function () {
+      var sum = gardenSummary(Date.now());
+      for (var i = 0; i < (herbIds || []).length; i++) {
+        if (!alive(runId)) return 'fail';
+        var herbId = herbIds[i], seedId = HERB_SEED[herbId];
+        if (!seedId) continue;
+        var have = countItem(seedId) || 0;
+        var growing = sum.growingSeeds[seedId] || 0;
+        if (have > 0 || growing > 0) continue;
+        var pack = packForSeed(seedId);
+        if (!pack) { log('Đổi hạt: không rõ gói hạt chứa ' + itemNameV123(seedId) + ' — chưa tự đổi được'); return 'fail'; }
+        log('Mục tiêu cần ' + itemNameV123(seedId) + ' để gieo ' + itemNameV123(herbId) + ' mà túi chưa có hạt, vườn cũng chưa có cây đang lớn — đổi ' + pack.name + ' ở Đại Phu trước' + (ctxText ? ' (mục tiêu: "' + ctxText + '")' : ''));
+        var ex = await exchangeSeedPack(runId, pack, true, ctxText);
+        if (!alive(runId)) return 'fail';
+        if (ex !== 'ok') return ex;
+      }
+      return 'ok';
+    })();
+  }
+  // Một vòng vườn trọn vẹn: múc nước (nếu chưa mở nguồn) → hái luống chín → gieo hạt cần →
+  // tưới luống khô. wantSeeds = danh sách id hạt muốn gieo (null = gieo mọi hạt đang có).
+  function gardenRound(runId, wantSeeds) {
+    return (async function () {
+      var res = { harvested: 0, sown: 0, watered: 0, blocked: null };
+      var stage = questStageNum(readQuestState().stage);
+      await travelTo(runId, GARDEN.map);
+      if (!alive(runId)) return res;
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      // Mở nguồn nước vĩnh viễn lần đầu (cần giai đoạn ≥8 theo mã)
+      var flags = (readLocal() || {}).flags || {};
+      if (!flags.ho_bich_thuy_da_muc) {
+        if (stage != null && stage < 8) {
+          log('Vườn: giai đoạn ' + stage + ' chưa mở Vườn Cá Nhân (cần giai đoạn 8+) — chưa gieo/tưới được');
+          res.blocked = 'stage';
+          return res;
+        }
+        log('Vườn: chưa mở nguồn nước — tới Ao Bích Thuỷ múc nước lần đầu');
+        await standNextTo(runId, GARDEN.pond.tx, GARDEN.pond.ty, GARDEN.pond.label);
+        if (await pressInteractBtn(runId, 6000, 'múc nước ở Ao Bích Thuỷ')) {
+          await sleep(800);
+          if (dialogOpen()) {
+            if (clickDialogChoice(['Múc nước'], 'Múc nước')) { await sleep(1000); log('Vườn: đã múc nước — nguồn nước vĩnh viễn đã mở'); }
+            closeDialogIfOpen();
+          }
+        } else log('Vườn: không thấy nút Tương Tác ở Ao Bích Thuỷ — tưới sẽ tốn Linh Tuyền Thuỷ nếu có');
+      }
+      var now = Date.now();
+      for (var pi = 0; pi < GARDEN.plots.length; pi++) {
+        if (!alive(runId)) return res;
+        if (isDowned()) { await handleDeath(runId); if (!alive(runId)) return res; }
+        // v1.24: bị quái đánh lúc làm vườn → đánh trả rồi làm tiếp
+        await fightBackCheck(runId, 'làm vườn');
+        var pl = GARDEN.plots[pi];
+        var st = plotStatusFromState(readFarmState(), pl.id, Date.now());
+        if (st.status === 'ready') {
+          var cropId = SEED_DEFS_V123[st.seed] ? SEED_DEFS_V123[st.seed].crop : null;
+          var before = cropId ? (countItem(cropId) || 0) : 0;
+          await standNextTo(runId, pl.tx, pl.ty, 'Luống Thuốc ' + (pi + 1));
+          if (await pressInteractBtn(runId, 5000, 'thu hoạch luống ' + (pi + 1))) {
+            await sleep(900);
+            if (cropId && (countItem(cropId) || 0) > before) { res.harvested++; log('Vườn: thu hoạch luống ' + (pi + 1) + ' → +1 ' + itemNameV123(cropId) + ' (đang có ' + countItem(cropId) + ')'); }
+            else if (plotStatusFromState(readFarmState(), pl.id, Date.now()).status === 'empty') { res.harvested++; log('Vườn: thu hoạch luống ' + (pi + 1) + ' xong (luống đã trống)'); }
+            else log('Vườn: bấm thu hoạch luống ' + (pi + 1) + ' mà chưa thấy cây tăng — kiểm lại vòng sau');
+          }
+          continue;
+        }
+        if (st.status === 'dry') {
+          await standNextTo(runId, pl.tx, pl.ty, 'Luống Thuốc ' + (pi + 1));
+          if (await pressInteractBtn(runId, 5000, 'tưới luống ' + (pi + 1))) {
+            await sleep(800);
+            var st2 = plotStatusFromState(readFarmState(), pl.id, Date.now());
+            if (st2.status === 'growing' || st2.status === 'ready') { res.watered++; log('Vườn: đã tưới luống ' + (pi + 1) + ' — còn ~' + st2.remainSec + 's nữa chín'); }
+            else log('Vườn: tưới luống ' + (pi + 1) + ' chưa thấy đổi trạng thái (caption: ' + readCaption() + ')');
+          }
+          continue;
+        }
+        if (st.status === 'empty') {
+          var seedId = null;
+          var candidates = wantSeeds && wantSeeds.length ? wantSeeds : Object.keys(SEED_DEFS_V123);
+          for (var ci = 0; ci < candidates.length; ci++) if ((countItem(candidates[ci]) || 0) > 0) { seedId = candidates[ci]; break; }
+          if (!seedId) continue;
+          if (stage != null && stage < 8) { res.blocked = 'stage'; continue; }
+          await standNextTo(runId, pl.tx, pl.ty, 'Luống Thuốc ' + (pi + 1));
+          if (await pressInteractBtn(runId, 5000, 'gieo hạt luống ' + (pi + 1))) {
+            await sleep(900);
+            if (dialogOpen()) {
+              if (clickDialogChoice(['Gieo ' + itemNameV123(seedId)], 'Gieo ' + itemNameV123(seedId))) {
+                await sleep(900);
+                var st3 = plotStatusFromState(readFarmState(), pl.id, Date.now());
+                if (st3.seed === seedId) { res.sown++; log('Vườn: đã gieo ' + itemNameV123(seedId) + ' ở luống ' + (pi + 1) + ' (khô ' + Math.round(SEED_DEFS_V123[seedId].grow / 60) + ' phút / tưới ' + Math.round(SEED_DEFS_V123[seedId].wet / 60) + ' phút)'); }
+                else log('Vườn: bấm gieo ' + itemNameV123(seedId) + ' mà luống ' + (pi + 1) + ' chưa ghi hạt — kiểm lại vòng sau');
+              }
+              closeDialogIfOpen();
+            } else log('Vườn: bấm Tương Tác luống ' + (pi + 1) + ' mà thoại gieo hạt chưa mở');
+          }
+        }
+      }
+      var sum = gardenSummary(Date.now());
+      log('Vườn: vòng này hái ' + res.harvested + ', gieo ' + res.sown + ', tưới ' + res.watered + ' — hiện trống ' + sum.empty + ', đang lớn ' + (sum.growing + sum.dry) + ' (khô ' + sum.dry + '), chín ' + sum.ready + (sum.nextReadySec != null ? ', luống chín kế sau ~' + sum.nextReadySec + 's' : ''));
+      return res;
+    })();
+  }
+  // Săn Linh Thúy: farm Dược Linh Thú trong vườn tới khi đủ số cần (quái chỉ xuất hiện từ giai đoạn 11).
+  function huntLinhThuy(runId, needQty) {
+    return (async function () {
+      var stage = questStageNum(readQuestState().stage);
+      if (stage != null && stage < 11) {
+        log('Linh Thúy: Dược Linh Thú chỉ xuất hiện từ giai đoạn 11 (đang ở giai đoạn ' + stage + ') — chưa tự săn được, làm nhiệm vụ chính trước');
+        return 'stage';
+      }
+      var have = countItem('linh_thuy') || 0;
+      log('Linh Thúy: đang có ' + have + '/' + needQty + ' — vào Vườn Cá Nhân hạ Dược Linh Thú (mỗi con rơi Linh Thúy theo mã)');
+      var chunks = 0;
+      while (alive(runId) && have < needQty && chunks < 4) {
+        chunks++;
+        var fr = await farmPhase(runId, GARDEN.map, { tx: GARDEN.linhThu.tx, ty: GARDEN.linhThu.ty, label: 'Dược Linh Thú' }, null, Date.now() + 4 * 60000);
+        if (!alive(runId)) return 'fail';
+        if (fr === 'hp') return 'hp';
+        var now2 = countItem('linh_thuy') || 0;
+        log('Linh Thúy: sau lượt farm ' + chunks + ' đang có ' + now2 + '/' + needQty);
+        have = now2;
+      }
+      return have >= needQty ? 'ok' : 'short';
+    })();
+  }
+  // Bảo đảm có Yêu Đan Cấp 3+: ghép mảnh ở Đan Lô (ưu tiên 100% nếu đủ Bảo Mệnh Phù) hoặc
+  // canh Xích Long khi boss đang sống/sắp ra ≤25 phút. Trả 'ok'|'wait'|'fail'|'hp'.
+  function ensureYeuDanCap3(runId) {
+    return (async function () {
+      var have = countYeuDanCap3Plus();
+      if (have != null && have >= 1) return 'ok';
+      var manh = countItem('manh_yeu_dan_cap_3') || 0;
+      if (manh >= 3) {
+        var bmp = countItem('bao_menh_phu') || 0;
+        if (bmp < 3 && (countItem('co_bich_moc') || 0) >= 12 && (countItem('tran_than_thach') || 0) >= 12) {
+          log('Yêu Đan: đủ nguyên liệu luyện Bảo Mệnh Phù — luyện ' + (3 - bmp) + ' lá để ghép 100%');
+          for (var bi = bmp; bi < 3 && alive(runId); bi++) {
+            var bw = await brewPill(runId, 'bao_menh_phu', 'Bảo Mệnh Phù', { exact: true });
+            if (!alive(runId)) return 'fail';
+            if (!bw.ok) break;
+          }
+          bmp = countItem('bao_menh_phu') || 0;
+        }
+        if (bmp >= 3) {
+          log('Yêu Đan: ghép 3 Mảnh Yêu Đan + 3 Bảo Mệnh Phù ở Đan Lô (100%)');
+          var g1 = await brewPill(runId, 'ghep_yeu_dan_phu', 'Ghép Yêu Đan · Bảo Mệnh', { exact: true });
+          if (!alive(runId)) return 'fail';
+          if (g1.ok && (countYeuDanCap3Plus() || 0) >= 1) { log('Yêu Đan: ghép xong — đã có Yêu Đan Cấp 3'); return 'ok'; }
+          log('Yêu Đan: ghép 100% chưa thấy đan tăng — kiểm lại vòng sau');
+          return 'fail';
+        }
+        log('Yêu Đan: ghép 3 Mảnh Yêu Đan ở Đan Lô (70% — thất bại mất mảnh, ghi rõ tỉ lệ)');
+        var g2 = await brewPill(runId, 'ghep_yeu_dan', 'Ghép Yêu Đan', { exact: true });
+        if (!alive(runId)) return 'fail';
+        if ((countYeuDanCap3Plus() || 0) >= 1) { log('Yêu Đan: ghép 70% thành công — đã có Yêu Đan Cấp 3'); return 'ok'; }
+        log('Yêu Đan: ghép 70% chưa thành (mảnh còn ' + (countItem('manh_yeu_dan_cap_3') || 0) + ') — vòng sau thử tiếp/canh boss');
+        return 'wait';
+      }
+      // Canh Xích Long: chỉ đi khi boss đang sống hoặc sắp ra trong 25 phút (không đứng chờ hàng giờ trong chuỗi)
+      var boss = bossById('xich_long');
+      var hd = await readHoatDongBossTimer(runId, boss);
+      if (!alive(runId)) return 'fail';
+      var plan = bossPlan(boss, Date.now(), readBossToast(), S.bossAnchor[boss.id] || null, readMapId(), hd);
+      var waitMs = plan.spawnAt != null ? plan.spawnAt - Date.now() : null;
+      if (waitMs == null || waitMs > 25 * 60000) {
+        log('Yêu Đan: chưa đủ mảnh ghép (' + manh + '/3) và Xích Long ' + (waitMs != null ? 'còn ' + fmtCountdown(waitMs) + ' mới ra' : 'chưa rõ giờ ra') + ' — mảnh từ quà Điểm Danh/hộp quà (tool không tự mở hộp); chuyển sang điều kiện khác, vòng sau canh tiếp');
+        return 'wait';
+      }
+      log('Yêu Đan: Xích Long ' + (waitMs <= 0 ? 'đang sống' : 'sắp ra sau ' + fmtCountdown(waitMs)) + ' — tới Long Uyên góp sức hạ boss lấy Yêu Đan Cấp 3 (bốc thăm người có công)');
+      await ensureRun(runId, true);
+      await ensureFly(runId, true);
+      await travelTo(runId, boss.map);
+      if (!alive(runId)) return 'fail';
+      await goToPath(runId, boss.tx, boss.ty, 1, 180000, 'vị trí boss Xích Long');
+      await ensureCombatTrio(runId, 'vị trí boss Xích Long');
+      var fought = await bossWaitFight(runId, boss, plan);
+      if (!alive(runId)) return 'fail';
+      await ensureAuto(runId, false);
+      if (fought === 'hp') return 'hp';
+      S.bossAnchor[boss.id] = Date.now();
+      if ((countYeuDanCap3Plus() || 0) >= 1) { log('Yêu Đan: hạ Xích Long xong — đã nhận Yêu Đan Cấp 3'); return 'ok'; }
+      log('Yêu Đan: lượt Xích Long kết thúc (' + fought + ') mà chưa có Yêu Đan (bốc thăm không trúng hoặc boss chưa gục) — vòng sau canh tiếp');
+      return 'wait';
+    })();
+  }
+  // Bảo đảm đủ nguyên liệu luyện `needPills` viên đan: tự đi lấy từng thứ còn thiếu.
+  // opts.prepareOnly=true: chỉ đổi hạt + gieo/tưới/hái (không săn boss/Huyết Xích) — v1.26
+  // không còn nơi nào gọi prepareOnly (bỏ thứ tự chuẩn bị vườn trước nhiệm vụ); nhánh giữ lại vô hại.
+  function ensurePillIngredients(runId, pillId, needPills, opts) {
+    opts = opts || {};
+    return (async function () {
+      var blocked = [];
+      var miss = missingIngredients(pillId, needPills, countsForRecipe(pillId));
+      if (!miss.length) return { ready: true, blocked: blocked, growingUntilSec: null };
+      log('Nguyên liệu ' + itemNameV123(pillId) + ': còn thiếu ' + miss.map(function (m) { return m.name + ' ' + m.have + '/' + m.need; }).join(', ') + ' — tự đi lấy');
+      for (var mi = 0; mi < miss.length; mi++) {
+        if (!alive(runId)) return { ready: false, blocked: blocked, growingUntilSec: null };
+        var m = miss[mi];
+        if (m.id === 'linh_thuy') {
+          if (opts.prepareOnly) { log('Nguyên liệu: Linh Thúy để vòng sau săn (đang chuẩn bị hạt trước)'); continue; }
+          var hr = await huntLinhThuy(runId, m.need);
+          if (!alive(runId)) return { ready: false, blocked: blocked, growingUntilSec: null };
+          if (hr === 'hp') return { ready: false, blocked: blocked, growingUntilSec: null, hp: true };
+          if (hr !== 'ok') blocked.push({ id: m.id, reason: 'săn Dược Linh Thú chưa đủ (' + hr + ')' });
+          continue;
+        }
+        if (m.id === 'yeu_dan_cap_3') {
+          if (opts.prepareOnly) continue;
+          var yr = await ensureYeuDanCap3(runId);
+          if (!alive(runId)) return { ready: false, blocked: blocked, growingUntilSec: null };
+          if (yr === 'hp') return { ready: false, blocked: blocked, growingUntilSec: null, hp: true };
+          if (yr !== 'ok') blocked.push({ id: m.id, reason: 'chưa ghép/canh được Yêu Đan Cấp 3 (' + yr + ')' });
+          continue;
+        }
+        if (m.id === 'bao_menh_phu') {
+          if (opts.prepareOnly) continue;
+          var bmpMiss = missingIngredients('bao_menh_phu', m.short, countsForRecipe('bao_menh_phu'));
+          if (bmpMiss.length) {
+            log('Nguyên liệu: thiếu ' + bmpMiss.map(function (x) { return x.name; }).join(', ') + ' để luyện Bảo Mệnh Phù — chạy Huyết Xích thu hoạch');
+            var hx0 = await runHuyetXich(runId, { chain: true });
+            if (!alive(runId)) return { ready: false, blocked: blocked, growingUntilSec: null };
+            log('Nguyên liệu: lượt Huyết Xích kết thúc (' + hx0 + ')');
+          }
+          for (var bq = 0; bq < m.short && alive(runId); bq++) {
+            var bw2 = await brewPill(runId, 'bao_menh_phu', 'Bảo Mệnh Phù', { exact: true });
+            if (!alive(runId)) return { ready: false, blocked: blocked, growingUntilSec: null };
+            if (!bw2.ok) { blocked.push({ id: m.id, reason: 'luyện Bảo Mệnh Phù chưa được: ' + (bw2.missing || []).join('; ') }); break; }
+          }
+          continue;
+        }
+        var isHuyetItem = (m.id === 'truc_co_thao' || m.id === 'dia_linh_qua' || m.id === 'co_bich_moc' || m.id === 'tran_than_thach');
+        if (isHuyetItem && !opts.prepareOnly) {
+          log('Nguyên liệu: thiếu ' + m.name + ' — chạy 1 lượt Huyết Xích thu hoạch');
+          var hx = await runHuyetXich(runId, { chain: true });
+          if (!alive(runId)) return { ready: false, blocked: blocked, growingUntilSec: null };
+          log('Nguyên liệu: lượt Huyết Xích kết thúc (' + hx + ') — ' + m.name + ' đang có ' + (countItem(m.id) || 0) + '/' + m.need);
+          if ((countItem(m.id) || 0) >= m.need) continue;
+          // Huyết Xích chưa đủ (hết lượt ngày?) → thử đường gieo trồng nếu có hạt (Trúc Cơ Thảo/Địa Linh Quả)
+          if (!HERB_SEED[m.id]) { blocked.push({ id: m.id, reason: 'Huyết Xích chưa đủ, vòng sau chạy tiếp' }); continue; }
+          log('Nguyên liệu: Huyết Xích chưa đủ ' + m.name + ' — chuyển sang gieo trồng ở Vườn Cá Nhân');
+        }
+        if (HERB_SEED[m.id]) {
+          var seedId = HERB_SEED[m.id];
+          var sum0 = gardenSummary(Date.now());
+          var growingNow = sum0.growingSeeds[seedId] || 0;
+          var seedsHave = countItem(seedId) || 0;
+          var needSeeds = m.short - growingNow;
+          if (needSeeds > seedsHave) {
+            var pack = seedPackById(PILL_PACK[pillId] || '');
+            if (!pack) { blocked.push({ id: m.id, reason: 'không rõ gói hạt cho ' + itemNameV123(pillId) }); continue; }
+            // v1.25 (Bui 20:20): chỉ đổi gói hạt của viên đan cần cho cửa phá quan hiện tại —
+            // không đổi gói vượt cấp (tốn Dược Công) hay dưới cấp (không dùng cho cửa sắp tới).
+            var realmNow = readRealmInfo();
+            var gateRule = realmNow ? BREAK_RULES[realmNow.realmId] : null;
+            if (gateRule && gateRule.item !== pillId) {
+              log('Đổi hạt: cửa phá quan hiện tại (' + realmNow.name + ') cần ' + gateRule.itemName + ', không phải ' + itemNameV123(pillId) + ' — không đổi ' + pack.name + ' (tránh tốn Dược Công sai cấp)');
+              blocked.push({ id: m.id, reason: 'gói hạt không hợp cấp: cửa hiện tại cần ' + gateRule.itemName });
+              continue;
+            }
+            log('Đổi hạt: đang cần ' + itemNameV123(pillId) + ' cho cửa phá quan ' + (realmNow ? realmNow.name : '?') + ' → tầng kế nên đổi ' + pack.name + ' (phí ' + pack.cost + ' Dược Công)');
+            var tries = 0;
+            while (alive(runId) && (countItem(seedId) || 0) < needSeeds && tries < 3) {
+              tries++;
+              var ex = await exchangeSeedPack(runId, pack, true, 'nguyên liệu ' + itemNameV123(pillId) + ' cho cửa phá quan');
+              if (!alive(runId)) return { ready: false, blocked: blocked, growingUntilSec: null };
+              if (ex !== 'ok') { blocked.push({ id: m.id, reason: 'đổi gói hạt chưa được (' + ex + (ex === 'noDC' ? (readSeedDaily().left15 <= 0 ? ' — đã hết 15 lượt Dược Công hôm nay, chờ 00:00 reset ngày mới' : ' — thiếu Dược Công, vòng sau làm Dược Công tiếp') : '') + ')' }); break; }
+            }
+          }
+          var gr = await gardenRound(runId, [seedId]);
+          if (!alive(runId)) return { ready: false, blocked: blocked, growingUntilSec: null };
+          if (gr.blocked === 'stage') blocked.push({ id: m.id, reason: 'chưa mở Vườn Cá Nhân (cần giai đoạn 8+)' });
+          continue;
+        }
+        blocked.push({ id: m.id, reason: 'chưa rõ nguồn tự lấy trong mã — nguồn ghi: ' + (PILL_SOURCES[m.id] || 'chưa rõ') });
+      }
+      var miss2 = missingIngredients(pillId, needPills, countsForRecipe(pillId));
+      var sum2 = gardenSummary(Date.now());
+      var growingUntilSec = null;
+      miss2.forEach(function (m2) {
+        var sd = HERB_SEED[m2.id];
+        if (sd && sum2.growingSeeds[sd] && sum2.nextReadySec != null) growingUntilSec = sum2.nextReadySec;
+      });
+      if (miss2.length) log('Nguyên liệu ' + itemNameV123(pillId) + ': sau lượt lấy vẫn thiếu ' + miss2.map(function (x) { return x.name + ' ' + x.have + '/' + x.need; }).join(', ') + (growingUntilSec != null ? ' — cây đang lớn, chín sau ~' + growingUntilSec + 's, làm việc khác trong lúc chờ' : ''));
+      return { ready: !miss2.length, blocked: blocked, growingUntilSec: growingUntilSec };
+    })();
+  }
+  // Rèn vũ khí nhiệm vụ (giai đoạn 20): kiếm 2 Huyền Thiết Khoáng (Thạch Giáp Yêu ở Hang Động)
+  // rồi tới Thợ Rèn Tản Viên (15,18) rèn Thiết Kiếm (phí 50 Linh Thạch — ghi rõ trước khi rèn).
+  function forgeQuestWeapon(runId) {
+    return (async function () {
+      var needOre = 2, fee = 50;
+      var ore = countItem('huyen_thiet_khoang') || 0;
+      if (ore < needOre) {
+        log('Rèn đồ: thiếu Huyền Thiết Khoáng (' + ore + '/' + needOre + ') — tới Hang Động hạ Thạch Giáp Yêu kiếm khoáng');
+        var chunks = 0;
+        while (alive(runId) && ore < needOre && chunks < 4) {
+          chunks++;
+          var fr = await farmPhase(runId, 'hang_dong_co', { tx: 14, ty: 8, label: 'Thạch Giáp Yêu' }, null, Date.now() + 4 * 60000);
+          if (!alive(runId)) return 'fail';
+          if (fr === 'hp') return 'hp';
+          ore = countItem('huyen_thiet_khoang') || 0;
+          log('Rèn đồ: sau lượt farm khoáng ' + chunks + ' đang có ' + ore + '/' + needOre + ' Huyền Thiết Khoáng');
+        }
+        if (ore < needOre) { log('Rèn đồ: farm khoáng chưa đủ — vòng sau farm tiếp'); return 'ore'; }
+      }
+      var stones = readStones();
+      log('Rèn đồ: đủ ' + ore + ' Huyền Thiết Khoáng — tới Thợ Rèn rèn Thiết Kiếm, phí rèn ' + fee + ' Linh Thạch (đang có ' + (stones != null ? stones : '?') + ')');
+      if (stones != null && stones < fee) { log('Rèn đồ: thiếu Linh Thạch trả phí rèn (' + stones + '/' + fee + ') — farm kiếm Linh Thạch trước'); return 'stones'; }
+      var beforeW = countItem('thiet_kiem') || 0;
+      await travelTo(runId, 'tan_vien', { label: 'Thợ Rèn', tx: 15, ty: 18 });
+      if (!alive(runId)) return 'fail';
+      await standNextTo(runId, 15, 18, 'Thợ Rèn');
+      await ensureAuto(runId, false);
+      await ensureFly(runId, false);
+      var pressed = await pressInteractBtn(runId, 8000, 'mở lò rèn ở Thợ Rèn');
+      if (!pressed) { log('Rèn đồ: không bấm được Tương Tác ở Thợ Rèn'); return 'fail'; }
+      await sleep(1200);
+      if (dialogOpen()) {
+        var choice = findByText('#dialog-choices', ['Rèn', 'Lò Rèn']) || findByText('#dialog', ['Rèn', 'Lò Rèn']);
+        if (choice) { pressDom(choice); await sleep(1000); }
+      }
+      var slot = await waitFor(function () {
+        var slots = document.querySelectorAll('.forge-slot');
+        for (var i = 0; i < slots.length; i++) if ((slots[i].getAttribute('aria-label') || '').indexOf('Thiết Kiếm') === 0) return slots[i];
+        return null;
+      }, 8000, 'thấy ô Thiết Kiếm trong lò rèn');
+      if (!slot) { log('Rèn đồ: không thấy ô Thiết Kiếm trong lò rèn (giao diện ForgeUI chưa mở?)'); closeDialogIfOpen(); return 'fail'; }
+      pressDom(slot);
+      await sleep(900);
+      var detail = document.querySelector('.forge-detail');
+      var detailText = detail ? (detail.textContent || '').replace(/\s+/g, ' ').trim() : '';
+      log('Rèn đồ: chi tiết Thiết Kiếm trong lò: ' + detailText.slice(0, 300));
+      var actBtn = null;
+      var btns = document.querySelectorAll('.forge-detail .equip-action, .forge-detail button');
+      for (var bi = 0; bi < btns.length; bi++) {
+        var bt = (btns[bi].textContent || '').trim();
+        if (!btns[bi].disabled && /^Rèn/.test(bt)) { actBtn = btns[bi]; break; }
+      }
+      if (!actBtn) { log('Rèn đồ: nút Rèn đang khóa hoặc không thấy — chi tiết: ' + detailText.slice(0, 200)); closeDialogIfOpen(); return 'fail'; }
+      log('Rèn đồ: bấm Rèn Thiết Kiếm — trừ ' + needOre + ' Huyền Thiết Khoáng + ' + fee + ' Linh Thạch');
+      pressDom(actBtn);
+      await sleep(4000);
+      closeDialogIfOpen();
+      var afterW = countItem('thiet_kiem') || 0;
+      var flags = (readLocal() || {}).flags || {};
+      if (afterW > beforeW || flags.ren_vu_khi_chinh) {
+        log('Rèn đồ: rèn xong Thiết Kiếm (đang có ' + afterW + ') — mặc đồ tốt hơn ngay');
+        try { await autoEquipBetter(runId); } catch (e) { if (!alive(runId)) throw e; }
+        return 'ok';
+      }
+      log('Rèn đồ: bấm Rèn mà chưa thấy Thiết Kiếm tăng — kiểm lại vòng sau');
+      return 'fail';
+    })();
+  }
+  // Kiếm nguyên liệu theo mục tiêu nhiệm vụ dạng vật phẩm: tra bảng nguồn (quái rơi đồ)
+  // rồi tự tới bãi quái farm đủ số cần. Trả true nếu đã farm (có tiến triển để vòng nhiệm vụ chạy tiếp).
+  var QUEST_ITEM_SOURCES = [
+    { key: 'Yêu Cốt Vụn', item: 'yeu_cot', monster: 'Yêu Quái' },
+    { key: 'Độc Đằng Độc Dịch', item: 'doc_dang_doc_dich', monster: 'Độc Đằng Yêu' },
+    { key: 'Độc Dịch', item: 'doc_dang_doc_dich', monster: 'Độc Đằng Yêu' },
+    { key: 'Ngưu Sừng', item: 'nguu_sung', monster: 'Xích Nhãn Ngưu' },
+    { key: 'Nanh Hổ', item: 'nanh_ho', monster: 'Bạch Hổ Tuyết' },
+    { key: 'Xuyên Sơn Giáp Phiến', item: 'xuyen_son_giap_phien', monster: 'Xuyên Sơn Giáp' },
+    { key: 'Huyền Thiết Khoáng', item: 'huyen_thiet_khoang', monster: 'Thạch Giáp Yêu' },
+    { key: 'Linh Thúy', item: 'linh_thuy', monster: 'Dược Linh Thú' }
+  ];
+  function findMonsterPoint(monsterName) {
+    var mapIds = Object.keys(MAPS);
+    for (var mi = 0; mi < mapIds.length; mi++) {
+      var pts = MAPS[mapIds[mi]].monsterPoints || [];
+      for (var pi = 0; pi < pts.length; pi++) {
+        var nm = String(pts[pi].name || '').split(' · ')[0];
+        if (nm === monsterName || nm.indexOf(monsterName) >= 0 || monsterName.indexOf(nm) >= 0) {
+          return { map: mapIds[mi], tx: pts[pi].tx, ty: pts[pi].ty, label: pts[pi].name };
+        }
+      }
+    }
+    return null;
+  }
+  function questItemFarm(runId, obj) {
+    return (async function () {
+      var src = null;
+      for (var i = 0; i < QUEST_ITEM_SOURCES.length; i++) if (obj.text.indexOf(QUEST_ITEM_SOURCES[i].key) >= 0) { src = QUEST_ITEM_SOURCES[i]; break; }
+      if (!src) {
+        // Dự phòng: mục tiêu dạng "... (hạ <quái> ...)" → farm quái đó, kiểm tiến triển qua bảng nhiệm vụ
+        var mm = obj.text.match(/\(hạ\s+([^,()]+?)(?:\s+ở\s+|\s*,|\))/);
+        if (mm) src = { key: obj.text, item: null, monster: mm[1].trim() };
+      }
+      if (!src) { log('Nhiệm vụ: mục tiêu vật phẩm "' + obj.text + '" chưa rõ nguồn tự lấy trong mã — không đoán mò'); return false; }
+      var pt = findMonsterPoint(src.monster);
+      if (!pt) { log('Nhiệm vụ: không tìm thấy bãi quái "' + src.monster + '" trong dữ liệu map của tool — chưa tự farm được'); return false; }
+      var need = obj.max != null ? obj.max : null;
+      log('Nhiệm vụ: cần ' + (src.item ? itemNameV123(src.item) : 'vật phẩm') + (need != null ? ' ' + (obj.cur || 0) + '/' + need : '') + ' — tới ' + (MAPS[pt.map] ? MAPS[pt.map].name : pt.map) + ' farm ' + src.monster + ' (' + pt.tx + ',' + pt.ty + ')');
+      var chunks = 0;
+      while (alive(runId) && chunks < 4) {
+        chunks++;
+        var fr = await farmPhase(runId, pt.map, { tx: pt.tx, ty: pt.ty, label: pt.label }, null, Date.now() + 4 * 60000);
+        if (!alive(runId)) return false;
+        if (fr === 'hp') return false;
+        var st2 = readQuestState();
+        var cur2 = null;
+        for (var oi = 0; oi < st2.objs.length; oi++) if (st2.objs[oi].text === obj.text) { cur2 = st2.objs[oi]; break; }
+        var haveItem = src.item ? (countItem(src.item) || 0) : null;
+        log('Nhiệm vụ: sau lượt farm ' + chunks + ' — ' + (cur2 ? 'mục tiêu ' + (cur2.cur != null ? cur2.cur : '?') + '/' + (cur2.max != null ? cur2.max : '?') + (cur2.done ? ' (XONG)' : '') : 'mục tiêu không còn trong bảng') + (haveItem != null ? ', túi có ' + haveItem + ' ' + itemNameV123(src.item) : ''));
+        if (!cur2 || cur2.done) return true;
+        if (need != null && cur2.cur != null && cur2.cur >= need) return true;
+        if (need != null && haveItem != null && haveItem >= need) return true;
+      }
+      log('Nhiệm vụ: farm ' + src.monster + ' chưa đủ số cần sau ' + chunks + ' lượt — vòng sau farm tiếp');
+      return true; // đã farm thật, để vòng nhiệm vụ kiểm lại thay vì dừng hẳn
+    })();
+  }
+
+  // ---- Chuỗi chặng cày cấp (v1.18, lệnh Bui 18:55 ngày 2026-11-26 "Tools từ chặng 1 luôn") ----
+  // "Chặng" = giai đoạn nhiệm vụ chính (QUEST_STAGES 0–38). Chuỗi luôn quét từ chặng đầu tiên
+  // (giai đoạn 0 Nhập Môn → 1 Lĩnh Ngộ Cổ Pháp + Luyện Khí Tầng 1) đi lên theo thứ tự: chặng nào
+  // nhân vật đã qua thì ghi "đã qua — bỏ qua", chặng chưa qua thì làm đầy đủ (vòng v1.17:
+  // nhiệm vụ → Dược Công → farm hợp cấp → đả tọa/luyện đan → phá quan).
+  // Mốc tầng trong mục tiêu giai đoạn (chỉ số REALM_ORDER: Phàm Nhân 0, Luyện Khí 1–13, Trúc Cơ 14):
+  // giai đoạn 10 phá quan lên Tầng 2, 13 lên Tầng 3, 14 lên Tầng 4, 22 tới Tầng 10, 24 đạt Trúc Cơ —
+  // chỉ dùng để suy chặng đã qua khi không đọc được giai đoạn nhiệm vụ trên bảng.
+  var CHAIN_TIER_MILESTONE = { 10: 2, 13: 3, 14: 4, 22: 10, 24: 14 };
+  function chainStagePassed(stageNum, curStage, tier) {
+    if (stageNum == null) return false;
+    if (curStage != null) return stageNum < curStage;
+    var ms = CHAIN_TIER_MILESTONE[stageNum];
+    return ms != null && tier != null && tier >= ms; // tầng đã đạt mốc phá quan của chặng → chặng đã qua
+  }
+  function chainStageLabel(stageNum) {
+    var d = questStageData(stageNum);
+    return 'Chặng ' + stageNum + (d ? ' (' + d.n + ')' : '');
+  }
+  // Chuỗi cày cấp tân thủ: luôn quét từ chặng 1 đi lên (v1.18) — chặng đã qua ghi "đã qua — bỏ qua",
+  // chặng chưa qua lặp nhiệm vụ chính → Dược Công → farm hợp cấp → đả tọa/luyện đan → phá quan,
+  // tới khi lên Trúc Cơ Sơ Kỳ. Nhật ký + tổng kết phiên.
+  // v1.25 (Bui 20:27): dòng nhật ký chuỗi nhiệm vụ — giai đoạn hiện tại, mục tiêu đã xong
+  // và mục tiêu còn lại theo đúng thứ tự game liệt kê (để nhìn là biết đang đi đúng chuỗi).
+  function questChainStatusText(st) {
+    if (!st) return 'Chuỗi nhiệm vụ: không đọc được bảng nhiệm vụ';
+    var stageNum = questStageNum(st.stage);
+    var done = [], pend = [];
+    (st.objs || []).forEach(function (o) { (o.done ? done : pend).push(o.text + (o.max != null && o.cur != null ? ' (' + o.cur + '/' + o.max + ')' : '')); });
+    return 'Chuỗi nhiệm vụ: đang ở ' + (st.stage || ('giai đoạn ' + (stageNum != null ? stageNum : '?'))) +
+      ' — đã xong: ' + (done.length ? done.join('; ') : '(chưa mục tiêu nào)') +
+      ' | còn theo thứ tự: ' + (pend.length ? pend.map(function (t, i) { return '[' + (i + 1) + '] ' + t; }).join('; ') : '(hết mục tiêu — chờ giai đoạn kế)');
+  }
+  function runCayCap(runId) {
+    return (async function () {
+      var startRealm = await readRealmInfoRetry(runId);
+      if (!startRealm) { log('Cày cấp: không đọc được cảnh giới — dữ liệu thô: ' + realmDiag()); stopTool('không đọc được cảnh giới'); return; }
+      await flyCheckAtStart(runId, 'Cày cấp tân thủ', null); // v1.36: ghi trạng thái Phi Hành lúc bắt đầu (từng việc trong chuỗi tự kiểm tra riêng)
+      if (startRealm.source === 'hud') log('Cày cấp: cảnh giới đọc dự phòng từ HUD (#hud-realm) — localStorage chưa có khóa realm');
+      var startStones = readStones();
+      var startLocal = readLocal();
+      var startDc = startLocal && typeof startLocal.duocCong === 'number' ? startLocal.duocCong : null;
+      var qStart = readQuestState();
+      var curStageStart = questStageNum(qStart.stage);
+      log('Chuỗi cày cấp: bắt đầu từ chặng 1 — nhân vật đang ở chặng ' + (curStageStart != null ? curStageStart : '?') + '/tầng ' + startRealm.tier + ' (' + startRealm.name + ', Đạo Hạnh ' + (startRealm.exp != null ? startRealm.exp : '?') + ') — mục tiêu Trúc Cơ Sơ Kỳ');
+      if (startRealm.realmId === 'pham_nhan') log('Cày cấp: đang là Phàm Nhân — cần hoàn tất nghi thức Tẩy Tuỷ Phạt Mao qua nhiệm vụ chính (giai đoạn 0–4) trước khi vào Luyện Khí Tầng 1');
+      // Quét chuỗi từ chặng 1 (v1.18): ghi "đã qua — bỏ qua" cho từng chặng đã qua, "đang làm" cho chặng hiện tại
+      var chainPassedUpTo = -1, chainCurrent = -1;
+      function logChainScan(curStage, tier) {
+        var i, sn;
+        if (curStage == null) {
+          for (i = 0; i < QUEST_STAGES.length; i++) {
+            sn = QUEST_STAGES[i].s;
+            if (sn <= chainPassedUpTo) continue;
+            if (chainStagePassed(sn, null, tier)) { log(chainStageLabel(sn) + ': đã qua (suy theo tầng ' + tier + ') — bỏ qua'); chainPassedUpTo = sn; }
+          }
+          return;
+        }
+        for (i = 0; i < QUEST_STAGES.length; i++) {
+          sn = QUEST_STAGES[i].s;
+          if (sn <= chainPassedUpTo || sn >= curStage) continue;
+          log(chainStageLabel(sn) + ': đã qua — bỏ qua');
+          chainPassedUpTo = sn;
+        }
+        if (curStage !== chainCurrent) {
+          var cd = questStageData(curStage);
+          log(chainStageLabel(curStage) + ': đang làm' + (cd ? ' — ' + cd.h : ''));
+          chainCurrent = curStage;
+        }
+      }
+      logChainScan(curStageStart, startRealm.tier);
+      // v1.42 (Bui 04:22 ngày 2026-11-27): KHÔNG mặc đồ trước vòng lặp nữa — nhiệm vụ chính
+      // phải là việc đầu tiên của chuỗi (mặc đồ vẫn chạy sau trận nhiệm vụ + sau farm gỡ chặn).
+      if (!alive(runId)) return;
+      var lastSig = '', sameSig = 0, cycles = 0;
+      function summary() {
+        var endRealm = readRealmInfo() || startRealm;
+        var endStones = readStones();
+        var endLocal = readLocal();
+        var endDc = endLocal && typeof endLocal.duocCong === 'number' ? endLocal.duocCong : null;
+        log('Tổng kết phiên cày cấp: cảnh giới ' + startRealm.name + ' → ' + endRealm.name +
+          ' (tăng ' + Math.max(0, (endRealm.tier || 0) - (startRealm.tier || 0)) + ' tầng)' +
+          ', Linh Thạch ' + (startStones != null ? startStones : '?') + ' → ' + (endStones != null ? endStones : '?') +
+          (startStones != null && endStones != null ? ' (' + (endStones - startStones >= 0 ? '+' : '') + (endStones - startStones) + ')' : '') +
+          ', Dược Công ' + (startDc != null ? startDc : '?') + ' → ' + (endDc != null ? endDc : '?') +
+          (startDc != null && endDc != null ? ' (' + (endDc - startDc >= 0 ? '+' : '') + (endDc - startDc) + ')' : ''));
+      }
+      while (alive(runId)) {
+        cycles++;
+        if (cycles > 200) { log('Cày cấp: quá 200 vòng — dừng'); summary(); stopTool('quá số vòng cày cấp'); return; }
+        if (isDowned()) { await handleDeath(runId); if (!alive(runId)) return; }
+        var hp0 = readHpPct();
+        if (hp0 != null && hp0 < 0.35) { log('Cày cấp: Khí Huyết dưới 35% — dừng'); summary(); stopTool('Khí Huyết thấp'); return; }
+        var realm = readRealmInfo() || await readRealmInfoRetry(runId);
+        if (!realm) { log('Cày cấp: mất dữ liệu cảnh giới — dữ liệu thô: ' + realmDiag()); summary(); stopTool('mất dữ liệu cảnh giới'); return; }
+        logChainScan(questStageNum(readQuestState().stage), realm.tier); // quét chặng: ghi đã qua/đang làm khi giai đoạn đổi
+        if (REALM_ORDER.indexOf(realm.realmId) >= REALM_ORDER.indexOf('truc_co_1')) {
+          log('Cày cấp: ĐÃ ĐẠT ' + realm.name + ' — chuỗi Luyện Khí 1→13 + Trúc Cơ hoàn tất');
+          log('Chuỗi cày cấp dừng ở Trúc Cơ theo phạm vi Luyện Khí 1→13 — các chặng sau (giai đoạn 25+) làm bằng chế độ Nhiệm vụ chính');
+          summary();
+          stopTool('đã lên Trúc Cơ');
+          return;
+        }
+        var panel = await readBreakPanel(runId);
+        var dhLine = breakLine(panel, 'Đạo Hạnh');
+        var rule = BREAK_RULES[realm.realmId] || null;
+        var itemLine = rule ? breakLine(panel, rule.itemName) : null;
+        var questLine = null;
+        if (panel) for (var qi = 0; qi < panel.lines.length; qi++) if (/nhiệm vụ|giai đoạn/i.test(panel.lines[qi].label)) { questLine = panel.lines[qi]; break; }
+        log('Cày cấp vòng ' + cycles + ': ' + realm.name + ' — ' + (panel ? (panel.route + ' | ' + panel.status) : 'không đọc được bảng Đột Phá'));
+        // v1.25 (Bui 20:27): mỗi vòng ghi rõ đang ở giai đoạn mấy, mục tiêu nào đã xong/còn —
+        // xương sống là chuỗi nhiệm vụ chính đúng thứ tự giai đoạn, việc phụ chỉ khi bị chặn.
+        log(questChainStatusText(readQuestState()));
+        // v1.23: liệt kê rõ từng điều kiện còn thiếu, vòng nào cũng ghi
+        var missingList = listMissingConditions(realm, panel, questStageNum(readQuestState().stage));
+        if (missingList.length) log('Cày cấp: điều kiện đột phá còn thiếu: ' + missingList.map(function (x) { return x.text; }).join('; ') + ' — tự làm cho đủ từng mục');
+        else log('Cày cấp: điều kiện đột phá đã đủ theo bảng + luật mã');
+        // v1.26: chữ ký tiến triển thêm giai đoạn + tiến độ mục tiêu nhiệm vụ — nhiệm vụ chính
+        // tiến (giai đoạn tăng/mục tiêu tăng) cũng tính là tiến triển, tránh dừng oan sau 3 vòng.
+        var qstSig = readQuestState();
+        var sig = realm.realmId + '|' + (realm.exp != null ? realm.exp : '?') + '|' + (panel ? panel.lines.map(function (l) { return l.label + ':' + l.cur + '/' + l.target; }).join(';') : '') +
+          '|' + (rule ? (countItem(rule.item) || 0) : 0) + '|' + gardenSummary(Date.now()).ready + '|' + (countItem('linh_thuy') || 0) + '|' + (countYeuDanCap3Plus() || 0) +
+          '|' + (questStageNum(qstSig.stage) != null ? questStageNum(qstSig.stage) : '?') + '|' + qstSig.objs.map(function (o) { return (o.done ? '1' : '0') + ':' + (o.cur != null ? o.cur : ''); }).join(',');
+        if (sig === lastSig) sameSig++; else { sameSig = 0; lastSig = sig; }
+        if (sameSig >= 3) { log('Cày cấp: 3 vòng liên tiếp không tiến triển (' + realm.name + ') — dừng để tránh lặp vô ích'); summary(); stopTool('chuỗi cày cấp không tiến triển'); return; }
+
+        // v1.26 (Bui 20:33 ngày 2026-11-26) + v1.42 (Bui 04:22 ngày 2026-11-27): NHIỆM VỤ
+        // CHÍNH TRƯỚC mọi việc phụ, đúng thứ tự giai đoạn/mục tiêu game liệt kê. Chỉ khi
+        // mục tiêu bị chặn điều kiện cảnh giới/đan/Đạo Hạnh (mã trả 'item'/'equip-locked')
+        // mới làm ĐÚNG việc gỡ chặn đó (phá quan / lấy nguyên liệu + luyện đan / đả tọa /
+        // farm lấy Đạo Hạnh) — xong quay lại ngay mục tiêu đang dở. Bước chưa tự làm được
+        // ('unknown'/'stuck'/'timeout') thì DỪNG chờ Bui (v1.42), không làm việc phụ thay thế.
+        if (panel && panel.blocked) log('Cày cấp: bảng Đột Phá báo khóa: ' + panel.status + ' — nhiệm vụ chính trước');
+        // v1.42 (Bui 04:22 ngày 2026-11-27): mỗi vòng làm mục tiêu nhiệm vụ chính hiện tại
+        // TRƯỚC (đúng thứ tự game liệt kê) — ghi rõ đang làm mục tiêu nào; việc phụ chỉ khi
+        // mục tiêu bị chặn điều kiện và phải là đúng việc gỡ chặn đó (xem dưới).
+        var qNow = readQuestState();
+        var qStageNow = questStageNum(qNow.stage);
+        var qPendNow = (qNow.objs || []).filter(function (o) { return !o.done; });
+        var qObjNow = qPendNow.length ? qPendNow[0].text : '(không đọc được mục tiêu)';
+        log('Nhiệm vụ chính Giai đoạn ' + (qStageNow != null ? qStageNow : '?') + ' — đang làm: ' + qObjNow);
+        setDoing('Nhiệm vụ chính Giai đoạn ' + (qStageNow != null ? qStageNow : '?') + ' — đang làm: ' + qObjNow, null);
+        var qr = await runMainQuest(runId, { chain: true });
+        if (!alive(runId)) return;
+        if (qr === 'hp') { summary(); stopTool('Khí Huyết thấp'); return; }
+        // v1.42: bước nhiệm vụ tool chưa tự làm được → ghi nguyên văn + DỪNG chờ Bui,
+        // tuyệt đối không chuyển sang việc phụ thay thế (bản cũ rơi vào farm/Dược Công
+        // nên trông như "nhiệm vụ chính không làm toàn làm cái gì không ấy").
+        if (qr === 'unknown' || qr === 'stuck' || qr === 'timeout') {
+          var qStop = readQuestState();
+          var qStopPend = (qStop.objs || []).filter(function (o) { return !o.done; });
+          log('Cày cấp: bước nhiệm vụ chưa tự làm được (' + qr + ') — mục tiêu nguyên văn: "' + (qStopPend.length ? qStopPend[0].text : qObjNow) + '" (' + (qStop.stage || 'giai đoạn ?') + ') — DỪNG chờ Bui, không làm việc phụ thay thế');
+          setDoing('Dừng: bước nhiệm vụ chưa tự làm được — "' + (qStopPend.length ? qStopPend[0].text : qObjNow) + '"', null);
+          summary(); stopTool('bước nhiệm vụ chưa tự làm được (' + qr + ')'); return;
+        }
+        if (qr === 'equip-noitem') {
+          log('Cày cấp: mục tiêu trang bị bị chặn vì chưa có món trong túi ("' + qObjNow + '") — tool không tự kiếm được món này, DỪNG chờ Bui, không làm việc phụ thay thế');
+          setDoing('Dừng: chưa có món cần trang bị — "' + qObjNow + '"', null);
+          summary(); stopTool('chưa có món cần trang bị'); return;
+        }
+        if (qr === 'vantieu' || qr === 'tamma' || qr === 'chienbang') {
+          log('Cày cấp: mục tiêu bị chặn vì hệ thống theo giờ/cảnh giới chưa làm được lúc này (' + qr + ': "' + qObjNow + '") — DỪNG chờ Bui (lịch trình chạy đúng giờ), không làm việc phụ thay thế');
+          setDoing('Dừng: mục tiêu chờ giờ/cảnh giới (' + qr + ') — "' + qObjNow + '"', null);
+          summary(); stopTool('mục tiêu chờ giờ/cảnh giới: ' + qr); return;
+        }
+        if (qr === 'noquest') {
+          // Không đọc được mục tiêu (bảng nhiệm vụ ẩn/trống): chờ 3s đọc lại 1 lần —
+          // vẫn trống thì dừng báo rõ, không âm thầm chuyển việc phụ như bản cũ.
+          log('Cày cấp: không đọc được mục tiêu nhiệm vụ chính — chờ 3s đọc lại');
+          await sleep(3000);
+          if (!alive(runId)) return;
+          var qRe = readQuestState();
+          var qRePend = (qRe.objs || []).filter(function (o) { return !o.done; });
+          if (qRe.hidden || !qRePend.length) {
+            log('Cày cấp: vẫn không có mục tiêu nhiệm vụ chính trong bảng (' + (qRe.stage || 'không đọc được giai đoạn') + ') — DỪNG chờ Bui kiểm tra bảng nhiệm vụ, không làm việc phụ thay thế');
+            setDoing('Dừng: không đọc được mục tiêu nhiệm vụ chính', null);
+            summary(); stopTool('không đọc được mục tiêu nhiệm vụ chính'); return;
+          }
+          log('Cày cấp: đọc lại đã có mục tiêu — quay lại nhiệm vụ chính');
+          continue;
+        }
+        // Tới đây qr chỉ còn 'item' hoặc 'equip-locked': mục tiêu bị chặn điều kiện
+        // cảnh giới/đan/Đạo Hạnh → làm ĐÚNG việc phụ gỡ chặn đó ở dưới, xong quay lại ngay.
+        var qrReason = qr === 'item' ? 'chỉ còn mục tiêu vật phẩm/điều kiện (đan/Đạo Hạnh/phá quan)' :
+          qr === 'equip-locked' ? 'món cần trang bị chưa đủ cảnh giới' :
+          'bước nhiệm vụ bị chặn (' + qr + ')';
+        log('Cày cấp: mục tiêu bị chặn vì ' + qrReason + ' ("' + qObjNow + '") → làm đúng việc gỡ chặn đó, xong quay lại đúng mục tiêu đang dở');
+        log(questChainStatusText(readQuestState()));
+        var realm2 = readRealmInfo() || realm;
+        var panel2 = await readBreakPanel(runId);
+        // Việc phụ 1: phá quan khi bảng Đột Phá đã sẵn sàng
+        if (panel2 && panel2.ready) {
+          // v1.23: phá quan Trúc Cơ — nếu chưa đủ 5 Bảo Mệnh Phù mà đủ nguyên liệu Huyết Xích
+          // trong túi thì luyện thêm cho đủ 5 để phá quan 100% (không đủ thì doBreakthrough ghi rõ tỉ lệ)
+          if (realm2.realmId === 'luyen_khi_13') {
+            var bmpNow = countItem('bao_menh_phu') || 0;
+            if (bmpNow < 5 && (countItem('co_bich_moc') || 0) >= 12 && (countItem('tran_than_thach') || 0) >= 12) {
+              log('Cày cấp: luyện thêm Bảo Mệnh Phù cho đủ 5 lá phá quan Trúc Cơ 100% (đang có ' + bmpNow + '/5)');
+              for (var bq2 = bmpNow; bq2 < 5 && alive(runId); bq2++) {
+                var bw3 = await brewPill(runId, 'bao_menh_phu', 'Bảo Mệnh Phù', { exact: true });
+                if (!alive(runId)) return;
+                if (!bw3.ok) break;
+              }
+            }
+          }
+          log('Mục tiêu bị chặn vì ' + qrReason + ' → làm phá quan để gỡ');
+          setDoing('Mục tiêu bị chặn vì ' + qrReason + ' → phá quan để gỡ', null);
+          var br = await doBreakthrough(runId);
+          if (!alive(runId)) return;
+          if (br === 'ascended') { continue; }
+          if (br === 'failed' && realm2.realmId === 'luyen_khi_13') { log('Cày cấp: phá quan Trúc Cơ thất bại (mất 1 Trúc Cơ Đan) — cần luyện viên khác'); }
+          continue;
+        }
+        // Việc phụ 2: thiếu đan cho cửa quan hiện tại → tự lấy nguyên liệu rồi luyện (v1.23).
+        // Muốn có hạt phải làm nhiệm vụ Dược Công để đổi (v1.26): ensurePillIngredients →
+        // exchangeSeedPack tự làm Dược Công cho đủ điểm rồi mới đổi gói hạt (xem exchangeSeedPack).
+        var rule2 = BREAK_RULES[realm2.realmId] || null;
+        var itemLine2 = rule2 ? breakLine(panel2, rule2.itemName) : null;
+        if (rule2 && itemLine2 && !itemLine2.done) {
+          var needQty = rule2.qty - (itemLine2.cur || 0);
+          log('Mục tiêu bị chặn vì thiếu ' + needQty + ' ' + rule2.itemName + ' cho cửa quan ' + realm2.name + ' → tầng kế → tự lấy nguyên liệu rồi luyện để gỡ');
+          setDoing('Mục tiêu bị chặn vì thiếu ' + rule2.itemName + ' → lấy nguyên liệu + luyện đan để gỡ', null);
+          var ing = await ensurePillIngredients(runId, rule2.item, needQty, {});
+          if (!alive(runId)) return;
+          if (ing.hp) { summary(); stopTool('Khí Huyết thấp'); return; }
+          if (ing.ready) {
+            var brewed = false;
+            for (var bq = 0; bq < needQty && alive(runId); bq++) {
+              var brw = await brewPill(runId, rule2.item, rule2.itemName);
+              if (!alive(runId)) return;
+              if (brw.ok) { brewed = true; continue; }
+              log('Cày cấp: luyện ' + rule2.itemName + ' chưa được — ' + (brw.missing || []).join('; '));
+              break;
+            }
+            if (brewed) continue;
+          } else {
+            if (ing.blocked.length) log('Cày cấp: nguyên liệu chưa tự lấy được: ' + ing.blocked.map(function (x) { return itemNameV123(x.id) + ' (' + x.reason + ')'; }).join('; '));
+            if (ing.growingUntilSec != null) {
+              // v1.42: cây đang lớn là việc gỡ chặn đang chờ chín — chờ rồi quay lại nhiệm
+              // vụ chính, không chen việc phụ khác; chờ cây là tiến triển nên xóa chữ ký lặp.
+              var waitSec = Math.min(ing.growingUntilSec, 300);
+              log('Cày cấp: cây đang lớn trong vườn (chín sau ~' + ing.growingUntilSec + 's) — chờ ' + waitSec + 's rồi quay lại nhiệm vụ chính');
+              setDoing('Mục tiêu bị chặn vì thiếu ' + rule2.itemName + ' → chờ cây trong vườn chín (~' + ing.growingUntilSec + 's)', null);
+              lastSig = ''; sameSig = 0;
+              await sleep(waitSec * 1000);
+              if (!alive(runId)) return;
+              continue;
+            }
+            log('Cày cấp: chưa đủ nguyên liệu ' + rule2.itemName + ' — chỉ kiểm tiếp Đạo Hạnh ở dưới (làm nếu Đạo Hạnh cũng thiếu)');
+          }
+        }
+        // Ghi chú giai đoạn 21: mục tiêu Đại Hội theo suất cố định (09:16/13:16/17:16/20:16,
+        // ghi danh trước 16 phút) — chỉ ghi suất kế tiếp vào nhật ký (lịch trình/chế độ
+        // Đại Hội chạy đúng giờ), chuỗi không tự chuyển việc phụ vì mục tiêu này.
+        if (questStageNum(readQuestState().stage) === 21) {
+          var sess21 = daiHoiNextSession(Date.now());
+          log('Việc phụ (giai đoạn 21): mục tiêu Đại Hội theo suất cố định — suất kế tiếp ' + (sess21 ? fmtTime(sess21.startMs) + ' (mở ghi danh ' + fmtTime(sess21.regMs) + (sess21.inWindow ? ' — ĐANG mở ghi danh, chạy chế độ Đại Hội ngay' : ', còn ' + fmtCountdown(sess21.regMs - Date.now())) + ')' : 'chưa rõ') + '; chuỗi không chờ suất, làm việc khác trong lúc chờ');
+        }
+        // v1.42 (Bui 04:22 ngày 2026-11-27): việc gỡ chặn cuối — CHỈ khi Đạo Hạnh thật sự
+        // còn thiếu mới đả tọa, chưa đầy mới farm lấy Đạo Hạnh. Bản cũ luôn chạy đả tọa +
+        // Dược Công 1 lượt/tầng + farm 10 phút bất kể lý do chặn — đó là "việc phụ chen
+        // trước nhiệm vụ chính" Bui báo. Dược Công đổi hạt đã tự chạy trong
+        // ensurePillIngredients/exchangeSeedPack khi cần nên bỏ lượt Dược Công chung.
+        var dh2 = breakLine(panel2, 'Đạo Hạnh');
+        if (dh2 && dh2.done) continue; // Đạo Hạnh đã đủ → vòng sau nhiệm vụ chính trước, rồi phá quan/đan
+        if (!dh2) {
+          log('Cày cấp: không đọc được dòng Đạo Hạnh trong bảng Đột Phá — không rõ cách gỡ chặn (' + qrReason + '), DỪNG chờ Bui thay vì làm việc phụ chung chung');
+          setDoing('Dừng: không đọc được bảng Đột Phá để gỡ chặn — "' + qObjNow + '"', null);
+          summary(); stopTool('không đọc được bảng Đột Phá'); return;
+        }
+        log('Mục tiêu bị chặn vì thiếu Đạo Hạnh (' + (dh2.cur != null ? dh2.cur : '?') + '/' + (dh2.target != null ? dh2.target : '?') + ') → đả tọa để gỡ');
+        setDoing('Mục tiêu bị chặn vì thiếu Đạo Hạnh → đả tọa để gỡ', null);
+        if (!canMeditateRealm((realm2 || realm).realmId)) {
+          // Phàm Nhân chưa đả tọa được (canMeditate=false trong mã) — quay lại nhiệm vụ Tẩy Tuỷ
+          log('Cày cấp: ' + (realm2 || realm).name + ' chưa đả tọa được — quay lại nhiệm vụ chính Tẩy Tuỷ ở vòng sau');
+          continue;
+        }
+        var medR = await meditateUntilFull(runId);
+        if (!alive(runId)) return;
+        var panelM = await readBreakPanel(runId);
+        if (panelM && panelM.ready) continue;
+        var dhM = breakLine(panelM, 'Đạo Hạnh');
+        if (dhM && dhM.done) continue;
+        log('Cày cấp: đả tọa xong (' + medR + ') mà Đạo Hạnh chưa đầy — farm quái hợp cấp 10 phút lấy Đạo Hạnh (đúng việc gỡ chặn)');
+        setDoing('Mục tiêu bị chặn vì thiếu Đạo Hạnh → farm lấy Đạo Hạnh để gỡ', null);
+        var farm = pickFarmByTier((realm2 || realm).tier);
+        log('Cày cấp: farm ' + farm.label + ' ở ' + (MAPS[farm.map] ? MAPS[farm.map].name : farm.map) + ' (' + farm.tx + ',' + farm.ty + ') — bật đủ Bay + Chạy + Auto');
+        var fr = await farmPhase(runId, farm.map, farm, null, Date.now() + 10 * 60000);
+        if (!alive(runId)) return;
+        if (fr === 'hp') { log('Cày cấp: Khí Huyết thấp khi farm — dừng'); summary(); stopTool('Khí Huyết thấp'); return; }
+        // v1.23: nhặt được đồ mới khi farm → mặc đồ tốt hơn ngay
+        try { await autoEquipBetter(runId); } catch (e1) { if (!alive(runId)) throw e1; log('Mặc đồ: lỗi (' + e1.message + ') — bỏ qua'); }
+        if (!alive(runId)) return;
+        var panel4 = await readBreakPanel(runId);
+        var dh4 = breakLine(panel4, 'Đạo Hạnh');
+        if (!(dh4 && dh4.done) && !(panel4 && panel4.ready)) {
+          await meditateUntilFull(runId);
+          if (!alive(runId)) return;
+        }
+      }
+    })();
+  }
+
+  // ============ Điều khiển chạy/dừng ============
+  function stopTool(reason, noLand) {
+    if (!S.running) { setStatus('Đã dừng'); return; }
+    S.running = false; S.runId++;
+    releaseAllInputs(); // nhả toàn bộ phím/joystick/dpad ngay, không để nhân vật tự đi tiếp
+    if (S.mode === 'fishing') stopFishingGame(); // dừng luôn tự động câu của game
+    if (S.mode === 'conbang' || S.mode === 'hotay') { vcRelease(); vcLuongWatchStop(); var thu = $('.vc-thu'); if (thu && !thu.classList.contains('hidden')) pressDom(thu); if (S.vcStats) { vcLogStats('Tổng kết phiên câu'); S.vcStats = null; } } // nhả nút câu + thu cần + tổng kết phiên
+    log('Dừng tool: ' + (reason || ''));
+    setStatus('Đã dừng (' + (reason || '') + ')');
+    setDoing('—', null);
+    if (S.autoByTool && S.autoBelief) {
+      toggleAutoOnce().then(function () { S.autoBelief = false; S.autoByTool = false; log('Đã tắt Auto'); });
+    }
+    // Dừng do tool (HP thấp/kẹt/lỗi/nút Dừng): hạ cánh nếu đang bay.
+    // Dừng do chạm tay thật (noLand): KHÔNG tự hạ cánh — người chơi tự lái.
+    if (!noLand && S.flyingBelief) {
+      // v1.36: kiểm tra trạng thái thật trước khi nhấn hạ cánh — belief lệch (thật ra
+      // đang TẮT) mà nhấn mù là bật bay lên thay vì hạ cánh
+      var fsStop = readFlyState();
+      if (fsStop === false) log('Dừng tool: Phi Hành đang TẮT thật — không nhấn hạ cánh');
+      else if (pressFly()) log('Đã hạ cánh (dừng tool)');
+      S.flyingBelief = false;
+      setStatus(S.status);
+    }
+  }
+  function startTool(mode) {
+    if (S.running) { log('Tool đang chạy — bấm Dừng trước'); return; }
+    S.running = true; S.mode = mode; var runId = ++S.runId;
+    S.steerMethod = null; camAnchor = null; // mỗi phiên chạy dò lại cách lái + neo camera từ đầu
+    S.flySpeedChecked = false; S.flyRetryDone = false; // kiểm chứng bay lại từ đầu mỗi phiên
+    var p = readPos(), m = readMapId();
+    var modeName = mode === 'farm' ? 'farm' : mode === 'fishing' ? 'câu cá' : mode === 'conbang' ? 'Câu Côn Bằng' : mode === 'hotay' ? 'Câu cá Hồ Tây' : mode === 'rua' ? 'Tổ đội farm rùa' : mode === 'huyet' ? 'Huyết Xích' : mode === 'boss' ? 'Căn giờ Boss' : mode === 'quest' ? 'Nhiệm vụ chính' : mode === 'vetnut' ? 'Khe Nứt' : mode === 'schedule' ? 'Lịch trình' : mode === 'gather' ? 'Thu thập' : mode === 'daihoi' ? 'Đại Hội' : mode === 'caycap' ? 'Cày cấp tân thủ' : mode === 'chientruong' ? 'Vạn Hoang Chiến Trường' : mode === 'sysach' ? 'Sỹ Sách Điện' : mode === 'vantieu' ? 'Vận Tiêu' : mode === 'chienbang' ? 'Tán Tu Chiến Bảng' : mode === 'tamma' ? 'Huyền Không Cổ Viện (Tam Ma)' : mode === 'gachafree' ? 'Rút bí tịch miễn phí' : 'Dược Công';
+    log('Bắt đầu ' + modeName + ' — map: ' + (m || '?') + ', vị trí: ' + (p ? '(' + p.x + ',' + p.y + ')' : '?'));
+    var job;
+    if (mode === 'farm') {
+      var targetMap = ($('#ttpx-map') || {}).value || 'thanh_truc_lam';
+      var dests = destinationsFor(targetMap);
+      var destIdx = parseInt((($('#ttpx-dest') || {}).value || '0'), 10);
+      var dest = dests[isNaN(destIdx) ? 0 : destIdx] || dests[0] || null;
+      var zoneVal = ($('#ttpx-zone') || {}).value || '';
+      var zone = zoneVal ? parseInt(zoneVal, 10) : null;
+      if (zone != null && isNaN(zone)) zone = null;
+      job = runFarm(runId, targetMap, dest, zone);
+    } else if (mode === 'fishing') {
+      job = runFishing(runId);
+    } else if (mode === 'conbang') {
+      job = runConBang(runId);
+    } else if (mode === 'hotay') {
+      job = runHoTay(runId);
+    } else if (mode === 'rua') {
+      job = runTurtleFarm(runId);
+    } else if (mode === 'huyet') {
+      job = runHuyetXich(runId);
+    } else if (mode === 'boss') {
+      var boss = bossById((($('#ttpx-boss') || {}).value) || '') || BOSSES[0];
+      job = runBossTimer(runId, boss);
+    } else if (mode === 'quest') {
+      job = runMainQuest(runId);
+    } else if (mode === 'vetnut') {
+      job = runVetNut(runId);
+    } else if (mode === 'schedule') {
+      job = runSchedule(runId);
+    } else if (mode === 'gather') {
+      job = runGather(runId);
+    } else if (mode === 'daihoi') {
+      job = runDaiHoi(runId);
+    } else if (mode === 'caycap') {
+      job = runCayCap(runId);
+    } else if (mode === 'chientruong') {
+      job = runChienTruong(runId);
+    } else if (mode === 'sysach') {
+      job = runSySachDien(runId);
+    } else if (mode === 'vantieu') {
+      job = runVanTieu(runId);
+    } else if (mode === 'chienbang') {
+      job = runChienBang(runId);
+    } else if (mode === 'tamma') {
+      job = runTamMa(runId);
+    } else if (mode === 'gachafree') {
+      job = runGachaFree(runId, {});
+    } else {
+      job = runDuocCong(runId);
+    }
+    // v1.14: trước khi vào việc chính — mặc đồ tốt hơn trong túi (v1.21: không còn mở Sự Kiện Điểm Danh ở đây)
+    var mainJob = job;
+    job = (async function () {
+      await preflight(runId, mode);
+      if (!alive(runId)) return;
+      return await mainJob;
+    })();
+    job.then(function () { if (alive(runId)) { /* farm chạy vô hạn tới khi dừng */ } })
+       .catch(function (e) {
+         if (alive(runId)) {
+           log('Lỗi/dừng: ' + e.message);
+           if (/kẹt/.test(e.message)) {
+             var pp = readPos(), mm = readMapId();
+             log('Chi tiết kẹt — vị trí: ' + (pp ? '(' + pp.x + ',' + pp.y + ')' : '?') + ', map: ' + (mm ? (MAPS[mm] ? MAPS[mm].name : mm) : '?') + ', chế độ: ' + modeName + ', cách lái: ' + (S.steerMethod || '?') + ', bay: ' + (S.flyingBelief ? 'BẬT' : 'TẮT'));
+           }
+           stopTool(e.message);
+         }
+       });
+  }
+
+  // Chạm tay thật → dừng ngay (sự kiện tổng hợp của tool có isTrusted=false nên không tự kích)
+  ['pointerdown', 'keydown'].forEach(function (ev) {
+    window.addEventListener(ev, function (e) {
+      if (!S.running || !e.isTrusted) return;
+      var panel = $('#ttpx-panel');
+      if (panel && e.target && panel.contains(e.target)) return;
+      stopTool('người chơi chạm tay', true);
+    }, true);
+  });
+
+  // ============ Bảng điều khiển ============
+  function refreshDestOptions() {
+    var mapSel = $('#ttpx-map'), destSel = $('#ttpx-dest');
+    if (!mapSel || !destSel) return;
+    var dests = destinationsFor(mapSel.value);
+    destSel.innerHTML = dests.map(function (d, i) {
+      return '<option value="' + i + '">' + d.label + ' (' + d.tx + ',' + d.ty + ')</option>';
+    }).join('');
+  }
+  // v1.27 (Bui 20:53): mục Sự kiện — nút bật/tắt Tự đăng kí + Tự làm/đánh từng sự kiện,
+  // Tích hết/Bỏ hết; lựa chọn lưu localStorage (ttpx_events_v1). Nút chế độ riêng của
+  // từng sự kiện vẫn bấm tay được như cũ, không phụ thuộc các nút này.
+  // v1.33 (Bui 22:31 "phần lịch trình sự kiện có thể thu nhỏ"): mục Sự kiện thu nhỏ/mở
+  // ra được — thu nhỏ chỉ còn dòng tiêu đề, trạng thái nhớ qua localStorage, mặc định
+  // mở; thu nhỏ không ảnh hưởng lịch trình chạy (chỉ ẩn hiển thị).
+  var EV_COLLAPSED_KEY = 'ttpx_ev_collapsed_v1';
+  function evCollapsedGet() { try { return localStorage.getItem(EV_COLLAPSED_KEY) === '1'; } catch (e) { return false; } }
+  function evCollapsedSet(v) { try { localStorage.setItem(EV_COLLAPSED_KEY, v ? '1' : '0'); } catch (e) {} }
+  function renderEventToggles() {
+    var box = $('#ttpx-events');
+    if (!box) return;
+    var collapsed = evCollapsedGet();
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center"><b>Sự kiện (lịch tuần)</b>' +
+      '<span><button id="ttpx-ev-all" style="background:#1f6f4a;color:#fff;border:0;border-radius:6px;padding:2px 8px;margin-right:4px">Tích hết</button>' +
+      '<button id="ttpx-ev-none" style="background:#6f2a2a;color:#fff;border:0;border-radius:6px;padding:2px 8px;margin-right:4px">Bỏ hết</button>' +
+      '<button id="ttpx-ev-collapse" title="Thu nhỏ/mở ra mục Sự kiện" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:2px 8px">' + (collapsed ? '＋' : '—') + '</button></span></div>' +
+      '<div id="ttpx-ev-body" style="display:' + (collapsed ? 'none' : '') + '">';
+    WEEK_EVENTS.forEach(function (e) {
+      if (e.noteOnly) {
+        html += '<div style="margin:3px 0;color:#8fb3a2">' + e.ten + ' — ' + e.lich + '</div>';
+        return;
+      }
+      html += '<div style="margin:3px 0">' + e.ten + '<br>';
+      if (e.hasReg) html += '<label style="margin-right:8px"><input type="checkbox" class="ttpx-ev-cb" data-ev="' + e.id + '" data-kind="reg"' + (evOn(e.id, 'reg') ? ' checked' : '') + '> Tự đăng kí</label>';
+      html += '<label><input type="checkbox" class="ttpx-ev-cb" data-ev="' + e.id + '" data-kind="play"' + (evOn(e.id, 'play') ? ' checked' : '') + '> ' + (e.hasReg ? 'Tự làm/đánh' : 'Tự làm') + '</label></div>';
+    });
+    html += '</div>';
+    box.innerHTML = html;
+    var cbs = box.querySelectorAll('.ttpx-ev-cb');
+    for (var i = 0; i < cbs.length; i++) {
+      cbs[i].addEventListener('change', function (ev) {
+        var el = ev.target;
+        evSet(el.getAttribute('data-ev'), el.getAttribute('data-kind'), el.checked);
+        log('Sự kiện: ' + evToggleText());
+      });
+    }
+    var bAll = $('#ttpx-ev-all'), bNone = $('#ttpx-ev-none');
+    if (bAll) bAll.addEventListener('click', function () { evSetAll(true); renderEventToggles(); log('Sự kiện: đã TÍCH HẾT — ' + evToggleText()); });
+    if (bNone) bNone.addEventListener('click', function () { evSetAll(false); renderEventToggles(); log('Sự kiện: đã BỎ HẾT — ' + evToggleText()); });
+    var bCol = $('#ttpx-ev-collapse');
+    if (bCol) bCol.addEventListener('click', function () {
+      var now = !evCollapsedGet();
+      evCollapsedSet(now);
+      renderEventToggles();
+      log('Sự kiện (lịch tuần): đã ' + (now ? 'THU NHỎ (chỉ còn dòng tiêu đề — lịch trình vẫn chạy như cũ)' : 'MỞ RA đầy đủ'));
+    });
+  }
+  // v1.33: nút mục tiêu câu Hồ Tây (Linh/Yêu/Giao/Tự do/Tự động) — tô nút đang chọn,
+  // lưu localStorage; đổi mục tiêu giữa phiên thì lần quăng kế dùng mồi mới.
+  function renderVcTarget() {
+    var cur = vcTargetGet();
+    var nameEl = $('#ttpx-vc-target-name');
+    if (nameEl) nameEl.textContent = VC_TARGETS[cur].ten;
+    var btns = document.querySelectorAll('.ttpx-vc-tg');
+    for (var i = 0; i < btns.length; i++) {
+      var on = btns[i].getAttribute('data-tg') === cur;
+      btns[i].style.background = on ? '#1f6f4a' : '#1d2f27';
+      btns[i].style.color = on ? '#fff' : '#cfe8da';
+    }
+  }
+  // v1.35: nút vùng quăng Hồ Tây (Gần/Giữa/Xa/Tự động) — tô nút đang chọn, lưu
+  // localStorage; đổi vùng giữa phiên thì lần quăng kế dùng vùng mới.
+  function renderVcZone() {
+    var cur = vcZoneGet();
+    var nameEl = $('#ttpx-vc-zone-name');
+    if (nameEl) nameEl.textContent = VC_ZONES[cur].ten + (VC_ZONES[cur].vungTen ? ' (' + VC_ZONES[cur].vungTen + ')' : ' (theo luồng cá)');
+    var btns = document.querySelectorAll('.ttpx-vc-zn');
+    for (var i = 0; i < btns.length; i++) {
+      var on = btns[i].getAttribute('data-zn') === cur;
+      btns[i].style.background = on ? '#1f6f4a' : '#1d2f27';
+      btns[i].style.color = on ? '#fff' : '#cfe8da';
+    }
+  }
+  function buildPanel() {
+    if ($('#ttpx-panel')) return;
+    var reachTanVien = reachableFrom('tan_vien');
+    var opts = FARM_MAPS.map(function (id) { return '<option value="' + id + '"' + (id === 'thanh_truc_lam' ? ' selected' : '') + '>' + MAPS[id].name + (reachTanVien[id] ? '' : ' (vào qua NPC)') + '</option>'; }).join('');
+    var zoneOpts = '<option value="">Giữ nguyên khu</option>' + Array.from({ length: 20 }, function (_, i) { return '<option value="' + (i + 1) + '">Khu ' + (i + 1) + '</option>'; }).join('');
+    var bossOpts = BOSSES.map(function (b) { return '<option value="' + b.id + '">' + b.name + ' — ' + MAPS[b.map].name + ' (' + b.tx + ',' + b.ty + ')</option>'; }).join('');
+    var d = document.createElement('div');
+    d.id = 'ttpx-panel';
+    d.style.cssText = 'display:none;position:fixed;right:6px;bottom:6px;z-index:99999;width:min(300px,88vw);max-width:88vw;max-height:calc(100dvh - 120px);overflow-y:auto;box-sizing:border-box;background:rgba(12,18,24,.92);color:#e8f3ee;border:1px solid #3a5a4a;border-radius:10px;font:11px/1.4 system-ui,sans-serif;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,.5)';
+    var selStyle = 'width:100%;margin:2px 0 6px;background:#12211a;color:#e8f3ee;border:1px solid #3a5a4a;border-radius:6px;padding:4px';
+    d.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<b>Tool Tu Tiên Pixel v1.47</b><span><button id="ttpx-back" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:2px 8px;display:none">← Chức năng</button> <button id="ttpx-collapse" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:2px 8px">Đóng</button></span></div>' +
+      '<div id="ttpx-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px"></div>' +
+      '<div id="ttpx-body" style="display:none">' +
+        '<div id="ttpx-detail-title" style="margin:6px 0 0;font-weight:700;color:#9fe8c0"></div>' +
+        '<div id="ttpx-status" style="margin:6px 0;color:#ffe9a8">Chưa chạy</div>' +
+        // v1.41 (Bui 04:06): dòng "Đang làm: ..." hiện rõ việc hiện tại + việc kế kèm giờ, ngay trên panel
+        '<div id="ttpx-doing" style="margin:0 0 6px;color:#9fe8c0;font-weight:600">Đang làm: —</div>' +
+        '<div id="ttpx-farm-opts"><select id="ttpx-map" style="' + selStyle + '">' + opts + '</select>' +
+        '<select id="ttpx-dest" style="' + selStyle + '"></select>' +
+        '<select id="ttpx-zone" style="' + selStyle + '">' + zoneOpts + '</select></div>' +
+        '<div id="ttpx-boss-opts"><select id="ttpx-boss" style="' + selStyle + '">' + bossOpts + '</select></div>' +
+        '<div id="ttpx-fnbtns" style="display:flex;gap:6px;flex-wrap:wrap">' +
+          '<button id="ttpx-farm" data-mode="farm" style="flex:1;background:#1f6f4a;color:#fff;border:0;border-radius:6px;padding:4px">Đi farm</button>' +
+          '<button id="ttpx-dc" data-mode="dc" style="flex:1;background:#7a5a1f;color:#fff;border:0;border-radius:6px;padding:4px">Làm việc Dược Công</button>' +
+          '<button id="ttpx-fish" data-mode="fishing" style="flex:1;background:#1f5a7a;color:#fff;border:0;border-radius:6px;padding:4px">Câu cá</button>' +
+          '<button id="ttpx-conbang" data-mode="conbang" style="flex:1;background:#2a6f8a;color:#fff;border:0;border-radius:6px;padding:4px">Câu Côn Bằng</button>' +
+          '<button id="ttpx-hotay" data-mode="hotay" style="flex:1;background:#2a8a6f;color:#fff;border:0;border-radius:6px;padding:4px">Câu cá Hồ Tây</button>' +
+          '<button id="ttpx-rua" data-mode="rua" style="flex:1;background:#2a6f4a;color:#fff;border:0;border-radius:6px;padding:4px">Tổ đội farm rùa</button>' +
+          '<button id="ttpx-hx" data-mode="huyet" style="flex:1;background:#6f2a3a;color:#fff;border:0;border-radius:6px;padding:4px">Huyết Xích</button>' +
+          '<button id="ttpx-bossbtn" data-mode="boss" style="flex:1;background:#4a2a6f;color:#fff;border:0;border-radius:6px;padding:4px">Căn giờ Boss</button>' +
+          '<button id="ttpx-quest" data-mode="quest" style="flex:1;background:#2a6f5a;color:#fff;border:0;border-radius:6px;padding:4px">Nhiệm vụ chính</button>' +
+          '<button id="ttpx-vn" data-mode="vetnut" style="flex:1;background:#5a2a6f;color:#fff;border:0;border-radius:6px;padding:4px">Khe Nứt</button>' +
+          '<button id="ttpx-sched" data-mode="schedule" style="flex:1;background:#6f5a1f;color:#fff;border:0;border-radius:6px;padding:4px">Lịch trình</button>' +
+          '<button id="ttpx-caycap" data-mode="caycap" style="flex:1;background:#7a1f4d;color:#fff;border:0;border-radius:6px;padding:4px">Cày cấp tân thủ</button>' +
+          '<button id="ttpx-gather" data-mode="gather" style="flex:1;background:#2a6f3a;color:#fff;border:0;border-radius:6px;padding:4px">Thu thập</button>' +
+          '<button id="ttpx-dh" data-mode="daihoi" style="flex:1;background:#6f3a1f;color:#fff;border:0;border-radius:6px;padding:4px">Đại Hội</button>' +
+          '<button id="ttpx-ct" data-mode="chientruong" style="flex:1;background:#6f2a1f;color:#fff;border:0;border-radius:6px;padding:4px">Chiến Trường</button>' +
+          '<button id="ttpx-ssd" data-mode="sysach" style="flex:1;background:#3a2a6f;color:#fff;border:0;border-radius:6px;padding:4px">Sỹ Sách Điện</button>' +
+          '<button id="ttpx-vt" data-mode="vantieu" style="flex:1;background:#5a4a1f;color:#fff;border:0;border-radius:6px;padding:4px">Vận Tiêu</button>' +
+          '<button id="ttpx-cb" data-mode="chienbang" style="flex:1;background:#1f4a6f;color:#fff;border:0;border-radius:6px;padding:4px">Chiến Bảng</button>' +
+          '<button id="ttpx-tm" data-mode="tamma" style="flex:1;background:#4a1f5a;color:#fff;border:0;border-radius:6px;padding:4px">Tam Ma</button></div>' +
+        '<div style="display:flex;gap:6px;margin-top:6px">' +
+          '<button id="ttpx-run" style="background:#4a5a2a;color:#fff;border:0;border-radius:6px;padding:4px 8px">Chạy</button>' +
+          '<button id="ttpx-fly" style="background:#2a4a6f;color:#fff;border:0;border-radius:6px;padding:4px 8px">Bay</button>' +
+          '<button id="ttpx-bright" style="background:#6f6a1f;color:#fff;border:0;border-radius:6px;padding:4px 8px">Map sáng</button>' +
+          '<button id="ttpx-stop" style="background:#6f2a2a;color:#fff;border:0;border-radius:6px;padding:4px 8px">Dừng</button></div>' +
+        // v1.33 (tích hợp từ tệp v3 của Bui): mục tiêu câu Hồ Tây + xóa tỷ lệ cắn đã lưu
+        '<div id="ttpx-fish-opts" style="margin-top:6px;border-top:1px solid #3a5a4a;padding-top:4px">' +
+          '<div>Mục tiêu câu Hồ Tây: <span id="ttpx-vc-target-name"></span></div>' +
+          '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">' +
+            '<button class="ttpx-vc-tg" data-tg="linh" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Linh Ngư</button>' +
+            '<button class="ttpx-vc-tg" data-tg="yeu" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Yêu Ngư</button>' +
+            '<button class="ttpx-vc-tg" data-tg="giao" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Giao Ngư</button>' +
+            '<button class="ttpx-vc-tg" data-tg="tudo" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Tự do</button>' +
+            '<button class="ttpx-vc-tg" data-tg="auto" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Tự động</button>' +
+            '<button id="ttpx-vc-rates-reset" title="Xóa dữ liệu tỷ lệ cắn theo vùng/mồi đã lưu" style="background:#2a2113;color:#d8c9a3;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Xóa tỷ lệ câu</button></div>' +
+          // v1.35 (Bui 22:42): chọn vùng quăng Gần/Giữa/Xa/Tự động theo lực dây
+          '<div style="margin-top:4px">Vùng quăng Hồ Tây: <span id="ttpx-vc-zone-name"></span></div>' +
+          '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">' +
+            '<button class="ttpx-vc-zn" data-zn="gan" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Gần</button>' +
+            '<button class="ttpx-vc-zn" data-zn="giua" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Giữa</button>' +
+            '<button class="ttpx-vc-zn" data-zn="xa" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Xa</button>' +
+            '<button class="ttpx-vc-zn" data-zn="auto" style="background:#1d2f27;color:#cfe8da;border:1px solid #3a5a4a;border-radius:6px;padding:3px 7px">Tự động</button></div></div>' +
+        '<div id="ttpx-events" style="margin-top:6px;border-top:1px solid #3a5a4a;padding-top:4px"></div>' +
+        '<pre id="ttpx-log" style="margin:6px 0 0;white-space:pre-wrap;word-break:break-word;color:#b9d6c7;font-size:11px;max-height:90px;overflow:hidden"></pre>' +
+      '</div>';
+    document.body.appendChild(d);
+    renderEventToggles();
+    renderVcTarget();
+    renderVcZone();
+    var tgBtns = document.querySelectorAll('.ttpx-vc-tg');
+    for (var ti = 0; ti < tgBtns.length; ti++) {
+      tgBtns[ti].addEventListener('click', function (ev) {
+        var k = ev.target.getAttribute('data-tg');
+        vcTargetSet(k);
+        // datMucTieu của v3: đặt lại vùng/mồi theo mục tiêu mới
+        vcV3.vungHien = VC_TARGETS[k].vung;
+        vcV3.choTimDuoc = null;
+        vcV3.demKhongCan = 0;
+        vcV3.moiDaChon = null;
+        if (k === 'auto') vcV3ChonTuDong(null);
+        renderVcTarget();
+        var tg = VC_TARGETS[k];
+        log('Mục tiêu câu Hồ Tây: ' + tg.ten + ' — mồi ' + VC_MOI[tg.moi].ten + (tg.duPhong ? ' (dự phòng ' + VC_MOI[tg.duPhong].ten + ')' : '') + ', vùng ' + VC_ZONES[vcKeyOfV3Zone(vcV3.vungHien)].vungTen + ' (vòng câu v3; lựa chọn Vùng quăng: ' + VC_ZONES[vcZoneGet()].ten + ' — chọn tay thắng vùng v3, luồng Giao/Yêu thắng cả hai)');
+      });
+    }
+    var znBtns = document.querySelectorAll('.ttpx-vc-zn');
+    for (var zi = 0; zi < znBtns.length; zi++) {
+      znBtns[zi].addEventListener('click', function (ev) {
+        var k = ev.target.getAttribute('data-zn');
+        vcZoneSet(k);
+        renderVcZone();
+        var z = VC_ZONES[k];
+        log('Vùng quăng Hồ Tây: ' + z.ten + (z.vungTen ? ' (' + z.vungTen + ', lực ' + z.tu + '–' + z.den + ', thả lực đích ' + Math.round(z.luc * 100) + '% phao rơi ~' + Math.round(vcTamQuang(z.luc)) + 'px)' : ' (chọn vùng theo luồng cá: luồng server → vùng khớp vị trí; không có → vùng theo logic v3 — mục tiêu Tự động chọn theo tỷ lệ cắn, mục tiêu thường theo vùng của mục tiêu)') + ' — luồng Giao/Yêu vẫn thắng lựa chọn này');
+      });
+    }
+    var rrBtn = $('#ttpx-vc-rates-reset');
+    if (rrBtn) rrBtn.addEventListener('click', function () { vcRatesReset(); });
+    refreshDestOptions();
+    // v1.47 (Bui 06:56 ngày 2026-11-27): bảng tool 2 tầng — mặc định thu gọn thành
+    // 1 nút nhỏ (#ttpx-fab); bấm nút mở lưới ô chức năng (#ttpx-grid); bấm từng ô
+    // mới hiện bảng dữ liệu đang làm của chức năng đó (#ttpx-body lọc theo chức năng).
+    var FN_TILES = [
+      ['farm', 'Đi farm'], ['dc', 'Dược Công'], ['quest', 'Nhiệm vụ chính'], ['schedule', 'Lịch trình'],
+      ['caycap', 'Cày cấp tân thủ'], ['fishing', 'Câu cá'], ['hotay', 'Câu cá Hồ Tây'], ['conbang', 'Câu Côn Bằng'],
+      ['huyet', 'Huyết Xích'], ['boss', 'Căn giờ Boss'], ['vetnut', 'Khe Nứt'], ['gather', 'Thu thập'],
+      ['rua', 'Tổ đội farm rùa'], ['daihoi', 'Đại Hội'], ['chientruong', 'Chiến Trường'], ['sysach', 'Sỹ Sách Điện'],
+      ['vantieu', 'Vận Tiêu'], ['chienbang', 'Chiến Bảng'], ['tamma', 'Tam Ma']
+    ];
+    var fab = document.createElement('button');
+    fab.id = 'ttpx-fab';
+    fab.textContent = 'Tool';
+    fab.style.cssText = 'position:fixed;right:6px;bottom:6px;z-index:99999;background:rgba(31,111,74,.92);color:#fff;border:1px solid #3a5a4a;border-radius:10px;font:700 13px system-ui,sans-serif;padding:10px 14px;box-shadow:0 4px 18px rgba(0,0,0,.5)';
+    document.body.appendChild(fab);
+    var grid = $('#ttpx-grid');
+    FN_TILES.forEach(function (fn) {
+      var t = document.createElement('button');
+      t.className = 'ttpx-tile';
+      t.setAttribute('data-mode', fn[0]);
+      t.style.cssText = 'background:#12211a;color:#e8f3ee;border:1px solid #3a5a4a;border-radius:8px;padding:10px 4px;font:11px system-ui,sans-serif;text-align:center';
+      t.innerHTML = '<b>' + fn[1] + '</b><div class="ttpx-tile-state" style="color:#9fe8c0;font-size:10px;margin-top:2px">Chưa chạy</div>';
+      t.addEventListener('click', function () { ttpxOpenDetail(fn[0], fn[1]); });
+      grid.appendChild(t);
+    });
+    function ttpxRefreshTiles() {
+      var tiles = document.querySelectorAll('.ttpx-tile');
+      for (var i = 0; i < tiles.length; i++) {
+        var on = S.running && S.mode === tiles[i].getAttribute('data-mode');
+        tiles[i].style.borderColor = on ? '#9fe8c0' : '#3a5a4a';
+        var st = tiles[i].querySelector('.ttpx-tile-state');
+        if (st) st.textContent = on ? '● Đang chạy' : 'Chưa chạy';
+      }
+      fab.textContent = S.running ? 'Tool ●' : 'Tool';
+    }
+    function ttpxShowGrid() {
+      $('#ttpx-grid').style.display = 'grid';
+      $('#ttpx-body').style.display = 'none';
+      $('#ttpx-back').style.display = 'none';
+      ttpxRefreshTiles();
+    }
+    function ttpxOpenDetail(mode, label) {
+      $('#ttpx-grid').style.display = 'none';
+      $('#ttpx-body').style.display = '';
+      $('#ttpx-back').style.display = '';
+      $('#ttpx-detail-title').textContent = label || mode;
+      $('#ttpx-farm-opts').style.display = (mode === 'farm' || mode === 'schedule') ? '' : 'none';
+      $('#ttpx-boss-opts').style.display = (mode === 'boss') ? '' : 'none';
+      $('#ttpx-fish-opts').style.display = (mode === 'hotay' || mode === 'conbang') ? '' : 'none';
+      $('#ttpx-events').style.display = (mode === 'schedule') ? '' : 'none';
+      var btns = document.querySelectorAll('#ttpx-fnbtns button');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].style.display = (btns[i].getAttribute('data-mode') === mode) ? '' : 'none';
+      }
+    }
+    fab.addEventListener('click', function () {
+      d.style.display = '';
+      fab.style.display = 'none';
+      if (S.running && S.mode) {
+        var lbl = S.mode;
+        for (var i = 0; i < FN_TILES.length; i++) if (FN_TILES[i][0] === S.mode) lbl = FN_TILES[i][1];
+        ttpxOpenDetail(S.mode, lbl);
+      } else ttpxShowGrid();
+    });
+    $('#ttpx-collapse').addEventListener('click', function () {
+      d.style.display = 'none';
+      fab.style.display = '';
+      ttpxRefreshTiles();
+    });
+    $('#ttpx-back').addEventListener('click', ttpxShowGrid);
+    setInterval(ttpxRefreshTiles, 2000);
+    $('#ttpx-map').addEventListener('change', refreshDestOptions);
+    // v1.34 (Bui chốt 22:38 ngày 2026-11-26): anh đổi tay map/điểm/khu trên bảng thì
+    // lựa chọn tay thắng mặc định farm theo cảnh giới của lịch trình (nhớ qua tải lại trang).
+    ['#ttpx-map', '#ttpx-dest', '#ttpx-zone'].forEach(function (sel) {
+      var el = $(sel);
+      if (el) el.addEventListener('change', function () { try { localStorage.setItem('ttpx_farm_manual_v1', '1'); } catch (e) {} });
+    });
+    $('#ttpx-farm').addEventListener('click', function () { startTool('farm'); });
+    $('#ttpx-dc').addEventListener('click', function () { startTool('dc'); });
+    $('#ttpx-fish').addEventListener('click', function () { startTool('fishing'); });
+    $('#ttpx-conbang').addEventListener('click', function () { startTool('conbang'); });
+    $('#ttpx-hotay').addEventListener('click', function () { startTool('hotay'); });
+    $('#ttpx-rua').addEventListener('click', function () { startTool('rua'); });
+    $('#ttpx-hx').addEventListener('click', function () { startTool('huyet'); });
+    $('#ttpx-bossbtn').addEventListener('click', function () { startTool('boss'); });
+    $('#ttpx-quest').addEventListener('click', function () { startTool('quest'); });
+    $('#ttpx-vn').addEventListener('click', function () { startTool('vetnut'); });
+    $('#ttpx-sched').addEventListener('click', function () { startTool('schedule'); });
+    $('#ttpx-caycap').addEventListener('click', function () { startTool('caycap'); });
+    $('#ttpx-gather').addEventListener('click', function () { startTool('gather'); });
+    $('#ttpx-dh').addEventListener('click', function () { startTool('daihoi'); });
+    $('#ttpx-ct').addEventListener('click', function () { startTool('chientruong'); });
+    $('#ttpx-ssd').addEventListener('click', function () { startTool('sysach'); });
+    $('#ttpx-vt').addEventListener('click', function () { startTool('vantieu'); });
+    $('#ttpx-cb').addEventListener('click', function () { startTool('chienbang'); });
+    $('#ttpx-tm').addEventListener('click', function () { startTool('tamma'); });
+    $('#ttpx-run').addEventListener('click', function () { manualRunToggle(); });
+    $('#ttpx-fly').addEventListener('click', function () { manualFlyToggle(); });
+    $('#ttpx-bright').addEventListener('click', function () { manualBrightToggle(); });
+    $('#ttpx-stop').addEventListener('click', function () { stopTool('người chơi bấm Dừng'); });
+    log('Tool sẵn sàng. Chọn map + điểm đến (+ khu) rồi bấm "Đi farm", hoặc "Làm việc Dược Công", hoặc "Câu cá", hoặc "Câu cá Hồ Tây" (câu liên tục ở Hồ Tây, tự quét luồng cá + tính ô bờ/lực quăng, mồi theo thời tiết), hoặc "Câu Côn Bằng" (canh 12:30/19:30), hoặc "Huyết Xích", hoặc chọn boss rồi "Căn giờ Boss", hoặc "Nhiệm vụ chính", hoặc "Khe Nứt" (Vết Nứt Không Gian 22:00), hoặc "Lịch trình" (lịch tuần Thứ 2→Chủ Nhật: Dược Công → farm → boss → Đại Hội/Côn Bằng/Chiến Trường/Sỹ Sách Điện/Khe Nứt theo nút Sự kiện bên dưới; farm theo cảnh giới: dưới Trúc Cơ khu dược vắng người, Trúc Cơ trở lên Phong Địa — đổi tay trên bảng thì dùng lựa chọn tay; qua 00:00 làm Dược Công trước), hoặc "Thu thập" (khoáng/linh thảo), hoặc "Đại Hội" (tự ghi danh + tự đánh giải Đại Hội Tu Tiên, thua/hết giải tự quay lại farm; thắng ít nhất 1 trận thì tự mở Sự Kiện điểm danh), hoặc "Chiến Trường" (Vạn Hoang Chiến Trường Thứ Hai/Thứ Sáu 21:16), hoặc "Sỹ Sách Điện" (phó bản tông môn Thứ Năm 20:16, cần thuộc tông môn), hoặc "Vận Tiêu" (Trúc Cơ trở lên, nhận tiêu 11:00–22:00 ở Huấn Sư Huynh Rừng Trúc, 6 chuyến/ngày — chuyến đầu tự kéo, xong game mở tự chạy), hoặc "Chiến Bảng" (Tán Tu Chiến Bảng ở Chấp Sự Đại Hội, thắng +50 Linh Thạch, lượt hồi 22:00, không mua thêm lượt), hoặc "Tam Ma" (Huyền Không Cổ Viện, ghép 22:30–23:30 đủ 10 người). Dòng "Đang làm:" trên bảng hiện rõ việc hiện tại + việc kế kèm giờ. Mỗi chế độ đều tự mặc đồ tốt hơn trước khi vào việc, tự hồi sinh đi lại khi chết.');
+  }
+
+  // Chờ game tải xong (canvas + HUD vị trí) rồi mới hiện bảng
+  (function waitGame() {
+    var tries = 0;
+    (function tick() {
+      tries++;
+      if (gameCanvas() && $('#hud-pos')) { buildPanel(); return; }
+      if (tries > 240) { try { buildPanel(); log('Chưa thấy HUD game — bảng hiện dự phòng'); } catch (e) {} return; }
+      setTimeout(tick, 1000);
+    })();
+  })();
+
+  // Móc cho kiểm thử qua CDP (không dùng trong chơi thường)
+  window.__ttpxTool = {
+    startFarm: function () { startTool('farm'); },
+    startDC: function () { startTool('dc'); },
+    startFish: function () { startTool('fishing'); },
+    startConBang: function () { startTool('conbang'); },
+    startHoTay: function () { startTool('hotay'); },
+    startRua: function () { startTool('rua'); },
+    partyStatus: partyStatus,
+    partyInviteVisible: partyInviteVisible,
+    partyAcceptInvite: partyAcceptInvite,
+    turtleQuestProgress: turtleQuestProgress,
+    TURTLE_POINTS: TURTLE_POINTS,
+    CONBANG: CONBANG,
+    VANTIEU: VANTIEU,
+    CHIENBANG: CHIENBANG,
+    TAMMA: TAMMA,
+    weekEventsAround: weekEventsAround,
+    evRunnerFor: evRunnerFor,
+    cbTierOfText: cbTierOfText,
+    tmGhepOpen: tmGhepOpen,
+    scheduleNextText: scheduleNextText,
+    pickAltar: pickAltar,
+    classifyObjective: classifyObjective,
+    questNpcForObjective: questNpcForObjective,
+    questNavFailCaption: questNavFailCaption,
+    atQuestNpc: atQuestNpc,
+    MAPS: MAPS,
+    questChainStatusText: questChainStatusText,
+    questEquipItemName: questEquipItemName,
+    jobOrderByTier: jobOrderByTier,
+    JOB_META: JOB_META,
+    DAI_DA: DAI_DA,
+    DAI_DA_VUON: DAI_DA_VUON,
+    conBangNext: conBangNext,
+    conBangWindows: conBangWindows,
+    vcPhase: vcPhase,
+    vcFishOnce: vcFishOnce,
+    vcReel: vcReel,
+    vcDistance: vcDistance,
+    vcBaitState: vcBaitState,
+    vcEnsureBait: vcEnsureBait,
+    vcNoteResult: vcNoteResult,
+    vcParseLuongText: vcParseLuongText,
+    vcParseLuongAll: vcParseLuongAll,
+    vcThuCanBtn: vcThuCanBtn,
+    vcScanLuong: vcScanLuong,
+    vcBestLuong: vcBestLuong,
+    vcPlanCast: vcPlanCast,
+    vcPlanAutoZone: vcPlanAutoZone,
+    vcZoneGet: vcZoneGet,
+    vcZoneSet: vcZoneSet,
+    VC_ZONES: VC_ZONES,
+    vcTargetGet: vcTargetGet,
+    vcTargetSet: vcTargetSet,
+    vcRateRecord: vcRateRecord,
+    vcRatesLoad: vcRatesLoad,
+    vcRatesReset: vcRatesReset,
+    vcRatesText: vcRatesText,
+    vcPickShoreBySession: vcPickShoreBySession,
+    evCollapsedGet: evCollapsedGet,
+    evCollapsedSet: evCollapsedSet,
+    vcPlanForLuong: vcPlanForLuong,
+    VC_CAST_HOLD_MS: VC_CAST_HOLD_MS,
+    VC_V3_CFG: VC_V3_CFG,
+    vcV3: vcV3,
+    vcV3ChonTuDong: vcV3ChonTuDong,
+    vcV3KhongCan: vcV3KhongCan,
+    vcV3Can: vcV3Can,
+    vcV3ZonePlan: vcV3ZonePlan,
+    vcTap: vcTap,
+    vcTensionHigh: vcTensionHigh,
+    vcTamQuang: vcTamQuang,
+    vcLucForDist: vcLucForDist,
+    vcVungOfLuc: vcVungOfLuc,
+    vcNoteShore: vcNoteShore,
+    vcShoreStatsText: vcShoreStatsText,
+    VC_DIRS: VC_DIRS,
+    vcLogStats: vcLogStats,
+    readPhongDiaZones: readPhongDiaZones,
+    pdPickFarmable: pdPickFarmable,
+    pdHangOf: pdHangOf,
+    pdZoneText: pdZoneText,
+    PD_HANG: PD_HANG,
+    VC_MOI: VC_MOI,
+    claimDailyReward: claimDailyReward,
+    startHuyet: function () { startTool('huyet'); },
+    startBoss: function () { startTool('boss'); },
+    startQuest: function () { startTool('quest'); },
+    startVetNut: function () { startTool('vetnut'); },
+    startSchedule: function () { startTool('schedule'); },
+    startCayCap: function () { startTool('caycap'); },
+    startGachaFree: function () { startTool('gachafree'); },
+    gachaFreeUsedToday: gachaFreeUsedToday,
+    gachaNgayVN: gachaNgayVN,
+    questStageData: questStageData,
+    questStageNum: questStageNum,
+    QUEST_STAGES: QUEST_STAGES,
+    readRealmInfo: readRealmInfo,
+    realmTierOf: realmTierOf,
+    canMeditateRealm: canMeditateRealm,
+    readRealmFromHud: readRealmFromHud,
+    realmDiag: realmDiag,
+    REALM_ORDER: REALM_ORDER,
+    REALM_NAMES: REALM_NAMES,
+    pickFarmByTier: pickFarmByTier,
+    FARM_BY_TIER: FARM_BY_TIER,
+    BREAK_RULES: BREAK_RULES,
+    PILL_RECIPES: PILL_RECIPES,
+    chainStagePassed: chainStagePassed,
+    CHAIN_TIER_MILESTONE: CHAIN_TIER_MILESTONE,
+    classifyObjective: classifyObjective,
+    startGather: function () { startTool('gather'); },
+    startDaiHoi: function () { startTool('daihoi'); },
+    startChienTruong: function () { startTool('chientruong'); },
+    startSySach: function () { startTool('sysach'); },
+    GUIDE_TAN_THU: GUIDE_TAN_THU,
+    guideLine: guideLine,
+    nextWeeklySessionMs: nextWeeklySessionMs,
+    setMapBright: setMapBright,
+    isDarkMap: isDarkMap,
+    brightAutoCheck: brightAutoCheck,
+    DARK_MAP_PREFIXES: DARK_MAP_PREFIXES,
+    WEEK_EVENTS: WEEK_EVENTS,
+    weekEventsAround: weekEventsAround,
+    weekEventsTodayText: weekEventsTodayText,
+    evDueList: evDueList,
+    evOn: evOn,
+    evSet: evSet,
+    evSetAll: evSetAll,
+    evToggleText: evToggleText,
+    renderEventToggles: renderEventToggles,
+    ctHuyetLanBtn: ctHuyetLanBtn,
+    ensureCombatTrio: ensureCombatTrio,
+    trioState: trioState,
+    isDowned: isDowned,
+    handleDeath: handleDeath,
+    snapshotCtx: snapshotCtx,
+    pkCheck: pkCheck,
+    handleQuestDialog: handleQuestDialog,
+    dialogChoiceBtns: dialogChoiceBtns,
+    dialogBtcCards: dialogBtcCards,
+    parseChoiceStats: parseChoiceStats,
+    readQuestFlags: readQuestFlags,
+    fightBackCheck: fightBackCheck,
+    fightBack: fightBack,
+    parseRequireTier: parseRequireTier,
+    readSkillSlots: readSkillSlots,
+    skillRotation: skillRotation,
+    parseItemStats: parseItemStats,
+    autoEquipBetter: autoEquipBetter,
+    countItem: countItem, countYeuDanCap3Plus: countYeuDanCap3Plus,
+    listMissingConditions: listMissingConditions, missingIngredients: missingIngredients,
+    plotStatusFromState: plotStatusFromState, gardenSummary: gardenSummary,
+    SEED_PACKS_V123: SEED_PACKS_V123, SEED_DEFS_V123: SEED_DEFS_V123, HERB_SEED: HERB_SEED,
+    packForSeed: packForSeed, seedExchangeDecision: seedExchangeDecision, ensureSeedsForHerbs: ensureSeedsForHerbs, exchangeSeedPack: exchangeSeedPack,
+    PILL_PACK: PILL_PACK, GARDEN: GARDEN, QUEST_ITEM_SOURCES: QUEST_ITEM_SOURCES,
+    findMonsterPoint: findMonsterPoint, itemNameV123: itemNameV123,
+    claimDailyReward: claimDailyReward,
+    gatherPoints: GATHER_POINTS,
+    itemSlot: ITEM_SLOT,
+    daihoi: DAIHOI,
+    daiHoiNextSession: daiHoiNextSession,
+    daiHoiSessions: daiHoiSessions,
+    readDaiHoiToast: readDaiHoiToast,
+    readDaiHoiPanel: readDaiHoiPanel,
+    inDaiHoiMap: inDaiHoiMap,
+    inDaiHoiArena: inDaiHoiArena,
+    daiHoiMapName: daiHoiMapName,
+    parseDaiHoiWins: parseDaiHoiWins,
+    parseDaiHoiRound: parseDaiHoiRound,
+    parseDaiHoiOpponent: parseDaiHoiOpponent,
+    daiHoiFinishedState: daiHoiFinishedState,
+    readDaiHoiSat: readDaiHoiSat,
+    daiHoiLeave: daiHoiLeave,
+    daiHoiReturnToFarm: daiHoiReturnToFarm,
+    daiHoiFightAndFarm: daiHoiFightAndFarm,
+    readHoatDongAllBosses: readHoatDongAllBosses,
+    bossCycleOnce: bossCycleOnce,
+    farmPhase: farmPhase,
+    readQuestState: readQuestState,
+    classifyObjective: classifyObjective,
+    vetnut: VETNUT,
+    readVetNutToast: readVetNutToast,
+    vnNextOpenMs: vnNextOpenMs,
+    vnSweepPoints: vnSweepPoints,
+    bosses: BOSSES,
+    bossById: bossById,
+    bossPlan: bossPlan,
+    readBossToast: readBossToast,
+    parseHdCountdown: parseHdCountdown,
+    parseHdStatus: parseHdStatus,
+    readHoatDongBoss: readHoatDongBoss,
+    openHoatDong: openHoatDong,
+    closeHoatDong: closeHoatDong,
+    readHoatDongBossTimer: readHoatDongBossTimer,
+    parseClockText: parseClockText,
+    estimateTravelMs: estimateTravelMs,
+    nextDailyWindowStart: nextDailyWindowStart,
+    bossScheduleText: bossScheduleText,
+    huyet: HUYET,
+    hxFindConfirmBtn: hxFindConfirmBtn,
+    hxAutoConfirm: hxAutoConfirm,
+    hxDumpDialog: hxDumpDialog,
+    hxHarvestPoint: hxHarvestPoint,
+    hxSweepAroundPoint: hxSweepAroundPoint,
+    hxHarvestMap: hxHarvestMap,
+    hxFarmMap: hxFarmMap,
+    hxFarmUntilEnd: hxFarmUntilEnd,
+    hxCollapseSecs: hxCollapseSecs,
+    adjacentFreeTile: adjacentFreeTile,
+    caption: readCaption,
+    stones: readStones,
+    collapse: readCollapse,
+    stop: function () { stopTool('CDP'); },
+    run: function () { manualRunToggle(); return readRunState(); },
+    runState: readRunState,
+    autoState: readAutoState,
+    nearestStaging: nearestStagingMap,
+    reachable: reachableFrom,
+    escapePlan: escapePlan,
+    hxLeaveDungeon: hxLeaveDungeon,
+    startAutoFishing: startAutoFishing,
+    findPath: function (mapId, sx, sy, tx, ty, fly, opts) {
+      var raw = astarPath(mapId, sx, sy, tx, ty, !!fly, opts);
+      if (!raw) return null;
+      var grid = gridFor(mapId, !!fly);
+      return { raw: raw, simplified: simplifyPath(grid, sx, sy, raw, opts && opts.extraBlocked, !!(opts && opts.allowBorder)) };
+    },
+    maps: MAPS,
+    bfsPath: bfsPath,
+    zone: readCurrentZone,
+    fishing: fishingActive,
+    seed: readSeedState,
+    destinations: destinationsFor,
+    calibrate: function () { S.running = true; var id = ++S.runId; return calibrate(id).then(function () { return { pxX: S.pxX, pxY: S.pxY, ok: S.calibOk, pos: readPos() }; }); },
+    state: function () { return { running: S.running, mode: S.mode, status: S.status, pos: readPos(), map: readMapId(), hp: readHpPct(), autoSig: autoSig(), calibOk: S.calibOk, calibDone: S.calibDone, steerMethod: S.steerMethod, flyingBelief: S.flyingBelief, runState: readRunState(), zone: readCurrentZone(), fishing: fishingActive(), dailyChecked: S.dailyChecked }; },
+    fly: function () { manualFlyToggle(); return S.flyingBelief; },
+    tap: function (dx, dy) { return tapCanvas(dx, dy); },
+    keyDown: keyDown, keyUp: keyUp, releaseKeys: releaseAllKeys,
+    releaseAll: releaseAllInputs, joyRelease: joyRelease, dpadRelease: dpadRelease,
+    detectSteer: function (tx, ty) { S.running = true; var id = ++S.runId; return detectSteerMethod(id, tx, ty).then(function (m) { S.steerMethod = m; return m; }); },
+    held: function () { return Object.keys(heldKeys); },
+    keyT: function () { pressKey('KeyT', 't'); return autoSig(); },
+    log: log
+  };
+})();
