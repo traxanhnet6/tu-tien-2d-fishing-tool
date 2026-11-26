@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Đi Farm (Tự đi tới bãi farm rồi bật Auto)
 // @namespace    https://tutienpixel.online/
-// @version      1.1.0
-// @description  Chọn bãi farm (preset hoặc nhập tay map/khu/x/y) — tool lái nhân vật bằng joystick thật (dispatch PointerEvent lên #joystick sau khi vá setPointerCapture), đọc vị trí/map/HP/khu từ DOM (#hud-pos, #hud-map, #value-hp, Bảng Khu), đổi khu qua biển KHU, tới nơi bật Auto + Chạy + Phi Hành để farm. Không dùng window.__ns_ (không tồn tại live). Không tự hồi sinh, không tiêu Linh Thạch, không ghi danh gì.
+// @version      1.2.0
+// @description  Chọn bãi farm (preset hoặc nhập tay map/khu/x/y) — tool tự dò cách lái (phím → joystick → dpad → chạm neo camera), lái bằng cách thắng, BẬT Chạy + Phi Hành trong lúc di chuyển và giữ qua cổng, tới nơi tự bật Auto + Chạy + Phi Hành để farm. Đọc vị trí/map/HP/khu từ DOM (#hud-pos, #hud-map, #value-hp, Bảng Khu). Không dùng window.__ns_ (không tồn tại live). Không tự hồi sinh, không tiêu Linh Thạch, không ghi danh gì.
 // @author       Muse (làm cho Thanh)
 // @match        https://tutienpixel.online/*
 // @match        https://tutien2d.com/*
@@ -10,60 +10,98 @@
 // @run-at       document-idle
 // ==/UserScript==
 //
-// TOOL ĐI FARM v1.1.0 — sửa lỗi gốc khiến tool không di chuyển được live
-// (Thanh báo 05:51 26/11, ảnh thanhvan2 ở Rừng Trúc (12,28)).
+// TOOL ĐI FARM v1.2.0 — tích hợp code Thanh gửi 07:04–07:06 26/11
+// ("Mã này có thể di chuyển thử tích hợp vào tools đã có" +
+//  "Thêm bật phi hành + chạy khi chạy tools" +
+//  "Đến map tự bật auto+phi hành+ chạy").
+// Code gửi: ~/workspace/tu-tien-2d-di-farm/code-thanh-gui-v1.5.0.user.js
+// ("Tool Tu Tiên Pixel — Tự đi farm + Việc Dược Công" v1.5.0).
 //
-// ---- NGUYÊN NHÂN GỐC (xác minh từ game.js client 24/11) ----
-// 1) game.js bọc TOÀN BỘ code trong 1 IIFE `;(function(){ var __ns_ = {}; ... })();`
-//    — `__ns_` là biến LOCAL trong IIFE, KHÔNG BAO GIỜ gán lên window
-//    (grep `window.X =` cả file chỉ có 1 cái: `window.__PNTT_BROWSER_GUARDS__`).
-//    Vậy `window.__ns_` là `undefined` trên trang thật trong MỌI ngữ cảnh
-//    (userscript, console, Playwright). Mọi tool đọc `window.__ns_` đều mù
-//    hoàn toàn live. Test smoke v1.0.0 chỉ PASS vì harness TỰ MOCK
-//    `window.__ns_` — đó là lý do test xanh mà live không chạy.
-//    => v1.1.0 KHÔNG dùng `window.__ns_` ở bất cứ chỗ nào (chỉ nhắc tới
-//    trong comment này). Mọi trạng thái đều đọc từ DOM.
-// 2) Handler joystick của game: pointerdown gọi `a.setPointerCapture(pointerId)`
-//    KHÔNG try/catch rồi mới set trạng thái kéo `s={pointerId,cx,cy,radius,
-//    deadzone}`; pointermove chỉ chạy `if(s)` rồi gọi `Input.setJoystick`.
-//    Với PointerEvent giả (pointerId tự đặt), setPointerCapture throw
-//    NotFoundError -> handler dừng giữa chừng -> `s` không bao giờ được set
-//    -> nhân vật KHÔNG NHÚC NHÍCH. => v1.1.0 vá `Element.prototype.
-//    setPointerCapture` (+ releasePointerCapture) bằng wrapper try/catch
-//    nuốt lỗi ngay khi nạp (hành vi thật không đổi).
+// ---- LẤY TỪ CODE GỬI (đã đối chiếu từng cái với game.js client 24/11) ----
+// - Lái đa cách, tự dò 1 lần/phiên: phím (KeyW/A/S/D) -> joystick -> dpad
+//   (.dpad-btn data-dx/data-dy) -> chạm neo camera (tapCanvas + anchor).
+//   Phím: game Input map e.code, theo dõi phím giữ qua keydown/keyup,
+//   `isTrusted` xuất hiện 0 lần trong game.js -> KeyboardEvent tổng hợp
+//   lái được; dispatch lên document.body (bubbles). Giữ 2 phím khi đi
+//   chéo, không nhúc nhích thì chuyển giữ từng trục (diagOk).
+// - Phi Hành + Chạy BẬT TRONG LÚC DI CHUYỂN, giữ bật qua cổng (bật lại
+//   sau mỗi lần đổi map); qua cổng không được khi bay thì hạ cánh, đi bộ
+//   qua, rồi bay lại (mẫu tryCrossPortal của code gửi).
+// - Kiểm chứng Phi Hành bằng TỐC ĐỘ: đợt lái đầu đủ dài (>=800ms, >=2 ô)
+//   mà <3 ô/s thì bấm lại 1 lần duy nhất (KeyF), không bấm lần 3 mù.
+// - Chạm neo camera: tapCanvas lên canvas game (game: handler `window
+//   pointerup`, tap <500ms và <14px -> Input.tap = screenToBuffer(...),
+//   không kiểm isTrusted, không setPointerCapture); neo = ô tại tâm canvas
+//   (chạm tâm rồi đọc vị trí); chạm làm xa đích >2 ô -> bỏ neo, neo lại.
+//   SỬA so với code gửi: cập nhật neo sau đợt chạm = ô nhân vật (camera
+//   game bám theo nhân vật) thay vì vị trí - điểm chạm/px (công thức đó
+//   giả định camera đứng yên trong đợt chạm, lệch cả quãng vừa đi).
+// - Dừng khi chạm/phím THẬT (isTrusted=true ngoài panel).
+// - Kích thước map w/h, spawn, điểm farm, cổng duoc_vien<->van_can — xem
+//   ghi chú đối chiếu ở dưới (chỉ thêm cái đã xác minh từ MapData).
 //
-// ---- ĐÃ XÁC MINH từ game.js client 24/11 (xem ~/workspace/tu-tien-2d-di-farm/NOTES.md) ----
-// - TILE = 32; tâm ô (cx,cy) theo pixel = (cx*32+16, cy*32+16).
-// - #hud-pos text = "( x , y )" (ô hiện tại); #hud-map text = tên map.
-// - #value-hp text = "hp / hpMax" (vd "319 / 319").
-// - #downed (DownedUI): hiện khi nhân vật gục; #downed-badge text "Trọng Thương · Ns".
-// - Joystick: #joystick (+ #joystick-thumb); hình học như code game:
-//   radius = min(w,h)/2 - min(thumbW,thumbH)/2 - 4 (thumb mặc định 58);
-//   deadzone = min(8, 0.18*radius). Hướng kéo = vector từ tâm tới điểm chạm.
-// - Bảng Khu (#khu-panel .khu-overlay): ô khu hiện tại có class "dang",
-//   khu đầy có class "day", ghi chú .khu-note = "Đang ở khu N. ...".
-//   Bấm ô khu hiện tại chỉ đóng bảng (vô hại); bấm khu khác gửi yêu cầu đổi
-//   khu lên server, server từ chối nếu đầy -> xác nhận bằng cách mở lại bảng.
-// - Đồ thị cổng (portals, trích từ MapData + code build động, xem NOTES.md):
-//   làng<->Rừng Trúc, làng<->Miếu Hoang, làng<->Bãi Đá (39,14)/(39,15),
-//   Rừng Trúc<->Dược Cốc, Dược Cốc<->Hồ Tây/Vườn Cá, Miếu<->Phong Địa (0,6),
-//   Bãi Đá<->Mỏ (19-24,10), Bãi Đá<->MTC (9-11,0), MTC<->Bãi Đá (14-16,25),
-//   Mỏ<->Thung Lũng (38,16), Thung Lũng<->Bát Quái, Long Uyên<->Hang Động
-//   (22,4, byHand — cần bấm "Vào"/Tương tác).
-//   Cổng làng (22,4)->MTC ĐÃ BỊ BUILDER XÓA (filter trong code MTC) nên
-//   KHÔNG có trong đồ thị; Rừng Mãng Xà->làng cũng bị xóa.
-// - Nút HUD (#btn-auto-touch, #btn-fly, #btn-run, #btn-attack,
-//   #btn-fishing-stop-touch) CHỈ bind "pointerdown" — .click() là no-op,
-//   phải dùng tap() (pointerdown+pointerup+click). Nút [data-uu-tien]
-//   trong Cài Đặt thì bấm bằng .click().
-// - Phi Hành: KHÔNG đọc được trạng thái thật từ DOM (class nút #btn-fly đã
-//   xác minh live là sai) — tool bấm theo class, kiểm tra lại bằng tốc độ
-//   farm như quy tắc chặng (xem log/panel).
-// - Cổng game mở ngay khi nhân vật BƯỚC LÊN ĐÚNG Ô cổng (checkPortal);
-//   cổng byHand thì phải bấm Tương tác ("Vào") khi đứng gần.
-// - Hằng game: kẹt St=6s, chờ cổng Ft=8s, repath Pt=0.6s (tool lấy mốc này).
+// ---- KHÔNG LẤY TỪ CODE GỬI (và vì sao) ----
+// - Đọc map/HP qua #hud-where và #row-hp: CẢ HAI đều KHÔNG tồn tại trong
+//   game.js (0 hit) -> giữ cách đọc #hud-map + #value-hp của v1.1.0.
+// - Đồ thị cổng của code gửi: THIẾU phong_dia + bai_da_hang_gio + cổng
+//   đông làng (39,14)/(39,15) và CÓ cổng làng (22,4)->MTC đã bị builder
+//   xóa -> giữ nguyên đồ thị v1.1.0, chỉ thêm (18,22) MTC->làng (có thật
+//   trong MapData dong_mach_ngam, targetSpawn (22,6)).
+// - Kích thước van_can: code gửi ghi 56x40, MapData ghi o=56,b=36 -> lấy
+//   56x36. Điểm farm Rừng Trúc (20,15): ô 'L' (nước sen) bị chặn -> dùng
+//   (14,15) đã xác minh đi được (vùng 5x5 toàn ô mở).
+// - Kiểu tới nơi của code gửi: HẠ CÁNH rồi chỉ bật Auto — trái lệnh Thanh
+//   07:06 (tới map tự bật auto+phi hành+chạy) -> giữ thứ tự batBoFarm
+//   của v1.1.0 (ưu tiên 'Quái' -> Auto -> Chạy -> Phi Hành CUỐI).
+// - Vòng Dược Công của code gửi (tapNpc xoắn ốc + bấm bước nhiệm vụ):
+//   KHÔNG làm trong lượt này (chỉ Đi Farm) — đánh giá chuyển sang Tool
+//   Dược ở báo cáo bàn giao, xem NOTES.md.
+// - Hiệu chuẩn px/ô (calibrate): KHÔNG lấy — chạm dùng mặc định 32px/ô
+//   (= CONFIG.TILE, đã xác minh) + neo camera tự hiệu chỉnh; hiệu chuẩn
+//   bằng chạm đo (4 lần chạm thử mỗi trục) tốn thời gian và dễ đo rác
+//   khi chạm tìm đường không ổn định.
+//
+// ---- ĐÃ XÁC MINH từ game.js client 24/11 cho v1.2.0 (xem NOTES.md) ----
+// - Phím: keydown listener trên window, e.code KeyW/A/S/D + Arrow*,
+//   n.keys[dir] theo dõi phím giữ; handler bỏ qua e.repeat cho hành
+//   động 1 lần; keyup xóa phím; blur xóa hết. KeyT/KeyR -> _autoToggle;
+//   KeyF -> _flyToggle; Shift (trái/phải) cũng toggle Run.
+// - #btn-run bind pointerdown -> Input.toggleRun(); onRunChange toggle
+//   class "active" trên #btn-run và #joystick-run (class Chạy đáng tin).
+// - #btn-fly: game có hàm đồng bộ class "active" theo player.flying,
+//   NHƯNG live đã xác minh class này SAI (v1.1.0) -> chỉ dùng làm gợi ý,
+//   kiểm chứng thật bằng tốc độ (xem trên).
+// - .dpad-btn tồn tại (data-dx/data-dy); handler pointerdown gọi
+//   setPointerCapture KHÔNG try/catch (như joystick) -> nhờ vá v1.1.0.
+// - Tap-to-move: Input.queueTap(x,y,clientX,clientY) tồn tại; handler
+//   `window pointerup`: tap <500ms, <14px -> Input.tap =
+//   Renderer.screenToBuffer(clientX,clientY); không kiểm isTrusted.
+// - Kích thước map (w x h): tan_vien 40x30, thanh_truc_lam 40x30,
+//   duoc_vien 40x30, hang_dong_co 30x20, long_uyen 40x30, mieu_hoang
+//   20x14, van_can 56x36, vuon_ca_nhan 18x13, dong_mach_ngam 36x24,
+//   bai_da_hang_gio 40x30, phong_dia 40x30, mo_linh_thach 40x30.
+// - Spawn đã xác minh (khớp hết code gửi): tan_vien (8,26),
+//   thanh_truc_lam (7,2), duoc_vien (12,2), hang_dong_co (14,16),
+//   long_uyen (2,14), mieu_hoang (18,6), van_can (33,31),
+//   vuon_ca_nhan (8,10), dong_mach_ngam (16,19),
+//   thach_phong_thung_lung (3,27).
+// - Điểm farm code gửi, đối chiếu lưới đất + legend riêng từng map:
+//   Rừng Trúc (20,15)='L' nước sen CHẶN -> thay bằng (14,15)='.' mở;
+//   Thảo Dược Cốc (20,15)='~' sỏi ĐI ĐƯỢC; Hang Động (15,10)='.'
+//   ĐI ĐƯỢC; Miếu Hoang (10,7)='s' nền đá ĐI ĐƯỢC; Hồ Tây (33,31)
+//   = spawn ĐI ĐƯỢC. (Chú ý: '~' ở map khác có thể là nước chặn —
+//   chỉ kết luận theo legend riêng từng map.)
+// - Camera bám nhân vật: nhân vật hiện ở (W/2, 0.6*H) trên màn hình
+//   (không phải đúng tâm canvas) — neo camera đo bằng chạm tâm + đọc
+//   vị trí thật nên vẫn đúng; neo sau đợt chạm = ô nhân vật (camera bám).
+//   Nếu live camera đứng yên trong đợt chạm thì neo này lệch, cảnh báo
+//   thoái lui (>2 ô) sẽ bỏ neo và neo lại. Chưa xác minh live.
 //
 // ---- CHƯA XÁC MINH — cần test live (không đoán mò, ghi rõ ở preset) ----
+// - Toàn bộ động cơ lái mới (phím/dpad/chạm) + dò cách lái + bay trong
+//   lúc di chuyển + hạ cánh qua cổng: chỉ mới qua test smoke.
+// - Phím lái KHI ĐANG BAY: handler phím là cùng code path với đi bộ
+//   (n.keys) nên rất có thể dùng được, nhưng chưa có bằng chứng live.
 // - Tọa độ riêng của bãi Phong Địa Khu 3 (preset dùng điểm an toàn (30,27)).
 // - Thảo Dược Cốc Khu 16: preset dùng (18,16) là BẾN CÂU đã xác minh đi được,
 //   chưa xác minh là bãi farm tốt.
@@ -141,6 +179,13 @@ var CFG = {
   portalPx: 16,           // tới cổng khi cách tâm ô cổng < nửa ô (16px)
   joyMag: 0.75,           // độ kéo joystick (0..1) khi lái
   joyPointerId: 987654321, // pointerId giả DUY NHẤT cho cả chuỗi down/move/up
+  detectMs: 1200,         // mỗi cách lái dò giữ hướng 1,2s (xem detectSteerMethod)
+  dpadAltMs: 400,         // luân phiên 2 trục dpad mỗi 400ms khi không có nút chéo
+  flySpeedMin: 3,         // ô/s — bay dưới ngưỡng này là chưa ăn (kiểm chứng bằng tốc độ)
+  flyCheckMs: 800,        // đợt lái đầu dài >=800ms mới đo tốc độ bay
+  pxPerTile: 32,          // px/ô cho chạm neo camera (mặc định = CONFIG.TILE)
+  tapStableMs: 800,       // đứng yên bao lâu thì coi là ổn định (chờ sau chạm)
+  detourMinMs: 3000,      // đợt đi vòng tối thiểu cho phím/dpad/chạm (chậm hơn joystick)
 };
 
 // ---------------- Đồ thị cổng (trích từ MapData client 24/11) ----------------
@@ -199,6 +244,9 @@ var PORTALS = {
   dong_mach_ngam: [
     { tx: 14, ty: 25, to: 'bai_da_hang_gio' }, { tx: 15, ty: 25, to: 'bai_da_hang_gio' },
     { tx: 16, ty: 25, to: 'bai_da_hang_gio' },
+    // (18,22)->tan_vien có thật trong MapData dong_mach_ngam
+    // (targetSpawn (22,6), label "Ra Chân Núi") — thêm từ code gửi v1.2.0.
+    { tx: 18, ty: 22, to: 'tan_vien' },
   ],
   long_uyen: [
     { tx: 0, ty: 14, to: 'thanh_truc_lam' }, { tx: 0, ty: 15, to: 'thanh_truc_lam' },
@@ -252,17 +300,22 @@ function nextHop(fromId, toId) {
 // safe: điểm an toàn mặc định của map (= spawn của map trong client 24/11;
 //   dùng khi đổi Map mà chưa chọn preset — KHÔNG BAO GIỜ để Map và X/Y
 //   thuộc 2 map khác nhau, xem bug v1.0.0 ở dưới).
+// w/h: kích thước map (ô) theo MapData client 24/11 — dùng để chặn biên
+//   khi nhập tọa độ (v1.2.0, lấy từ code gửi sau khi đối chiếu).
 var MAPS = {
-  phong_dia:      { ten: 'Phong Địa',            sign: [[34, 15], [30, 19], [30, 20]], safe: [37, 14] },
-  duoc_vien:      { ten: 'Thảo Dược Cốc',        sign: [[14, 5]], safe: [12, 2] },
-  dong_mach_ngam: { ten: 'Miếu Ông Trường Con',  sign: [[11, 22]], safe: [15, 22] },
-  hang_dong_co:   { ten: 'Hang Động',            sign: [[14, 16]], safe: [14, 16] },
-  bai_da_hang_gio:{ ten: 'Bãi Đá',               sign: null, safe: [3, 28] },
-  mo_linh_thach:  { ten: 'Mỏ Linh Thạch',        sign: null, safe: [3, 27] },
-  thach_phong_thung_lung: { ten: 'Thung Lũng (Thạch Phong)', sign: null, safe: [3, 27] },
-  mieu_hoang:     { ten: 'Miếu Hoang',           sign: null, safe: [18, 6] },
-  tan_vien:       { ten: 'Chân Núi Tản Viên',    sign: null, safe: [8, 26] },
-  thanh_truc_lam: { ten: 'Rừng Trúc',            sign: null, safe: [7, 2] },
+  phong_dia:      { ten: 'Phong Địa',            sign: [[34, 15], [30, 19], [30, 20]], safe: [37, 14], w: 40, h: 30 },
+  duoc_vien:      { ten: 'Thảo Dược Cốc',        sign: [[14, 5]], safe: [12, 2], w: 40, h: 30 },
+  dong_mach_ngam: { ten: 'Miếu Ông Trường Con',  sign: [[11, 22]], safe: [15, 22], w: 36, h: 24 },
+  hang_dong_co:   { ten: 'Hang Động',            sign: [[14, 16]], safe: [14, 16], w: 30, h: 20 },
+  bai_da_hang_gio:{ ten: 'Bãi Đá',               sign: null, safe: [3, 28], w: 40, h: 30 },
+  mo_linh_thach:  { ten: 'Mỏ Linh Thạch',        sign: null, safe: [3, 27], w: 40, h: 30 },
+  thach_phong_thung_lung: { ten: 'Thung Lũng (Thạch Phong)', sign: null, safe: [3, 27], w: 40, h: 30 },
+  mieu_hoang:     { ten: 'Miếu Hoang',           sign: null, safe: [18, 6], w: 20, h: 14 },
+  tan_vien:       { ten: 'Chân Núi Tản Viên',    sign: null, safe: [8, 26], w: 40, h: 30 },
+  thanh_truc_lam: { ten: 'Rừng Trúc',            sign: null, safe: [7, 2], w: 40, h: 30 },
+  van_can:        { ten: 'Hồ Tây',               sign: null, safe: [33, 31], w: 56, h: 36 },
+  long_uyen:      { ten: 'Long Uyên Cốc',        sign: null, safe: [2, 14], w: 40, h: 30 },
+  vuon_ca_nhan:   { ten: 'Vườn Cá Nhân',         sign: null, safe: [8, 10], w: 18, h: 13 },
 };
 // Tên HUD -> map id (đọc #hud-map).
 var HUD_MAP = [
@@ -291,6 +344,17 @@ var PRESETS = [
   { id: 'bd',     ten: 'Bãi Đá tầng trên — CHƯA XÁC MINH bãi', map: 'bai_da_hang_gio', khu: 0, x: 10, y: 5 },
   { id: 'mo',     ten: 'Mỏ Linh Thạch (3,13) — CHƯA XÁC MINH bãi', map: 'mo_linh_thach', khu: 0, x: 3, y: 13 },
   { id: 'mtc',    ten: 'Miếu Ông Trường Con (15,22)',   map: 'dong_mach_ngam',  khu: 12, x: 15, y: 22 },
+  // Preset mới v1.2.0 (điểm farm lấy từ code gửi, đối chiếu ô đi được
+  // trong MapData client 24/11 — bãi farm thì CHƯA XÁC MINH, xem header):
+  // - Rừng Trúc: code gửi (20,15) là ô 'L' nước sen BỊ CHẶN -> dùng
+  //   (14,15)='.' (vùng 5x5 quanh nó toàn ô đi được, cùng hàng y=15).
+  // - Thảo Dược Cốc (20,15)='~' sỏi đi được; Hang Động (15,10)='.' đi
+  //   được; Miếu Hoang (10,7)='s' nền đá đi được; Hồ Tây (33,31)=spawn.
+  { id: 'rtfarm', ten: 'Rừng Trúc farm (14,15) — CHƯA XÁC MINH bãi', map: 'thanh_truc_lam', khu: 0, x: 14, y: 15 },
+  { id: 'dcfarm', ten: 'Thảo Dược Cốc farm (20,15) — CHƯA XÁC MINH bãi', map: 'duoc_vien', khu: 0, x: 20, y: 15 },
+  { id: 'hdfarm', ten: 'Hang Động farm (15,10) — CHƯA XÁC MINH bãi', map: 'hang_dong_co', khu: 0, x: 15, y: 10 },
+  { id: 'mhfarm', ten: 'Miếu Hoang farm (10,7) — CHƯA XÁC MINH bãi', map: 'mieu_hoang', khu: 0, x: 10, y: 7 },
+  { id: 'htfarm', ten: 'Hồ Tây farm (33,31) — CHƯA XÁC MINH bãi', map: 'van_can', khu: 0, x: 33, y: 31 },
 ];
 
 // ---------------- Trạng thái ----------------
@@ -305,12 +369,37 @@ var lastHop = null;
 var khuHienTai = null; // khu đọc được từ Bảng Khu (null = chưa rõ)
 var soKhuHienTai = 40; // số khu của map hiện tại (đọc từ bảng, mặc định 40)
 var hpAvailable = false; // đã thấy #value-hp lần nào chưa
+// --- Lái đa cách (v1.2.0) ---
+var steerMethod = null; // 'keys'|'joystick'|'dpad'|'tap' — dò 1 lần mỗi phiên chạy
+var flyingBelief = false; // tin là đang bay (class #btn-fly đã biết sai live — kiểm chứng bằng tốc độ)
+var flySpeedChecked = false, flyRetryDone = false, flySpeedMeasured = null, flySpeedFirst = null; // lần đo đầu (chẩn đoán bay chậm), không ghi đè
+var camAnchor = null; // {x,y} ô tại tâm canvas (chạm neo camera)
+var heldKeys = {}; // code -> true (phím tool đang giữ)
+var dpadHeld = null; // nút dpad đang giữ
+var guardMap = null; // map lúc bắt đầu đợt lái — đổi map giữa đợt thì dừng đợt ngay
+var legDeadline = 0; // hạn giờ chặng đi hiện tại (ms epoch) — đợt lái cũng phải tôn trọng
 
 // ---------------- Helper DOM ----------------
 function $(s) { return document.querySelector(s); }
 function $all(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
 function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 function txt(el) { return el ? (el.innerText || el.textContent || '') : ''; }
+// Kẹp ô vào trong biên map (dùng w/h MapData khi có) — tránh nhập tọa độ
+// ngoài map rồi tool đi lạc.
+function clampCell(mapId, x, y) {
+  var m = MAPS[mapId];
+  if (!m || typeof m.w !== 'number' || typeof m.h !== 'number') return { x: x, y: y };
+  return {
+    x: Math.max(0, Math.min(m.w - 1, x)),
+    y: Math.max(0, Math.min(m.h - 1, y)),
+  };
+}
+function dirName(dx, dy) {
+  var ns = dy > 0 ? 'nam' : dy < 0 ? 'bắc' : '';
+  var ew = dx > 0 ? 'đông' : dx < 0 ? 'tây' : '';
+  return ew && ns ? ew + '-' + ns : (ew || ns || 'đứng yên');
+}
+function fmtSec(ms) { return (ms / 1000).toFixed(1).replace('.', ',') + 's'; }
 function log(s) {
   logLines.push(s);
   if (logLines.length > 6) logLines.shift();
@@ -404,10 +493,23 @@ function datAuto(bat) {
 }
 function datFly(bat) {
   bat = !!bat;
-  if (flyDangBat() === bat) return true;
-  var b = $('#btn-fly');
-  if (!b) return false;
-  tap(b);
+  if (flyDangBat() !== bat) {
+    var b = $('#btn-fly');
+    if (!b) return false;
+    tap(b);
+  }
+  // flyingBelief là "tin là đang bay" — class nút đã biết sai live nên
+  // đây chỉ là gợi ý; kiểm chứng thật bằng tốc độ ở đợt lái đầu.
+  flyingBelief = bat;
+  return true; // game tiêu thụ cờ toggle ở frame sau — bấm đúng 1 lần
+}
+// Bấm Phi Hành bằng phím KeyF (keydown+keyup tổng hợp lên body).
+// Game: keydown KeyF -> _flyToggle (bỏ qua e.repeat). Dùng cho lần bấm
+// lại duy nhất khi kiểm chứng tốc độ thấy bay chưa ăn.
+function pressFlyKey() {
+  var tgt = document.body || document.documentElement;
+  tgt.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true, cancelable: true }));
+  tgt.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyF', key: 'f', bubbles: true, cancelable: true }));
   return true;
 }
 function datRun(bat) {
@@ -525,6 +627,352 @@ async function joyHold(dx, dy, ms) {
   return true;
 }
 
+// ---------------- Lái đa cách, tự dò (v1.2.0 — lấy từ code gửi) ----------------
+// Thứ tự dò 1 lần mỗi phiên chạy: phím -> joystick (engine v1.1.0 ở trên)
+// -> dpad -> chạm neo camera. Mỗi cách giữ hướng về đích detectMs, vị trí
+// đổi >=1 ô là đạt. Mọi đợt lái (burst) đều: poll vị trí mỗi tickMs,
+// nhả đầu vào ở MỌI lối thoát, dừng khi đổi map giữa đợt (guardMap).
+// Trả {reason, pos, ms} với reason: arrived|step|axis|moved|stuck|
+// timeout|stopped|mapchanged|nojoy|nodpad.
+
+// ---------- Phím hướng (lái bằng giữ phím — không phụ thuộc camera) ----------
+// Game Input đọc e.code: KeyW/ArrowUp=up, KeyS/ArrowDown=down,
+// KeyA/ArrowLeft=left, KeyD/ArrowRight=right, theo dõi phím đang giữ qua
+// keydown/keyup, không kiểm isTrusted -> giữ phím tổng hợp dùng được.
+// Sự kiện gửi lên body (bubbles) để tới được listener dù game gắn ở
+// body/document/window.
+var DIR_KEYS = [
+  { code: 'KeyW', key: 'w', name: 'W' },
+  { code: 'KeyS', key: 's', name: 'S' },
+  { code: 'KeyA', key: 'a', name: 'A' },
+  { code: 'KeyD', key: 'd', name: 'D' },
+  { code: 'ArrowUp', key: 'ArrowUp', name: '↑' },
+  { code: 'ArrowDown', key: 'ArrowDown', name: '↓' },
+  { code: 'ArrowLeft', key: 'ArrowLeft', name: '←' },
+  { code: 'ArrowRight', key: 'ArrowRight', name: '→' },
+];
+var DIR_BY_CODE = {};
+DIR_KEYS.forEach(function (d) { DIR_BY_CODE[d.code] = d; });
+function keyTarget() { return document.body || document.documentElement; }
+function keyDown(code) {
+  var d = DIR_BY_CODE[code];
+  if (!d || heldKeys[code]) return;
+  heldKeys[code] = true;
+  keyTarget().dispatchEvent(new KeyboardEvent('keydown', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+}
+function keyUp(code) {
+  var d = DIR_BY_CODE[code];
+  if (!d || !heldKeys[code]) return;
+  delete heldKeys[code];
+  keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+}
+function releaseAllKeys() {
+  // Nhả toàn bộ 8 phím hướng (kể cả khi heldKeys lệch) — keyup thừa vô hại với game.
+  DIR_KEYS.forEach(function (d) {
+    keyTarget().dispatchEvent(new KeyboardEvent('keyup', { code: d.code, key: d.key, bubbles: true, cancelable: true }));
+  });
+  heldKeys = {};
+}
+function codesFor(dx, dy) {
+  var codes = [];
+  if (dx > 0) codes.push('KeyD'); else if (dx < 0) codes.push('KeyA');
+  if (dy > 0) codes.push('KeyS'); else if (dy < 0) codes.push('KeyW');
+  return codes;
+}
+// Giữ phím theo 1 đợt: poll vị trí mỗi tickMs, nhả khi shouldStop(p) trả
+// lý do / kẹt (không đổi ô >= stuckMs) / hết giờ đợt / đổi map / dừng.
+// Mọi lối thoát đều nhả toàn bộ phím.
+function holdKeysBurst(runId, codes, shouldStop, burstTimeoutMs) {
+  return new Promise(function (resolve) {
+    var t0 = Date.now();
+    var lastPos = docCell();
+    var lastMoveAt = t0;
+    codes.forEach(keyDown);
+    (function tick() {
+      var now = Date.now();
+      var p = docCell();
+      if (runId !== runToken) { releaseAllKeys(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+      if (guardMap && docMapId() && docMapId() !== guardMap) { releaseAllKeys(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+      if (p) {
+        if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+        var sr = shouldStop(p);
+        if (sr) { releaseAllKeys(); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+      }
+      if (legDeadline && now > legDeadline) { releaseAllKeys(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+      if (p && now - lastMoveAt >= CFG.stuckMs) { releaseAllKeys(); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+      if (now - t0 >= burstTimeoutMs) { releaseAllKeys(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+      setTimeout(tick, CFG.tickMs);
+    })();
+  });
+}
+
+// ---------- Joystick theo đợt (bọc engine v1.1.0) ----------
+// Kéo joystick theo 1 đợt: giữ kéo, poll vị trí mỗi tickMs; hết đợt thì
+// kéo về tâm (dừng di chuyển, chưa nhả) — đổi hướng đợt sau chỉ cần
+// pointermove lại, không cần nhả. Nhả hẳn (pointerup) ở
+// releaseAllInputs / finally của steerToCell / stop().
+function holdJoyBurst(runId, vx, vy, shouldStop, burstTimeoutMs) {
+  return new Promise(function (resolve) {
+    var t0 = Date.now();
+    if (!joy.active && !joyDown()) return resolve({ reason: 'nojoy', pos: docCell(), ms: 0 });
+    var lastPos = docCell();
+    var lastMoveAt = t0;
+    var len = Math.hypot(vx, vy) || 1;
+    joyMoveTo(vx / len, vy / len);
+    (function tick() {
+      var now = Date.now();
+      var p = docCell();
+      if (runId !== runToken) { joyUp(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+      if (guardMap && docMapId() && docMapId() !== guardMap) { joyUp(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+      if (p) {
+        if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+        var sr = shouldStop(p);
+        if (sr) { joyMoveTo(0, 0); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+      }
+      if (legDeadline && now > legDeadline) { joyMoveTo(0, 0); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+      if (p && now - lastMoveAt >= CFG.stuckMs) { joyMoveTo(0, 0); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+      if (now - t0 >= burstTimeoutMs) { joyMoveTo(0, 0); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+      setTimeout(tick, CFG.tickMs);
+    })();
+  });
+}
+
+// ---------- Nút dpad (giữ nút hướng .dpad-btn mang data-dx/data-dy) ----------
+// Game: handler pointerdown gọi setPointerCapture KHÔNG try/catch (như
+// joystick) rồi set trạng thái giữ -> nhờ vá v1.1.0 mới lái được bằng
+// PointerEvent giả. Nút nằm trong #touch-ui nên có thể đang ẩn.
+var DPAD_PID = 13;
+function dpadPointer(el, type) {
+  var r = el.getBoundingClientRect();
+  el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: DPAD_PID, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: 'touch', isPrimary: true }));
+}
+function dpadPress(el) {
+  if (!el || dpadHeld === el) return;
+  dpadRelease();
+  dpadPointer(el, 'pointerdown');
+  dpadHeld = el;
+}
+function dpadRelease() {
+  if (!dpadHeld) return;
+  var el = dpadHeld;
+  dpadHeld = null;
+  try { dpadPointer(el, 'pointerup'); } catch (e) { /* bỏ qua */ }
+}
+function findDpadBtns(sx, sy) {
+  var btns = document.querySelectorAll('.dpad-btn');
+  if (!btns.length) {
+    // Có thể #touch-ui đang ẩn (desktop) — thử hiện lại rồi tìm lần nữa.
+    hienJoystick();
+    btns = document.querySelectorAll('.dpad-btn');
+  }
+  var exact = null, xOnly = null, yOnly = null;
+  for (var i = 0; i < btns.length; i++) {
+    var bx = parseInt(btns[i].getAttribute('data-dx') || '0', 10);
+    var by = parseInt(btns[i].getAttribute('data-dy') || '0', 10);
+    if (bx === sx && by === sy) exact = btns[i];
+    else if (sx !== 0 && bx === sx && by === 0) xOnly = btns[i];
+    else if (sy !== 0 && by === sy && bx === 0) yOnly = btns[i];
+  }
+  return { exact: exact, xOnly: xOnly, yOnly: yOnly };
+}
+// Giữ nút dpad theo 1 đợt: có nút chéo khớp thì giữ nút đó; không có thì
+// luân phiên 2 trục mỗi dpadAltMs. Mọi lối thoát đều nhả nút.
+function holdDpadBurst(runId, sx, sy, shouldStop, burstTimeoutMs) {
+  return new Promise(function (resolve) {
+    var t0 = Date.now();
+    var btns = findDpadBtns(sx, sy);
+    if (!btns.exact && !btns.xOnly && !btns.yOnly) return resolve({ reason: 'nodpad', pos: docCell(), ms: 0 });
+    var lastPos = docCell();
+    var lastMoveAt = t0;
+    var altFlipAt = 0, altX = true;
+    function pressCurrent() {
+      if (btns.exact) { dpadPress(btns.exact); return; }
+      if (btns.xOnly && btns.yOnly) { dpadPress(altX ? btns.xOnly : btns.yOnly); return; }
+      dpadPress(btns.xOnly || btns.yOnly);
+    }
+    pressCurrent();
+    (function tick() {
+      var now = Date.now();
+      var p = docCell();
+      if (runId !== runToken) { dpadRelease(); return resolve({ reason: 'stopped', pos: p, ms: now - t0 }); }
+      if (guardMap && docMapId() && docMapId() !== guardMap) { dpadRelease(); return resolve({ reason: 'mapchanged', pos: p, ms: now - t0 }); }
+      if (!btns.exact && btns.xOnly && btns.yOnly && now - altFlipAt >= CFG.dpadAltMs) { altFlipAt = now; altX = !altX; pressCurrent(); }
+      if (p) {
+        if (!lastPos || p.x !== lastPos.x || p.y !== lastPos.y) { lastPos = p; lastMoveAt = now; }
+        var sr = shouldStop(p);
+        if (sr) { dpadRelease(); return resolve({ reason: sr, pos: p, ms: now - t0 }); }
+      }
+      if (legDeadline && now > legDeadline) { dpadRelease(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+      if (p && now - lastMoveAt >= CFG.stuckMs) { dpadRelease(); return resolve({ reason: 'stuck', pos: p, ms: now - t0 }); }
+      if (now - t0 >= burstTimeoutMs) { dpadRelease(); return resolve({ reason: 'timeout', pos: p, ms: now - t0 }); }
+      setTimeout(tick, CFG.tickMs);
+    })();
+  });
+}
+
+// ---------- Chạm neo camera (dự phòng cuối) ----------
+// Chạm đúng tâm canvas -> ô hiện tại = ô tại tâm -> chạm về đích theo vị
+// trí nhân vật thật. Sau mỗi chạm, suy ô tâm mới từ điểm chạm đã dùng
+// (ô tâm = ô nhân vật - điểm chạm/px/ô) để giữ hiệu chỉnh gần mép map.
+// Chạm làm xa đích >2 ô -> bỏ neo, neo lại đợt sau (xem steerToCell).
+// Game: handler `window pointerup`, tap <500ms và <14px -> Input.tap =
+// Renderer.screenToBuffer(clientX,clientY); không kiểm isTrusted, không
+// setPointerCapture. px/ô mặc định 32 (= CONFIG.TILE).
+function gameCanvas() {
+  var cs = Array.prototype.slice.call(document.querySelectorAll('canvas'));
+  var best = null, ba = 0;
+  cs.forEach(function (c) {
+    var r = c.getBoundingClientRect(), a = r.width * r.height;
+    if (a > ba) { ba = a; best = c; }
+  });
+  return best;
+}
+// Vùng HUD phủ trên canvas cần tránh khi chạm lái (joystick, cụm nút, bảng tool).
+function hudAvoidZones() {
+  var zones = [];
+  var c = gameCanvas();
+  if (!c) return zones;
+  var r = c.getBoundingClientRect();
+  zones.push({ x0: r.x, y0: r.y + r.height * 0.58, x1: r.x + r.width * 0.36, y1: r.y + r.height }); // joystick dưới trái
+  zones.push({ x0: r.x + r.width * 0.62, y0: r.y + r.height * 0.52, x1: r.x + r.width, y1: r.y + r.height }); // cụm nút dưới phải
+  ['#tt2d-difarm-panel', '#btn-auto-touch', '#btn-auto', '#btn-attack', '#btn-fly'].forEach(function (sel) {
+    var el = $(sel);
+    if (!el) return;
+    var b = el.getBoundingClientRect();
+    if (b.width > 0 && b.height > 0) zones.push({ x0: b.x - 6, y0: b.y - 6, x1: b.x + b.width + 6, y1: b.y + b.height + 6 });
+  });
+  return zones;
+}
+function safeTapPoint(cx, cy, r) {
+  // Kẹp trong canvas, chừa lề 12% mỗi phía.
+  var mx = r.width * 0.12, my = r.height * 0.12;
+  cx = Math.max(r.x + mx, Math.min(r.x + r.width - mx, cx));
+  cy = Math.max(r.y + my, Math.min(r.y + r.height - my, cy));
+  // Rơi vào vùng HUD thì dịch điểm chạm lên trên vùng đó (giữ hướng ngang).
+  var zones = hudAvoidZones();
+  for (var i = 0; i < zones.length; i++) {
+    var z = zones[i];
+    if (cx >= z.x0 && cx <= z.x1 && cy >= z.y0 && cy <= z.y1) {
+      cy = Math.max(r.y + my, Math.min(r.y + r.height - my, z.y0 - 10));
+    }
+  }
+  return { x: cx, y: cy };
+}
+function tapCanvas(dx, dy) {
+  var c = gameCanvas();
+  if (!c) return false;
+  var r = c.getBoundingClientRect();
+  var ccx = r.x + r.width / 2, ccy = r.y + r.height / 2;
+  var pt = safeTapPoint(ccx + dx, ccy + dy, r);
+  var opts = { bubbles: true, cancelable: true, pointerId: 3, clientX: pt.x, clientY: pt.y, pointerType: 'touch', isPrimary: true };
+  c.dispatchEvent(new PointerEvent('pointerdown', opts));
+  setTimeout(function () { window.dispatchEvent(new PointerEvent('pointerup', opts)); }, 120);
+  return { dx: Math.round(pt.x - ccx), dy: Math.round(pt.y - ccy) };
+}
+// Chờ vị trí đứng yên (không đổi ô trong tapStableMs liên tiếp), poll 300ms.
+function waitStablePos(runId, timeoutMs) {
+  return new Promise(function (resolve) {
+    var t0 = Date.now(), prev = null, stillSince = null;
+    (function tick() {
+      if (runId !== runToken) return resolve(null);
+      var p = docCell();
+      if (p) {
+        if (prev && p.x === prev.x && p.y === prev.y) {
+          if (stillSince === null) stillSince = Date.now();
+          if (Date.now() - stillSince >= CFG.tapStableMs) return resolve(p);
+        } else stillSince = null;
+        prev = p;
+      }
+      if (Date.now() - t0 >= timeoutMs) return resolve(prev);
+      if (legDeadline && Date.now() > legDeadline) return resolve(prev);
+      setTimeout(tick, 300);
+    })();
+  });
+}
+function anchorCamera(runId) {
+  return (async function () {
+    tapCanvas(0, 0);
+    var p = await waitStablePos(runId, 12000);
+    if (p) { camAnchor = { x: p.x, y: p.y }; log('Neo camera: ô tại tâm = (' + p.x + ',' + p.y + ')'); }
+    return p;
+  })();
+}
+function holdTapBurst(runId, tx, ty, shouldStop, burstTimeoutMs) {
+  return (async function () {
+    var t0 = Date.now();
+    if (!camAnchor) {
+      var ap = await anchorCamera(runId);
+      if (!ap) return { reason: 'stuck', pos: docCell(), ms: 0 };
+      if (runId !== runToken) return { reason: 'stopped', pos: ap, ms: Date.now() - t0 };
+    }
+    tapCanvas((tx - camAnchor.x) * CFG.pxPerTile, (ty - camAnchor.y) * CFG.pxPerTile);
+    var p = await waitStablePos(runId, Math.max(3000, burstTimeoutMs));
+    if (guardMap && docMapId() && docMapId() !== guardMap) return { reason: 'mapchanged', pos: p, ms: Date.now() - t0 };
+    // Neo mới = ô nhân vật sau đợt chạm: camera game bám theo nhân vật nên
+    // sau khi nhân vật dừng, ô tại tâm canvas = ô nhân vật. (Code gửi dùng
+    // neo = vị trí - điểm chạm/px — công thức đó giả định camera ĐỨNG YÊN
+    // trong đợt chạm; với camera bám thì nó lệch cả quãng vừa đi, đã sửa
+    // ở v1.2.0. Cảnh báo thoái lui + neo lại vẫn là lưới an toàn.)
+    if (p) camAnchor = { x: p.x, y: p.y };
+    var sr = p ? shouldStop(p) : null;
+    return { reason: sr || (p ? 'timeout' : 'stuck'), pos: p, ms: Date.now() - t0 };
+  })();
+}
+
+// Nhả toàn bộ đầu vào lái: 8 phím hướng + joystick (pointerup) + nút dpad.
+function releaseAllInputs() {
+  releaseAllKeys();
+  joyUp();
+  dpadRelease();
+}
+
+// ---------- Tự dò cách lái (lần di chuyển đầu tiên mỗi phiên chạy) ----------
+// Thứ tự: phím -> joystick -> nút dpad -> chạm neo camera. Mỗi cách giữ
+// hướng về đích detectMs, vị trí đổi >=1 ô là đạt. Dò 1 lần/phiên, log rõ
+// cách nào thắng (xem log panel).
+function detectSteerMethod(runId, tx, ty) {
+  return (async function () {
+    var p0 = docCell();
+    if (!p0) { log('Dò cách lái: không đọc được vị trí — mặc định phím'); log('Cách lái: phím'); return 'keys'; }
+    var dx = tx - p0.x, dy = ty - p0.y;
+    var movedFrom = function (q) { return (q.x !== p0.x || q.y !== p0.y) ? 'moved' : null; };
+    log('Dò cách lái… (từ (' + p0.x + ',' + p0.y + ') về (' + tx + ',' + ty + '))');
+
+    // a. Phím hướng
+    log('Dò cách lái: thử phím…');
+    var rk = await holdKeysBurst(runId, codesFor(dx, dy), movedFrom, CFG.detectMs);
+    if (runId !== runToken) return 'keys';
+    if (rk.reason === 'moved') { log('Cách lái: phím'); return 'keys'; }
+    log('Phím không làm nhân vật di chuyển — thử joystick');
+
+    // b. Joystick
+    log('Dò cách lái: thử joystick…');
+    var rj = await holdJoyBurst(runId, dx, dy, movedFrom, CFG.detectMs);
+    joyUp(); // nhả hẳn sau đợt dò (holdJoyBurst chỉ kéo về tâm)
+    if (runId !== runToken) return 'keys';
+    if (rj.reason === 'moved') { log('Cách lái: joystick'); return 'joystick'; }
+    log('Joystick không làm nhân vật di chuyển — thử nút dpad');
+
+    // c. Nút dpad
+    var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+    var sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+    var btns = findDpadBtns(sx, sy);
+    if (btns.exact || btns.xOnly || btns.yOnly) {
+      log('Dò cách lái: thử nút dpad…');
+      var rd = await holdDpadBurst(runId, sx, sy, movedFrom, CFG.detectMs);
+      if (runId !== runToken) return 'keys';
+      if (rd.reason === 'moved') { log('Cách lái: dpad'); return 'dpad'; }
+      log('Nút dpad không làm nhân vật di chuyển — dùng chạm neo camera');
+    } else {
+      log('Không thấy nút dpad — dùng chạm neo camera');
+    }
+
+    // d. Chạm neo camera
+    log('Cách lái: chạm (neo camera)');
+    return 'tap';
+  })();
+}
+
 // ---------------- Kiểm tra an toàn mỗi nhịp ----------------
 function kiemTraAnToan() {
   if (docGuc()) return { ok: false, reason: 'guc', msg: 'Nhân vật đã gục — tool KHÔNG tự hồi sinh. Bấm DỪNG rồi xử lý tay.' };
@@ -536,11 +984,14 @@ function kiemTraAnToan() {
   return { ok: true };
 }
 
-// ---------------- Lái tới 1 ô bằng joystick ----------------
-// Trả {ok:true} khi tới nơi (cách tâm đích <= arrivePx), hoặc
+// ---------------- Lái tới 1 ô bằng cách lái đã dò ----------------
+// Vòng lặp theo đợt (burst) như goToTile của code gửi, giữ hợp đồng trả
+// của v1.1.0: {ok:true} khi tới nơi (cách đích <= arrivePx), hoặc
 // {ok:false, reason, msg} với reason: ket|hp-thap|guc|dung|het-gio|
-// doi-map|loi. Kẹt: ô không đổi 6s -> đánh trả (Auto 1 lần) rồi lái
-// vuông góc 2-3s; quá 4 lần -> dừng.
+// doi-map|loi. Kẹt: đợt không di chuyển / không tiến gần đích -> đánh trả
+// (Auto 1 lần) rồi lái vuông góc; quá repathMax lần đi vòng -> dừng.
+// Đợt lái: tốc độ chỉ dùng ước lượng hạn giờ (đi bộ ~2,1 ô/s, bay ~4 ô/s).
+// Kiểm chứng Phi Hành bằng tốc độ ở đợt lái đầu đủ dài (xem trong vòng lặp).
 async function steerToCell(tx, ty, opts) {
   opts = opts || {};
   var arrivePx = (typeof opts.arrivePx === 'number') ? opts.arrivePx : CFG.arrivePx;
@@ -548,9 +999,15 @@ async function steerToCell(tx, ty, opts) {
   var tok = runToken;
   var mapStart = docMapId();
   var t0 = Date.now();
-  var lastCell = null, stillMs = 0, detours = 0, detourSign = 1, fightTried = false;
-  var toXpx = tx * CFG.tile + CFG.tile / 2;
-  var toYpx = ty * CFG.tile + CFG.tile / 2;
+  legDeadline = t0 + CFG.legTimeoutMs;
+  // Dung sai theo ô: cổng (arrivePx 16px) cần đúng ô; bãi farm (32px) cho
+  // phép lệch 1 ô (tương đương dist <= 32px của v1.1.0).
+  var tol = (arrivePx >= CFG.tile) ? 1 : 0;
+  var cheb = function (p) { return Math.max(Math.abs(tx - p.x), Math.abs(ty - p.y)); };
+  var detours = 0, detourSign = 1, fightTried = false, diagOk = true;
+  var bestCheb = Infinity, noProgress = 0;
+  var burstFrom = null; // vị trí + khoảng cách trước đợt gần nhất (cảnh báo thoái lui)
+  guardMap = mapStart;
   steerCalls++;
   try {
     while (true) {
@@ -566,96 +1023,157 @@ async function steerToCell(tx, ty, opts) {
       if (Date.now() - t0 > CFG.legTimeoutMs) {
         return { ok: false, reason: 'het-gio', msg: 'Quá ' + Math.round(CFG.legTimeoutMs / 1000) + 's chưa tới ' + label + ' — đã dừng.' };
       }
-      var v = docViTriPx();
-      if (!v) { await sleep(CFG.tickMs); continue; }
-      var dist = Math.hypot(v.x - toXpx, v.y - toYpx);
-      if (dist <= arrivePx) return { ok: true };
-      var cell = { x: Math.floor(v.x / CFG.tile), y: Math.floor(v.y / CFG.tile) };
-      // Kẹt: ô (#hud-pos) không đổi — game: |dx|+|dy| < 0.5 mỗi frame, St=6s.
-      if (lastCell && lastCell.x === cell.x && lastCell.y === cell.y) stillMs += CFG.tickMs;
-      else stillMs = 0;
-      lastCell = cell;
-      if (stillMs >= CFG.stuckMs) {
+      var p = docCell();
+      if (!p) { await sleep(CFG.tickMs); continue; }
+      if (cheb(p) <= tol) return { ok: true };
+      // Cảnh báo thoái lui: đợt trước làm nhân vật xa đích hơn >2 ô.
+      if (burstFrom && cheb(p) > burstFrom.cheb + 2) {
+        log('Cảnh báo: đợt lái làm xa đích (' + burstFrom.x + ',' + burstFrom.y + ')→(' + p.x + ',' + p.y + ')');
+        if (steerMethod === 'tap') { camAnchor = null; log('Bỏ neo camera — sẽ neo lại'); }
+      }
+      burstFrom = null;
+      // Lần di chuyển đầu tiên của phiên: tự dò cách lái (phím -> joystick
+      // -> dpad -> chạm neo camera).
+      if (!steerMethod) {
+        steerMethod = await detectSteerMethod(tok, tx, ty);
+        if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        continue;
+      }
+
+      var dx = tx - p.x, dy = ty - p.y; // ô; +y là nam (KeyS)
+      var startCheb = cheb(p);
+      var startPos = { x: p.x, y: p.y };
+      var codes = codesFor(dx, dy);
+      if (!diagOk && codes.length > 1) codes = [Math.abs(dx) >= Math.abs(dy) ? codes[0] : codes[1]];
+
+      var speed = flyingBelief ? 4 : 2.1; // ô/s, chỉ để đặt hạn giờ đợt
+      var stepMode = startCheb <= 1; // gần đích: đợt ngắn 1 bước cho chính xác
+      var burstCap = stepMode ? 2500 : Math.max(2500, Math.min(15000, startCheb / speed * 1000 * 1.6 + 1200));
+      var shouldStop = function (q) {
+        if (cheb(q) <= tol) return 'arrived';
+        if (stepMode) return (q.x !== startPos.x || q.y !== startPos.y) ? 'step' : null;
+        var qdx = tx - q.x, qdy = ty - q.y;
+        // Nhả khi một trục đã tới 0 hoặc vượt đích (đổi dấu) — đợt sau tính lại hướng.
+        if (dx !== 0 && (qdx === 0 || (qdx > 0) !== (dx > 0))) return 'axis';
+        if (dy !== 0 && (qdy === 0 || (qdy > 0) !== (dy > 0))) return 'axis';
+        return null;
+      };
+
+      burstFrom = { x: p.x, y: p.y, cheb: startCheb };
+      var res, burstDesc;
+      if (steerMethod === 'joystick') {
+        res = await holdJoyBurst(tok, dx, dy, shouldStop, burstCap);
+        burstDesc = 'kéo joystick hướng ' + dirName(dx, dy) + ' ~' + fmtSec(res.ms);
+      } else if (steerMethod === 'dpad') {
+        var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0, sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+        res = await holdDpadBurst(tok, sx, sy, shouldStop, burstCap);
+        burstDesc = 'giữ nút dpad (' + sx + ',' + sy + ') ~' + fmtSec(res.ms);
+      } else if (steerMethod === 'tap') {
+        res = await holdTapBurst(tok, tx, ty, shouldStop, burstCap);
+        burstDesc = 'chạm neo camera ~' + fmtSec(res.ms);
+      } else {
+        res = await holdKeysBurst(tok, codes, shouldStop, burstCap);
+        burstDesc = 'giữ phím [' + codes.map(function (c) { return DIR_BY_CODE[c].name; }).join('+') + '] ~' + fmtSec(res.ms);
+      }
+      log('→(' + tx + ',' + ty + ') từ (' + p.x + ',' + p.y + ') ' + burstDesc);
+      if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+      // Đổi map trong đợt lái (bước lên ô cổng): dừng chặng này ngay.
+      var mapAfter = docMapId();
+      if (mapAfter && mapStart && mapAfter !== mapStart) {
+        return { ok: false, reason: 'doi-map', msg: 'Đã sang map ' + tenMap(mapAfter) + '.' };
+      }
+      var p2 = res.pos || docCell();
+      if (!p2) { await sleep(CFG.tickMs); continue; }
+      if (cheb(p2) <= tol) return { ok: true };
+
+      // Kiểm chứng Phi Hành bằng TỐC ĐỘ (đợt lái đầu đủ dài khi đang bay):
+      // class nút #btn-fly đã biết sai live nên tốc độ là kiểm chứng thật.
+      // <3 ô/s thì bấm lại 1 lần duy nhất (KeyF); không bấm lần 3 mù.
+      // Chỉ đo đợt tiến triển tốt (arrived/axis/timeout), không đo đợt kẹt.
+      if (flyingBelief && !flySpeedChecked && res.ms >= CFG.flyCheckMs &&
+          (res.reason === 'arrived' || res.reason === 'axis' || res.reason === 'timeout')) {
+        var distTiles = Math.hypot(p2.x - startPos.x, p2.y - startPos.y);
+        if (distTiles >= 2) {
+          var spd = distTiles / (res.ms / 1000);
+          flySpeedMeasured = spd;
+          if (flySpeedFirst === null) flySpeedFirst = spd;
+          if (spd < CFG.flySpeedMin && !flyRetryDone) {
+            flyRetryDone = true;
+            log('Phi Hành: tốc độ chỉ ~' + spd.toFixed(1) + ' ô/s (<' + CFG.flySpeedMin + ') — bay chưa ăn, bấm lại 1 lần (KeyF).');
+            pressFlyKey();
+            await sleep(1200);
+            if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+          } else {
+            flySpeedChecked = true;
+            log('Phi Hành: BẬT (tốc độ ~' + spd.toFixed(1) + ' ô/s).');
+            if (spd < CFG.flySpeedMin) log('Tốc độ vẫn thấp sau khi bấm lại — giữ nguyên, không bấm nữa.');
+          }
+        }
+      }
+
+      var moved = (p2.x !== startPos.x || p2.y !== startPos.y);
+      if (steerMethod === 'keys' && codes.length > 1 && !moved && res.reason !== 'arrived') {
+        diagOk = false;
+        log('Giữ 2 phím chéo không di chuyển — chuyển sang giữ từng trục.');
+      }
+      if (cheb(p2) < bestCheb) { bestCheb = cheb(p2); noProgress = 0; } else noProgress++;
+
+      var isStuck = res.reason === 'stuck' || (!moved && res.reason !== 'arrived') || noProgress >= 3;
+      if (isStuck) {
         if (!fightTried) {
           // Nghi quái chặn đường: bật Auto đánh trả rồi đi tiếp. Chỉ thử
-          // 1 lần mỗi chặng đi (theo cơ chế "Tự Đi" của Thanh). Đồng bộ lại
-          // phiên kéo TRƯỚC khi đánh trả: game có thể đã hủy trạng thái kéo
-          // (VD: qua cổng rồi bị đẩy về ngay — tool vẫn tưởng joystick đang
-          // kéo, còn game thì không) — ngắt rồi kéo lại cho chắc, không thì
-          // mọi pointermove sau đó đều bị game bỏ qua. Kéo lại xong đẩy
-          // NGAY về hướng đích (không thì joystick ở tâm, nhân vật đứng yên
-          // và Auto không với tới quái chặn).
-          joyUp();
-          joyDown();
-          var fdx = toXpx - v.x, fdy = toYpx - v.y;
-          var fl = Math.hypot(fdx, fdy) || 1;
-          joyMoveTo(fdx / fl, fdy / fl);
+          // 1 lần mỗi chặng đi (theo cơ chế "Tự Đi" của Thanh). Trong lúc
+          // đánh vẫn ĐẨY về hướng đích theo cách lái đang dùng (không thì
+          // nhân vật đứng yên và Auto không với tới quái chặn). Joystick
+          // thì đồng bộ lại phiên kéo TRƯỚC khi đánh trả: game có thể đã
+          // hủy trạng thái kéo (VD: qua cổng rồi bị đẩy về ngay) — ngắt
+          // rồi kéo lại cho chắc, không thì mọi pointermove sau đó đều
+          // bị game bỏ qua.
           fightTried = true;
-          stillMs = 0;
           log('Có thể quái chặn đường — bật Auto đánh trả rồi đi tiếp.');
+          if (steerMethod === 'joystick') { joyUp(); joyDown(); }
           datAuto(true);
-          var tF = Date.now();
-          var moved = false;
-          while (Date.now() - tF < CFG.fightWaitMs) {
-            if (tok !== runToken) { datAuto(false); return { ok: false, reason: 'dung', msg: 'Đã dừng.' }; }
-            var a2 = kiemTraAnToan();
-            if (!a2.ok) { datAuto(false); return { ok: false, reason: a2.reason, msg: a2.msg }; }
-            var v2 = docViTriPx();
-            if (v2) {
-              var c2 = { x: Math.floor(v2.x / CFG.tile), y: Math.floor(v2.y / CFG.tile) };
-              if (c2.x !== lastCell.x || c2.y !== lastCell.y) { moved = true; break; }
-            }
-            await sleep(CFG.tickMs);
-          }
+          var fdx = tx - p2.x, fdy = ty - p2.y;
+          var fStop = function (q) { return (q.x !== p2.x || q.y !== p2.y) ? 'moved' : null; };
+          var fRes;
+          if (steerMethod === 'joystick') fRes = await holdJoyBurst(tok, fdx, fdy, fStop, CFG.fightWaitMs);
+          else if (steerMethod === 'dpad') fRes = await holdDpadBurst(tok, fdx > 0 ? 1 : fdx < 0 ? -1 : 0, fdy > 0 ? 1 : fdy < 0 ? -1 : 0, fStop, CFG.fightWaitMs);
+          else if (steerMethod === 'tap') fRes = await holdTapBurst(tok, tx, ty, fStop, CFG.fightWaitMs);
+          else fRes = await holdKeysBurst(tok, codesFor(fdx, fdy), fStop, CFG.fightWaitMs);
           datAuto(false);
-          if (moved) { log('Đánh trả xong, đi tiếp.'); }
+          if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+          if (fRes && fRes.reason === 'moved') log('Đánh trả xong, đi tiếp.');
           else log('Đánh trả không nhúc nhích — thử đi vòng.');
-          lastCell = null;
+          bestCheb = Infinity; noProgress = 0;
           continue;
         }
         detours++;
-        stillMs = 0;
         if (detours > CFG.repathMax) {
           return { ok: false, reason: 'ket', msg: 'Kẹt đường tới ' + label + ' — đã thử đi vòng ' + CFG.repathMax + ' lần.' };
         }
         detourCount++;
         log('Kẹt — đi vòng (lần ' + detours + '/' + CFG.repathMax + ').');
-        // Lái vuông góc với hướng đích trong detourMs, rồi thử lại.
-        var ddx = toXpx - v.x, ddy = toYpx - v.y;
-        var dl = Math.hypot(ddx, ddy) || 1;
-        var px = -ddy / dl * detourSign, py = ddx / dl * detourSign;
+        // Lái vuông góc với hướng đích rồi thử lại. Phím/dpad/chạm chậm
+        // hơn joystick nên đợt đi vòng dài hơn (tối thiểu detourMinMs)
+        // để đi đủ xa mà qua được vật cản.
+        var pdx = -dy, pdy = dx;
+        var pl = Math.hypot(pdx, pdy) || 1;
+        var px = pdx / pl * detourSign, py = pdy / pl * detourSign;
         detourSign = -detourSign; // lần sau đi vòng hướng ngược lại
-        var tD = Date.now();
-        while (Date.now() - tD < CFG.detourMs) {
-          if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
-          var a3 = kiemTraAnToan();
-          if (!a3.ok) return { ok: false, reason: a3.reason, msg: a3.msg };
-          if (docMapId() && mapStart && docMapId() !== mapStart) {
-            return { ok: false, reason: 'doi-map', msg: 'Đã sang map ' + tenMap(docMapId()) + '.' };
-          }
-          var vD = docViTriPx();
-          if (vD) {
-            var dd2 = Math.hypot(vD.x - toXpx, vD.y - toYpx);
-            if (dd2 <= arrivePx) return { ok: true };
-          }
-          if (!joyMoveTo(px, py)) {
-            return { ok: false, reason: 'loi', msg: 'Không thấy joystick để lái (bật chế độ Chạm trong Menu rồi bấm ĐI lại).' };
-          }
-          await sleep(CFG.joyMoveMs);
-        }
-        lastCell = null;
+        var detourTimeout = (steerMethod === 'joystick') ? CFG.detourMs : Math.max(CFG.detourMs, CFG.detourMinMs);
+        if (steerMethod === 'joystick') await holdJoyBurst(tok, px, py, function () { return null; }, detourTimeout);
+        else if (steerMethod === 'dpad') await holdDpadBurst(tok, px > 0 ? 1 : px < 0 ? -1 : 0, py > 0 ? 1 : py < 0 ? -1 : 0, function () { return null; }, detourTimeout);
+        else if (steerMethod === 'tap') await holdTapBurst(tok, p2.x + Math.round(px * 2), p2.y + Math.round(py * 2), function () { return null; }, Math.max(6000, detourTimeout));
+        else await holdKeysBurst(tok, codesFor(px, py), function () { return null; }, detourTimeout);
+        if (tok !== runToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+        noProgress = 0;
         continue;
       }
-      // Lái thẳng về đích.
-      var dx = toXpx - v.x, dy = toYpx - v.y;
-      var len = Math.hypot(dx, dy) || 1;
-      if (!joyMoveTo(dx / len, dy / len)) {
-        return { ok: false, reason: 'loi', msg: 'Không thấy joystick để lái (bật chế độ Chạm trong Menu rồi bấm ĐI lại).' };
-      }
-      await sleep(CFG.tickMs);
     }
   } finally {
-    joyUp();
+    guardMap = null;
+    legDeadline = 0;
+    releaseAllInputs();
   }
 }
 
@@ -824,11 +1342,19 @@ async function start() {
   msg = 'Đang đi tới ' + tenMap(target.map) + ' Khu ' + (target.khu || 'giữ nguyên') + ' (' + target.x + ',' + target.y + ')…';
   log(msg);
   renderStatus();
-  // Chuẩn bị như game làm khi bật Tự Đi: tắt Auto, hạ Phi Hành, dừng câu.
+  // Phiên chạy mới: dò lại cách lái + neo camera từ đầu, kiểm chứng bay
+  // lại từ đầu (bấm lại tối đa 1 lần/phiên).
+  steerMethod = null; camAnchor = null;
+  flySpeedChecked = false; flyRetryDone = false; flySpeedMeasured = null; flySpeedFirst = null;
+  // Chuẩn bị: tắt Auto (không đánh quái lúc đi), dừng câu; BẬT Chạy +
+  // Phi Hành để đi nhanh (lệnh Thanh 07:05) — giữ bật qua các cổng.
   if (autoDangBat()) datAuto(false);
   await sleep(400);
   if (tok !== runToken) return;
-  if (flyDangBat()) datFly(false);
+  datRun(true);
+  await sleep(400);
+  if (tok !== runToken) return;
+  datFly(true);
   await sleep(400);
   if (tok !== runToken) return;
   stopFishing();
@@ -875,6 +1401,16 @@ async function start() {
       } else if (r.ok) {
         // Tới ô cổng: cổng game mở khi BƯỚC LÊN ô — chờ đổi map (Ft=8s).
         var ok = await choDoiMap(cur, CFG.portalWaitMs);
+        if (!ok && flyingBelief) {
+          // Qua cổng không được khi đang bay: hạ cánh, đi bộ lên ô cổng,
+          // thử lại (mẫu tryCrossPortal của code gửi).
+          log('Chưa qua được cổng (' + hop.tx + ',' + hop.ty + ') khi bay — hạ cánh đi bộ lên ô cổng.');
+          datFly(false);
+          var r2 = await steerToCell(hop.tx, hop.ty, { arrivePx: CFG.portalPx, label: 'cổng (' + hop.tx + ',' + hop.ty + ')' });
+          if (!r2.ok && r2.reason === 'dung') return;
+          if (r2.ok) ok = await choDoiMap(cur, CFG.portalWaitMs);
+          else if (r2.reason === 'doi-map') ok = true; // đã qua trong lúc đi bộ lên cổng
+        }
         if (!ok) {
           // Nudge bằng joystick về phía cổng rồi chờ thêm.
           var nudged = false;
@@ -899,6 +1435,14 @@ async function start() {
       // Sang map mới thì khu chưa rõ nữa — đọc lại từ bảng khi cần đổi khu.
       khuHienTai = null;
       log('Đã sang ' + tenMap(docMapId()) + '.');
+      // Qua cổng/hạ cánh có thể tắt bay — bật lại Chạy + Phi Hành để đi
+      // tiếp cho nhanh (giữ bật qua các cổng, lệnh Thanh 07:05). Bật lại
+      // bay thì đo lại tốc độ ở đợt lái sau (không bấm lại lần 2 mù).
+      if (!runDangBat()) datRun(true);
+      if (!flyingBelief) {
+        datFly(true);
+        flySpeedChecked = false; // đo lại tốc độ sau khi bật lại
+      }
       continue;
     }
     // Đã ở map đích.
@@ -927,7 +1471,7 @@ async function start() {
 }
 function stop() {
   runToken++;
-  joyUp();
+  releaseAllInputs(); // nhả hết phím + joystick + dpad, không để nhân vật tự đi tiếp
   if (state === 'dang-di') {
     state = 'da-dung';
     msg = 'Đã dừng — đứng tại chỗ.';
@@ -935,6 +1479,23 @@ function stop() {
   }
   renderStatus();
 }
+
+// Chạm/phím THẬT (isTrusted=true) ngoài panel -> dừng ngay để người chơi
+// tự lái. Sự kiện tổng hợp của tool có isTrusted=false nên không tự kích.
+// - pointerdown: bỏ qua cú bấm trong panel tool (bấm nút ĐI/DỪNG...).
+// - keydown: chỉ bỏ qua khi đang gõ trong ô nhập của panel (X/Y/Khu...);
+//   phím WASD khi focus đang ở nút ĐI vẫn dừng tool (nút không ăn phím).
+window.addEventListener('pointerdown', function (e) {
+  if (state !== 'dang-di' || !e.isTrusted) return;
+  var p = $('#tt2d-difarm-panel');
+  if (p && e.target && p.contains(e.target)) return;
+  stop();
+}, true);
+window.addEventListener('keydown', function (e) {
+  if (state !== 'dang-di' || !e.isTrusted) return;
+  if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  stop();
+}, true);
 
 // ---------------- Panel (khung gọn, thu nhỏ được) ----------------
 var panel = null, bar = null, statusEl = null, logEl = null, contentEl = null;
@@ -974,7 +1535,7 @@ function buildPanel() {
   panel = el('div', { id: 'tt2d-difarm-panel', style: 'position:fixed;top:8px;right:8px;width:300px;z-index:99999;background:rgba(20,16,10,.95);border:1px solid #8a6d3b;border-radius:8px;color:#f0e6d2;font:12px/1.5 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.5);' });
   var head = el('div', { style: 'display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid #8a6d3b;cursor:default;' });
   head.appendChild(el('b', { style: 'flex:1;font-size:13px;' }, 'Đi Farm — Tu Tiên 2D'));
-  head.appendChild(el('span', { style: 'color:#c9a86a;font-size:11px;' }, 'v1.1.0'));
+  head.appendChild(el('span', { style: 'color:#c9a86a;font-size:11px;' }, 'v1.2.0'));
   var btnMin = el('button', { style: 'background:#3a2f1d;color:#f0e6d2;border:1px solid #8a6d3b;border-radius:4px;width:22px;height:22px;cursor:pointer;' }, '—');
   btnMin.title = 'Thu nhỏ thành thanh';
   btnMin.addEventListener('click', function () { setCollapsed(true); });
@@ -1059,7 +1620,7 @@ function buildPanel() {
   logEl = el('div', { id: 'tt2d-difarm-log', style: 'margin-top:5px;font-size:11px;color:#c9b896;white-space:pre-wrap;' }, '');
   contentEl.appendChild(logEl);
   contentEl.appendChild(el('div', { style: 'margin-top:6px;color:#9a8a6a;font-size:11px;' },
-    'Lái bằng joystick thật (đã vá setPointerCapture). HP < 35% tự dừng. KHÔNG tự hồi sinh, KHÔNG tiêu Linh Thạch, KHÔNG ghi danh. Khu đầy thì dừng + báo rõ. Khu hiện tại chỉ đọc được sau khi mở Bảng Khu. Phi Hành kiểm tra bằng tốc độ farm.'));
+    'Tự dò cách lái (phím → joystick → dpad → chạm). Bay + Chạy bật trong lúc đi, tới nơi bật Auto + Chạy + Phi Hành. HP < 35% tự dừng. KHÔNG tự hồi sinh, KHÔNG tiêu Linh Thạch, KHÔNG ghi danh. Khu đầy thì dừng + báo rõ. Khu hiện tại chỉ đọc được sau khi mở Bảng Khu. Phi Hành kiểm tra bằng tốc độ (đợt lái đầu); chạm/phím thật ngoài bảng sẽ dừng tool.'));
   panel.appendChild(contentEl);
   document.body.appendChild(panel);
 
@@ -1080,6 +1641,12 @@ function readForm() {
   if (k) target.khu = Math.max(0, parseInt(k.value, 10) || 0);
   if (x) target.x = Math.max(0, parseInt(x.value, 10) || 0);
   if (y) target.y = Math.max(0, parseInt(y.value, 10) || 0);
+  // Kẹp tọa độ vào biên map (tránh nhập ô ngoài map rồi tool đi lạc).
+  var c = clampCell(target.map, target.x, target.y);
+  if (c.x !== target.x || c.y !== target.y) {
+    log('Tọa độ (' + target.x + ',' + target.y + ') ngoài map ' + tenMap(target.map) + ' — kẹp về (' + c.x + ',' + c.y + ').');
+    target.x = c.x; target.y = c.y;
+  }
   var cb = $('#tt2d-difarm-farm');
   if (cb) farmKhiToi = cb.checked;
   // Bấm ĐI = chặng mới: khu đọc được trước đó có thể đã cũ — đọc lại từ bảng.
@@ -1150,7 +1717,7 @@ else document.addEventListener('DOMContentLoaded', buildPanel);
 setInterval(function () { if (state !== 'dang-di') renderStatus(); }, 2000);
 
 window.__TT2D_DIFARM__ = {
-  version: '1.1.0',
+  version: '1.2.0',
   start: start,
   stop: stop,
   setTarget: function (t) {
@@ -1159,6 +1726,9 @@ window.__TT2D_DIFARM__ = {
     if (typeof t.x === 'number') target.x = t.x;
     if (typeof t.y === 'number') target.y = t.y;
     if (typeof t.farmKhiToi === 'boolean') farmKhiToi = t.farmKhiToi;
+    // Kẹp tọa độ vào biên map.
+    var c = clampCell(target.map, target.x, target.y);
+    target.x = c.x; target.y = c.y;
     // Đổi đích = chặng mới: khu đọc được trước đó có thể đã cũ (đăng nhập
     // lại có thể rơi vào khu khác cùng map) — bắt buộc đọc lại từ bảng.
     khuHienTai = null;
@@ -1192,6 +1762,12 @@ window.__TT2D_DIFARM__ = {
       joyPatchApplied: joyPatchApplied,
       hpAvailable: hpAvailable,
       lastHop: lastHop,
+      steerMethod: steerMethod,
+      flyingBelief: flyingBelief,
+      flySpeed: flySpeedMeasured,
+      flySpeedFirst: flySpeedFirst,
+      flySpeedChecked: flySpeedChecked,
+      flyRetried: flyRetryDone,
     };
   },
   presets: function () { return PRESETS.map(function (p) { return p.id; }); },
@@ -1200,5 +1776,8 @@ window.__TT2D_DIFARM__ = {
   _patchCapture: patchPointerCapture,
   _graph: PORTALS,
   _cfg: CFG,
+  // Móc cho test smoke: ép cách lái (bỏ qua dò) / reset về dò lại.
+  _setSteerMethod: function (m) { steerMethod = m; return steerMethod; },
+  _resetSteer: function () { steerMethod = null; camAnchor = null; return true; },
 };
 })();
