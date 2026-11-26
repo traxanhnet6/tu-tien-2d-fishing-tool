@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tu Tiên 2D — Tool tự làm nhiệm vụ Dược (Đại Phu Dược Công)
 // @namespace    https://tutienpixel.online/
-// @version      1.2.0
+// @version      1.2.1
 // @description  Tự động làm nhiệm vụ Dược Công ở Đại Phu (Thảo Dược Cốc): tự đi từ BẤT CỨ map nào về Đại Phu (lái tự dò phím/joystick/dpad/chạm, Phi Hành + Chạy BẬT trong lúc di chuyển), Trúc Cơ thì bấm "Tự Đi Làm Việc Dược Công" để game tự làm hết lượt; Luyện Khí thì tự nhận việc theo DC cao nhất, bấm bước nhiệm vụ để game tự đi tới chỗ làm, bấm Tương Tác tới đủ tiến độ rồi về nộp. Nút "TỰ ĐI LÀM VIỆC ĐÃ NHẬN" tiếp tục việc đã nhận bằng tay. Chỉ làm 5 việc thường, đủ 15 lượt/ngày thì dừng. Bảng điều khiển thu nhỏ được. Chỉ bấm nút của game.
 // @author       Muse (làm cho Thanh)
 // @match        https://tutienpixel.online/*
@@ -64,6 +64,20 @@
 //  - Đọc DC từ localStorage pntt_progress_v1 (trường duocCong) để đối
 //    chiếu sau mỗi lần nộp (code gửi); HP đọc từ #value-hp (code gửi
 //    dùng #row-hp — KHÔNG tồn tại trong game.js, 0 hit).
+// v1.2.1 (26/11): SỬA NGƯỠNG KIỂM CHỨNG BAY — đính chính chẩn đoán v1.2.0.
+//  Ngưỡng cũ 3 ô/s SAI: tốc độ thật (game.js CONFIG 24/11: SPEED 68px/s,
+//  TILE 32, WALK_MULT 1,485, RUN_MULT 1,65, FLY.SPEED_MULT 1,9) là đi bộ
+//  3,16 / chạy 3,51 / bay 4,04 / bay+chạy 6,66 ô/s. Tool lái với Chạy BẬT
+//  nên bay lỗi (chỉ chạy 3,51) vẫn đo >=3, không bao giờ bấm lại KeyF.
+//  Nay ngưỡng 5 (chạy 3,51 < 5 < bay+chạy chậm nhất 5,96), chỉ đo khi
+//  Chạy đang BẬT, đo TÍCH LŨY qua nhiều đợt cùng hướng tới đủ 2000ms giữ
+//  phím (xem khối đo tốc độ trong steerToCell). Đo Euclid (game chuẩn hoá
+//  hướng chéo 1/√2 trong Input.update nên Euclid đúng mọi hướng) — bỏ đo
+//  Chebyshev của v1.2.0 (đo thiếu 1/√2 khi chéo, và đi thẳng chạy 3,51
+//  vẫn >3). LÝ DO TÍCH LŨY: đo một đợt đơn lẻ không đo được live — đợt nào
+//  tới đích/biển Khu thì `cheb(p2) <= tol` return trước khối đo, các đợt
+//  còn lại thường <2000ms (probe Đi Farm 26/11: tuyến phong_dia
+//  (20,20)->(30,27) có đợt 0,5–1,3s, không đợt nào đo được).
 // v1.1.2 (25/11): TIẾP TỤC VIỆC ĐÃ NHẬN BẰNG TAY (Thanh 07:23 — "nhận xong
 //  nhiệm vụ nhân vật đứng yên không làm gì hết") — thêm nút "TỰ ĐI LÀM VIỆC
 //  ĐÃ NHẬN": tool đọc việc đang giữ từ bảng nhiệm vụ, tự tìm đường tới chỗ
@@ -309,8 +323,8 @@ var CFG = {
   joyPointerId: 987654321, // pointerId giả DUY NHẤT cho cả chuỗi down/move/up
   detectMs: 1200,         // mỗi cách lái dò giữ hướng 1,2s
   dpadAltMs: 400,         // luân phiên 2 trục dpad mỗi 400ms khi không có nút chéo
-  flySpeedMin: 3,         // ô/s — bay dưới ngưỡng này là chưa ăn (kiểm chứng bằng tốc độ)
-  flyCheckMs: 800,        // đợt lái đầu dài >=800ms mới đo tốc độ bay
+  flySpeedMin: 5,         // ô/s — bay+chạy dưới ngưỡng này là chưa ăn (xem ghi chú v1.2.1 ở khối đo tốc độ)
+  flyWindowMs: 2000,     // cửa sổ TÍCH LŨY đo tốc độ bay (ms giữ phím cộng dồn qua nhiều đợt cùng hướng, chỉ đo khi Chạy đang BẬT)
   pxPerTile: 32,          // px/ô cho chạm neo camera (mặc định = CONFIG.TILE)
   tapStableMs: 800,       // đứng yên bao lâu thì coi là ổn định (chờ sau chạm)
   choTuongTacMs: 150000,  // chờ nhãn "Tương Tác" sau khi bấm bước nhiệm vụ
@@ -493,6 +507,7 @@ var collapsed = false;  // bảng đang thu nhỏ?
 var steerMethod = null; // 'keys'|'joystick'|'dpad'|'tap' — dò 1 lần mỗi phiên chạy
 var flyingBelief = false; // tin là đang bay (class #btn-fly đã biết sai live — kiểm chứng bằng tốc độ)
 var flySpeedChecked = false, flyRetryDone = false, flySpeedMeasured = null, flySpeedFirst = null;
+var flyMeas = null; // cửa sổ tích lũy đo tốc độ bay: {x, y, ms, sx, sy} — vị trí đầu cửa sổ, tổng ms giữ phím, dấu hướng
 var camAnchor = null; // {x,y} ô tại tâm canvas (chạm neo camera)
 var heldKeys = {}; // code -> true (phím tool đang giữ)
 var dpadHeld = null; // nút dpad đang giữ
@@ -1314,6 +1329,7 @@ async function steerToCell(tx, ty, opts) {
   var bestCheb = Infinity, noProgress = 0;
   var burstFrom = null; // vị trí + khoảng cách trước đợt gần nhất (cảnh báo thoái lui)
   guardMap = mapStart;
+  flyMeas = null; // cửa sổ đo tốc độ bay mới cho mỗi chặng lái
   try {
     while (true) {
       if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
@@ -1351,7 +1367,7 @@ async function steerToCell(tx, ty, opts) {
       var codes = codesFor(dx, dy);
       if (!diagOk && codes.length > 1) codes = [Math.abs(dx) >= Math.abs(dy) ? codes[0] : codes[1]];
 
-      var speed = flyingBelief ? 4 : 2.1; // ô/s, chỉ để đặt hạn giờ đợt
+      var speed = 3.51; // ô/s khi Chạy BẬT — tốc độ CHẠY thật, dùng làm tốc độ nền để đặt hạn giờ đợt (bay+chạy ~6,66 nhanh hơn nên hạn này luôn đủ rộng; đừng dùng tốc độ bay vì bay lỗi thì nhân vật chỉ chạy 3,51)
       var stepMode = startCheb <= 1; // gần đích: đợt ngắn 1 bước cho chính xác
       var burstCap = stepMode ? 2500 : Math.max(2500, Math.min(15000, startCheb / speed * 1000 * 1.6 + 1200));
       var shouldStop = function (q) {
@@ -1389,36 +1405,63 @@ async function steerToCell(tx, ty, opts) {
       }
       var p2 = res.pos || docCell();
       if (!p2) { await sleep(CFG.tickMs); continue; }
-      if (cheb(p2) <= tol) return { ok: true };
 
-      // Kiểm chứng Phi Hành bằng TỐC ĐỘ (đợt lái đầu đủ dài khi đang bay):
-      // class nút #btn-fly đã biết sai live nên tốc độ là kiểm chứng thật.
-      // <3 ô/s thì bấm lại 1 lần duy nhất (KeyF); không bấm lần 3 mù.
-      // Chỉ đo đợt tiến triển tốt (arrived/axis/timeout), không đo đợt kẹt.
-      // Đo bằng khoảng cách CHEBYSHEV (trục lớn nhất), KHÔNG phải Euclid:
-      // đi chéo 2 phím làm Euclid tăng √2 lần (đi bộ chéo đo được ~3,5 ô/s
-      // > ngưỡng 3 nên tưởng đang bay — bắt được ở test (k13) 26/11:
-      // flyKeyCount=0, bay chậm mà không bấm lại KeyF).
-      if (flyingBelief && !flySpeedChecked && res.ms >= CFG.flyCheckMs &&
-          (res.reason === 'arrived' || res.reason === 'axis' || res.reason === 'timeout')) {
-        var distTiles = Math.max(Math.abs(p2.x - startPos.x), Math.abs(p2.y - startPos.y));
-        if (distTiles >= 2) {
-          var spd = distTiles / (res.ms / 1000);
-          flySpeedMeasured = spd;
-          if (flySpeedFirst === null) flySpeedFirst = spd;
-          if (spd < CFG.flySpeedMin && !flyRetryDone) {
-            flyRetryDone = true;
-            log('Phi Hành: tốc độ chỉ ~' + spd.toFixed(1) + ' ô/s (<' + CFG.flySpeedMin + ') — bay chưa ăn, bấm lại 1 lần (KeyF).');
-            pressFlyKey();
-            await sleep(1200);
-            if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
-          } else {
-            flySpeedChecked = true;
-            log('Phi Hành: BẬT (tốc độ ~' + spd.toFixed(1) + ' ô/s).');
-            if (spd < CFG.flySpeedMin) log('Tốc độ vẫn thấp sau khi bấm lại — giữ nguyên, không bấm nữa.');
+      // Kiểm chứng Phi Hành bằng TỐC ĐỘ — ĐO TÍCH LŨY qua nhiều đợt (v1.2.1):
+      // Đo một đợt đơn lẻ KHÔNG đo được live — đợt nào tới đích/biển Khu
+      // thì `cheb(p2) <= tol` return trước khối đo; các đợt còn lại thường
+      // ngắn hơn cửa đo. Nên cộng dồn qua các đợt cùng hướng cho tới khi
+      // đủ 2000ms giữ phím rồi mới phán: quãng đường RÒNG từ đầu cửa sổ
+      // tới vị trí hiện tại (chỉ sai số lượng tử hoá ~1,4 ô ở 2 đầu mút,
+      // KHÔNG cộng dồn theo số đợt) chia cho tổng ms giữ phím. Reset cửa
+      // sổ khi đổi hướng ngược dấu một trục (đi vòng/detour), khi đợt kẹt/
+      // không di chuyển, đợt bước 1 ô, khi Chạy TẮT, hoặc sau đợt đánh trả/
+      // đi vòng. Chỉ đo khi Chạy đang BẬT (bay không chạy chỉ 3,61–4,23,
+      // sát tốc độ đi bộ 3,16, không phân biệt được bằng toạ độ ô).
+      // Ngưỡng 5,0 ô/s từ game.js client 24/11 (CONFIG: SPEED 68, RUN 1,65,
+      // FLY 1,9, TILE 32; bay+chạy 6,66 — chậm nhất Phi Diệp 1,75: 5,96;
+      // chỉ chạy 3,51; đi bộ 3,16): cửa sổ 2000ms thì chạy thường đo tối
+      // đa 3,51+1,41/2≈4,2 < 5, bay+chạy chậm nhất đo tối thiểu
+      // 5,96−0,71≈5,25 > 5 — tách rõ. Đo bằng EUCLID — CỐ Ý: game chuẩn
+      // hoá vector chéo phím (×1/√2) nên tốc độ Euclid KHÔNG đổi theo
+      // hướng; Chebyshev đo chéo thấp hơn √2 lần (bay chéo 6,66 → ~4,7 < 5
+      // → bấm nhầm KeyF TẮT bay). Chẩn đoán cũ "chéo bộ Euclid ~3,5" là
+      // tốc độ CHẠY (3,51), không phải lỗi đo chéo (mock Dược đi chéo +1 ô
+      // cả 2 trục, không chuẩn hoá — artifact của mock, xem test k13).
+      // Chỉ đo đợt tiến triển (không đo đợt kẹt); bấm lại KeyF tối đa 1 lần.
+      if (flyingBelief && !flySpeedChecked) {
+        var movedB = (p2.x !== startPos.x || p2.y !== startPos.y);
+        var sdx = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
+        var sdy = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
+        var flipped = flyMeas && ((sdx !== 0 && flyMeas.sx !== 0 && sdx !== flyMeas.sx) ||
+          (sdy !== 0 && flyMeas.sy !== 0 && sdy !== flyMeas.sy));
+        if (!runDangBat() || flipped || res.reason === 'stuck' || !movedB || res.reason === 'step') {
+          flyMeas = null; // đợt này không tính vào cửa sổ; đợt sau mở cửa sổ mới
+        } else {
+          if (!flyMeas) flyMeas = { x: startPos.x, y: startPos.y, ms: 0, sx: sdx, sy: sdy };
+          flyMeas.ms += res.ms;
+          if (flyMeas.ms >= CFG.flyWindowMs) {
+            var distW = Math.hypot(p2.x - flyMeas.x, p2.y - flyMeas.y);
+            if (distW >= 2) {
+              var spdW = distW / (flyMeas.ms / 1000);
+              flySpeedMeasured = spdW;
+              if (flySpeedFirst === null) flySpeedFirst = spdW;
+              if (spdW < CFG.flySpeedMin && !flyRetryDone) {
+                flyRetryDone = true;
+                log('Phi Hành: tốc độ chỉ ~' + spdW.toFixed(1) + ' ô/s (<' + CFG.flySpeedMin + ') — bay chưa ăn, bấm lại 1 lần (KeyF).');
+                pressFlyKey();
+                await sleep(1200);
+                if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
+              } else {
+                flySpeedChecked = true;
+                log('Phi Hành: BẬT (tốc độ ~' + spdW.toFixed(1) + ' ô/s).');
+                if (spdW < CFG.flySpeedMin) log('Tốc độ vẫn thấp sau khi bấm lại — giữ nguyên, không bấm nữa.');
+              }
+            }
+            flyMeas = null; // đo xong (dù đủ quãng đường hay chưa) thì đóng cửa sổ
           }
         }
       }
+      if (cheb(p2) <= tol) return { ok: true };
 
       var moved = (p2.x !== startPos.x || p2.y !== startPos.y);
       if (steerMethod === 'keys' && codes.length > 1 && !moved && res.reason !== 'arrived') {
@@ -1451,7 +1494,7 @@ async function steerToCell(tx, ty, opts) {
           if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
           if (fRes && fRes.reason === 'moved') log('Đánh trả xong, đi tiếp.');
           else log('Đánh trả không nhúc nhích — thử đi vòng.');
-          bestCheb = Infinity; noProgress = 0;
+          bestCheb = Infinity; noProgress = 0; flyMeas = null; // đợt đánh trả không tính vào cửa sổ đo bay
           continue;
         }
         detours++;
@@ -1472,7 +1515,7 @@ async function steerToCell(tx, ty, opts) {
         else if (steerMethod === 'tap') await holdTapBurst(tok, p2.x + Math.round(px * 2), p2.y + Math.round(py * 2), function () { return null; }, Math.max(6000, detourTimeout));
         else await holdKeysBurst(tok, codesFor(px, py), function () { return null; }, detourTimeout);
         if (tok !== steerToken) return { ok: false, reason: 'dung', msg: 'Đã dừng.' };
-        noProgress = 0;
+        noProgress = 0; flyMeas = null; // đợt đi vòng vuông góc không tính vào cửa sổ đo bay
         continue;
       }
     }
@@ -2493,7 +2536,7 @@ async function tiepTucViecDangGiu() {
   steerToken++;
   steerMethod = null;
   flyingBelief = false; flySpeedChecked = false; flyRetryDone = false;
-  flySpeedMeasured = null; flySpeedFirst = null;
+  flySpeedMeasured = null; flySpeedFirst = null; flyMeas = null;
   camAnchor = null;
   dcLocalLucBatDau = docDCLocal();
   capNhatPanel();
@@ -2528,10 +2571,10 @@ function setOn(bat) {
     steerToken++; // vô hiệu hoá mọi đợt lái / vòng lặp cũ
     steerMethod = null; // dò lại cách lái cho phiên mới
     flyingBelief = false; flySpeedChecked = false; flyRetryDone = false;
-    flySpeedMeasured = null; flySpeedFirst = null;
+    flySpeedMeasured = null; flySpeedFirst = null; flyMeas = null;
     camAnchor = null;
     dcLocalLucBatDau = docDCLocal();
-    log('BẬT tool Dược v1.2.0 — tự đi tới Đại Phu từ bất cứ đâu, làm việc thường, nộp, lặp.');
+    log('BẬT tool Dược v1.2.1 — tự đi tới Đại Phu từ bất cứ đâu, làm việc thường, nộp, lặp.');
     vongLapChinh();
   } else {
     steerToken++; // dừng mọi đợt lái / vòng lặp đang chạy
@@ -2572,7 +2615,7 @@ function taoPanel() {
   p.id = 'tt2d-duoc-panel';
   p.innerHTML =
     '<div class="tt2d-duoc-head">' +
-      '<span class="tt2d-duoc-title">🌿 Dược Công <span class="tt2d-duoc-ver">v1.2.0</span></span>' +
+      '<span class="tt2d-duoc-title">🌿 Dược Công <span class="tt2d-duoc-ver">v1.2.1</span></span>' +
       '<button type="button" class="tt2d-duoc-mini" data-act="thu-nho" title="Thu nhỏ">–</button>' +
     '</div>' +
     '<div class="tt2d-duoc-body">' +
@@ -2648,12 +2691,13 @@ function capNhatPanel() {
 }
 function status() {
   return {
-    version: '1.2.0', on: on, phase: phase, realm: realm,
+    version: '1.2.1', on: on, phase: phase, realm: realm,
     dc: docDCLocal(), dcLocal: docDCLocal(), luotDaLam: luotDaLam,
     viecDangGiu: docViecDangGiu(),
     pos: docViTri(), hp: docHP(),
     steerMethod: steerMethod, flyingBelief: flyingBelief,
     flySpeedFirst: flySpeedFirst, flySpeedMeasured: flySpeedMeasured,
+    flyRetried: flyRetryDone,
   };
 }
 
@@ -2685,11 +2729,11 @@ function khoiTao() {
   capNhatPanel();
   // Cập nhật panel mỗi 2s (trạng thái, DC, việc đang giữ, cách lái).
   setInterval(capNhatPanel, 2000);
-  log('Tool Dược v1.2.0 đã tải. Bấm BẬT để tự đi tới Đại Phu và làm việc thường.');
+  log('Tool Dược v1.2.1 đã tải. Bấm BẬT để tự đi tới Đại Phu và làm việc thường.');
 }
 // Debug handle (mở cho test smoke + kiểm tra tay).
 window.__TT2D_DUOC__ = {
-  version: '1.2.0',
+  version: '1.2.1',
   _cfg: CFG,
   status: status,
   setOn: setOn,
