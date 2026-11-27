@@ -11,8 +11,8 @@ tool có bản mới.
 
 URL raw ổn định:
 
-- https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutienpixel/version.txt
-- https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/main/tutienpixel/tutienpixel-tool.user.js
+- https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/tutienpixel-host/tutienpixel/version.txt
+- https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/tutienpixel-host/tutienpixel/tutienpixel-tool.user.js
 
 ## Đẩy bản tool mới lên server
 
