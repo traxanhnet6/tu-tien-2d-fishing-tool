@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tool Tu Tiên Pixel — Tự đi farm + Việc Dược Công
 // @namespace    tutienpixel-tool
-// @version      1.76.0
+// @version      1.77.0
 // @description  Chọn map + điểm đến (cụm quái/NPC/bảng khu/boss) → tự Chạy + Phi Hành qua cổng → Auto + Chạy + Phi Hành farm (bật/tắt có kiểm chứng trạng thái thật); đồ thị cổng + lưới ô chặn lấy theo trạng thái SAU sửa đổi lúc chạy của client (cổng vào Miếu Ông Trường Con ở Bãi Đá); tìm đường A* trong map tránh núi/vật cản, không men theo rìa map, kẹt thì đánh dấu ô chặn tạm tính lại đường; mỗi map có 1 điểm neo — qua cổng vào map là tới điểm neo trước; Đi farm: tắt Auto suốt đường đi, tới điểm farm mới bật cả 3; map không có cổng vào thì đi tới map gần nhất + gợi ý NPC; chọn khu qua bảng khu (đứng cạnh bảng + bấm Tương Tác, kiểm chứng mở lại); vòng Việc Dược Công đúng trình tự game (đứng cạnh Đại Phu → bấm Tương Tác nhận việc → đứng cạnh điểm thu thập bấm Tương Tác → về giao + kiểm chứng Dược Công tăng); tự động câu cá ở Thảo Dược Cốc; Huyết Xích Cấm Địa: tới Miếu Hoang gặp Nữ Tu Trông Miếu đăng ký (100 Linh Thạch/người, tính 1 lượt/ngày) + tự xác nhận mở Cấm Địa (nhiều cách tìm nút xác nhận, bấm lại tối đa 5 lần) → vào cụm 3 map tự Auto đánh quái, quét sạch khu mở cấm chế rồi thu hoạch nguyên liệu (Bích Ngọc Cổ Mộc/Trấn Thần Thạch/Địa Linh Hóa Quả/Trúc Cơ Thảo). Căn giờ Boss: tự mở mục Hoạt Động trong Hành Trang đọc thời gian hồi boss làm nguồn giờ chính (đọc lại mỗi 60s khi chờ), xuất phát để có mặt tại vị trí boss trước giờ ra 5 phút. Nhiệm vụ chính: đọc mục tiêu trong bảng nhiệm vụ (#quest-objectives), bấm mục tiêu cho game tự dẫn đường (hụt thì tự tìm đường theo tên NPC/quái/map), tự đánh/hái/nói chuyện theo từng bước, bước lạ thì ghi nguyên văn rồi dừng. Khe Nứt (Vết Nứt Không Gian): canh toast #vn-toast báo map đang sáng (mở 22:00 giờ VN, cửa vào 10 phút, cần Hư Không Lệnh + Luyện Khí 13), tự tới đúng map, quét map tìm vết nứt (đọc toast-msg "Đứng sát vết nứt") rồi vào trong farm quái. Thêm v1.14: Lịch trình theo giờ (Dược Công → farm → boss sắp ra → 22:00 Khe Nứt), tự hồi sinh "Về làng / Miễn phí" rồi quay lại điểm đang làm khi chết, Thu thập khoáng/linh thảo (51 điểm/3 map), Hòm Hư Không trong Khe Nứt (quái đứng yên — giữ Auto + kỹ năng, đứng lâu khi giao chiến), tự mặc đồ tốt hơn trong túi (so điểm chỉ số), tự tránh PK (tụt Khí Huyết khi Auto tắt/caption → về điểm neo → đổi khu), kỹ năng theo nhịp khi đánh boss (đọc hồi chiêu ô #qs-0..3, không đọc được thì bấm luân phiên 2s), tự nhận Điểm Danh ngày, tự đăng kí Đại Hội Tu Tiên (suất 09:16/13:16/17:16/20:16, ghi danh trước 16 phút tại Chấp Sự Đại Hội). Thêm v1.15: tự đánh giải Đại Hội — ghi danh xong chờ trọng tài đưa vào Phòng Chờ rồi lên đài (Đài Luận Võ), bật Auto + Chạy + Bay + kỹ năng theo nhịp đánh từng trận, đọc kết quả từng trận từ toast Đại Hội; thua bị loại/hết giải thì tự bấm Về Làng rồi quay lại farm theo map/điểm đang chọn trên bảng (không dừng). Thêm v1.16: luật đánh nhau — mọi điểm bắt đầu đánh (farm, quét quái Huyết Xích, Khe Nứt, boss, nhiệm vụ chính, đài Đại Hội, lịch trình) đều bật ĐỦ Phi Hành + Chạy + Auto qua hàm chung có kiểm chứng + thử lại + nhật ký tổng kết "Bay/Chạy/Auto" (đi đường vẫn tắt Auto, chỉ Bay + Chạy). Thêm v1.17: chế độ Cày cấp tân thủ — chuỗi Luyện Khí tầng 1→13 rồi đột phá Trúc Cơ: đọc cảnh giới + bảng Đột Phá của game, ưu tiên nhiệm vụ chính → Dược Công → farm quái hợp cấp theo tầng (bảng trích từ dữ liệu quái) → đả tọa ở đài đá khi cần Đạo Hạnh → luyện đan phá quan ở Đan Lô khi đủ nguyên liệu (thiếu Trúc Cơ Thảo/Địa Linh Quả thì farm Huyết Xích) → ra đài đá phá quan (Trúc Cơ: chọn kèm 5 Bảo Mệnh Phù 100% nếu đủ, không thì 70%); bắt đầu từ tầng hiện tại, nhật ký + tổng kết phiên. Thêm v1.18: chuỗi cày cấp luôn quét từ chặng 1 (giai đoạn nhiệm vụ đầu + Luyện Khí Tầng 1) đi lên theo thứ tự — chặng đã qua (giai đoạn hiện tại lớn hơn/tầng đã đạt) thì ghi "đã qua — bỏ qua", chặng chưa qua làm đầy đủ như v1.17; nhật ký đầu phiên ghi rõ chặng/tầng hiện tại. Thêm v1.19: kiểm Điểm Danh qua bảng Sự Kiện chỉ 1 lần mỗi phiên (nhớ kết quả, lần sau bỏ qua ngay), mở/đọc/đóng bảng bằng poll ngắn thoát sớm khi có dữ liệu, quá 5 giây chưa đọc được thì bỏ qua vào việc chính; đọc Hoạt Động/Hành Trang cũng poll ngắn. Thêm v1.20: Câu Côn Bằng ở Hồ Tây — canh giờ Côn Bằng ra 12:30 + 19:30 giờ VN (6 phút/lần, theo CON_GIO trong mã client), vào Hồ Tây (van_can) Khu 1 trước khung, tới bờ hồ câu bằng nút giữ/thả .vc-nut theo pha thật trên DOM (quăng thả ở vùng Sâu → chờ phao chìm → giật → giữ/thả theo gợi ý Thả!/Nhả nhịp/Kéo! + tránh căng đỏ; pha conRanh nhấn móc Côn rồi kéo Côn theo nhịp), đọc thẻ cá + kết quả Côn ghi nhật ký, hết khung Côn thì tổng kết + dừng (cần Luyện Khí Tầng 7+). Thêm v1.21: Câu cá Hồ Tây — chế độ câu liên tục ở Hồ Tây cả ngày (tới khi bấm Dừng, trần phiên 4 giờ) + fix tỷ lệ cá cho vòng câu chung (poll chờ cắn 30ms giật ngay khi phao chìm hẳn, giật giữ luôn vào pha kéo, kéo theo gợi ý + căng dây theo xu hướng + khoảng cách cá, hụt ghi lý do suy từ căng/khoảng cách, tổng kết phiên quăng/bắt/hụt/tỷ lệ/nặng nhất); thời tiết → mồi: đọc luật hồ hiện tại (.vc-luat-ten: Nắng Gắt/Mưa Bụi/Gió Nồm/Nước Đục/Linh Triều/Lặng Sóng) chọn mồi hợp theo mô tả luật + mô tả mồi trong mã (không tự mua mồi, thiếu ghi rõ, thời tiết đổi thì đổi mồi); Điểm Danh TẮT ở đầu chế độ — chỉ mở Sự Kiện tự điểm danh sau Đại Hội có trận thắng. Thêm v1.22: sửa đọc cảnh giới cho chuỗi cày cấp — bản lưu pntt_progress_v1 của game ghi khóa "realm" (không phải "realmId") nên tool cũ luôn đọc hụt và dừng "không đọc được cảnh giới"; nay đọc đúng khóa realm (dự phòng đọc tên cảnh giới trên HUD #hud-realm), nhận đủ mọi realmId trong mã (Phàm Nhân, Luyện Khí 1–13, Trúc Cơ Sơ/Trung/Hậu Kỳ, Giả Đan, Kết Đan), không đọc được thì ghi nhật ký dữ liệu thô + nguồn; giai đoạn đầu: Phàm Nhân bỏ qua đả tọa (chưa cảm ứng linh khí), Dược Công bỏ qua khi giai đoạn nhiệm vụ dưới 8. Thêm v1.23: chuỗi cày cấp tự kiểm tra thiếu điều kiện đột phá rồi tự làm cho đủ — liệt kê từng điều kiện còn thiếu (Đạo Hạnh/giai đoạn nhiệm vụ/đan/nguyên liệu, đọc túi đồ qua bản lưu pntt_progress_v1.bag), thiếu nguyên liệu thảo thì tự đi Đại Phu đổi gói hạt bằng Dược Công → vào Vườn Cá Nhân gieo hạt + tưới nước (múc nước ở Ao Bích Thuỷ lần đầu) → trong lúc chờ cây lớn làm nhiệm vụ/farm/đả tọa → quay lại thu hoạch đúng lúc; thiếu Linh Thúy thì săn Dược Linh Thú trong vườn; thiếu nguyên liệu Huyết Xích thì chạy Huyết Xích; thiếu Yêu Đan Cấp 3 thì ghép 3 Mảnh Yêu Đan ở Đan Lô (kèm 3 Bảo Mệnh Phù = 100% nếu đủ, không thì 70% ghi rõ) hoặc canh Thần Thú Xích Long khi sắp ra; mọi việc đều tự điều hướng bằng hệ sẵn có (điểm neo, A*, cổng, đi đường tắt Auto, tới nơi bật đủ Bay+Chạy+Auto khi đánh); tự mặc đồ tốt hơn trong chuỗi (đầu chuỗi + sau farm/nhiệm vụ); nhiệm vụ cần rèn (giai đoạn 20) thì tự kiếm Huyền Thiết Khoáng ở Hang Động rồi tới Thợ Rèn rèn vũ khí (phí 50 Linh Thạch ghi rõ trước khi rèn); mục tiêu nhiệm vụ cần vật phẩm rơi từ quái thì tự tới bãi quái farm đủ số cần. Thêm v1.25: đả tọa tăng Đạo Hạnh ở Luyện Khí tầng thấp — mã client cho đả tọa từ Luyện Khí Tầng 1 trở lên (chỉ Phàm Nhân canMeditate=false), ngồi ở đài đá (Tản Viên hoặc đài trong vườn) được cộng Đạo Hạnh tối đa 60/phút; chuỗi cày cấp ở tầng thấp (1–6) thiếu Đạo Hạnh thì đả tọa ở đài gần nhất trước khi farm, đọc Đạo Hạnh trước/sau ghi rõ tăng bao nhiêu, Phàm Nhân vẫn làm nhiệm vụ Tẩy Tuỷ như cũ. Thêm v1.25 (bổ sung): nhiệm vụ chính tự trang bị theo mục tiêu ("Trang bị Phi Diệp vào ô Phi Hành" — mở Hành Trang đeo đúng món vào đúng ô, kiểm chứng ô trang bị; ô Phi Hành trống mà túi có Phi Diệp thì tự đeo để dùng Phi Hành; chưa đủ cảnh giới thì ghi rõ, không kẹt), tự gặp NPC dạng "Hoàn tất rồi gặp Tàng Kinh Lão Nhân" (tự tới Tản Viên 11,12, xử lý thoại theo luật v1.24), phân loại thêm mục tiêu sắc/luyện đan ở đan lô + câu cá theo nhiệm vụ + mục tiêu Đạo Hạnh/phá quan do chuỗi tự xử lý (không còn dừng "bước lạ" ở giai đoạn 14 — giai đoạn 15 Yêu Cốt Miếu Hoang tự đi tiếp qua Miếu Hoang); bước lạ vẫn thử tới đúng map/điểm làm việc của giai đoạn rồi ghi nguyên văn. Dược Công + đổi hạt hợp cấp độ: chỉ đổi gói hạt của đan cần cho cửa phá quan hiện tại (ghi rõ đổi gói nào vì đang cần đan gì, không đổi gói vượt/dưới cấp), nhận việc Dược Công vừa sức theo tầng (tầng thấp ưu tiên việc map an toàn, việc ở Thảo Dược Cốc quái cấp 4–5 để sau khi còn việc khác, việc khóa theo giai đoạn bỏ qua ghi rõ). Chuỗi cày cấp làm việc theo đúng chuỗi nhiệm vụ chính (đúng thứ tự giai đoạn 0→38, mục tiêu theo đúng thứ tự game liệt kê, không nhảy cóc): mỗi vòng nhật ký ghi rõ đang ở giai đoạn mấy, mục tiêu nào đã xong/còn; việc phụ (đả tọa/farm/Dược Công/luyện đan/phá quan) chỉ làm khi giai đoạn hiện tại cần hoặc bị chặn bởi điều kiện cảnh giới/đan, làm xong quay lại đúng mục tiêu đang dở. Thêm v1.26: cày tân thủ làm nhiệm vụ chính TRƯỚC mọi việc phụ (bỏ thứ tự cũ chuẩn bị vườn/gieo cây trước nhiệm vụ — cây chỉ gieo khi tới lượt việc phụ; phần farm: tới map + đổi khu xong là bật ngay Chạy+Phi Hành+Auto đánh luôn, áp mọi đường vào farm, đổi khu thất bại ghi rõ và farm ở khu hiện tại; chỉ khi nhiệm vụ chính bị chặn bởi điều kiện cảnh giới/đan/Đạo Hạnh hoặc đã làm hết phần làm được mới chuyển việc phụ, nhật ký ghi rõ lý do); muốn có hạt phải làm nhiệm vụ Dược Công để đổi — thiếu điểm Dược Công thì tự làm việc Dược Công hợp cấp ở Đại Phu (kiểm chứng qua seedQuest) cho đủ điểm rồi mới đổi gói hạt của đan cần cho cửa phá quan hiện tại, nhật ký ghi điểm trước/sau + số việc đã làm, hết lượt Dược Công trong ngày (tối đa 15 lượt/ngày) thì ghi rõ và chuyển việc khác; giai đoạn 0–23 bám trình tự hướng dẫn tân thủ trong client (phim hoạt cảnh NhiemVuHuongDan gd0–gd23: vườn gieo→múc nước→tưới→hái, đáp Bách Khoa thử đáp án tới khi đúng, đài đấu Chiến Bảng/Sân Đấu đánh trong đài, U Minh Cự Mãng vào Huyết Xích); thêm chế độ Vạn Hoang Chiến Trường (suất Thứ Hai/Thứ Sáu 21:16, ghi danh qua toast #ct-toast-act, vào trận bật đủ Bay+Chạy+Auto + kỹ năng theo nhịp) và Sỹ Sách Điện (phó bản tông môn 3 ải mở 20:16 Thứ Năm, vào qua Thủ Điện Sỹ Sách ở Miếu Ông Trường Con — cần thuộc tông môn, chưa đủ điều kiện thì ghi rõ lý do game từ chối); nút Map sáng nâng sáng vùng tối tầm nhìn (Vết Nứt/Chiến Trường vẽ lớp tối trong canvas — tool lọc sáng ở tầng hiển thị + phóng minimap), chế độ Chiến Trường tự canh hái Vạn Hoang Huyết Lan (khóm trên đảo, nút "Hái Huyết Lan" hiện khi đứng kề). Thêm v1.27: câu Hồ Tây theo luồng cá — quét thời gian thực thông báo luồng cá của server (caption + chat hệ thống "Luồng Yêu Ngư/Giao Ngư phía … vừa trồi lên", dấu nước nuoc bậc yeu/giao trong mã VanCanUI) → tính ô bờ gần luồng nhất + lực quăng theo công thức tầm quăng của client (56+194×lực px, phao gần dấu ≤58px dễ gặp bậc ấy) → tự di chuyển tới ô bờ đó rồi quăng, luồng đổi thì tính lại; không có luồng mới thì chọn vùng theo thời tiết hồ; thống kê tỷ lệ bắt từng ô bờ; vòng câu tự động trọn vẹn bằng minigame của tool (Hồ Tây không có "Tự động câu" của game — lựa chọn đó chỉ có ở hồ Thảo Dược Cốc). Lịch trình sự kiện tuần Thứ 2→Chủ Nhật: bảng lịch trích từ mã (Đại Hội 09:16/13:16/17:16/20:16 nghỉ 20:16 Thứ Ba/Năm/Bảy, Côn Bằng 12:30+19:30, Cổ Vật Đáy Hồ 10:00–22:00, Vết Nứt 22:00, Sỹ Sách Điện Thứ Năm 20:16, Chiến Trường Thứ Hai/Sáu 21:16, Tam Lộ Thứ Tư/Chủ Nhật 21:00, Tranh Bia Thứ Năm 21:00, Vận Tiêu 11:00–22:00, boss theo giờ hồi, Dược Công 15 lượt/ngày) — tới giờ sự kiện nào tự ghi danh/làm sự kiện đó (trùng giờ ưu tiên cửa vào sắp đóng trước), khoảng trống farm/Dược Công/boss như cũ; mục Sự kiện trên bảng có nút bật/tắt Tự đăng kí + Tự làm/đánh từng sự kiện, nút Tích hết/Bỏ hết, lựa chọn lưu lại. Map sáng tự bật ở bí cảnh/map sự kiện có lớp tối tầm nhìn (Vết Nứt, Chiến Trường, Sỹ Sách Điện, Tam Lộ, Tam Ma — theo drawSuong trong mã), ra map thường tự tắt. Thêm v1.28: câu Hồ Tây quăng sâu nhất + ưu tiên luồng bậc cao — vòng câu (thường + Côn Bằng) luôn thả lực ở vùng Sâu nhất của thanh lực (VUNG sau lực ≥0.68 theo mã, sóng tam giác 1.6s — thả khi lực tới đích trên chiều lên hoặc vừa qua đỉnh, ghi nhật ký lực thả thật + vùng mỗi lần quăng; không có luồng thì thả lực tối đa 1.0 = tầm quăng xa nhất 250px); quét map/thông báo tìm luồng Giao Ngư (giao ★4) và Yêu Ngư (yeu ★3) trước — có luồng bậc cao thì ưu tiên tuyệt đối (giao trước yeu, cùng bậc lấy mới nhất): tự chọn ô bờ + lực trong vùng Sâu để phao rơi vào luồng đó (điểm rơi ước theo hướng ra nước sâu về tâm hồ, trúng dấu khi cách ≤58px DAU_R); không có luồng bậc cao mới câu thường vùng Sâu; luồng bậc cao trồi lên giữa phiên thì lần quăng kế chuyển vị trí sang luồng đó ngay. Sửa v1.28 (lỗi đi farm Phong Địa qua Dược không qua cổng): đi qua nhiều map theo từng chặng có kiểm chứng — vào map tới điểm neo NPC trước, bay tới cổng đúng hướng, qua cổng đọc lại map thật rồi mới tính chặng kế (lạc sang map khác thì tính lại tuyến từ map đó); lái trong map mà map đổi giữa chừng (bước qua cổng) thì dừng lái ngay thay vì lái tiếp theo tọa độ map cũ; kẹt chặng nào nhật ký ghi rõ chặng đó. Thêm v1.29: sửa quăng sâu nhất thật (Bui báo 21:48 chạy v1.28 vẫn hụt) — game tính lực bằng sóng tam giác theo đồng hồ (Date.now()-lucTu)%1600/1600, đỉnh 1.0 tại 800ms sau nhấn (hàm X() trong VanCanUI), thả V() lấy lực tại đúng thời điểm pointerup; bản cũ poll height% 25ms gần như không bao giờ trúng cửa ±4ms quanh đỉnh 100% nên luôn thả trên chiều xuống — nay thả theo THỜI GIAN (ghi mốc nhấn, thả tại mốc + đích×800ms trên chiều lên, tính lực thật bằng đúng công thức của game + tự hiệu chỉnh độ lệch nhịp thả theo sai số đo từng lần quăng, nhật ký ghi lực đích/lực thật/vùng/phao rơi ~px mỗi lần quăng). Sửa quét luồng cá (Bui báo 21:49 chưa quét chọn được luồng tốt nhất) — nguyên nhân: dòng chat hệ thống kết thúc "." mà regex cũ đòi "!" nên nguồn chat không bao giờ khớp, caption chỉ hiện 2,8s mà tool chỉ quét lúc quăng, thông báo nhiều dấu nối " · " chỉ khớp dấu cuối, #thu-log trống khi panel chat đóng — nay theo dõi thay đổi DOM (MutationObserver trên #ritual-caption + #thu-log) ghi luồng ngay khi thông báo hiện, parser bắt mọi đoạn "Luồng <bậc> <hướng>" trong cả caption lẫn chat, chọn luồng tốt nhất còn tươi theo Giao > Yêu > Linh > Phàm, nhật ký ghi rõ quét thấy luồng nào ở nguồn nào. Thêm v1.30: Phong Địa tự kiểm tra khu đất phong — Phong Địa có 40 khu đất phong (hạng Thượng 1–4 Đạo Hạnh ×2, Trung 5–16 ×1,5, Hạ 17–40 ×1 theo mã PhongDia), khu có tông giữ (chu trong PhongDiaUI.st.khu) là đất phong: game ghi "Chưa có tông môn — chỉ vào được đất trống" nên chỉ khu Trống hoặc của tông mình mới farm được. Đi farm Phong Địa: tool tự tới bảng khu (35,17), mở bảng, đọc dấu tông giữ trên từng ô khu (class pd-chu/pd-minh/pd-cam/pd-tranh + thẻ tên tông), ghi nhật ký khu nào đất phong/khu nào đất trống, chọn khu đất trống hạng cao nhất (khu anh chọn là đất phong thì tự đổi khu khác), kiểm chứng đúng khu rồi bật Chạy+Phi Hành+Auto farm Lợn Rừng như luật v1.26; không đọc được trạng thái từ bảng khu thì dự phòng thử từng khu (vào khu tới điểm farm bật trio 15s xem có giao chiến không, ghi rõ là suy từ giao chiến); không có khu trống nào thì chỉ di chuyển, không bật Auto. Thêm v1.31: sửa quăng max tầm thật (Bui báo 21:58 chạy v1.30 vẫn chưa max) — tra mã VanCanUI: nhấn pointerdown→G() đặt lucTu đồng bộ, thả pointerup→V() lấy X() tại đúng lúc handler chạy, height% cập nhật mỗi khung hình trong VanCanUI.update; v1.29 canh rAF+setTimeout theo mốc +800ms vẫn hụt trên iPhone vì khung hình game nặng làm tick nhảy qua nhánh setTimeout, thả muộn tới 1 khung (mỗi 8ms muộn phía xuống = −1% lực) — nay thả THÍCH ỨNG: theo dõi height% theo từng khung rAF trong lúc giữ (thả ngay khi height% chạm ngưỡng 97–100 hoặc bắt đầu giảm sau đỉnh ≥90), dự phòng theo thời gian tại mốc + đích×800ms + offset hiệu chỉnh, cách nào đo lực cao hơn thì ưu tiên cách đó lần sau, tự hiệu chỉnh offset + ngưỡng height theo sai số từng lần quăng tới khi lực thả đạt ≥99%, nhật ký mỗi lần quăng ghi đầy đủ chẩn đoán (mốc nhấn/thả, height% lúc thả, lực công thức, cách thả, offset/ngưỡng, nhịp khung hình). Thêm v1.32: Huyết Xích theo cơ chế cấm chế toàn map — mỗi map quét sạch quái + boss trước rồi mới thu hoạch (thu hoạch vẫn giữ Phi Hành + Chạy + Auto, không đi bộ trong cụm, qua cổng trong cụm kiểm chứng bật lại nếu bị tắt), thu đủ mọi điểm mới qua map kế; boss 3 con đầu đàn đánh hit-and-run (vào đánh 2,5s → lùi 6 ô né đòn diện rộng 1,6s → quay lại, đổi hướng lùi mỗi nhịp); kiểm tra trạng thái thật trước khi nhấn nút Chạy/Phi Hành/Auto ở mọi nơi (đọc #btn-fly.active/#btn-run.active/#btn-auto-touch aria-pressed — đang đúng trạng thái thì không nhấn, tránh nhấn bật thành tắt). Tự dò cách lái (phím/joystick/dpad/chạm neo camera) bằng sự kiện tổng hợp, không gọi hàm nội bộ của game. Thêm v1.34: lịch trình treo 1 ngày theo cảnh giới — dưới Trúc Cơ (Luyện Khí) farm mặc định ở khu dược Thảo Dược Cốc, tự chọn khu vắng người nhất theo mức đông/vắng trên bảng khu (server trả số người từng khu, game chỉ hiện 3 mức vang/dong/day qua class ô khu — tool đọc class, khu đang vắng thì giữ, đông/đầy thì đổi, kiểm lại mỗi 10 phút farm), khung đêm 23:00–05:00 câu cá Hồ Tây thay farm; Trúc Cơ trở lên farm Phong Địa (tự kiểm tra 40 khu chọn khu trống hạng cao nhất như v1.30); anh đổi tay map/điểm/khu trên bảng thì lựa chọn tay thắng mặc định; qua 00:00 mỗi ngày làm Dược Công trước mọi việc khác (Trúc Cơ trở lên nhấn "Tự Đi Làm Việc Dược Công" của game + bật Phi Hành rồi chờ game làm xong, dưới Trúc Cơ tool tự làm vòng tay); khung Huyết Xích 1 lượt sau Dược Công. Thêm v1.35: câu Hồ Tây chọn vùng quăng Gần/Giữa/Xa/Tự động theo lực dây (VUNG trong mã client: Nông lực 0–0,34 tầm 56–122px, Giữa 0,34–0,68 tầm 122–188px, Sâu 0,68–1,0 tầm 188–250px) — nút chọn trên bảng lưu lại, mặc định Xa giữ luật sâu nhất cũ; Tự động chọn vùng theo luồng cá (luồng từ thông báo server → vùng khớp vị trí luồng ước + ô bờ gần nhất; không có thì theo luồng suy từ dữ liệu cắn + tỷ lệ cắn theo vùng, chưa đủ mẫu thì Xa), nhật ký ghi nguồn chọn vùng mỗi lần quăng; luồng Giao/Yêu vẫn thắng cả chọn tay; câu Côn Bằng giữ cách quăng cũ (móc Côn không liên quan lực quăng). Thêm v1.36: kiểm tra Phi Hành sau mỗi lần đổi map + đầu mỗi việc (Bui báo 22:46 chọn Huyết Xích đang bay qua map lại bị tắt Phi Hành) — tra mã game qua cổng không tự hạ cánh (checkPortal chỉ xét ô, nạp map không reset flying); nguyên nhân phía tool: dự phòng hạ cánh đi bộ lên ô cổng trong tryCrossPortal để lại Phi Hành TẮT (đi bộ tới điểm neo, chặng kế mới bật lại) + kiểm chứng bay bằng tốc độ trong goToTile nhấn pressFly mù có thể tắt bay đang bật; nay sau mỗi lần qua cổng chờ map ổn định rồi đọc trạng thái thật #btn-fly, cần bay thì bật lại ngay trước khi tới điểm neo; tốc độ thấp chỉ bật lại khi trạng thái thật TẮT; trong cụm Huyết Xích canh Phi Hành ở mỗi điểm quét/thu hoạch; đầu mỗi chế độ ghi nhật ký trạng thái Phi Hành lúc bắt đầu việc. Thêm v1.37: câu Hồ Tây thay cách thả lực bằng cách v3.1 trong tệp Tool Tổng Bui gửi (Bui làm rõ 22:54: bản cũ không quăng được mức sâu trên iPhone) — sự kiện nhấn/thả đúng v3.1 (PointerEvent pointerId 1, không pointerType), giữ nút cố định đích×800ms bằng setTimeout rồi thả (không canh height%, không hiệu chỉnh), đích vùng Xa đổi 1.0→0,85 (680ms, tâm vùng Sâu như castHoldMs của v3.1), lực theo luồng trần 0,95, nhật ký chẩn đoán từng lần quăng giữ nguyên (lực đích/thật/vùng/tầm rơi/thời gian giữ/height% lúc thả); tích hợp thêm từ v3.1: thu cần chủ động (.vc-thu khi chờ cắn quá 90s + đầu lượt nếu dây còn trong nước — bản cũ kẹt dây là dừng cả chế độ), tỷ lệ cắn theo thời tiết (bucket riêng từng thời tiết, ưu tiên khi chọn vùng/mồi), thời tiết dự phòng hash ngày đúng công thức client (luatKy trên chuỗi YYYY-MM-DD giờ VN) khi DOM chưa có, gợi ý vùng theo thời tiết (Nắng Gắt/Linh Triều→Sâu, Mưa Bụi→Giữa), không quăng mới 60s trước giờ Côn Bằng; giữ nguyên của tool chính: giật ngay khi phao chìm (fix tỷ lệ cá v1.21), kéo cá theo căng/khoảng cách, quét luồng Giao/Yêu từ thông báo server, 40 điểm câu, chọn vùng Gần/Giữa/Xa/Tự động (luồng Giao/Yêu vẫn thắng). Thêm chế độ Tổ đội farm rùa (lệnh Bui 22:53): tới Miếu Ông Trường Con Khu 12, bật đủ Phi Hành+Chạy+Auto farm Thạch Quy xoay 13 điểm rùa trích từ mã client, đếm tiến độ nhiệm vụ chính giai đoạn 36 "Hạ Thạch Quy biến dị" (đọc #quest-objectives, dự phòng cờ ha_tq_bien_di) tới đủ 100 thì dừng + báo; tự chấp nhận lời mời tổ đội (#invite-accept) + ghi trạng thái đội (#party-hud/#party-count) trong nhật ký — tool không tự mời người lạ (mời phải bấm vào người chơi trên canvas ≤180px, anh mời đồng đội hoặc chờ lời mời; nên lập đội ở làng/Bãi Đá vì trong miếu là đất PK tự do). Thêm v1.38: thay vòng câu Hồ Tây bằng mã câu của tệp tutien2d-ho-tay-auto-v3.user.js v3.0.0 (Bui lệnh 23:33 ngày 2026-11-26 — xóa phần auto câu Hồ Tây hiện tại, dùng nguyên logic của tệp v3): quăng giữ nút cố định theo vùng (Nông 136ms/Giữa 408ms/Sâu 680ms, ±15ms ngẫu nhiên), sự kiện nhấn/thả đúng v3 (PointerEvent pointerId 1, không pointerType/tọa độ), giật tap 60ms sau trễ 80–250ms khi phao chìm, kéo theo nhịp applyPull của v3 (căng đỏ buông, Thả! buông, Kéo! giữ, Nhả nhịp giữ rồi buông 200–350ms), chờ cắn quá 60s thì thu cần quăng lại, nghỉ 1–3s giữa 2 lần quăng, mồi theo mục tiêu của v3 (Linh→Ngọc Hà, Yêu→Xích Huyết, Giao→Long Diên Hương, Tự do→Giun Đất, Tự động→vùng+mồi tỷ lệ cắn tốt nhất), tỷ lệ cắn theo vùng/mồi của v3 (khóa tt2d_fish_v3_rates, cần ≥3 quăng mới tin tỷ lệ), 2 lần liên tiếp không cắn thì đổi vùng tìm chỗ, cắn ở vùng nào giữ vùng đó; bỏ cách thả v1.31/v1.37, bỏ mồi/vùng theo thời tiết, bỏ luật không quăng 60s trước giờ Côn (không có trong v3.0.0). Giữ của tool chính (Bui bổ sung 23:35): tự động đến Hồ Tây (van_can Khu 1) + 40 điểm câu + chọn vị trí theo luồng cá xuất hiện trên map theo thời gian thực (quét thông báo luồng caption/chat, luồng Giao/Yêu ưu tiên → tự chọn ô bờ + lực vào luồng, luồng đổi thì chuyển vị trí), nhật ký ghi rõ đã tự tới Hồ Tây/luồng nào đang xuất hiện/chọn vị trí nào vì sao + chẩn đoán từng lần quăng (lực/vùng/phao). Thêm v1.39: Huyết Xích tự hồi sinh khi chết (trong cụm nút #downed-home là \"Hồi sinh cửa\" miễn phí 60% Khí Huyết, #downed-spot tại chỗ 35% tối đa 3 lần/khu — tool ưu tiên tại chỗ giữ vị trí, hết lượt hồi cửa, ghi Linh Thạch trước/sau, sống lại còn trong cụm thì bật lại trio quay lại điểm đang làm tiếp tục, không dừng chế độ, chết quá 6 lần/lượt thì dừng), đánh boss di chuyển liên tục quanh boss (đi vòng bán kính 2↔3 ô quanh điểm boss không đứng yên, đổi bán kính mỗi vòng + đảo chiều mỗi 2 vòng, Auto + kỹ năng theo nhịp chạy suốt, nhật ký ghi từng vòng), thu hoạch đúng điểm (đứng đúng ô quanh điểm tới khi nút Tương Tác hiện + kiểm chứng bằng đếm vật phẩm trong túi trước/sau), tự nhận biết quét sạch quái/boss (caption \"Đã quét sạch yêu thú — cấm chế tan\" + thử thu hoạch điểm đầu cho số yêu thú còn lại + theo dõi boss đã gục — hết quái/boss mới thu hoạch đủ mọi điểm rồi sang map kế, nhật ký ghi \"đã quét sạch map X (0 yêu thú) — thu hoạch đủ N/N điểm — sang map kế\"). Thêm v1.40: Dược Công Trúc Cơ ấn tự động làm là bắt đầu nhiệm vụ (Bui chốt 00:02 ngày 2026-11-27) — tra mã game thấy bấm mục thoại "Tự Đi Làm Việc Dược Công" ở Đại Phu chỉ mở hộp xác nhận, phải ấn tiếp nút "Bắt Đầu Tự Làm" (#dialog-action) mới gọi pe() chạy autoDC (bản cũ không bấm nút này lại đóng thoại nên tự động không bao giờ bắt đầu); nay ấn mục thoại → ấn "Bắt Đầu Tự Làm" → kiểm chứng nhiệm vụ đã bắt đầu (caption "Tự làm việc Dược Công" / seedQuest.active / nhân vật di chuyển / điểm tăng) → xong bấm Phi Hành (ensureFly kiểm tra trạng thái trước khi nhấn; game bỏ qua nút bay khi thoại còn mở nên bấm sau khi thoại đóng) → đứng yên chờ, không gửi lệnh lái trong lúc chờ (game hủy autoDC khi có thao tác tay/di chuyển); dưới Trúc Cơ giữ vòng tay như cũ. Thêm v1.43: nhiệm vụ chính tự đến đúng chỗ NPC (Bui báo 04:29 ngày 2026-11-27 nhân vật không tự đến chỗ NPC) — tra mã game thấy bấm mục tiêu gọi diToiNhiemVu nhưng game từ chối/dừng tự đi kèm nhiều caption ("Việc này không có chỗ cố định để tự đi tới", "Đã ở đúng nơi", "Từ đây không có đường đi bộ", "Kẹt đường — dừng tự đi"…) mà bản cũ chỉ nhận diện 2 mẫu nên chờ đủ 120s đứng yên, và coi "di chuyển rồi đứng yên" là đã tới kể cả khi tự đi bị hủy giữa đường (lái đánh trả làm game hủy diNV); nay bước gặp/nói chuyện NPC: tra NPC đích từ tên trong mục tiêu/dữ liệu giai đoạn → bấm mục tiêu rồi kiểm chứng nhân vật có bắt đầu di chuyển trong 4s không, không di chuyển thì tool tự tới đúng ô kề NPC (tọa độ NPC thật trong dữ liệu), kiểm chứng đã đứng kề NPC + nút Tương Tác hiện rồi mới xử lý thoại, nhật ký ghi "Đang tới chỗ NPC … / Đã tới chỗ NPC …"; chờ tự đi nhận diện đủ caption dừng của game, đánh trả xong coi như tự đi đã hủy → tự tới chỗ NPC, không nhúc nhích quá 10s thì bỏ chờ sớm. Thêm v1.44: sửa bước Bách Khoa giai đoạn 17 — tới đúng chỗ Thầy Ông Nội (Tản Viên 9,10) mới bấm Tương Tác, chọn "Bắt đầu Hỏi Đạo", sai thì đọc gợi ý đáp án đúng của game rồi thử lại, đủ 5/5 nhận thưởng; bước "Rút 1 bí tịch CHƯA CÓ" rút thật ở tủ Tàng Kinh Sơ Cấp tới khi được quyển mới (cờ rut_bi_tich_17_2). Thêm v1.45: Dược Công Luyện Khí trọn vòng tự nhận–tự làm–tự trả tới hết 15 lượt/ngày (nhận việc đủ 3 bước gồm nút "Nhận Việc Này", trả việc bấm đúng nút hành động "Giao Nguyên Liệu"/"Giao Ba Cá", việc hụt tự hủy hoàn lượt chuyển việc khác, lỗi 1 lượt không dừng cả vòng, nhật ký "Đã nhận việc X — đang làm — đã trả, điểm Dược Công A→B — lượt n/15"); nhiệm vụ chính tự suy diễn từ chữ mục tiêu (loại việc + đích NPC/quái/vật/map + số lượng, tra MAPS/QUEST_STAGES/bảng vật phẩm) rồi tự làm, nhật ký ghi chuỗi suy diễn + tiến độ. Thêm v1.46: nhiệm vụ cần đổi hạt thì chọn làm nhiệm vụ Dược Công trước (Bui lệnh 06:48 ngày 2026-11-27) — mọi đường cần hạt (gieo trồng theo nhiệm vụ giai đoạn 8, nguyên liệu đan cho cửa phá quan, bước sắc/luyện đan theo nhiệm vụ, mục tiêu suy diễn ra thảo vườn) đều kiểm tra hạt trong túi + cây đang lớn trước: thiếu hạt thì đổi gói hạt chứa hạt đó ở Đại Phu (Tụ Khí 2 Dược Công không khóa; Luyện Khí 5 từ tầng 4; Phá Cảnh 10 từ tầng 7; Trúc Cơ 20 từ tầng 10 theo SEED_PACKS của client), thiếu điểm Dược Công thì chạy vòng Dược Công nhận–làm–trả trước cho đủ điểm rồi mới đổi, kiểm chứng hạt vào túi rồi quay lại đúng mục tiêu nhiệm vụ đang dở; hết 15 lượt Dược Công/ngày mà chưa đủ điểm thì ghi rõ chờ 00:00 reset ngày mới; nhật ký ghi "Mục tiêu cần gói hạt X (cần N điểm Dược Công, hiện có M) → làm Dược Công trước — đủ điểm → đã đổi gói hạt → quay lại nhiệm vụ". Thêm v1.47: bảng tool thu hẹp theo màn điện thoại (bề rộng tối đa 88% màn, chiều cao chừa 120px phía trên để không che hàng nút chức năng trên đầu của game, cuộn dọc trong bảng, chữ + nút nhỏ lại) — sửa lỗi bảng quá rộng che hết màn trong APK Android (Bui báo 06:55 ngày 2026-11-27). Bảng tool 2 tầng: mặc định 1 nút nhỏ, bấm mở lưới ô chức năng, bấm ô mới hiện bảng dữ liệu đang làm của chức năng đó. Thêm v1.48: làm việc Dược Công tự bật Chạy + Phi Hành (Bui lệnh 07:08 ngày 2026-11-27) — nhận việc xong tự bật Chạy + Phi Hành (đọc trạng thái thật trước khi nhấn, đang đúng thì không nhấn), kiểm lại sau mỗi lần qua cổng và trước mỗi điểm thu hoạch, nhật ký ghi trạng thái Chạy/Phi Hành lúc bắt đầu việc; làm đủ số lượng là tự tới Đại Phu (14,8) trả nhiệm vụ ngay (kiểm chứng điểm Dược Công tăng + seedQuest tắt) rồi nhận lượt kế, không đứng chờ; thoại hiện lên chỉ có mỗi nút "Lui Bước" thì tự chọn Lui Bước ngay ở mọi vòng (đi đường/farm/thu hoạch/câu cá/lịch trình/nhiệm vụ chính) để không ngắt phiên tự động, nhiều nút vẫn ưu tiên hành động/xác nhận như cũ. Thêm v1.49: tích Đạo Hạnh Luyện Khí trong chuỗi cày cấp = tới Rừng Trúc bật đủ Auto + Phi Hành + Chạy farm quái tích Đạo Hạnh (kiểm chứng 3 nút, nhật ký Đạo Hạnh a/b từng đoạn), đầy Đạo Hạnh thì đi phá quan ngay ở đài gần nhất, không farm tiếp; farm không tăng mới đả tọa bù ở đài đá. Luôn bật Phi Hành trong chuỗi cày cấp trừ lúc toạ thiền; phá cảnh xong bật Bay + Auto đánh ngay. Đủ nguyên liệu là tự luyện đan ngay ở Đan Lô (kiểm chứng đan vào túi), thiếu mới đi kiếm/đổi hạt. Thêm v1.50: ở vườn kiểm tra thu hoạch hết thảo dược đã chín (Bui lệnh 07:16 ngày 2026-11-27) — mỗi vòng vườn quét mọi ô trồng thu hoạch hết luống chín trước khi gieo việc khác, quét lại kiểm chứng không còn ô chín nào (còn sót thì thu lại tới khi sạch, tối đa 3 lượt quét), nhật ký ghi "Vườn: đã thu hoạch hết thảo dược chín (n ô) — còn m ô đang lớn, k ô trống"; vào vườn vì việc khác (phá quan/đả tọa ở đài vườn, săn Linh Thúy, luyện đan cần thảo qua vòng vườn) cũng kiểm tra thu hoạch hết thảo chín trước khi rời vườn. Thêm v1.51: canh Auto tự tắt (Bui báo 07:33 ngày 2026-11-27 phần Auto trong mã hay bị tự dừng) — tra mã client thấy Auto chỉ lật qua 1 hàm toggle duy nhất và game tự tắt Auto ở vài chỗ (bắt đầu/dừng tự làm việc Dược Công của game, hết quái khi tự làm việc, Tông Môn Chiến "Trả lái" khi có thao tác tay, khán giả Chiến Trường), còn mở túi/menu/thoại chỉ tạm dừng đánh chứ không tắt trạng thái, đổi map/chết/Phi Hành/Chạy/đánh tay không tắt Auto; nay tool canh trạng thái Auto thật mỗi 2s trong lúc chế độ đang cần Auto đánh (farm/tích Đạo Hạnh/Huyết Xích/boss/đánh trả), thấy Auto tự tắt là bật lại ngay + nhật ký ghi giờ tự tắt, đi đường/hộ tống/áp tải vẫn tắt Auto như luật cũ (canh chỉ chạy khi tool đang chủ động cần Auto), lúc game tự làm Dược Công thì canh đứng yên không đụng; sửa belief sau hồi sinh (chết không tắt Auto theo mã game — đọc trạng thái thật thay vì mặc định tắt, tránh bấm mù lật tắt Auto đang bật). Thêm v1.52: tích Đạo Hạnh trong chuỗi cày cấp đổi thành đả tọa ở đài đá làng (Tản Viên 22,18; đài vườn 8,7 nếu đang ở vườn) là cách chính — mã client cho ngồi đài đá meditate_stone cộng Đạo Hạnh theo MEDITATE.EXP_PER_SEC trần 60/phút — farm quái Rừng Trúc là cách thay thế khi đả tọa không khả dụng/không tăng hoặc đang ở sẵn Rừng Trúc, cách này chưa đầy thì thử cách kia, nhật ký ghi cách đang dùng + Đạo Hạnh a/b + tốc độ tăng; Đạo Hạnh đầy và đủ mọi điều kiện phá quan khác (đan phá cảnh/Trúc Cơ Đan, giai đoạn nhiệm vụ, Bảo Mệnh Phù) là phá quan ngay không chờ, thiếu điều kiện nào thì bổ sung ngay điều kiện đó (luyện đan/đổi hạt qua Dược Công như các bản trước) rồi phá quan, nhật ký ghi rõ từng điều kiện ĐỦ/THIẾU trước khi phá quan; đi farm/di chuyển dùng ngay cách nhanh nhất game cho phép (bật Phi Hành bay qua cổng tới nơi mới hạ cánh, mục tiêu nhiệm vụ thì bấm mục tiêu cho game tự đi), chỉ tự lái từng ô khi cách nhanh không dùng được, nhật ký ghi cách di chuyển đang dùng. Thêm v1.53: sửa Huyết Xích đánh xong boss không tìm quái đánh tiếp + xong quái không thu hoạch (Bui báo 13:04 ngày 2026-11-27) — tra mã client thấy cấm chế đếm MỌI quái còn sống trong map (hàm _() đếm SceneWorld.enemies chưa chết) mà bảng điểm quái của tool chỉ có 1–2 điểm/map trong khi quái thật ở 5–7 vị trí (Rừng Mãng Xà 7 rắn + boss, Lòng Đất 5 quái + boss, Đầm Lầy 2 hộ vệ + boss theo monsters.json) nên quái ở xa không bao giờ chết, cấm chế không tan, thu hoạch bị phong mãi; nay bổ sung đủ mọi điểm quái, tại mỗi điểm chờ tới khi hết giao chiến (Khí Huyết đã tụt rồi đứng yên) thay chờ cứng 7 giây, vòng quét theo dõi số yêu thú còn lại từng vòng (nhật ký "còn N yêu thú") quét tiếp tới khi về 0, boss đã đánh dấu gục mà cấm chế còn thì quay lại đánh boss (kết luận boss gục cũ suy từ Khí Huyết đứng yên có thể sai khi đi vòng bán kính 3 ngoài tầm boss — nay chỉ kết luận khi đang ở vòng gần bán kính 2, không giao chiến sau ~25 giây thì thoát sớm không quay đủ 240 giây), nhật ký từng giai đoạn "Huyết Xích map X: đã vào map — đánh boss — còn n yêu thú — đã quét sạch — thu hoạch điểm i/N — sang map kế". Thêm v1.54: sửa "lệch map là tool dừng" (Bui 13:18) — lệch map thì tự quay về đúng map của việc đang làm rồi làm tiếp ở mọi chế độ (farm, lịch trình, Huyết Xích, Dược Công, câu cá, boss, nhiệm vụ, thu thập), chỉ dừng khi thật sự không có đường cổng (trần 3 lần quay về); "chỉ chọn dừng là dừng tool, đóng cũng không dừng tool" (Bui 13:21) — bỏ dừng do chạm tay, thoại/bảng đóng hay lỗi bất thường thì tự khôi phục chạy tiếp, chỉ nút Dừng (và Khí Huyết <35%) mới dừng; sửa "đến đài đá mà không nhấn đả tọa" (Bui 13:22) — đứng kề đúng ô + hạ cánh + bấm Tương Tác tối đa 3 lần + kiểm chứng Đạo Hạnh tăng thật; Căn giờ Boss mặc định tự săn TẤT CẢ boss (Bui 13:23) — tự chọn boss sắp ra gần nhất, chưa tới giờ thì treo theo lịch trình (farm gần điểm boss), tới giờ quay lại săn, đánh xong chuyển boss kế. Thêm v1.55: Huyết Xích canh thông báo quét sạch yêu thú liên tục trong lúc quét map (đọc caption mỗi 400ms kể cả lúc di chuyển giữa các điểm quái/boss) — thấy thông báo \"Đã quét sạch yêu thú — cấm chế tan\" là dừng đánh ngay, thu hoạch luôn, không đánh thêm vòng nào; tín hiệu dự phòng cũ (thử thu hoạch điểm đầu, số yêu thú còn lại) giữ nguyên khi thông báo không hiện. Thêm v1.56: sửa nhãn phiên bản trên bảng tool (trước ghi cứng v1.47 nên mã mới vẫn hiện 1.47 — Bui báo 18:10 ngày 2026-11-27) — nay phiên bản hiển thị đọc từ một nguồn duy nhất (GM_info.script.version của Tampermonkey đọc thẳng @version, dự phòng hằng số TOOL_VERSION trong mã khi nhúng qua APK) dùng chung cho tiêu đề bảng + nhật ký bắt đầu, các bản sau không lệch nữa. Thêm v1.57: Tổ đội farm rùa tự mời người tổ đội rồi chọn khu (Bui lệnh 18:13 ngày 2026-11-27) — tới điểm farm rùa ở Miếu Ông Trường Con, chạm vòng quanh nhân vật mở menu người chơi (#mate-menu) bấm "Mời vào tổ đội" mời người đứng gần (tầm mời ≤180px + đội tối đa 6/6 do game khóa nút, lời mời sống 30s nên chưa vào thì mời lại sau 30s, nhật ký ghi đã mời ai/ai đã vào đội qua #party-members); đủ đội hoặc chờ quét mời xong thì tới bảng khu chọn khu vắng người nhất theo mức đông/vắng (luật chọn khu v1.34, không đọc được thì dự phòng Khu 12), cả đội cùng khu; qua khu xong bật đủ Auto + Phi Hành + Chạy có kiểm chứng rồi mới farm (Bui bổ sung 18:14), áp cả khi đổi khu giữa chừng; farm chia điểm theo thành viên (đọc vị trí của mình trong HUD đội .party-member.self — 2 người thì cụm Tây 7 điểm/cụm Đông 6 điểm, chưa vào đội xoay đủ 13 điểm như cũ); canh HUD đội ghi nhật ký đồng đội vào/rời đội + vừa gục (Trọng thương)/đứng dậy. Thêm v1.58: Tổ đội farm rùa DỒN ĐÁNH CHUNG QUÁI (Bui lệnh 18:23 ngày 2026-11-27) — bỏ chia điểm mỗi người một cụm của v1.57, cả đội dùng lịch điểm chung theo giờ (slot 75s × 13 điểm tính từ đồng hồ máy nên mọi máy chạy tool cùng tới một điểm, cùng đánh một con tới chết rồi mới chuyển điểm kế); đang giao chiến (Khí Huyết tụt ≥2% theo mẫu hxWaitFightDone) thì giữ điểm đánh tới hết giao chiến mới chuyển (trần giữ 180s); giao chiến liên tục >45s thì ghi nghi Thạch Quy biến dị (HP ×20 theo mã client — biến dị không có dấu hiệu DOM/caption, chữ \"Biến Dị\" + thanh máu vẽ trên canvas) và cả đội giữ dồn đánh con đó, tiến độ ha_tq_bien_di tăng trong lúc giữ = xác nhận đã hạ biến dị; nhật ký \"Dồn đánh chung: điểm (x,y) (con thứ n/13) — cả đội cùng đánh\". Thêm v1.59: 4 tính năng gợi ý vòng 2 (Bui chọn 1–4 lúc 18:28 ngày 2026-11-27) — Truyền Tống Trận tích hợp vào di chuyển (đường qua Tản Viên ↔ Bát Quái Thạch Phấn mà còn ≥3 chặng cổng thì đứng lên trận 10 Linh Thạch sang thẳng, kiểm tra đủ Linh Thạch + ghi trước/sau, không đủ/thất bại thì đi cổng như cũ); Yên Lãng Sơn (bí cảnh tổ đội 2–6 người, đăng ký ở Nữ Tu Trông Miếu, đọc lượt còn từ thoại, đánh theo lệnh chuông #yen-lang-lenh — ĐỨNG YÊN thì tắt Auto đứng yên, CHẠY thì di chuyển liên tục, mở rương khi Tộc Trưởng gục, hết lượt dừng ghi rõ); Hư Thiên (Thứ Năm 20:16, bấm nút Vào .htd-vao ở Thủ Điện Sỹ Sách, farm 4 ải + game tự nhặt bảo vật khi chạm, tránh PK, móc vào lịch tuần — trùng giờ Sỹ Sách Điện); Bí Cảnh Lãm Làng (chỉ chạy khi đã có tông môn — thoại Quản Sự không có mục Bí Cảnh Lãm Làng thì ghi rõ chưa đủ điều kiện, đánh 3 giai đoạn 15 phút rồi đổi tối đa 1 món Chiến Huân). Thêm v1.60: 3 tính năng gợi ý vòng 3 mục 4–6 (Bui chọn 18:33 ngày 2026-11-27) — Trận pháp khi farm/boss (Trúc Cơ 1+: đặt trận bàn qua ô kỹ năng chứa trận — farm ưu tiên Tụ Linh Trận, boss ưu tiên Liệt Hỏa Trận/Loạn Lôi Hỏa, kiểm tra Linh Thạch dựng + duy trì, hết Linh Thạch thì thu trận ghi rõ, hết trận đặt lại theo hồi chiêu); canh ngưỡng Công Boss + nhặt bí tịch rơi giữa trận (đọc HUD #boss-cong-hud ghi sát thương/trạng thái đủ điều kiện nhận đồ, Xích Long/Linh Hổ gục thì quét quanh điểm boss nhặt bí tịch rơi giữa trận trong 45s khóa chủ + kiểm chứng số bí tịch trong túi trước/sau); Chế Đài trong trận Chiến Bảng/Đại Hội (đọc banner #che-dai-banner — Địa Hỏa thì chạy né vòng đỏ, Linh Hoa + Khí Huyết thấp thì đứng vòng hồi máu, Kiếm Khí Châu thì chạy nhặt, nhật ký ghi mọi banner thấy được để chạy thử rồi siết). Thêm v1.61: vòng Dược Công canh thông báo Cổ Linh Thụ liên tục (400ms) — thấy thoại Cổ Thụ Linh Mộc hiện là tắt nhanh luôn (chỉ bấm nút đóng, nhật ký "Thấy thông báo Cổ Linh Thụ — tắt nhanh"); nhận việc xong kiểm tra nguyên liệu trong túi ngay — đủ số lượng thì giao luôn, chưa đủ thì làm tiếp cho đủ rồi giao (hộ tống giữ nguyên). Thêm v1.62: việc Dược Công hái Linh Chi hái 1 chuyến đủ cho cả 3 lượt nhiệm vụ hôm nay (mỗi lượt 3 cây → đủ 9 cây, mã client pickLinhChi cộng thẳng vào túi không chặn ở số việc cần, trả việc trừ đúng 3 cây) — đi qua các điểm hái kiểm tra túi sau mỗi điểm, đủ số là dừng giao luôn, các lượt sau nhận việc xong kiểm tra túi thấy đủ là giao luôn khỏi đi hái lại; hết điểm mà mới đủ lượt này thì giao lượt này, lượt sau hái tiếp; nhật ký "Hái Linh Chi: điểm (x,y) — đã có X/9". Thêm v1.63: tự nhập 8 gift code Bui gửi (YTBTUTIEN/PHACANHDAN/NGOAITRANG/CHUYENDAO/CHPLAY/TRUCCOHAUKY/YEUTHUCAP1/TUTIEN2D) qua Hành Trang → nút Gift Code — code đòi cấp/cảnh giới nào thì chờ nhân vật đạt đúng cấp đó mới nhập (chưa đạt không thử, tránh phí lượt; TRUCCOHAUKY chờ Trúc Cơ Hậu Kỳ), đạt cấp là nhập ngay ở lần kiểm kế (đầu phiên + sau phá quan + bấm tay ô Gift Code); đã nhập/đã dùng nhớ theo tài khoản không nhập lại; mã chọn hệ thì dừng chờ Bui chốt hệ, không tự chọn; nhật ký ghi rõ từng code và code nào đang chờ cấp nào. Thêm v1.64: mã TRUCCOHAUKY nhập được luôn (Bui chốt 18:54 ngày 2026-11-27) — bỏ yêu cầu Trúc Cơ Hậu Kỳ suy từ tên mã của v1.63, nhập luôn như 7 mã còn lại, trạng thái chờ cấp đã nhớ cho mã này được xóa 1 lần để lần kiểm kế nhập ngay, cơ chế học yêu cầu cấp từ lý do máy chủ trả giữ nguyên cho mọi mã; việc Dược Công hộ tống (Đưa Người Về Làng) bật Phi Hành + Chạy bay dẫn cháu về làng cho nhanh (Bui lệnh 18:55 + xác nhận cháu theo kịp khi bay — mã client cho cháu đuổi theo tốc độ 1.15× người chơi, xa quá 150px thì dịch chuyển tới cạnh người chơi), thay luật cũ hộ tống chỉ bật Chạy đi bộ. Thêm v1.65: nút "Tool" + bảng tool kéo di chuyển được (kéo nút Tool hoặc thanh tiêu đề bảng), nhớ vị trí qua tải lại trang — kéo tránh nút ✕ của game nếu bị che (Bui báo 19:03 ngày 2026-11-27 bảng che nút X không tắt được bảng thông báo). Thêm v1.66: lộ trình tự đi Yên Lãng Sơn trọn gói (Bui lệnh 19:32 + bổ sung 19:33 ngày 2026-11-27) — bấm chế độ là tự đi từ bất kỳ map nào về Miếu Hoang gặp Nữ Tu Trông Miếu; tự mời tổ đội qua kênh thế giới (nút phụ "Mời tổ đội" trong thoại Nữ Tu — game đăng tin, người ta bấm "Vào nhóm" là vào đội) + tin chat thế giới ghi rõ cần cấp, mời thêm người đứng gần có lọc cảnh giới cùng cấp (Luyện Khí mời Luyện Khí, Trúc Cơ mời Trúc Cơ — đọc "Cảnh giới:" trong menu người chơi); chọn số người vào 2–6 trên bảng, đủ số đã chọn thì đội trưởng đăng ký vào luôn (thành viên về Miếu Hoang chờ đội trưởng đưa vào), đang trong bí cảnh thì đánh tiếp luôn, hết lượt còn trong bí cảnh thì tự bấm Rời rồi đăng ký lượt kế; thiếu điều kiện (cảnh giới/đội/lượt) ghi nhật ký rõ thiếu gì, không kẹt. Thêm v1.67: rút bí tịch tới đúng Tàng Kinh Lão Nhân (Tản Viên 11,12) không nhầm Thầy Ông Nội (9,10) — đọc mục tiêu của nút Tương Tác từ aria-label của game + đứng ô kề xa NPC khác nhất + kiểm chứng tiêu đề thoại đúng NPC trước khi rút (sai thì đổi ô kề thử lại); mọi di chuyển tự bật Phi Hành + Chạy có kiểm chứng trạng thái thật (trừ áp tải Vận Tiêu game cấm bay); Lịch trình tới giờ sự kiện tự bật công cụ tương ứng đã có trong tool (boss/Đại Hội/Vết Nứt/Tam Ma/Côn Bằng/Chiến Trường/Sỹ Sách/Hư Thiên/Vận Tiêu/Chiến Bảng), sự kiện chưa có công cụ ghi nhật ký rõ chưa có; tới giờ ghi danh Đại Hội tự tới Chấp Sự Đại Hội (20,11) nhấp ghi danh đúng suất + kiểm chứng đã ghi danh, suất lỗi còn trong cửa giờ thì thử lại sau 60s. Thêm v1.68: ghi danh Đại Hội nhấp ngay nút "Ghi Danh" trên banner game tự hiện trên màn hình (toast #dh-toast-act, kiểm chứng nút đổi "Đã ghi danh") không cần tới NPC — đường NPC chỉ còn là dự phòng khi banner không dùng được; Huyết Xích biết chắc đã đánh hết quái bằng số yêu thú còn lại trong caption cấm chế (số chính xác từ mã client) + thử thu hoạch thật, số không giảm thì quét tuần tra mở rộng bắt quái lang thang, thử điểm chưa kết luận 2 vòng là sang thu hoạch luôn (sửa map 2 đánh hết không đi thu hoạch); thu hoạch poll caption 3s + thử hết 9 ô đứng (ô điểm/ô thẳng trước ô chéo) + 3 lượt rà + thoại "đã được đội thu hoạch" chỉ tính xong khi đúng điểm gần nhất (sửa map 1 sót 1 Mộc và map 3 sót hàng dưới Trúc Cơ Thảo); săn boss kiểm tra mục Hoạt Động: boss đã bị hạ mà không hồi sinh trong ngày (hồi qua 00:00) thì bỏ qua, săn boss khác còn hồi sinh được trong ngày, ghi nhật ký rõ boss bị bỏ. Thêm v1.69: Huyết Xích + Yên Lãng Sơn có ô chọn mời tổ đội + chọn số thành viên trên bảng — Huyết Xích tích "vào luôn 1 mình" (đăng ký ngay) hoặc "mời tổ đội" (bấm nút phụ "Mời tổ đội" trong thoại Nữ Tu đăng tin kênh Thế Giới, đọc số thành viên đội qua HUD, chưa đủ số đã chọn thì chờ + đăng lại tin, đủ là tự đăng ký vô map); mặc định Huyết Xích Luyện Khí mời tổ đội, Trúc Cơ trở lên vào luôn 1 mình; Yên Lãng Sơn ô tích mời tổ đội mặc định bật, tắt thì chỉ chờ đội hiện có đủ số rồi đăng ký. Thêm v1.70: nút "Cập nhật tool" ngay trên bảng tool — bấm mới kiểm tra bản mới trên server tool (không tự cập nhật ngầm), hiện bản đang chạy so với bản mới nhất; Tampermonkey mở trang cài đặt bản mới, trong APK báo rõ APK tự cập nhật khi mở phiên; đang chạy việc dở thì hỏi xác nhận lần 2 trước khi áp dụng. Vào lại Huyết Xích sau thoát/rớt kết nối: đọc lại trạng thái cấm chế từ đầu (caption đếm số yêu thú còn lại + thử thu hoạch thật), không dựa vào trạng thái nhớ trước khi rớt — hết quái thì thu hoạch luôn, còn quái thì quét tiếp. Thêm v1.72: hộ tống Dược Công bẩm Thầy Ông Nội tự động trọn (kiểm chứng đúng thoại bẩm, thử lại 3 lần, chờ seedQuest tắt); đi tới nơi làm nhiệm vụ chính bật đủ Phi Hành + Chạy (moveGuard trước khi bấm mục tiêu + kiểm lại trong lúc game tự dẫn đường); mở bảng tool tự vuốt lên đầu bảng; nhiệm vụ Hang Động (giai đoạn 20) tự vào hang qua thoại Cửa Hang Động, đánh Thạch Giáp Yêu lấy Chìa Khoá, mở Linh Dược Rương. Thêm v1.73: nhiệm vụ rèn (giai đoạn 20) thiếu Huyền Thiết Khoáng thì vào Hang Động qua thoại Cửa Hang Động (dùng chung handler vào hang của v1.72) hạ Thạch Giáp Yêu kiếm khoáng, đủ khoáng mới về Thợ Rèn rèn Thiết Kiếm; chưa nhận việc Hang Động của Lão Đạo Hành Cước thì ghi rõ lý do thay vì kẹt ở cổng hang. Thêm v1.73.1: luật rèn chung nhiệm vụ chính — cần gì rèn tự rèn (chọn công thức theo tên món trong mục tiêu, mục tiêu chung "rèn vũ khí" chọn món rẻ nhất đủ cảnh giới), thiếu nguyên liệu nào tự đi kiếm món đó (vào hang đào khoáng, farm quái rơi đồ, đào mạch khoáng, săn boss khi boss sắp ra; nguyên liệu Huyết Xích/Giao Long/Côn Bằng ghi rõ nguồn chưa tự kiếm trong bước rèn), đủ rồi về Thợ Rèn rèn + kiểm chứng. Tương tác NPC chuẩn ô đặt NPC: mọi chỗ mở thoại NPC đều đứng ô kề xa NPC khác nhất, chỉ bấm khi nút Tương Tác nhắm đúng NPC đích (aria-label), thoại mở ra kiểm chứng tiêu đề đúng NPC — sai thì đóng đổi ô, không chấp nhận thoại NPC khác. Thêm v1.74: giữ trang sống trên Safari iPhone (Bui lệnh 21:55 ngày 2026-11-27) — khi chạy tool tự giữ màn hình sáng bằng Wake Lock (Safari iOS 16.4+) + phát âm thanh gần như im lặng lặp bằng thẻ audio để iOS không đóng băng trang khi ra ứng dụng khác/khóa màn hình (JS + kết nối game tiếp tục chạy, có thể chậm hơn); quay lại trang tự xin lại khóa + phát lại âm thanh; ô bật/tắt "Giữ trang sống (Safari chạy ẩn)" + dòng trạng thái trên bảng tool, nhớ lựa chọn; giới hạn thật: iOS giết trang vì áp lực bộ nhớ hoặc tắt hẳn Safari thì không cứu được. Thêm v1.75: khung dự phòng khi trang ẩn — Worker hẹn giờ thay requestAnimationFrame lúc ẩn để vòng lặp game tiếp tục chạy khi ra ứng dụng khác/khóa màn hình (nhật ký đếm khung đã chạy lúc ẩn khi quay lại) + chống Safari tự thu phóng khi chạm ô nhập (cỡ chữ ô nhập tối thiểu 16px + khóa thu phóng lúc đang nhập, không đổi giao diện game).
 // @author       Muse (cho Bui)
 // @match        https://tutienpixel.online/*
@@ -23,7 +23,7 @@
     try {
       if (typeof GM_info !== 'undefined' && GM_info && GM_info.script && GM_info.script.version) return String(GM_info.script.version);
     } catch (e) {}
-    return '1.76.0';
+    return '1.77.0';
   })();
 
   // ============ Dữ liệu map nhúng (20 map, cổng + lưới theo trạng thái SAU sửa đổi lúc chạy) ============
@@ -2880,7 +2880,9 @@ var ITEM_SLOT = {};
     tickFallback: false,   // Worker không dùng được → nhịp bằng hẹn giờ thường
     tickTimer: null,       // hẹn giờ thường dự phòng
     hiddenFrames: 0,       // số khung dự phòng đã chạy trong lượt ẩn hiện tại
-    hiddenTicks: 0         // số nhịp hẹn giờ đã nhận trong lượt ẩn hiện tại
+    hiddenTicks: 0,        // số nhịp hẹn giờ đã nhận trong lượt ẩn hiện tại
+    lastTickSource: '',    // v1.77: nguồn nhịp gần nhất ('Worker' | 'timeupdate' | 'hẹn giờ')
+    audioRetryArmed: false // v1.77: đã gắn lắng nghe chạm tay để thử phát lại âm thanh chưa
   };
   function kaEnabled() { try { return localStorage.getItem('ttpx_keepalive_v1') !== 'off'; } catch (e) { return true; } }
   function kaSetEnabled(v) { try { localStorage.setItem('ttpx_keepalive_v1', v ? 'on' : 'off'); } catch (e) {} }
@@ -2889,14 +2891,19 @@ var ITEM_SLOT = {};
     if (!kaEnabled()) return 'Giữ trang sống: TẮT';
     var audioTxt = (KA.audioEl && !KA.audioEl.paused) ? 'âm thanh ĐANG PHÁT' : (KA.audioWanted ? 'âm thanh chưa phát' : 'âm thanh tắt');
     var wlTxt = KA.wakeLock ? 'màn hình sáng ĐANG GIỮ' : (('wakeLock' in navigator) ? 'màn hình sáng chưa giữ' : 'màn hình sáng: iOS không hỗ trợ Wake Lock');
-    var rafTxt = KA.rafPatched ? ('khung dự phòng ' + (KA.tickWorker ? 'Worker' : 'hẹn giờ') + ' ĐANG BẬT') : 'khung dự phòng tắt';
+    var rafTxt = KA.rafPatched ? ('khung dự phòng ' + (KA.tickWorker ? 'Worker' : 'hẹn giờ') + '+timeupdate ĐANG BẬT') : 'khung dự phòng tắt';
     return 'Giữ trang sống: ' + audioTxt + ' · ' + wlTxt + ' · ' + rafTxt;
   }
   function kaUpdateStatus() { var el = $('#ttpx-keepalive-status'); if (el) el.textContent = kaStatusText(); }
   function kaSilentWavUrl() {
-    // WAV 2 giây, 8000Hz mono 16-bit, sóng sin 55Hz biên độ ±2/32767 — tai không
-    // nghe thấy nhưng tín hiệu khác 0; thẻ audio để volume=1, không muted, đang
-    // phát → iOS tính là đang phát audio thật.
+    // WAV 2 giây, 8000Hz mono 16-bit, sóng sin 55Hz. v1.77 (Bui báo 22:39 ngày
+    // 2026-11-27 "Phần chạy ẩn trong safari vẫn không được"): biên độ cũ ±2/32767
+    // (~-84dBFS) quá nhỏ — iOS chỉ giữ tiến trình trang khi âm thanh "đang phát
+    // thật", tín hiệu gần như bằng 0 dễ bị coi là im lặng nên trang bị đóng băng
+    // ~30s sau khi ẩn. Nay biên độ ±160/32767 (~-46dBFS): tín hiệu thật nhưng vẫn
+    // rất khẽ, và 55Hz là tần số loa điện thoại gần như không phát ra được nên tai
+    // thực tế không nghe thấy. Thẻ audio để volume=1, không muted, đang phát →
+    // iOS tính là đang phát audio thật.
     var sr = 8000, dur = 2, n = sr * dur;
     var buf = new ArrayBuffer(44 + n * 2);
     var v = new DataView(buf);
@@ -2905,7 +2912,7 @@ var ITEM_SLOT = {};
     wstr(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
     v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
     wstr(36, 'data'); v.setUint32(40, n * 2, true);
-    for (var i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(2 * Math.sin(2 * Math.PI * 55 * i / sr)), true);
+    for (var i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(160 * Math.sin(2 * Math.PI * 55 * i / sr)), true);
     return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
   }
   function kaEnsureAudio() {
@@ -2925,6 +2932,13 @@ var ITEM_SLOT = {};
     a.addEventListener('pause', function () {
       if (KA.audioWanted && S.running) kaLog('Âm thanh giữ trang bị dừng (iOS ngắt — cuộc gọi/ứng dụng khác chiếm âm thanh?) — quay lại trang sẽ phát lại');
       kaUpdateStatus();
+    });
+    // v1.77: nhịp dự phòng từ chính thẻ audio — sự kiện timeupdate bắn ~4 lần/giây
+    // khi đang phát, không phụ thuộc Worker (bị CSP trang game chặn, đã xác lập ở
+    // chẩn đoán APK v10) hay hẹn giờ main thread (bị iOS bóp ~1 lần/phút khi ẩn).
+    // Chừng nào âm thanh còn phát (iOS giữ tiến trình) là còn nhịp cho vòng lặp game.
+    a.addEventListener('timeupdate', function () {
+      if (document.hidden && KA.rafPatched) kaTick('timeupdate');
     });
     (document.body || document.documentElement).appendChild(a);
     KA.audioEl = a;
@@ -2946,6 +2960,17 @@ var ITEM_SLOT = {};
     var p = a.play();
     if (p && p.catch) p.catch(function (e) {
       kaLog('Chưa phát được âm thanh giữ trang (' + (e && e.name ? e.name : e) + ') — Safari cần chạm tay vào trang trước; bấm nút chạy tool trên bảng rồi thử lại');
+      // v1.77: bị từ chối vì thiếu chạm tay thì gắn lắng nghe 1 lần — lần chạm tay
+      // kế tiếp vào trang (bấm nút nào cũng được) sẽ thử phát lại ngay trong cử chỉ đó.
+      if (!KA.audioRetryArmed) {
+        KA.audioRetryArmed = true;
+        var retry = function () {
+          document.removeEventListener('pointerdown', retry, true);
+          KA.audioRetryArmed = false;
+          if (KA.audioWanted && S.running) kaPlayAudio('chạm tay thử lại');
+        };
+        document.addEventListener('pointerdown', retry, true);
+      }
       kaUpdateStatus();
     });
     kaUpdateStatus();
@@ -2984,7 +3009,7 @@ var ITEM_SLOT = {};
     if (KA.tickWorker || KA.tickFallback) return;
     try {
       var w = new Worker(URL.createObjectURL(new Blob([kaWorkerSource()], { type: 'text/javascript' })));
-      w.onmessage = function () { kaTick(); };
+      w.onmessage = function () { kaTick('Worker'); };
       w.onerror = function () {
         kaLog('Worker hẹn giờ lỗi (trang game có thể chặn Worker) — khung dự phòng chuyển sang hẹn giờ thường');
         KA.tickWorkerOk = false; KA.tickFallback = true;
@@ -3002,7 +3027,7 @@ var ITEM_SLOT = {};
   }
   function kaStartFallbackTimer() {
     if (KA.tickTimer) return;
-    var step = function () { KA.tickTimer = setTimeout(step, 33); kaTick(); };
+    var step = function () { KA.tickTimer = setTimeout(step, 33); kaTick('hẹn giờ'); };
     KA.tickTimer = setTimeout(step, 33);
   }
   function kaTickingStart() {
@@ -3019,9 +3044,10 @@ var ITEM_SLOT = {};
     KA.tickWorkerOk = false;
     KA.tickFallback = false;
   }
-  function kaTick() {
+  function kaTick(source) {
     if (!document.hidden) return;
     KA.hiddenTicks++;
+    if (source) KA.lastTickSource = source; // v1.77: ghi nguồn nhịp để nhật ký lúc quay lại nói rõ nhịp nào đã chạy
     kaFlushRafQueue();
   }
   function kaFlushRafQueue() {
@@ -3109,7 +3135,7 @@ var ITEM_SLOT = {};
     KA.hiddenAt = 0;
     kaTickingStop(); // v1.75: trang hiện lại thì rAF gốc chạy, dừng nhịp dự phòng
     if (S.running && kaEnabled()) {
-      var framesTxt = KA.rafPatched ? (' — lúc ẩn khung dự phòng đã chạy ' + KA.hiddenFrames + ' khung/' + KA.hiddenTicks + ' nhịp' + (KA.hiddenFrames > 0 ? ' (game vẫn chạy lúc ẩn)' : ' (trang bị đóng băng — iOS không giữ tiến trình)')) : '';
+      var framesTxt = KA.rafPatched ? (' — lúc ẩn khung dự phòng đã chạy ' + KA.hiddenFrames + ' khung/' + KA.hiddenTicks + ' nhịp' + (KA.lastTickSource ? ' (nguồn nhịp: ' + KA.lastTickSource + ')' : '') + (KA.hiddenFrames > 0 ? ' (game vẫn chạy lúc ẩn)' : ' (trang bị đóng băng — iOS không giữ tiến trình)')) : '';
       kaLog('Quay lại trang' + (away ? ' sau ' + away + ' giây ẩn' : '') + (source ? ' (' + source + ')' : '') + framesTxt + ' — xin lại khóa màn hình sáng' + (KA.audioEl && KA.audioEl.paused ? ' + phát lại âm thanh giữ trang' : ''));
       kaRequestWakeLock('quay lại trang');
       if (KA.audioEl && KA.audioEl.paused) kaPlayAudio('quay lại trang');
@@ -5586,14 +5612,33 @@ var ITEM_SLOT = {};
           }
         }
       }
+      // v1.77 (Bui báo 22:37 + lệnh 22:38 ngày 2026-11-27: map 2+3 cứ di chuyển vòng
+      // không chạy đến điểm thu hoạch; tìm cách nhận biết hết quái + boss): bằng chứng
+      // mã client HuyetSacUI.sealed() chỉ áp cho ["rung_mang_xa","mach_dat_dong"] —
+      // map 3 (dam_lay_boss) KHÔNG có cấm chế, thu hoạch không bị phong bao giờ, và
+      // quái Huyết Xích không hồi sinh (Enemy.create: huyetSac → respawnSec=0). Map 3
+      // chỉ có 3 quái (boss U Minh Cự Mãng + 2 Xích Tinh Mãng canh) nên nhận biết hết
+      // quái chắc nhất ở map này là: đánh đúng 1 vòng qua 3 điểm quái (quái không hồi
+      // sinh nên đánh xong là hết thật) rồi thu hoạch thẳng — không canh caption cấm
+      // chế (map này không có), không quét vòng thừa.
+      if (mapId === 'dam_lay_boss') {
+        log('Huyết Xích map ' + MAPS[mapId].name + ': map này KHÔNG có cấm chế (mã client sealed() chỉ áp map 1+2) — đánh 1 vòng giết 3 quái (quái không hồi sinh) rồi thu hoạch thẳng, không quét vòng thừa');
+        var fr3 = await hxFightRound(runId, mapId, true, 1, totals, true, true);
+        if (fr3 === 'hp') return 'hp';
+        if (fr3 === 'mapchange') return 'mapchange';
+        clearedLog(1);
+        return 'done';
+      }
       // v1.68 (Bui báo 20:06 + lệnh 20:07 ngày 2026-11-27): biết chắc đã đánh hết quái
       // bằng SỐ yêu thú còn lại trong caption cấm chế (số chính xác từ mã client) +
       // thử thu hoạch thật. Thử điểm chưa kết luận ('tried') 2 vòng liên tiếp thì sang
       // thu hoạch luôn (pha thu hoạch tự quét quanh từng điểm) thay vì quét đủ 12 vòng
       // dài như trước — đó là cảnh Bui thấy "đánh hết quái boss cũng không đi thu hoạch".
-      // Số còn lại không giảm sau một vòng → vòng sau quét TUẦN TRA mở rộng bắt quái
-      // lang thang khỏi điểm spawn.
-      var lastLeft = null, stuckRounds = 0, inconclusiveRounds = 0, patrolNext = false;
+      // v1.77 (Bui báo 22:37 ngày 2026-11-27: map 2 cứ di chuyển vòng không chạy đến
+      // điểm thu hoạch): BỎ quét tuần tra mở rộng (hxPatrolExtra — đi vòng mọi điểm
+      // thu hoạch + góc map) khỏi vòng quét; số yêu thú không giảm 2 vòng liên tiếp
+      // là sang pha thu hoạch thẳng (từng điểm tự quét quái quanh điểm rồi thử lại).
+      var lastLeft = null, stuckRounds = 0, inconclusiveRounds = 0;
       for (var round = 1; round <= 12; round++) {
         if (!alive(runId)) throw new Error('đã dừng');
         // v1.55: thông báo quét sạch có thể đã hiện trong lúc thử điểm/hồi sinh
@@ -5603,13 +5648,6 @@ var ITEM_SLOT = {};
         if (fr === 'sealclear') { clearedLog(round, true); return 'done'; }
         if (fr === 'hp') return 'hp';
         if (fr === 'mapchange') return 'mapchange';
-        if (patrolNext) {
-          patrolNext = false;
-          var pr = await hxPatrolExtra(runId, mapId, totals);
-          if (pr === 'sealclear') { clearedLog(round, true); return 'done'; }
-          if (pr === 'hp') return 'hp';
-          if (pr === 'mapchange') return 'mapchange';
-        }
         // Tín hiệu 1: caption game báo cấm chế tan (hiện ngay khi con quái cuối gục,
         // chỉ ~2,8s nên hay hụt — tín hiệu 2 thử thu hoạch mới là chính)
         var seal = hxSealState();
@@ -5647,14 +5685,15 @@ var ITEM_SLOT = {};
             totals.bossDead[mapId] = false;
             log('Cấm chế còn ' + leftRaw + ' yêu thú mà boss ' + bossPt.name + ' đã đánh dấu gục — boss có thể chưa gục thật, vòng sau quay lại đánh boss');
           }
-          // Theo dõi tiến độ: số yêu thú không giảm 3 vòng liên tiếp thì dừng quét
+          // Theo dõi tiến độ: số yêu thú không giảm 2 vòng liên tiếp thì dừng quét
           // (quái còn lại không tới được/không đánh được — ghi rõ, sang thu hoạch
           // thử từng điểm, điểm nào phong sẽ quét quanh điểm rồi thử lại).
-          // v1.68: không giảm ngay từ vòng đầu → vòng sau quét tuần tra mở rộng.
-          if (leftN != null && lastLeft != null && leftN >= lastLeft) { stuckRounds++; patrolNext = true; } else stuckRounds = 0;
+          // v1.77: bỏ quét tuần tra vòng (hxPatrolExtra) — hết quái là chạy thẳng
+          // tới điểm thu hoạch (Bui báo 22:37 ngày 2026-11-27).
+          if (leftN != null && lastLeft != null && leftN >= lastLeft) stuckRounds++; else stuckRounds = 0;
           if (leftN != null) lastLeft = leftN;
-          if (stuckRounds >= 3) {
-            log('Số yêu thú còn lại không giảm sau 3 vòng quét liên tiếp (còn ' + leftRaw + ') — dừng quét sạch ở ' + MAPS[mapId].name + ', sang pha thu hoạch thử từng điểm');
+          if (stuckRounds >= 2) {
+            log('Số yêu thú còn lại không giảm sau 2 vòng quét liên tiếp (còn ' + leftRaw + ') — dừng quét sạch ở ' + MAPS[mapId].name + ', sang pha thu hoạch thử từng điểm');
             return 'done';
           }
         } else {
@@ -8732,6 +8771,17 @@ var ITEM_SLOT = {};
       while (alive(runId) && Date.now() - t0 < 8000) { if (gachaPanelOpen()) { opened = true; break; } await sleep(300); }
       if (!alive(runId)) return 'fail';
       if (!opened) { log('Rút bí tịch mới: bảng rút tủ Tàng Kinh Sơ Cấp không mở sau 8s'); return 'fail'; }
+      // v1.77 (Bui luật 22:44): tủ Sơ Cấp đã max skill (mọi quyển đã có/đã lĩnh ngộ)
+      // thì rút nữa cũng không ra quyển CHƯA CÓ — thoát bảng ngay, đi làm nhiệm vụ
+      // tiếp theo, không rút đủ 20 lượt vô ích.
+      var mxQ = gachaPoolMaxed('so_cap');
+      if (mxQ.maxed) {
+        log('Rút bí tịch mới: tủ Tàng Kinh Sơ Cấp đã MAX skill (đủ ' + mxQ.owned + '/' + mxQ.total + ' quyển) — thoát bảng rút, đi làm nhiệm vụ tiếp theo');
+        var closeMxQ = $('#gacha-close'); if (closeMxQ) pressDom(closeMxQ);
+        await sleep(600);
+        closeDialogIfOpen();
+        return 'done';
+      }
       var draws = 0;
       while (alive(runId) && draws < 20 && !flagDone() && !objDone()) {
         var one = $('#gacha-one');
@@ -10540,8 +10590,8 @@ var ITEM_SLOT = {};
     { id: 'covat', ten: 'Cổ Vật Đáy Hồ', lich: '10:00–22:00 mỗi ngày — câu ở Hồ Tây trong khung này có cơ hội (cả hồ 1 món/ngày)', noteOnly: true },
     { id: 'tamlo', ten: 'Tam Lộ Tranh Phong', lich: '21:00 Thứ Tư + Chủ Nhật, đăng ký trước 16 phút — tool chưa có chế độ tự làm', noteOnly: true },
     { id: 'tranhbia', ten: 'Tranh Bia Phong Địa', lich: '21:00–21:30 Thứ Năm — tool chưa có chế độ tự làm', noteOnly: true },
-    { id: 'vantieu', ten: 'Vận Tiêu', lich: 'nhận tiêu 11:00–22:00 mỗi ngày, 6 chuyến/ngày — chỉ Trúc Cơ trở lên', hasReg: false },
-    { id: 'chienbang', ten: 'Tán Tu Chiến Bảng', lich: 'khiêu chiến mỗi ngày ở Chấp Sự Đại Hội (lượt hồi 22:00) — thắng +50 Linh Thạch', hasReg: false },
+    { id: 'vantieu', ten: 'Vận Tiêu', lich: 'khung cố định 12:00 mỗi ngày — đúng 12:00 tự nhận chuyến 1, 6 chuyến/ngày, chỉ Trúc Cơ trở lên (game nhận tiêu 11:00–22:00)', hasReg: false },
+    { id: 'chienbang', ten: 'Tán Tu Chiến Bảng', lich: 'khung cố định 08:00–10:00 mỗi ngày ở Chấp Sự Đại Hội (lượt hồi 22:00) — thắng +50 Linh Thạch', hasReg: false },
     { id: 'tamma', ten: 'Huyền Không Cổ Viện (Tam Ma)', lich: 'ghép ngẫu nhiên 22:30–23:30 mỗi ngày, đủ 10 người', hasReg: false }
   ];
   var EV_KEY = 'ttpx_events_v1';
@@ -10618,10 +10668,16 @@ var ITEM_SLOT = {};
         out.push({ id: 'tranhbia', ten: 'Tranh Bia Phong Địa', startMs: tbSt, regMs: tbSt, closeMs: tbSt + 30 * 60000, leadMs: 0, noteOnly: true });
       }
       out.push({ id: 'covat', ten: 'Cổ Vật Đáy Hồ', startMs: msAtVN(day, 10, 0), regMs: msAtVN(day, 10, 0), closeMs: msAtVN(day, 22, 0), leadMs: 0, noteOnly: true });
-      // v1.41: Vận Tiêu khung nhận tiêu 11:00–22:00 (VanTieu.GIO_MO/GIO_DONG) — chạy 1 khung/ngày đủ 6 chuyến
-      out.push({ id: 'vantieu', ten: 'Vận Tiêu', startMs: msAtVN(day, 11, 0), regMs: msAtVN(day, 11, 0), closeMs: msAtVN(day, 22, 0), leadMs: 0 });
-      // v1.41: Chiến Bảng không có giờ cố định (lượt hồi 22:00) — khung 08:00–22:00 chạy 1 lượt/ngày
-      out.push({ id: 'chienbang', ten: 'Tán Tu Chiến Bảng', startMs: msAtVN(day, 8, 0), regMs: msAtVN(day, 8, 0), closeMs: msAtVN(day, 22, 0), leadMs: 0 });
+      // v1.77 (Bui chốt 22:45 + 22:46 ngày 2026-11-27): Chiến Bảng + Vận Tiêu làm
+      // theo KHUNG GIỜ CỐ ĐỊNH ban ngày, không để tool tự chọn khung trống tùy tiện.
+      // Vận Tiêu đúng 12:00 tự động bắt đầu, tự nhận chuyến 1 (runVanTieu tự nhận +
+      // tự kéo chuyến đầu, xong game mở tự chạy các chuyến còn lại; game nhận tiêu
+      // 11:00–22:00 nên khung tool 12:00–13:00 nằm gọn trong giờ game). Chiến Bảng
+      // khung sáng cố định 08:00–10:00 (giờ cụ thể tool chọn theo ví dụ "Chiến Bảng
+      // sáng" trong tài liệu gợi ý lịch trình — Bui muốn giờ khác thì đổi 2 số này).
+      // Quá khung cố định thì hôm đó không chạy nữa, không tự chen vào khung trống khác.
+      out.push({ id: 'vantieu', ten: 'Vận Tiêu', startMs: msAtVN(day, 12, 0), regMs: msAtVN(day, 12, 0), closeMs: msAtVN(day, 13, 0), leadMs: 0 });
+      out.push({ id: 'chienbang', ten: 'Tán Tu Chiến Bảng', startMs: msAtVN(day, 8, 0), regMs: msAtVN(day, 8, 0), closeMs: msAtVN(day, 10, 0), leadMs: 0 });
       // v1.41: Tam Ma ghép ngẫu nhiên 22:30–23:30 (TamMa.GHEP tu:22.5 den:23.5)
       out.push({ id: 'tamma', ten: 'Huyền Không Cổ Viện (Tam Ma)', startMs: msAtVN(day, 22, 30), regMs: msAtVN(day, 22, 30), closeMs: msAtVN(day, 23, 30), leadMs: 10 * 60000 });
     }
@@ -10845,9 +10901,21 @@ var ITEM_SLOT = {};
         setDoing('Vận Tiêu: tới Huấn Sư Huynh nhận tiêu (chuyến ' + tripNo + ')', null);
         await travelTo(runId, VANTIEU.mapNhan);
         if (!alive(runId)) return 'stopped';
-        await ensureFly(runId, false); // game bắt hạ cánh mới nhận tiêu được
+        // v1.77 (Bui lệnh 22:48 ngày 2026-11-27: "khi quay lại nhận tiêu thì đến
+        // huấn sư huynh phải tắt phi hành mới nhận được tiêu"): tới Huấn Sư Huynh
+        // là TẮT Phi Hành có kiểm chứng trước mới mở thoại nhận tiêu (đang bay thì
+        // game không cho nhận); thoại không mở mà Phi Hành còn bật thì tắt rồi thử lại.
+        log('Vận Tiêu: đã tới Huấn Sư Huynh — tắt Phi Hành trước mới nhận tiêu (chuyến ' + tripNo + ')');
+        await ensureFly(runId, false);
+        if (readFlyState() === true) { log('Vận Tiêu: Phi Hành vẫn đang bật — nhấn tắt lại'); pressFly(); await sleep(1500); }
         await ensureAuto(runId, false);
-        if (!(await openNpcDialog(runId, VANTIEU.npcNhan.tx, VANTIEU.npcNhan.ty, 'Huấn Sư Huynh'))) return 'không mở được thoại Huấn Sư Huynh';
+        var dlgOk = await openNpcDialog(runId, VANTIEU.npcNhan.tx, VANTIEU.npcNhan.ty, 'Huấn Sư Huynh');
+        if (!dlgOk && readFlyState() === true) {
+          log('Vận Tiêu: thoại chưa mở, Phi Hành còn bật — tắt Phi Hành rồi mở thoại lại');
+          await ensureFly(runId, false);
+          dlgOk = await openNpcDialog(runId, VANTIEU.npcNhan.tx, VANTIEU.npcNhan.ty, 'Huấn Sư Huynh');
+        }
+        if (!dlgOk) return 'không mở được thoại Huấn Sư Huynh';
         var choice = vtChoiceInfo('Nhận Tiêu');
         if (choice && choice.disabled) {
           log('Vận Tiêu: mục Nhận Tiêu bị khóa — ' + (choice.note || 'game không cho nhận'));
@@ -10865,19 +10933,34 @@ var ITEM_SLOT = {};
         log('Vận Tiêu: đang có xe dở (' + (hud.hang || '?') + ' — ' + (hud.dong || '') + ') — kéo tiếp chuyến này');
       }
       var auto = vtAutoState();
-      if (auto === 'available') {
-        log('Vận Tiêu: game đã mở tự chạy tiêu — bấm "Tự chạy tiêu" (game tự kéo/giao, bị đánh thì dừng tự chạy)');
-        setDoing('Vận Tiêu: tự chạy tiêu chuyến ' + tripNo, null);
-        pressDom(vtHud().tuBtn);
-        await sleep(1500);
-        var mon = await vtMonitorAuto(runId, tripNo);
-        if (mon === 'autostopped') { log('Vận Tiêu: tự chạy đã dừng giữa chuyến — tool tự kéo nốt'); var man1 = await vtEscortManual(runId, tripNo); if (man1 !== 'done') return man1; }
-        else if (mon !== 'done') return mon;
-      } else if (auto === 'running') {
-        log('Vận Tiêu: tự chạy tiêu đang bật sẵn — theo dõi tới khi giao xong');
-        var mon2 = await vtMonitorAuto(runId, tripNo);
-        if (mon2 === 'autostopped') { log('Vận Tiêu: tự chạy đã dừng giữa chuyến — tool tự kéo nốt'); var man2 = await vtEscortManual(runId, tripNo); if (man2 !== 'done') return man2; }
-        else if (mon2 !== 'done') return mon2;
+      if (auto === 'available' || auto === 'running') {
+        // v1.77 (Bui lệnh 22:47 ngày 2026-11-27: "Lần tiếp theo thì ấn nút tự động
+        // vận tiêu bị dừng ấn nút" + xác nhận giữ cách v1.41): các chuyến sau chuyến
+        // đầu ấn nút tự động vận tiêu của game; tự chạy bị dừng giữa chuyến thì ẤN
+        // NÚT LẠI (tối đa 3 lần) thay vì chuyển ngay sang kéo tay — ấn lại không
+        // chạy nữa mới tự kéo nốt như v1.41.
+        var autoDone = null;
+        for (var rePress = 0; rePress <= 3 && alive(runId); rePress++) {
+          var stNow = vtAutoState();
+          if (stNow === 'available') {
+            log('Vận Tiêu: ' + (rePress === 0 ? 'game đã mở tự chạy tiêu — bấm "Tự chạy tiêu" (game tự kéo/giao, bị đánh thì dừng tự chạy)' : 'tự chạy đã dừng — ấn nút tự động vận tiêu lại (lần ' + rePress + '/3)'));
+            setDoing('Vận Tiêu: tự chạy tiêu chuyến ' + tripNo, null);
+            pressDom(vtHud().tuBtn);
+            await sleep(1500);
+          } else if (stNow === 'running') {
+            log('Vận Tiêu: tự chạy tiêu đang bật sẵn — theo dõi tới khi giao xong');
+          } else {
+            log('Vận Tiêu: nút tự động vận tiêu không còn bấm được (trạng thái ' + stNow + ') — chuyển tự kéo tay');
+            break;
+          }
+          var mon = await vtMonitorAuto(runId, tripNo);
+          if (mon === 'done') { autoDone = 'done'; break; }
+          if (mon !== 'autostopped') { autoDone = mon; break; }
+          log('Vận Tiêu: tự chạy đã dừng giữa chuyến' + (rePress < 3 ? ' — ấn nút tự động lại' : ' — đã ấn lại 3 lần vẫn dừng, tool tự kéo nốt'));
+        }
+        if (autoDone === 'done') { /* giao xong bằng tự chạy */ }
+        else if (autoDone && autoDone !== 'autostopped') return autoDone;
+        else { var man1 = await vtEscortManual(runId, tripNo); if (man1 !== 'done') return man1; }
       } else {
         log('Vận Tiêu: tự chạy tiêu chưa mở (chuyến đầu hôm nay phải tự kéo — luật của game) — tool tự kéo xe theo tuyến, đi bộ không bay');
         var man3 = await vtEscortManual(runId, tripNo);
@@ -11124,6 +11207,33 @@ var ITEM_SLOT = {};
     { id: 'so_cap', label: 'Tàng Kinh Sơ Cấp' },
     { id: 'bi_dong', label: 'Tàng Kinh Bị Động' }
   ];
+  // v1.77 (Bui luật 22:44 ngày 2026-11-27: "Khi rút bí tịch miễn phí nếu max skill
+  // rồi thì thoát bảng ra đi làm nhiệm vụ tiếp theo"): kỹ năng trong game KHÔNG có
+  // cấp — học là có. Bằng chứng mã client: Skills.known(skillId) = ownsBook →
+  // Inventory.owns(book,1) = túi có ≥1 quyển HOẶC đã lĩnh ngộ (Quest.flags.linhNgo
+  // [bookId]===1, LINH_NGO_FLAG="linhNgo"). "Max skill" của 1 tủ = đã có/đã lĩnh ngộ
+  // MỌI quyển trong tủ → rút nữa chỉ ra quyển trùng. Bảng quyển trích nguyên từ
+  // định nghĩa tủ trong mã client (so_cap 15 quyển, bi_dong 12 quyển).
+  var GACHA_POOL_BOOKS = {
+    so_cap: ['bi_tich_dan_linh', 'bi_tich_hoa_cau', 'bi_tich_phong_nhan', 'bi_tich_bang_thau', 'bi_tich_dia_thich', 'bi_tich_so_xich_chan', 'bi_tich_kim_mang', 'bi_tich_thanh_dang', 'bi_tich_thuy_tien', 'bi_tich_loi_xa', 'bi_tich_ngu_kiem_thuat', 'bi_tich_dinh_than', 'bi_tich_kim_chung_trao', 'bi_tich_su_tu_hong', 'bi_tich_loi_chuong'],
+    bi_dong: ['bi_tich_kim_quang_chao', 'bi_tich_moc_xuan', 'bi_tich_tu_linh', 'bi_tich_phong_hanh', 'bi_tich_bang_tam', 'bi_tich_moc_sinh', 'bi_tich_ho_tam', 'bi_tich_kiem_y', 'bi_tich_hoa_mach', 'bi_tich_tinh_tam', 'bi_tich_tho_thuan', 'bi_tich_ma_khi']
+  };
+  // Đã có 1 quyển bí tịch chưa (túi có ≥1 hoặc đã lĩnh ngộ) — đúng cách game tính
+  // Inventory.owns(book,1). Không đọc được bản lưu → coi như chưa có (không bỏ tủ oan).
+  function gachaBookOwned(bookId) {
+    var n = countItem(bookId);
+    if (n != null && n >= 1) return true;
+    var loc = readLocal();
+    var ln = loc && loc.flags ? loc.flags.linhNgo : null;
+    return !!(ln && typeof ln === 'object' && ln[bookId] === 1);
+  }
+  // Tủ đã max skill chưa: mọi quyển trong tủ đều đã có/đã lĩnh ngộ.
+  function gachaPoolMaxed(poolId) {
+    var books = GACHA_POOL_BOOKS[poolId] || [];
+    var owned = 0;
+    for (var i = 0; i < books.length; i++) if (gachaBookOwned(books[i])) owned++;
+    return { maxed: books.length > 0 && owned >= books.length, owned: owned, total: books.length };
+  }
   function gachaNgayVN(nowMs) { return Math.floor(((nowMs == null ? Date.now() : nowMs) + 252e5) / 864e5); }
   function gachaFreeUsedToday(poolId) {
     var loc = readLocal();
@@ -11144,6 +11254,14 @@ var ITEM_SLOT = {};
         log('Rút bí tịch: cả 2 tủ miễn phí (Tàng Kinh Sơ Cấp + Tàng Kinh Bị Động) đã hết lượt miễn phí hôm nay (cờ gacha_mien_phi) — bỏ qua, không rút lượt tốn Linh Thạch');
         return 'done';
       }
+      // v1.77 (Bui luật 22:44): tủ đã max skill (mọi quyển đã có/đã lĩnh ngộ) thì
+      // không đi rút nữa — rút chỉ ra quyển trùng; bỏ tủ đó, đi làm việc tiếp theo.
+      todo = todo.filter(function (p) {
+        var mx = gachaPoolMaxed(p.id);
+        if (mx.maxed) log('Rút bí tịch: tủ ' + p.label + ' đã MAX skill (đã có/đã lĩnh ngộ đủ ' + mx.owned + '/' + mx.total + ' quyển) — không rút nữa, đi làm nhiệm vụ tiếp theo');
+        return !mx.maxed;
+      });
+      if (!todo.length) { log('Rút bí tịch miễn phí: các tủ còn lượt đều đã max skill — bỏ qua, đi làm nhiệm vụ tiếp theo'); return 'done'; }
       log('Rút bí tịch miễn phí: còn lượt hôm nay ở tủ ' + todo.map(function (p) { return p.label; }).join(', ') + ' — tới Tàng Kinh Lão Nhân ở Tản Viên (11,12)');
       await moveGuard(runId, 'Rút bí tịch miễn phí'); // v1.67: di chuyển tới Tản Viên phải Phi Hành + Chạy đều bật
       await ensureAuto(runId, false);
@@ -11164,6 +11282,15 @@ var ITEM_SLOT = {};
         while (alive(runId) && Date.now() - t0 < 8000) { if (gachaPanelOpen()) { opened = true; break; } await sleep(300); }
         if (!alive(runId)) return;
         if (!opened) { log('Rút bí tịch: bảng rút tủ ' + pool.label + ' không mở sau 8s — bỏ qua'); continue; }
+        // v1.77 (Bui luật 22:44): bảng đã mở mà tủ max skill → thoát bảng ngay,
+        // không rút thêm, đi làm nhiệm vụ tiếp theo.
+        var mxNow = gachaPoolMaxed(pool.id);
+        if (mxNow.maxed) {
+          log('Rút bí tịch: tủ ' + pool.label + ' đã MAX skill (đủ ' + mxNow.owned + '/' + mxNow.total + ' quyển) — thoát bảng rút, đi làm nhiệm vụ tiếp theo');
+          var closeMx = $('#gacha-close'); if (closeMx) pressDom(closeMx);
+          await sleep(600);
+          continue;
+        }
         var title = (($('#gacha-title') || {}).textContent || '').trim();
         var one = $('#gacha-one');
         var oneText = one ? (one.textContent || '').replace(/\s+/g, ' ').trim() : '';
@@ -11259,7 +11386,11 @@ function runSchedule(runId) {
         log('Lịch trình: vào khung Huyết Xích (1 lượt/ngày trong lịch treo; game cho Luyện Khí 5 lượt/ngày, mỗi lượt 15 phút, phí 100 Linh Thạch)');
         var hxRes = await runHuyetXich(runId, { schedule: true });
         if (!alive(runId)) return;
-        log('Lịch trình: xong khung Huyết Xích (' + hxRes + ') — quay lại vòng farm/sự kiện/boss');
+        // v1.77 (Bui lệnh 22:49 ngày 2026-11-27: "Acc trúc cơ farl phong địa sau
+        // khi đy huyết xích xong"): Trúc Cơ trở lên đi Huyết Xích xong thì farm
+        // Phong Địa (khu trống hạng cao nhất — luật farm theo cảnh giới v1.34
+        // trong khung farm phía dưới đã chọn sẵn map Phong Địa cho Trúc Cơ+).
+        log('Lịch trình: xong khung Huyết Xích (' + hxRes + ') — quay lại vòng farm/sự kiện/boss' + (isTrucCoUpRealm(readRealmInfo()) ? ' — acc Trúc Cơ: farm Phong Địa (khu trống hạng cao nhất) sau Huyết Xích' : ''));
       }
       // v1.67 (Bui lệnh 19:56 + báo lỗi 20:00: tới giờ Đại Hội chưa tự nhấp ghi danh):
       // tới giờ sự kiện là tự bật công cụ tương ứng đã có trong tool để thực hiện, xong
@@ -11865,6 +11996,19 @@ function runSchedule(runId) {
       }
       // v1.21 (lệnh Bui 19:38): Điểm Danh chỉ mở Sự Kiện khi thắng ít nhất 1 trận Đại Hội kỳ này
       if (wins >= 1) {
+        // v1.77 (Bui luật 22:41 ngày 2026-11-27: "Việc dược phải làm hết mới nhận
+        // việc thắng trận đại hội"): còn lượt Dược Công trong ngày thì làm Dược Công
+        // hết trước (đủ 15 lượt/ngày), xong mới nhận việc thắng trận (điểm danh).
+        // Không làm được (chưa tới giai đoạn 8/Khí Huyết thấp) thì ghi rõ rồi vẫn
+        // điểm danh, không kẹt việc thắng trận.
+        var dcLeft = readSeedDaily();
+        if (dcLeft.left15 > 0) {
+          log('Thắng Đại Hội (' + wins + ' vòng) — còn ' + dcLeft.left15 + '/15 lượt Dược Công hôm nay: làm Dược Công hết trước rồi mới nhận việc thắng trận (điểm danh)');
+          try { await runDuocCong(runId, { schedule: true }); } catch (eDc) { if (!alive(runId)) return; log('Dược Công trước điểm danh: lỗi (' + eDc.message + ') — vẫn nhận việc thắng trận'); }
+          if (!alive(runId)) return;
+          var dcLeft2 = readSeedDaily();
+          log('Dược Công đã làm trước: lượt hôm nay đã dùng ' + dcLeft2.total15 + '/15' + (dcLeft2.left15 > 0 ? ' (còn ' + dcLeft2.left15 + ' lượt chưa làm được — xem nhật ký Dược Công ở trên)' : ' — đã hết lượt') + ' — giờ nhận việc thắng trận Đại Hội');
+        }
         log('Thắng Đại Hội (' + wins + ' vòng) — mở Sự Kiện điểm danh');
         try { await claimDailyReward(runId); } catch (e) { if (!alive(runId)) return; log('Điểm danh: lỗi (' + e.message + ') — bỏ qua'); }
         if (!alive(runId)) return;
@@ -12701,6 +12845,132 @@ function runSchedule(runId) {
   // giao chiến (Khí Huyết đứng yên 4s sau khi đã tụt) hoặc hết ngân sách;
   // lệnh chuông chen ngang: ĐỨNG YÊN thì tắt Auto đứng yên, CHẠY thì di
   // chuyển quanh điểm. Trả 'quiet'|'none'|'timeout'|'hp'|'map'|'downed'.
+  // v1.77 (Bui lệnh 22:36 ngày 2026-11-27: "Map yên lãng sơ cách đánh là lao vào
+  // đánh trụ với boss máu xuống thấp 20% lùi ra Toạ hồi máu trên 75% máu mới vào
+  // skill tiếp"): Khí Huyết ≤20% khi đánh trụ (Trấn Sơn Bia)/boss (Hộ Vệ/Tộc
+  // Trưởng) → lùi ra khỏi giao chiến về phía điểm vào (20,61) tới khi Khí Huyết
+  // ngừng tụt, ngồi đả tọa hồi máu, >75% mới đứng dậy bật đủ Bay+Chạy+Auto lao
+  // vào đánh tiếp đúng điểm đó.
+  // Bằng chứng mã client về đả tọa trong bí cảnh: nút thiền #btn-meditate-touch /
+  // phím Q → Input.consumeMeditate() → Player.sit() ngồi NGAY TẠI CHỖ (không cần
+  // đài đá; đài đá chỉ cho thêm Đạo Hạnh); chỉ bị chặn ở Chiến Trường/Tam Lộ/Vết
+  // Nứt + khóa PvP 2s — Yên Lãng Sơn không thuộc các map chặn. tickMeditate hồi
+  // HP thật (hp += HP_PER_SEC×…); ngoài đả tọa KHÔNG có hồi HP tự nhiên theo thời
+  // gian (chỉ SP hồi liên tục) nên đứng yên chờ không hồi máu — bắt buộc ngồi toạ.
+  // Player.sit tự hạ cánh; đang ngồi mà có lệnh di chuyển thì tự đứng dậy → khi toạ
+  // phải tắt Auto + không gửi lệnh lái. Lệnh chuông lúc toạ: ĐỨNG YÊN thì ngồi yên
+  // hợp lệ; CHẠY thì đứng dậy di chuyển quanh chỗ an toàn, hết lệnh ngồi lại.
+  // Trả 'ok' (đã hồi >75%) | 'downed' | 'fail' (hồi không tăng — dừng lượt như luật
+  // cũ) | 'map' (đã ra khỏi bí cảnh).
+  function ylRetreatRecover(runId, ptName) {
+    return (async function () {
+      var hpStart = readHpPct();
+      log('Yên Lãng Sơn: Khí Huyết xuống ' + (hpStart != null ? Math.round(hpStart * 100) + '%' : '?') + ' khi đánh điểm ' + ptName + ' — lùi ra khỏi giao chiến, toạ hồi máu trên 75% mới vào đánh tiếp');
+      setStatus('Yên Lãng Sơn: lùi ra toạ hồi máu…');
+      await ensureAuto(runId, false);
+      releaseAllInputs();
+      // ---- Lùi về phía điểm vào (20,61) từng chặng tới khi Khí Huyết ngừng tụt ----
+      var spawn = { tx: 20, ty: 61 };
+      var p0 = readPos();
+      var hops = [];
+      if (p0) {
+        hops.push({ tx: Math.round(p0.x + (spawn.tx - p0.x) * 0.4), ty: Math.round(p0.y + (spawn.ty - p0.y) * 0.4) });
+        hops.push({ tx: Math.round(p0.x + (spawn.tx - p0.x) * 0.7), ty: Math.round(p0.y + (spawn.ty - p0.y) * 0.7) });
+      }
+      hops.push(spawn);
+      var safe = false;
+      for (var hi = 0; hi < hops.length && alive(runId); hi++) {
+        if (readMapId() !== 'yen_lang_son') return 'map';
+        if (isDowned()) return 'downed';
+        var hpB = readHpPct();
+        try { await goToPath(runId, hops[hi].tx, hops[hi].ty, 1, 30000, 'lùi ra hồi máu'); }
+        catch (e) { if (!alive(runId)) throw e; log('Yên Lãng Sơn: lùi chưa tới được (' + hops[hi].tx + ',' + hops[hi].ty + '): ' + e.message + ' — thử chặng kế'); }
+        if (!alive(runId)) throw new Error('đã dừng');
+        if (readMapId() !== 'yen_lang_son') return 'map';
+        if (isDowned()) return 'downed';
+        await sleep(2000);
+        var hpA = readHpPct();
+        if (hpB != null && hpA != null && hpB - hpA < 0.01) { safe = true; log('Yên Lãng Sơn: đã lùi tới (' + hops[hi].tx + ',' + hops[hi].ty + ') — Khí Huyết ngừng tụt, thoát giao chiến'); break; }
+        log('Yên Lãng Sơn: lùi tới (' + hops[hi].tx + ',' + hops[hi].ty + ') vẫn còn bị đánh (Khí Huyết ' + (hpA != null ? Math.round(hpA * 100) + '%' : '?') + ') — lùi tiếp');
+      }
+      if (!safe) log('Yên Lãng Sơn: đã lùi về điểm vào mà Khí Huyết vẫn tụt — vẫn ngồi toạ thử hồi tại đây');
+      // ---- Ngồi đả tọa hồi máu tới >75% ----
+      var sitTries = 0, recovered = false, deadline = Date.now() + 4 * 60000;
+      while (alive(runId) && Date.now() < deadline) {
+        if (readMapId() !== 'yen_lang_son') return 'map';
+        if (isDowned()) return 'downed';
+        var hpNow = readHpPct();
+        if (hpNow != null && hpNow > 0.75) { recovered = true; break; }
+        sitTries++;
+        await ensureAuto(runId, false);
+        await ensureFly(runId, false); // hạ cánh: ngồi đả tọa phải đứng trên mặt đất (Player.sit cũng tự hạ cánh)
+        releaseAllInputs();
+        var mb = $('#btn-meditate-touch');
+        if (mb) pressDom(mb); else pressKey('KeyQ', 'q');
+        log('Yên Lãng Sơn: ngồi đả tọa hồi máu (lần ' + sitTries + ', Khí Huyết ' + (hpNow != null ? Math.round(hpNow * 100) + '%' : '?') + ') — hồi trên 75% mới vào đánh tiếp');
+        // Kiểm chứng đã ngồi thật: Khí Huyết phải tăng trong ~12s (tickMeditate hồi HP;
+        // ngoài đả tọa không có hồi HP tự nhiên nên tăng = đã ngồi thật)
+        var hpSit0 = readHpPct(), seated = false, verT0 = Date.now();
+        while (alive(runId) && Date.now() - verT0 < 12000) {
+          await sleep(2000);
+          if (readMapId() !== 'yen_lang_son') return 'map';
+          if (isDowned()) return 'downed';
+          var hpV = readHpPct();
+          if (hpSit0 != null && hpV != null && hpV > hpSit0) { seated = true; break; }
+          // Lệnh chuông CHẠY lúc đang chờ ngồi: đứng dậy di chuyển, hết lệnh ngồi lại
+          if (/CHẠY/.test(ylLenhText())) break;
+        }
+        if (!seated) {
+          if (/CHẠY/.test(ylLenhText())) {
+            log('Yên Lãng Sơn: lệnh chuông "CHẠY" lúc đang toạ — đứng dậy di chuyển quanh chỗ an toàn, hết lệnh ngồi lại');
+            var mbRun = $('#btn-meditate-touch');
+            if (mbRun) pressDom(mbRun); else pressKey('KeyQ', 'q');
+            var pRun = readPos();
+            if (pRun) { try { await goToPath(runId, pRun.x + 3, pRun.y, 1, 10000, 'chạy theo lệnh chuông'); } catch (e2) { if (!alive(runId)) throw e2; } }
+            var wRun = Date.now();
+            while (alive(runId) && readMapId() === 'yen_lang_son' && /CHẠY/.test(ylLenhText()) && Date.now() - wRun < 10000) await sleep(400);
+            sitTries--; // lệnh chuông chen ngang không tính là lần ngồi hụt
+            continue;
+          }
+          log('Yên Lãng Sơn: ngồi toạ mà Khí Huyết chưa tăng sau ~12s (lần ' + sitTries + '/2) — thử lại');
+          if (sitTries >= 2) { log('Yên Lãng Sơn: 2 lần ngồi toạ đều không hồi được máu — dừng lượt như luật cũ'); return 'fail'; }
+          continue;
+        }
+        // Đã ngồi thật: canh hồi tới >75%, lệnh CHẠY thì đứng dậy chạy rồi ngồi lại
+        while (alive(runId) && Date.now() < deadline) {
+          await sleep(2000);
+          if (readMapId() !== 'yen_lang_son') return 'map';
+          if (isDowned()) return 'downed';
+          var hpR = readHpPct();
+          if (hpR != null && hpR > 0.75) { recovered = true; break; }
+          if (/CHẠY/.test(ylLenhText())) {
+            log('Yên Lãng Sơn: lệnh chuông "CHẠY" lúc đang toạ (Khí Huyết ' + (hpR != null ? Math.round(hpR * 100) + '%' : '?') + ') — đứng dậy di chuyển, hết lệnh ngồi lại');
+            var mbRun2 = $('#btn-meditate-touch');
+            if (mbRun2) pressDom(mbRun2); else pressKey('KeyQ', 'q');
+            var pRun2 = readPos();
+            if (pRun2) { try { await goToPath(runId, pRun2.x + 3, pRun2.y, 1, 10000, 'chạy theo lệnh chuông'); } catch (e3) { if (!alive(runId)) throw e3; } }
+            var wRun2 = Date.now();
+            while (alive(runId) && readMapId() === 'yen_lang_son' && /CHẠY/.test(ylLenhText()) && Date.now() - wRun2 < 10000) await sleep(400);
+            break; // vòng ngoài ngồi lại
+          }
+        }
+        if (recovered) break;
+      }
+      if (!recovered) {
+        var hpEnd = readHpPct();
+        if (hpEnd != null && hpEnd > 0.75) recovered = true;
+        else { log('Yên Lãng Sơn: toạ hồi quá 4 phút chưa qua 75% (đang ' + (hpEnd != null ? Math.round(hpEnd * 100) + '%' : '?') + ') — dừng lượt như luật cũ'); return 'fail'; }
+      }
+      // Đứng dậy + bật đủ trio, quay lại đánh tiếp
+      var mbUp = $('#btn-meditate-touch');
+      if (mbUp) pressDom(mbUp); else pressKey('KeyQ', 'q');
+      await sleep(800);
+      await ensureCombatTrio(runId, 'Yên Lãng Sơn hồi máu xong');
+      var hpDone = readHpPct();
+      log('Yên Lãng Sơn: đã hồi máu lên ' + (hpDone != null ? Math.round(hpDone * 100) + '%' : '?') + ' (>75%) — lao vào đánh tiếp điểm ' + ptName);
+      return 'ok';
+    })();
+  }
   function ylFightAtPoint(runId, pt, budgetMs) {
     return (async function () {
       log('Yên Lãng Sơn: tới điểm "' + pt.name + '" (' + pt.tx + ',' + pt.ty + ') — đánh điểm này xong mới sang điểm kế');
@@ -12713,7 +12983,22 @@ function runSchedule(runId) {
         if (readMapId() !== 'yen_lang_son') return 'map';
         if (isDowned()) return 'downed';
         var hp = readHpPct();
-        if (hp != null && hp < 0.35) return 'hp';
+        // v1.77 (Bui lệnh 22:36): máu xuống 20% thì lùi ra toạ hồi máu, trên 75%
+        // mới vào đánh tiếp đúng điểm này (thời gian lùi/hồi không tính ngân sách điểm)
+        if (hp != null && hp <= 0.20) {
+          var recT0 = Date.now();
+          var rec = await ylRetreatRecover(runId, pt.name);
+          pausedMs += Date.now() - recT0;
+          if (rec === 'map') return 'map';
+          if (rec === 'downed') return 'downed';
+          if (rec === 'fail') return 'hp';
+          // hồi xong: quay lại đúng điểm này đánh tiếp
+          try { await goToPath(runId, pt.tx, pt.ty, 1, 60000, pt.name); }
+          catch (eR) { if (!alive(runId)) throw eR; log('Yên Lãng Sơn: hồi máu xong chưa quay lại được điểm ' + pt.name + ': ' + eR.message + ' — đánh tại chỗ hiện tại'); }
+          hpRef = readHpPct();
+          lastDropAt = Date.now();
+          continue;
+        }
         var lenh = ylLenhText();
         if (/ĐỨNG YÊN/.test(lenh)) {
           log('Yên Lãng Sơn: lệnh chuông "ĐỨNG YÊN — ĐỪNG ĐÁNH" tại điểm ' + pt.name + ' — tắt Auto, đứng yên chờ hết lệnh');
@@ -12760,7 +13045,19 @@ function runSchedule(runId) {
       while (alive(runId) && readMapId() === 'yen_lang_son') {
         if (Date.now() - tIn > 13 * 60000) { log('Yên Lãng Sơn: đã ở trong bí cảnh 13 phút (một lượt 12 phút) — kết thúc lượt'); return 'timeout'; }
         var hp0 = readHpPct();
-        if (hp0 != null && hp0 < 0.35) { log('Yên Lãng Sơn: Khí Huyết dưới 35% — dừng Auto, anh tự lái tiếp'); await ensureAuto(runId, false); return 'hp'; }
+        // v1.77 (Bui lệnh 22:36): bỏ điểm dừng cứng HP<35% — máu ≤20% đầu vòng thì
+        // lùi + toạ hồi trên 75% rồi mới tới điểm kế; hồi không được mới dừng lượt.
+        if (hp0 != null && hp0 <= 0.20) {
+          var rec0 = await ylRetreatRecover(runId, 'đầu vòng lộ trình');
+          if (rec0 === 'map') return 'map';
+          if (rec0 === 'downed') {
+            log('Yên Lãng Sơn: nhân vật gục khi lùi hồi máu — tự hồi sinh rồi đánh tiếp');
+            await handleDeath(runId);
+            if (!alive(runId)) return 'map';
+            continue;
+          }
+          if (rec0 === 'fail') { log('Yên Lãng Sơn: Khí Huyết thấp, toạ hồi không được — dừng lượt'); return 'hp'; }
+        }
         var stage = ylHudText('.yl-gd');
         if (stage && stage !== lastStage) { lastStage = stage; log('Yên Lãng Sơn: giai đoạn "' + stage + '" — ' + (ylHudText('.yl-gio') || '') + (ylHudText('.yl-boss') ? ' · ' + ylHudText('.yl-boss') : '')); }
         var bia = ylHudText('.yl-bia');
@@ -12849,9 +13146,9 @@ function runSchedule(runId) {
                   await partyInviteNearby(runId, invitedAt, 30000, group);
                   if (!alive(runId)) return;
                   if (partyStatus().count >= want) { enough = true; break; }
-                  if (Date.now() - lastPost > 120000) {
+                  if (Date.now() - lastPost > 60000) {
                     lastPost = Date.now();
-                    log('Yên Lãng Sơn: đội vẫn chưa đủ ' + want + ' người (đang ' + partyStatus().count + ') — đăng lại tin mời kênh thế giới');
+                    log('Yên Lãng Sơn: đội vẫn chưa đủ ' + want + ' người (đang ' + partyStatus().count + ') — ấn Mời tổ đội lại (1 phút mời 1 lần tới khi đủ người)');
                     if (await ylOpenNuTuDialog(runId)) ylPostTuyen(runId);
                   }
                 }
