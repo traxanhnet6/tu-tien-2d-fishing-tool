@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tool Tu Tiên Pixel — Tự đi farm + Việc Dược Công
 // @namespace    tutienpixel-tool
-// @version      2.0.5
+// @version      2.0.6
 // @description  Tool Tu Tiên Pixel Online: tự farm, Việc Dược Công, Huyết Xích, câu cá, căn giờ boss, nhiệm vụ chính, lịch trình theo giờ, cày cấp tân thủ.
 // @author       Muse (cho Bui)
 // @match        https://tutienpixel.online/*
@@ -83,7 +83,7 @@
         } catch (e) {}
       });
       document.body.appendChild(fab);
-      try { console.log('[TTPX] nút Tool đã hiện sớm (v2.0.5)'); } catch (e) {}
+      try { console.log('[TTPX] nút Tool đã hiện sớm (v2.0.6)'); } catch (e) {}
       return true;
     } catch (e) { return false; }
   }
@@ -108,7 +108,7 @@
     try {
       if (typeof GM_info !== 'undefined' && GM_info && GM_info.script && GM_info.script.version) return String(GM_info.script.version);
     } catch (e) {}
-    return '2.0.5';
+    return '2.0.6';
   })();
 
   // ============ v1.95 (Bui báo 21:38 ngày 2026-11-28: "Lỗi tools không chạy được trên chrome") ============
@@ -571,21 +571,29 @@
   // map boss), lưu localStorage để bền qua phiên. estimateTravelMs dùng trung vị
   // các lượt đã đo khi có, kẹp trong [0,7×, 2×] số ước cũ để số đo lệch (kẹt
   // cổng/đánh nhau dọc đường) không làm xuất phát muộn oan.
+  // v2.0.6 (gợi ý căn giờ boss mục 9, Bui lệnh 02:14 ngày 2026-11-29): ghi thêm
+  // khóa theo từng boss ('boss:<id>') — hai boss cùng map đích vẫn có số đo riêng
+  // (điểm boss trong map khác nhau, thời gian trong map đích lệch nhau);
+  // estimateTravelMs ưu tiên trung vị theo boss, không có mới dùng tuyến map.
   var BOSS_TRAVEL_KEY = 'ttpx_boss_travel_v1';
   function bossTravelLoad() {
     try { var o = JSON.parse(localStorage.getItem(BOSS_TRAVEL_KEY) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; }
   }
-  function bossTravelRecord(fromMap, toMap, ms) {
+  function bossTravelRecord(fromMap, toMap, ms, bossId) {
     if (!fromMap || !toMap || fromMap === toMap || !(ms > 0) || ms > 30 * 60000) return;
     try {
       var o = bossTravelLoad();
-      var k = fromMap + '>' + toMap;
-      var arr = Array.isArray(o[k]) ? o[k] : [];
-      arr.push(Math.round(ms));
-      if (arr.length > 5) arr = arr.slice(arr.length - 5);
-      o[k] = arr;
+      function pushKey(k) {
+        var arr = Array.isArray(o[k]) ? o[k] : [];
+        arr.push(Math.round(ms));
+        if (arr.length > 5) arr = arr.slice(arr.length - 5);
+        o[k] = arr;
+        return arr.length;
+      }
+      var nRoute = pushKey(fromMap + '>' + toMap);
+      var nBoss = bossId ? pushKey('boss:' + bossId) : 0;
       localStorage.setItem(BOSS_TRAVEL_KEY, JSON.stringify(o));
-      log('Săn boss: ghi thời gian di chuyển thật ' + fromMap + ' → ' + toMap + ': ' + Math.round(ms / 1000) + 's (đã đo ' + arr.length + ' lượt tuyến này)');
+      log('Săn boss: ghi thời gian di chuyển thật ' + fromMap + ' → ' + toMap + ': ' + Math.round(ms / 1000) + 's (đã đo ' + nRoute + ' lượt tuyến này' + (bossId ? ', ' + nBoss + ' lượt riêng boss ' + bossId : '') + ')');
     } catch (e) {}
   }
   function medianMs(arr) {
@@ -593,12 +601,16 @@
     var s = arr.slice().sort(function (a, b) { return a - b; });
     return s[Math.floor(s.length / 2)];
   }
-  function estimateTravelMs(fromMap, toMap) {
+  function estimateTravelMs(fromMap, toMap, bossId) {
     if (!fromMap || fromMap === toMap) return 90000;
     var p = bfsPath(fromMap, toMap);
     var hops = p ? p.length : 3;
     var est = hops * 120000 + 90000; // ước: mỗi cổng ~2 phút + 1,5 phút trong map đích
-    var measured = medianMs(bossTravelLoad()[fromMap + '>' + toMap]);
+    var store = bossTravelLoad();
+    // v2.0.6 mục 9: ưu tiên số đo riêng của boss này (điểm boss trong map đích
+    // quyết phần cuối đường đi), không có mới dùng số đo tuyến map→map.
+    var measured = bossId ? medianMs(store['boss:' + bossId]) : null;
+    if (measured == null) measured = medianMs(store[fromMap + '>' + toMap]);
     if (measured != null) return Math.max(Math.round(est * 0.7), Math.min(Math.round(est * 2), measured));
     return est;
   }
@@ -636,7 +648,16 @@
   // v1.94 (gợi ý mục 3): chọn boss theo giá trị khi trùng giờ — boss sớm nhất
   // làm mốc; boss khác giá trị cao hơn mà giờ ra chênh ≤ gapMs (mặc định 10
   // phút, tool chọn) thì ưu tiên boss giá trị cao. cands: [{boss, plan, at}].
+  // v2.0.6 (gợi ý căn giờ boss mục 10, Bui lệnh 02:14 ngày 2026-11-29): xếp thứ
+  // tự theo giá trị + khoảng cách — trong cửa chênh ≤ gapMs, điểm xếp hạng =
+  // value − số phút di chuyển ước tính (plan.travelMs, mỗi phút trừ 1 điểm —
+  // số tool chọn): boss giá trị cao nhưng xa quá thì boss gần hơn thắng; hòa
+  // điểm thì boss ra sớm hơn thắng.
   var BOSS_VALUE_GAP_MS = 10 * 60000;
+  function bossRankScore(c) {
+    var travelMin = (c && c.plan && c.plan.travelMs != null) ? Math.round(c.plan.travelMs / 60000) : 0;
+    return ((c && c.boss && c.boss.value) || 0) - travelMin;
+  }
   function pickBossByValue(cands, gapMs) {
     if (!cands || !cands.length) return null;
     var sorted = cands.slice().sort(function (a, b) { return a.at - b.at; });
@@ -645,7 +666,7 @@
     for (var i = 1; i < sorted.length; i++) {
       var c = sorted[i];
       if (c.at - first.at > (gapMs != null ? gapMs : BOSS_VALUE_GAP_MS)) break;
-      if ((c.boss.value || 0) > (best.boss.value || 0)) best = c;
+      if (bossRankScore(c) > bossRankScore(best)) best = c;
     }
     return best;
   }
@@ -715,7 +736,7 @@
       spawnAt = nextWeeklyDayStart(boss, nowMs, false);
       source = 'Chủ Nhật (giờ ra do server quyết — chỉ đi khi Hoạt Động báo đang/sắp xuất hiện)';
     }
-    var travelMs = estimateTravelMs(curMap, boss.map);
+    var travelMs = estimateTravelMs(curMap, boss.map, boss.id); // v2.0.6 mục 9: ưu tiên số đo riêng của boss này
     // v1.94: chỉ di chuyển khi còn 5 phút tới giờ ra (BOSS_GO_LEAD_MS) — còn lâu
     // thì làm việc khác theo lịch trình. Mục 2 (travel đo thật) dung hòa: tuyến
     // nào đo thật lâu hơn 5 phút thì xuất phát sớm hơn đúng bằng phần vượt để
@@ -7709,7 +7730,7 @@ var ITEM_SLOT = {};
         // (vật rơi hết hạn 180s). Tín hiệu 30s cũ giữ làm dự phòng khi HUD không hiện.
         if (fought && cong && cong.st === 'guc') {
           log('Boss ' + boss.name + ' đã gục lúc ' + fmtTime(Date.now()) + ' (HUD Công Boss báo st-guc)' + (congDuLogged ? ' — đã đủ ngưỡng Công Boss' : ' — chưa thấy đủ ngưỡng Công Boss'));
-          if (boss.id === 'xich_long' || boss.id === 'linh_ho' || boss.id === 'ma_bao' || boss.id === 'giao_long') await bossBitichSweep(runId, boss, lastFightPos);
+          await bossBitichSweep(runId, boss, lastFightPos); // v2.0.6 mục 6: quét nhặt quanh xác boss cho MỌI boss (trước thiếu Nhện Bạch Ngọc)
           return finish('dead');
         }
         if (!announced) {
@@ -7737,6 +7758,15 @@ var ITEM_SLOT = {};
                 if (!alive(runId)) return finish('none');
                 if (isDowned()) break;
                 if (Date.now() - guardT0 > 30000) { log('Dọn hộ vệ quá 30s — dừng dọn, vào boss luôn'); break; }
+                // v2.0.6 (gợi ý căn giờ boss mục 8, Bui lệnh 02:14 ngày 2026-11-29):
+                // kiểm lại HUD boss trước mỗi hộ vệ — boss tụt dưới 70% máu trong
+                // lúc đang dọn (người khác đang hạ nhanh) thì dừng dọn, dồn vào
+                // boss luôn, không dọn nốt hộ vệ làm mất lượt chạm boss.
+                var tgtG2 = readTargetInfo();
+                if (tgtG2 && tgtG2.name && (tgtG2.name.indexOf(boss.short || boss.name) >= 0 || tgtG2.name.indexOf(boss.name) >= 0) && tgtG2.pct != null && tgtG2.pct < 70) {
+                  log('Boss ' + boss.name + ' đang bị hạ nhanh (còn ' + tgtG2.pct + '% máu) trong lúc dọn hộ vệ — dừng dọn, dồn vào boss luôn');
+                  break;
+                }
                 var gd = boss.guards[gi];
                 try { await goToPath(runId, gd.tx, gd.ty, 1, 30000, 'hộ vệ ' + gd.name); } catch (e) { if (!alive(runId)) throw e; continue; }
                 if (!alive(runId)) return finish('none');
@@ -7758,7 +7788,7 @@ var ITEM_SLOT = {};
         }
         if (fought && Date.now() - lastDropAt > 30000) {
           log('Boss ' + boss.name + ' đã gục hoặc biến mất lúc ' + fmtTime(Date.now()) + ' (Khí Huyết đứng yên 30s sau giao chiến)' + (congDuLogged ? ' — đã đủ ngưỡng Công Boss' : ' — chưa thấy đủ ngưỡng Công Boss'));
-          if (boss.id === 'xich_long' || boss.id === 'linh_ho' || boss.id === 'ma_bao' || boss.id === 'giao_long') await bossBitichSweep(runId, boss, lastFightPos);
+          await bossBitichSweep(runId, boss, lastFightPos); // v2.0.6 mục 6: quét nhặt quanh xác boss cho MỌI boss (trước thiếu Nhện Bạch Ngọc)
           return finish('dead');
         }
         if (Date.now() > deadline) {
@@ -7830,11 +7860,12 @@ var ITEM_SLOT = {};
         cands.push({ boss: b, plan: plan, at: Math.max(plan.spawnAt, now) });
       });
       // v1.94 (gợi ý mục 3): trùng giờ (chênh ≤10 phút) thì ưu tiên boss giá trị cao
+      // v2.0.6 (gợi ý căn giờ boss mục 10): xếp hạng theo điểm = giá trị − phút di chuyển
       var best = pickBossByValue(cands);
       if (best && cands.length > 1) {
         var earliest = cands.slice().sort(function (a, b2) { return a.at - b2.at; })[0];
         if (earliest.boss.id !== best.boss.id) {
-          log('Căn giờ Boss: ' + earliest.boss.name + ' ra sớm hơn ' + best.boss.name + ' ' + Math.max(1, Math.round((best.at - earliest.at) / 60000)) + ' phút nhưng ' + best.boss.name + ' giá trị cao hơn (điểm ' + (best.boss.value || 0) + ' > ' + (earliest.boss.value || 0) + ') — ưu tiên ' + best.boss.name + ' (ngưỡng chênh 10 phút)');
+          log('Căn giờ Boss: ' + earliest.boss.name + ' ra sớm hơn ' + best.boss.name + ' ' + Math.max(1, Math.round((best.at - earliest.at) / 60000)) + ' phút nhưng ' + best.boss.name + ' điểm xếp hạng cao hơn (giá trị − phút di chuyển: ' + bossRankScore(best) + ' > ' + bossRankScore(earliest) + ') — ưu tiên ' + best.boss.name + ' (ngưỡng chênh 10 phút)');
         }
       }
       if (skipped.length) log('Căn giờ Boss: bỏ qua ' + skipped.join(', ') + ' — đã bị hạ, không hồi sinh trong ngày (hồi qua 00:00)');
@@ -7887,7 +7918,7 @@ var ITEM_SLOT = {};
             var hangChunkMs = (pp.spawnAt - Date.now() <= 15 * 60000) ? 3 * 60000 : 10 * 60000;
             var hangEnd = Math.min(pp.departAt, Date.now() + hangChunkMs);
             var hangT = bossHangTarget(pb); // v1.94: treo farm ở điểm farm trên bảng, không tới điểm boss sớm
-            var fr = await farmPhase(runId, hangT.map, hangT.dest, null, hangEnd, {});
+            var fr = await farmPhase(runId, hangT.map, hangT.dest, null, hangEnd, { bossWatch: true }); // v2.0.6 mục 1: boss báo đã ra trong lúc treo thì cắt khung treo đi săn ngay
             if (!alive(runId)) return;
             if (fr === 'hp') { log('Khí Huyết dưới 35% khi treo chờ boss — dừng'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
             continue; // đọc lại giờ mọi boss, chọn boss kế (có thể có boss khác ra sớm hơn)
@@ -7947,7 +7978,7 @@ var ITEM_SLOT = {};
             log('Boss ' + boss.name + ' còn ' + remainMinM + ' phút — treo làm việc khác, còn 5 phút tới giờ ra mới di chuyển đến điểm boss');
             setDoing('Treo chờ boss ' + boss.name + ' (còn ' + remainMinM + ' phút)', 'Boss kế: ' + boss.name + ' lúc ' + fmtTime(plan.spawnAt).slice(0, 5));
             var hangTM = bossHangTarget(boss); // v1.94: treo farm ở điểm farm trên bảng, không tới điểm boss sớm
-            var frM = await farmPhase(runId, hangTM.map, hangTM.dest, null, Math.min(plan.departAt, Date.now() + 10 * 60000), {});
+            var frM = await farmPhase(runId, hangTM.map, hangTM.dest, null, Math.min(plan.departAt, Date.now() + 10 * 60000), { bossWatch: true }); // v2.0.6 mục 1: boss báo đã ra trong lúc treo thì cắt khung treo đi săn ngay
             if (!alive(runId)) throw new Error('đã dừng');
             if (frM === 'hp') { log('Khí Huyết dưới 35% khi treo chờ boss — dừng'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
             lastHdAt = 0; // đọc lại mục Hoạt Động ngay sau khung treo
@@ -7980,10 +8011,16 @@ var ITEM_SLOT = {};
         await ensureRun(runId, true);
         await ensureFly(runId, true);
         if (!(await gotoWorkMap(runId, boss.map, 'canh boss ' + boss.name))) { log('Căn giờ Boss: không tới được map boss — vòng kế thử lại'); await sleep(10000); continue; }
-        setStatus('Tới vị trí boss ' + boss.name + ' (' + boss.tx + ',' + boss.ty + ')…');
-        await goToPath(runId, boss.tx, boss.ty, 1, 180000, 'vị trí boss');
+        // v2.0.6 (gợi ý căn giờ boss mục 5, Bui lệnh 02:14 ngày 2026-11-29):
+        // nhánh boss đơn cũng đứng chờ LỆCH điểm boss 3 ô như bossCycleOnce
+        // (v1.80) — bản cũ đi thẳng tới điểm boss đứng chờ, boss ra ngay tại chỗ
+        // đứng sẽ sớm chết; bossWaitFight tự tiến vào điểm boss khi boss ra.
+        var waitPtM = bossWaitPoint(boss);
+        setStatus('Tới điểm chờ boss ' + boss.name + ' (' + waitPtM.tx + ',' + waitPtM.ty + ') — lệch điểm boss (' + boss.tx + ',' + boss.ty + ')…');
+        log('Canh boss ' + boss.name + ': đứng chờ lệch điểm boss tại (' + waitPtM.tx + ',' + waitPtM.ty + ') — không đứng trực tiếp chỗ boss hồi sinh (' + boss.tx + ',' + boss.ty + ')');
+        await goToPath(runId, waitPtM.tx, waitPtM.ty, 1, 180000, 'điểm chờ boss');
         var arriveAt = Date.now();
-        bossTravelRecord(travelFromM, boss.map, arriveAt - travelT0M); // v1.94 mục 2
+        bossTravelRecord(travelFromM, boss.map, arriveAt - travelT0M, boss.id); // v1.94 mục 2 + v2.0.6 mục 9 (ghi riêng từng boss)
         if (plan.spawnAt != null) {
           var earlyMin = Math.round((plan.spawnAt - arriveAt) / 60000);
           log('Đã có mặt tại vị trí boss ' + boss.name + ' lúc ' + fmtTime(arriveAt) + (earlyMin > 0 ? ' — trước giờ xuất hiện ' + earlyMin + ' phút' : earlyMin === 0 ? ' — đúng giờ xuất hiện' : ' — sau giờ xuất hiện ' + (-earlyMin) + ' phút (boss có thể đã ra)'));
@@ -7996,7 +8033,8 @@ var ITEM_SLOT = {};
         if (fought === 'map') {
           // v1.54: lệch map khi canh boss thì quay về điểm boss canh tiếp, không dừng
           if (await recoverToMap(runId, boss.map, 'canh boss ' + boss.name)) {
-            await goToPath(runId, boss.tx, boss.ty, 1, 180000, 'vị trí boss');
+            var waitPtM2 = bossWaitPoint(boss); // v2.0.6 mục 5: quay về điểm chờ lệch, không đứng tại điểm boss
+            await goToPath(runId, waitPtM2.tx, waitPtM2.ty, 1, 180000, 'điểm chờ boss');
             await ensureCombatTrio(runId, 'vị trí boss ' + boss.name + ' sau lệch map');
             fought = await bossWaitFight(runId, boss, plan);
             if (fought === 'hp') { log('Khí Huyết dưới 35% khi canh boss — dừng'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
@@ -12172,6 +12210,20 @@ var ITEM_SLOT = {};
       return typeof bag[itemId] === 'number' ? bag[itemId] : (bag[itemId] ? 1 : 0);
     } catch (e) { return null; }
   }
+  // v2.0.6 (gợi ý căn giờ boss mục 6, Bui lệnh 02:14 ngày 2026-11-29): đếm TỔNG
+  // số vật trong túi — boss gục quét nhặt quanh xác, tổng vật tăng là bằng chứng
+  // đã nhặt được đồ rơi (không chỉ bí tịch/Phong Song Dực).
+  function countBagTotal() {
+    try {
+      var raw = localStorage.getItem('pntt_progress_v1');
+      if (!raw) return null;
+      var p = JSON.parse(raw);
+      var bag = p.bag || {};
+      var n = 0;
+      for (var k in bag) n += (typeof bag[k] === 'number' ? bag[k] : 1);
+      return n;
+    } catch (e) { return null; }
+  }
   // Boss gục: quét vòng quanh điểm boss nhặt bí tịch rơi giữa trận (khóa chủ 45s) + đồ rơi.
   // v1.94 (gợi ý mục 5): tâm quét = ô nhân vật lúc boss gục (center) khi có — boss
   // đuổi người đánh nên điểm gục thường lệch khỏi điểm spawn; không có thì điểm boss.
@@ -12182,7 +12234,8 @@ var ITEM_SLOT = {};
       var dropItemId = boss.id === 'ma_bao' ? 'phong_song_duc' : null; // Ma Báo rơi Phong Song Dực
       var before = countBitichInBag();
       var beforeItem = dropItemId ? countItemInBag(dropItemId) : null;
-      log('Boss ' + boss.name + ': quét quanh ' + (center ? 'điểm giao chiến (' + cx + ',' + cy + ')' : 'điểm boss') + ' nhặt bí tịch rơi giữa trận (khóa chủ 45s) + đồ rơi' + (before != null ? ' — bí tịch trong túi trước: ' + before : '') + (beforeItem != null ? ', Phong Song Dực trước: ' + beforeItem : ''));
+      var beforeTotal = countBagTotal(); // v2.0.6 mục 6: tổng vật trong túi trước khi quét
+      log('Boss ' + boss.name + ': quét quanh ' + (center ? 'điểm giao chiến (' + cx + ',' + cy + ')' : 'điểm boss') + ' nhặt bí tịch rơi giữa trận (khóa chủ 45s) + đồ rơi' + (before != null ? ' — bí tịch trong túi trước: ' + before : '') + (beforeItem != null ? ', Phong Song Dực trước: ' + beforeItem : '') + (beforeTotal != null ? ', tổng vật trong túi trước: ' + beforeTotal : ''));
       var offs = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [2, 0], [-2, 0], [0, 2], [0, -2]];
       for (var i = 0; i < offs.length; i++) {
         if (!alive(runId)) return;
@@ -12214,6 +12267,12 @@ var ITEM_SLOT = {};
       if (dropItemId) {
         var afterItem = countItemInBag(dropItemId);
         if (beforeItem != null && afterItem != null) log('Boss ' + boss.name + ': Phong Song Dực trong túi ' + beforeItem + ' → ' + afterItem + (afterItem > beforeItem ? ' — đã nhặt được' : ' (trận này không rơi hoặc chưa tới lượt mình nhặt)'));
+      }
+      // v2.0.6 mục 6: tổng vật trong túi tăng = đã nhặt được đồ rơi quanh xác boss
+      var afterTotal = countBagTotal();
+      if (beforeTotal != null && afterTotal != null) {
+        if (afterTotal > beforeTotal) log('Boss ' + boss.name + ': đã nhặt đồ rơi quanh xác boss — tổng vật trong túi ' + beforeTotal + ' → ' + afterTotal + ' (+' + (afterTotal - beforeTotal) + ')');
+        else log('Boss ' + boss.name + ': tổng vật trong túi vẫn ' + afterTotal + ' (không nhặt thêm được đồ quanh xác boss ở lượt quét này)');
       }
     })();
   }
@@ -12920,7 +12979,21 @@ var ITEM_SLOT = {};
       // Cache bị xóa ngay khi một boss gục (bossWaitFight/bossCycleOnce) để lượt
       // đọc kế lấy số mới từ server.
       var nowHd = Date.now();
-      if (S.hdCacheData && S.hdCacheAt && nowHd - S.hdCacheAt < 60000) {
+      // v2.0.6 (gợi ý căn giờ boss mục 3, Bui lệnh 02:14 ngày 2026-11-29): đọc
+      // giờ hồi Hoạt Động LIÊN TỤC — cache rút còn 25s khi số liệu cũ cho thấy
+      // có boss còn ≤15 phút tới giờ ra (đúng nhịp bossHdRefreshMs + nhịp game
+      // cho phép xin hoatdong.xem 20s), ngoài cửa đó giữ 60s như cũ.
+      var cacheTtlMs = 60000;
+      if (S.hdCacheData) {
+        BOSSES.forEach(function (b) {
+          var ce = S.hdCacheData[b.id];
+          if (ce && ce.parsed && ce.parsed.kind === 'countdown' && ce.parsed.secsLeft != null) {
+            var leftMs = (ce.readAt || S.hdCacheAt || nowHd) + ce.parsed.secsLeft * 1000 - nowHd;
+            if (leftMs <= 15 * 60000 && leftMs > -30 * 60000) cacheTtlMs = 25000;
+          }
+        });
+      }
+      if (S.hdCacheData && S.hdCacheAt && nowHd - S.hdCacheAt < cacheTtlMs) {
         var cacheFull = true;
         BOSSES.forEach(function (b) { var ce = S.hdCacheData[b.id]; if (!ce || ce.parsed.kind === 'unknown') cacheFull = false; });
         if (cacheFull) {
@@ -12965,7 +13038,7 @@ var ITEM_SLOT = {};
       log('Canh boss ' + boss.name + ': đứng chờ lệch điểm boss tại (' + waitPt.tx + ',' + waitPt.ty + ') — không đứng trực tiếp chỗ boss hồi sinh (' + boss.tx + ',' + boss.ty + ')');
       await goToPath(runId, waitPt.tx, waitPt.ty, 1, 180000, 'điểm chờ boss');
       var arriveAt = Date.now();
-      bossTravelRecord(travelFrom, boss.map, arriveAt - travelT0); // v1.94 mục 2
+      bossTravelRecord(travelFrom, boss.map, arriveAt - travelT0, boss.id); // v1.94 mục 2 + v2.0.6 mục 9 (ghi riêng từng boss)
       if (plan && plan.spawnAt != null) {
         var earlyMin = Math.round((plan.spawnAt - arriveAt) / 60000);
         log('Đã có mặt tại vị trí boss ' + boss.name + ' lúc ' + fmtTime(arriveAt) + (earlyMin > 0 ? ' — trước giờ xuất hiện ' + earlyMin + ' phút' : earlyMin === 0 ? ' — đúng giờ xuất hiện' : ' — sau giờ xuất hiện ' + (-earlyMin) + ' phút'));
@@ -13031,9 +13104,32 @@ var ITEM_SLOT = {};
       log('Lịch trình: đang farm tại ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap) + ' — ' + d.label + ' (tới ' + fmtTime(deadlineMs) + ')');
       var lastCrowdCheck = Date.now();
       var lastStoneCheck = 0; // v1.80: kiểm trần Linh Thạch từ quái mỗi 15s khi farm tới max trần (lịch Luyện Khí)
+      var lastBossToastCheck = 0; // v2.0.6 mục 1: nhịp đọc thông báo boss trong khung farm (15s/lần)
       while (alive(runId)) {
         if (Date.now() >= deadlineMs) return 'deadline';
         await sleep(1500);
+        // v2.0.6 (gợi ý căn giờ boss mục 1, Bui lệnh 02:14 ngày 2026-11-29):
+        // đang farm mà boss tới giờ xuất phát (S.bossDepartAt) hoặc game báo
+        // boss ĐÃ RA sớm hơn giờ ước trong plan → cắt khung farm ngay, trả
+        // 'bossdue' để vòng lịch chen ngang đi săn, săn xong quay lại việc dở
+        // (trước chỉ cắt ở ranh giới khung/deadline nên boss ra sớm là trễ).
+        // Chỉ bật khi nơi gọi truyền opts.bossWatch (lịch trình chính + treo
+        // chờ boss) — các khung farm ngắn khác giữ hành vi cũ.
+        if (opts.bossWatch) {
+          if (S.bossDepartAt && Date.now() >= S.bossDepartAt) {
+            log('Lịch trình: tới giờ xuất phát đi boss — dừng khung farm, chen ngang săn boss (xong quay lại việc đang làm)');
+            return 'bossdue';
+          }
+          if (Date.now() - lastBossToastCheck >= 15000) {
+            lastBossToastCheck = Date.now();
+            var bt = readBossToast();
+            if (bt && bt.alive && bt.bossId && evOn('boss', 'play')) {
+              var btBoss = bossById(bt.bossId);
+              log('Lịch trình: game báo boss ' + (btBoss ? btBoss.name : bt.name) + ' đã xuất hiện trong lúc đang farm — dừng khung farm, chen ngang đi săn ngay (xong quay lại việc đang làm)');
+              return 'bossdue';
+            }
+          }
+        }
         // v1.99: sự kiện ngẫu nhiên (Xổng Chuồng/Thương Đội) vừa được báo →
         // nhường đường ngay, vòng lịch trình chen ngang đi đánh rồi farm tiếp.
         if (S.randEv && evOn('sukienngau', 'play') && Date.now() - S.randEv.t0 < RANDEVENT_FRESH_MS) {
@@ -14682,8 +14778,15 @@ function runSchedule(runId) {
           bossCands.push({ boss: b, plan: plan, at: Math.max(plan.spawnAt, now0) });
         });
         // v1.94 (gợi ý mục 3): trùng giờ (chênh ≤10 phút) ưu tiên boss giá trị cao
+        // v2.0.6 (gợi ý căn giờ boss mục 10): xếp hạng theo điểm = giá trị − phút di chuyển
         var pickedB = pickBossByValue(bossCands);
         if (pickedB) { nextBoss = pickedB.boss; nextPlan = pickedB.plan; }
+        if (pickedB && bossCands.length > 1) {
+          var earliestB = bossCands.slice().sort(function (a, b2) { return a.at - b2.at; })[0];
+          if (earliestB.boss.id !== pickedB.boss.id) {
+            log('Lịch trình: ' + earliestB.boss.name + ' ra sớm hơn ' + pickedB.boss.name + ' ' + Math.max(1, Math.round((pickedB.at - earliestB.at) / 60000)) + ' phút nhưng ' + pickedB.boss.name + ' điểm xếp hạng cao hơn (giá trị − phút di chuyển: ' + bossRankScore(pickedB) + ' > ' + bossRankScore(earliestB) + ') — ưu tiên ' + pickedB.boss.name + ' (ngưỡng chênh 10 phút)');
+          }
+        }
         if (skippedBoss.length) log('Lịch trình: bỏ qua ' + skippedBoss.join(', ') + ' — đã bị hạ, không hồi sinh trong ngày (hồi qua 00:00)');
         if (!nextBoss && skippedBoss.length) log('Lịch trình: mọi boss đều không hồi sinh trong ngày — farm chờ qua 00:00');
         if (nextBoss) log('Lịch trình: boss ra sớm nhất là ' + nextBoss.name + ' lúc ' + fmtTime(nextPlan.spawnAt) + ' (' + nextPlan.source + ') — xuất phát ' + fmtTime(nextPlan.departAt));
@@ -15041,8 +15144,9 @@ function runSchedule(runId) {
         if (lkMode && sdFarm) log('Lịch Luyện Khí: Linh Thạch từ quái hôm nay ' + sdFarm.da + '/' + sdFarm.tran + (sdFarm.full ? ' — ĐÃ MAX TRẦN (farm tiếp lấy Đạo Hạnh/đồ rơi trong lúc chờ câu/vườn/phá quan)' : ' — farm ở Dược tới max trần'));
         log('Lịch trình: vào khung farm tới ' + fmtTime(deadline) + ' (' + why + ')');
         setDoing('Farm ' + (MAPS[targetMap] ? MAPS[targetMap].name : targetMap) + (dest ? ' — ' + dest.label : '') + (zone ? ' — Khu ' + zone : '') + ' tới ' + fmtTime(deadline).slice(0,5), scheduleNextText());
-        var fr = await farmPhase(runId, targetMap, dest, zone, deadline, { emptyZone: lkMode && !manualTouched, midCrowd: tcMode, stopWhenStoneCap: lkMode && !(sdFarm && sdFarm.full) }); // v1.79: Trúc Cơ farm Phong Địa chọn khu trống vừa vừa người; v1.80: Luyện Khí farm tới max trần Linh Thạch từ quái
+        var fr = await farmPhase(runId, targetMap, dest, zone, deadline, { emptyZone: lkMode && !manualTouched, midCrowd: tcMode, stopWhenStoneCap: lkMode && !(sdFarm && sdFarm.full), bossWatch: true }); // v1.79: Trúc Cơ farm Phong Địa chọn khu trống vừa vừa người; v1.80: Luyện Khí farm tới max trần Linh Thạch từ quái; v2.0.6 mục 1: boss báo đã ra thì cắt khung farm chen ngang đi săn
         if (!alive(runId)) return;
+        if (fr === 'bossdue') { log('Lịch trình: khung farm nhường cho boss (tới giờ xuất phát/boss đã ra) — tính lại vòng để chen ngang săn boss, xong quay lại farm'); continue; }
         if (fr === 'stonecap') { log('Lịch Luyện Khí: farm chạm trần Linh Thạch từ quái — tính lại vòng (sang câu Hồ Tây/vườn/phá quan)'); continue; }
         if (fr === 'hp') { log('Lịch trình: Khí Huyết dưới 35% khi farm — dừng lịch trình'); await ensureAuto(runId, false); stopTool('Khí Huyết thấp'); return; }
         if (fr === 'map') { log('Lịch trình: bị văng sang map khác khi farm — tính lại vòng'); continue; }
