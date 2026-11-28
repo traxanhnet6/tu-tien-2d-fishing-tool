@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tool Tu Tiên Pixel — Tự đi farm + Việc Dược Công
 // @namespace    tutienpixel-tool
-// @version      2.0.4
+// @version      2.0.5
 // @description  Tool Tu Tiên Pixel Online: tự farm, Việc Dược Công, Huyết Xích, câu cá, căn giờ boss, nhiệm vụ chính, lịch trình theo giờ, cày cấp tân thủ.
 // @author       Muse (cho Bui)
 // @match        https://tutienpixel.online/*
@@ -83,7 +83,7 @@
         } catch (e) {}
       });
       document.body.appendChild(fab);
-      try { console.log('[TTPX] nút Tool đã hiện sớm (v2.0.4)'); } catch (e) {}
+      try { console.log('[TTPX] nút Tool đã hiện sớm (v2.0.5)'); } catch (e) {}
       return true;
     } catch (e) { return false; }
   }
@@ -108,7 +108,7 @@
     try {
       if (typeof GM_info !== 'undefined' && GM_info && GM_info.script && GM_info.script.version) return String(GM_info.script.version);
     } catch (e) {}
-    return '2.0.4';
+    return '2.0.5';
   })();
 
   // ============ v1.95 (Bui báo 21:38 ngày 2026-11-28: "Lỗi tools không chạy được trên chrome") ============
@@ -6124,7 +6124,15 @@ var ITEM_SLOT = {};
             if (msHit != null) { milestoneFired[msHit] = true; milestonePending = msHit; }
             bossPrevPct = bossHudPct;
           }
-        } else if (on === false && bossSeenOnHud) {
+        } else if (on !== true && bossSeenOnHud) {
+          // v2.0.5 (Bui báo 02:05 ngày 2026-11-29: đánh xong boss vẫn không chịu
+          // đi thu hoạch): boss gục thì HUD mục tiêu thường ẨN/trống hẳn
+          // (readTargetInfo trả null → bossOnHud trả null), không phải chuyển
+          // sang quái khác. Bản cũ chỉ tăng bossGoneChecks khi on===false nên
+          // bossGoneChecks đứng 0 mãi → cả 2 nhánh kết luận gục không nổ →
+          // trận boss cháy đủ trần 240s, vòng sau quay lại điểm boss nữa.
+          // Nay: đã từng thấy boss trên HUD mà nay HUD không còn hiện boss
+          // (quái khác HOẶC trống) đều tính 1 nhịp mất dấu.
           bossGoneChecks++;
         }
         return on;
@@ -6347,6 +6355,7 @@ var ITEM_SLOT = {};
       setStatus('Quét quái ' + m.name + ' (vòng ' + roundNo + ')…');
       await ensureCombatTrio(runId, 'quét quái Huyết Xích ' + m.name + ' vòng ' + roundNo);
       var foughtPts = 0; // v1.89: đếm điểm có giao chiến trong vòng (nhật ký kiểm tra hết quái)
+      var unvisitedPts = 0; // v2.0.5: điểm quái không tới được trong vòng (goToPath lỗi) — vòng 0 giao chiến mà còn điểm chưa tới thì chưa kết luận sạch map
       for (var i = 0; i < pts.length; i++) {
         if (!alive(runId)) throw new Error('đã dừng');
         if (watchSeal && hxSealClearSeen()) return 'sealclear';
@@ -6377,7 +6386,7 @@ var ITEM_SLOT = {};
         }
         log('Quét: tới điểm ' + pt.name + ' (' + pt.tx + ',' + pt.ty + ') — điểm ' + (i + 1) + '/' + pts.length + ' của vòng ' + roundNo);
         try { await goToPath(runId, pt.tx, pt.ty, 1, 120000, pt.name); }
-        catch (e) { if (!alive(runId)) throw e; log('Chưa tới được điểm ' + pt.name + ': ' + e.message + ' — sang điểm kế'); continue; }
+        catch (e) { if (!alive(runId)) throw e; unvisitedPts++; log('Chưa tới được điểm ' + pt.name + ': ' + e.message + ' — sang điểm kế'); continue; }
         // v1.53: chờ Auto đánh tới khi hết giao chiến tại điểm này (thay chờ cứng 7s)
         var wf = await hxWaitFightDone(runId, pt, watchSeal);
         // v2.0.1 (Bui báo 00:31 ngày 2026-11-29: map 3 phải giết HẾT quái mới đến
@@ -6411,6 +6420,12 @@ var ITEM_SLOT = {};
       // dấu hiệu map đã sạch, pha kiểm tra cấm chế ngay sau sẽ xác nhận để
       // chuyển thu hoạch.
       log('Huyết Xích: vòng quét ' + roundNo + ' ở ' + m.name + ' xong — gặp giao chiến ở ' + foughtPts + '/' + pts.length + ' điểm quái' + (foughtPts === 0 ? ' (không gặp quái nào trong vòng này — kiểm tra cấm chế ngay để chuyển thu hoạch nếu đã sạch)' : ''));
+      // v2.0.5: ghi kết quả vòng cho hxClearMap — vòng 0 giao chiến + boss đã
+      // gục + không điểm nào bị bỏ qua vì không tới được = map đã sạch chắc
+      // chắn (quái Huyết Xích không hồi sinh) → sang thu hoạch ngay, không
+      // phụ thuộc probe thu hoạch nữa.
+      totals.lastRoundFought = foughtPts;
+      totals.lastRoundUnvisited = unvisitedPts;
       return 'done';
     })();
   }
@@ -6891,6 +6906,20 @@ var ITEM_SLOT = {};
         if (fr === 'sealclear') { clearedLog(round, true); return 'done'; }
         if (fr === 'hp') return 'hp';
         if (fr === 'mapchange') return 'mapchange';
+        // v2.0.5 (Bui báo 02:05 ngày 2026-11-29: đánh xong quái boss vẫn không
+        // chịu đi thu hoạch): vòng quét vừa rồi KHÔNG gặp giao chiến ở điểm
+        // quái nào + boss đã gục + không điểm nào bị bỏ qua vì không tới được
+        // → map đã sạch chắc chắn (quái Huyết Xích không hồi sinh, mã client
+        // Enemy.create huyetSac → respawnSec=0) → sang thu hoạch NGAY, không
+        // chờ probe thu hoạch (probe hụt 'tried' là quét lại vòng thừa — đúng
+        // cảnh Bui thấy). Caption "Đã quét sạch yêu thú" không nổ trong
+        // gameplay thật (chỉ có trong phim hướng dẫn HuyetXichHuongDan) nên
+        // không trông chờ tín hiệu đó nữa.
+        if (totals.bossDead && totals.bossDead[mapId] && totals.lastRoundFought === 0 && !totals.lastRoundUnvisited) {
+          log('Huyết Xích map ' + MAPS[mapId].name + ': vòng quét ' + round + ' không gặp giao chiến ở điểm quái nào + boss đã gục — map đã sạch, chuyển sang thu hoạch ngay');
+          clearedLog(round);
+          return 'done';
+        }
         // Tín hiệu 1: caption game báo cấm chế tan (hiện ngay khi con quái cuối gục,
         // chỉ ~2,8s nên hay hụt — tín hiệu 2 thử thu hoạch mới là chính)
         var seal = hxSealState();
@@ -6937,10 +6966,20 @@ var ITEM_SLOT = {};
         seal = hxSealState();
         if (seal && seal.clear) { clearedLog(round, true); return 'done'; }
         if (res && res.indexOf('sealed:') === 0) {
-          inconclusiveRounds = 0;
           var leftRaw = res.slice(7);
           var leftN = leftRaw === '?' ? null : +leftRaw;
           if (leftN === 0) { clearedLog(round); return 'done'; }
+          // v2.0.5: caption cấm chế không đọc được SỐ yêu thú ('sealed:?') thì
+          // tính là vòng CHƯA KẾT LUẬN — bản cũ reset cả inconclusiveRounds
+          // lẫn stuckRounds mỗi vòng như vậy nên vòng quét có thể chạy đủ 12
+          // vòng mới sang thu hoạch. Nay: 2 vòng 'sealed:?' liên tiếp là sang
+          // pha thu hoạch (từng điểm tự quét quanh điểm rồi thử lại).
+          if (leftN == null) {
+            inconclusiveRounds++;
+            log('Vòng quét ' + round + ' xong — caption cấm chế không đọc được số yêu thú còn lại (lần ' + inconclusiveRounds + '/2)' + (inconclusiveRounds >= 2 ? ' — sang pha thu hoạch luôn, không quét lặp vô hạn' : ' — quét tiếp vòng ' + (round + 1)));
+            if (inconclusiveRounds >= 2) return 'done';
+          } else {
+          inconclusiveRounds = 0;
           log('Huyết Xích map ' + MAPS[mapId].name + ': vòng quét ' + round + ' xong — còn ' + leftRaw + ' yêu thú' + (lastLeft != null && leftN != null ? ' (vòng trước còn ' + lastLeft + ')' : '') + ' — quét tiếp vòng ' + (round + 1));
           // Boss đã đánh dấu gục mà cấm chế còn >0: có thể boss chưa gục thật
           // (kết luận cũ suy từ Khí Huyết đứng yên) → xóa cờ, vòng sau đánh lại boss.
@@ -6969,13 +7008,16 @@ var ITEM_SLOT = {};
             if (pr === 'sealclear') { clearedLog(round, true); return 'done'; }
             if (pr === 'hp') return 'hp';
             if (pr === 'mapchange') return 'mapchange';
-            stuckRounds = 0; // tuần tra xong cho thêm vòng quét kiểm chứng
+            // v2.0.5: tuần tra xong KHÔNG reset stuckRounds nữa (bản cũ reset
+            // → tốn thêm 1 vòng quét đầy đủ dù số yêu thú không đổi). Vòng kế
+            // mà số vẫn không giảm là stuckRounds chạm 2 → sang thu hoạch.
             continue;
           }
           if (stuckRounds >= 2) {
             log('Số yêu thú còn lại không giảm sau 2 vòng quét liên tiếp (còn ' + leftRaw + ') — dừng quét sạch ở ' + MAPS[mapId].name + ', sang pha thu hoạch thử từng điểm');
             return 'done';
           }
+          } // v2.0.5: đóng nhánh leftN đọc được số
         } else {
           inconclusiveRounds++;
           log('Vòng quét ' + round + ' xong — thử điểm ' + probe.id + ' chưa kết luận được cấm chế (' + res + ', lần ' + inconclusiveRounds + '/2) — quét tiếp vòng ' + (round + 1));
