@@ -1,22 +1,18 @@
 // ==UserScript==
 // @name         Tool Tu Tiên Pixel — Tự đi farm + Việc Dược Công
 // @namespace    tutienpixel-tool
-// @version      2.0.2
+// @version      2.0.3
 // @description  Tool Tu Tiên Pixel Online: tự farm, Việc Dược Công, Huyết Xích, câu cá, căn giờ boss, nhiệm vụ chính, lịch trình theo giờ, cày cấp tân thủ.
 // @author       Muse (cho Bui)
 // @match        https://tutienpixel.online/*
 // @match        https://www.tutienpixel.online/*
-// @match        http://tutienpixel.online/*
 // @match        https://tutien2d.com/*
 // @match        https://www.tutien2d.com/*
-// @match        http://tutien2d.com/*
 // @updateURL    https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/tutienpixel-host/tutienpixel/tutienpixel-tool.user.js
 // @downloadURL  https://raw.githubusercontent.com/traxanhnet6/tu-tien-2d-fishing-tool/tutienpixel-host/tutienpixel/tutienpixel-tool.user.js
 // @run-at       document-idle
-// @inject-into  content
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
-// @connect      raw.githubusercontent.com
 // ==/UserScript==
 
 
@@ -32,6 +28,20 @@
 // ("Tool !") để Bui nhìn thấy ngay script có chạy hay không; bấm nút khi bảng chưa dựng
 // thì gọi __ttpxTool.buildPanel() của IIFE chính; (c) @inject-into content cho Safari
 // (app Userscripts khuyên dùng khi trang có CSP chặt — Tampermonkey bỏ qua khóa này).
+// ============ v2.0.3 (Bui báo 01:25 ngày 2026-11-29: vẫn không hiện trên Safari — app Stay) ============
+// Nguyên nhân gốc (đọc mã nguồn Stay github.com/shenruisi/Stay commit 9b78d761):
+// trình phân tích metadata phía app của Stay (Stay/tampermonkey/lib/parse-user-script.js
+// + supported-apis.js) liệt kê thẻ "connect" (và "source") trong UserScriptUnsupport_TAGS
+// — script có @connect bị đánh dấu pass=false ("Unsupport tag") và không được kích
+// hoạt/tiêm. @connect chỉ thêm từ v1.95 (cho Chrome/Tampermonkey tải mã khóa vượt CSP),
+// đúng mốc tool ngừng hiện trên Safari/Stay; các bản v1.92 trở về trước không có @connect
+// nên chạy được. Đã mô phỏng đúng cách Stay bọc script (shim GM + xóa dòng // + async
+// function): mã v2.0.2 chạy tốt, nút hiện — lỗi nằm ở khâu phân tích/cài, không phải mã.
+// Sửa v2.0.3: BỎ @connect khỏi header (Stay chấp nhận; Tampermonkey Chrome lần đầu tải
+// mã khóa sẽ hiện hộp hỏi Allow kết nối raw.githubusercontent.com — bấm Allow một lần),
+// bỏ @inject-into (Stay không dùng khóa này), bỏ 2 @match http:// (game chỉ https, giảm
+// rủi ro bộ khớp mẫu phía Stay). Giữ @grant GM_xmlhttpRequest + unsafeWindow (Stay hỗ trợ
+// cả hai; Chrome cần để tải mã khóa vượt CSP trang game).
 (function ttpxEarlyFab() {
   'use strict';
   var ERR = '';
@@ -73,7 +83,7 @@
         } catch (e) {}
       });
       document.body.appendChild(fab);
-      try { console.log('[TTPX] nút Tool đã hiện sớm (v2.0.2)'); } catch (e) {}
+      try { console.log('[TTPX] nút Tool đã hiện sớm (v2.0.3)'); } catch (e) {}
       return true;
     } catch (e) { return false; }
   }
@@ -98,7 +108,7 @@
     try {
       if (typeof GM_info !== 'undefined' && GM_info && GM_info.script && GM_info.script.version) return String(GM_info.script.version);
     } catch (e) {}
-    return '2.0.2';
+    return '2.0.3';
   })();
 
   // ============ v1.95 (Bui báo 21:38 ngày 2026-11-28: "Lỗi tools không chạy được trên chrome") ============
