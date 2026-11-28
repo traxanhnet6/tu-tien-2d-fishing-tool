@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tool Tu Tiên Pixel — Tự đi farm + Việc Dược Công
 // @namespace    tutienpixel-tool
-// @version      2.0.3
+// @version      2.0.4
 // @description  Tool Tu Tiên Pixel Online: tự farm, Việc Dược Công, Huyết Xích, câu cá, căn giờ boss, nhiệm vụ chính, lịch trình theo giờ, cày cấp tân thủ.
 // @author       Muse (cho Bui)
 // @match        https://tutienpixel.online/*
@@ -83,7 +83,7 @@
         } catch (e) {}
       });
       document.body.appendChild(fab);
-      try { console.log('[TTPX] nút Tool đã hiện sớm (v2.0.3)'); } catch (e) {}
+      try { console.log('[TTPX] nút Tool đã hiện sớm (v2.0.4)'); } catch (e) {}
       return true;
     } catch (e) { return false; }
   }
@@ -108,7 +108,7 @@
     try {
       if (typeof GM_info !== 'undefined' && GM_info && GM_info.script && GM_info.script.version) return String(GM_info.script.version);
     } catch (e) {}
-    return '2.0.3';
+    return '2.0.4';
   })();
 
   // ============ v1.95 (Bui báo 21:38 ngày 2026-11-28: "Lỗi tools không chạy được trên chrome") ============
